@@ -1,0 +1,62 @@
+# sudo usermod -a -G docker $USER
+version: '3.3'
+services:
+  mysql:
+    container_name: mysql_database
+    image: mysql:latest
+    restart: always
+    environment:
+      - MYSQL_ROOT_PASSWORD=password
+      - MYSQL_DATABASE=mpf
+      - MYSQL_USER=mpf
+      - MYSQL_PASSWORD=mpf
+    volumes:
+      - mysql-data:/var/lib/mysql
+    ports:
+      - "3306:3306"
+
+  active_mq:
+    container_name: active_mq
+    build: ./active-mq
+    restart: always
+    ports:
+      - "61616:61616"
+    restart: always
+
+  redis:
+    container_name: redis
+    image: redis
+    ports:
+      - "6379:6379"
+    restart: always
+
+  tomcat:
+    # workflow manager
+    container_name: tomcat
+    build: ./tomcat
+    depends_on:
+      - mysql
+    restart: always
+    ports:
+      - "8080:8080"
+      - "7801:7801"
+    volumes:
+      - mpf-data:/opt/mpf/share
+    # deploy:
+    #   placement:
+    #     constraints:
+    #       - node.role == manager
+    #       - engine.labels.operatingsystem == ubuntu 14.04
+    #     preferences:
+    #       - spread: node.labels.zone
+
+  node_manager:
+    container_name: node_manager
+    build: ./node-manager
+    restart: always
+    ports:
+      - "80:80"
+      - "7800:7800"
+
+volumes:
+  my-datavolume:
