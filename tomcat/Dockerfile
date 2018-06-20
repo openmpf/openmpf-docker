@@ -28,7 +28,7 @@ RUN touch /etc/ld.so.conf.d/mpf-x86_64.conf; \
 # Install needed build toolchain
 RUN yum install -y git python-pip python-devel python-setuptools file \
     python-setuptools-devel gcc gcc-c++ make autoconf automake \
-    libtool yasm nasm bzip2; yum clean all
+    libtool yasm nasm bzip2 cmake3; yum clean all
 
 # C Foreign Function Interface (CFFI):
 RUN cd /home/mpf; yum install libffi-devel -y; yum clean all
@@ -79,7 +79,9 @@ RUN cd /apps/source/cmake_sources; tar xzf cmake-2.8.12.2.tar.gz; \
     make install;
 RUN ldconfig; ln -s /apps/install/bin/cmake /usr/local/bin/cmake;
 
-# FFmpeg 3.3.3
+### FFmpeg 3.3.3
+
+# opencore-amr
 RUN wget -nv -O /apps/source/ffmpeg_sources/opencore-amr-0.1.4.tar.gz \
     "https://downloads.sf.net/project/opencore-amr/opencore-amr/opencore-amr-0.1.4.tar.gz"; \
     cd /apps/source/ffmpeg_sources; tar xzf opencore-amr-0.1.4.tar.gz; \
@@ -144,8 +146,8 @@ RUN wget -nv -O /apps/source/ffmpeg_sources/v1.6.1.tar.gz \
     "https://codeload.github.com/webmproject/libvpx/tar.gz/v1.6.1"; \
     cd /apps/source/ffmpeg_sources; tar xzf v1.6.1.tar.gz; cd libvpx-1.6.1; \
     ./configure --prefix="/apps/install" --enable-shared --enable-vp8 \
-    --enable-vp9 --enable-pic --disable-debug --disable-examples --disable-docs; \
-    make; make install; make distclean; ldconfig;
+    --enable-vp9 --enable-pic --disable-debug --disable-examples --disable-docs \
+    --as=yasm; make; make install; make distclean; ldconfig;
 
 # libx264
 RUN wget -nv -O /apps/source/ffmpeg_sources/x264-snapshot-20170226-2245-stable.tar.bz2 \
@@ -170,6 +172,57 @@ RUN wget -nv -O /apps/source/ffmpeg_sources/xvidcore-1.3.4.tar.gz \
     cd xvidcore/build/generic; ./configure --prefix="/apps/install"; \
     make; make install; make distclean; ldconfig;
 
+# TODO move up
+RUN yum install -y numpy; yum clean all
+
+# FFmpeg (end)
+RUN cd /apps/source/ffmpeg_sources; git clone https://git.ffmpeg.org/ffmpeg.git ffmpeg; \
+    cd ffmpeg; git checkout release/3.3; PKG_CONFIG_PATH="/apps/install/lib/pkgconfig" \
+    ./configure --bindir="/apps/install/bin" --disable-libsoxr --enable-avresample \
+    --enable-gpl --enable-libopencore-amrnb --enable-libopencore-amrwb \
+    --enable-libfdk_aac --enable-libmp3lame --enable-libopus --enable-libspeex \
+    --enable-libtheora --enable-libvorbis --enable-libvpx --enable-libx264 \
+    --enable-libx265 --enable-libxvid --enable-nonfree --enable-openssl \
+    --enable-shared --enable-version3 --extra-cflags="-I/apps/install/include" \
+    --extra-ldflags="-L/apps/install/lib" --extra-libs=-ldl --prefix="/apps/install"; \
+    make; make install; make distclean; ln -s /apps/install/bin/ffmpeg /usr/bin/ffmpeg; \
+    ldconfig;
+
+### FFmpeg end
+
+# Google protocol buffers 2.5.0
+RUN wget -nv -O /apps/source/google_sources/protobuf-2.5.0.tar.gz \
+    "https://github.com/google/protobuf/releases/download/v2.5.0/protobuf-2.5.0.tar.gz"; \
+    cd /apps/source/google_sources; tar xzf protobuf-2.5.0.tar.gz; cd protobuf-2.5.0; \
+    ./configure --prefix=/apps/install; make -j8; make install; make distclean; \
+    ldconfig; ln -s /apps/install/bin/protoc /usr/local/bin/protoc; \
+    ln -s /usr/lib64/libuuid.so.1.3.0 /usr/lib64/libuuid.so;
+
+# OpenCV 3.3.0
+RUN cd /apps/source/opencv_sources; git clone https://github.com/opencv/opencv.git; \
+    cd opencv; git checkout 3.3.0; mkdir release; cd release; \
+    PKG_CONFIG_PATH="/apps/install/lib/pkgconfig" cmake3 \
+    -DCMAKE_BUILD_TYPE=Release -DWITH_GSTREAMER:BOOL="0" -DWITH_OPENMP:BOOL="1" \
+    -DBUILD_opencv_apps:BOOL="0" -DWITH_OPENCLAMDBLAS:BOOL="0" \
+    -DWITH_CUDA:BOOL="0" -DCLAMDFFT_ROOT_DIR:PATH="CLAMDFFT_ROOT_DIR-NOTFOUND" \
+    -DBUILD_opencv_aruco:BOOL="0" \
+    -DCMAKE_INSTALL_PREFIX:PATH="/apps/install/opencv3.3.0" -DWITH_WEBP:BOOL="0" \
+    -DBZIP2_LIBRARIES:FILEPATH="BZIP2_LIBRARIES-NOTFOUND" \
+    -DWITH_GIGEAPI:BOOL="0" -DWITH_JPEG:BOOL="1" -DWITH_CUFFT:BOOL="0" \
+    -DWITH_IPP:BOOL="0" -DWITH_V4L:BOOL="1" -DWITH_GDAL:BOOL="0" \
+    -DWITH_OPENCLAMDFFT:BOOL="0" -DWITH_GPHOTO2:BOOL="0" -DWITH_VTK:BOOL="0" \
+    -DWITH_GTK_2_X:BOOL="0" -DBUILD_opencv_world:BOOL="0" -DWITH_TIFF:BOOL="1" \
+    -DWITH_1394:BOOL="0" -DWITH_EIGEN:BOOL="0" -DWITH_LIBV4L:BOOL="0" \
+    -DBUILD_opencv_ts:BOOL="0" -DWITH_MATLAB:BOOL="0" -DWITH_OPENCL:BOOL="0" \
+    -DWITH_PVAPI:BOOL="0" -DENABLE_CXX11:BOOL=“1” ..; \
+    make -j4; make install; \
+    sh -c 'echo "/apps/install/opencv3.3.0/lib" >> /etc/ld.so.conf.d/mpf-x86_64.conf'; \
+    ln -sf /apps/install/opencv3.3.0 /opt/opencv-3.3.0; \
+    ln -sf /apps/install/opencv3.3.0/include/opencv2 /usr/local/include/opencv2; \
+    ln -sf /apps/install/opencv3.3.0/include/opencv /usr/local/include/opencv; \
+    ldconfig; export OpenCV_DIR=/opt/opencv-3.3.0/share/OpenCV;
+
+
 # # TODO mount as volume
 # RUN mkdir /opt/mpf/; mkdir /opt/mpf/share
 #
@@ -180,17 +233,20 @@ RUN wget -nv -O /apps/source/ffmpeg_sources/xvidcore-1.3.4.tar.gz \
 # RUN cd /home/mpf; \
 #     git clone https://github.com/openmpf/openmpf-projects.git --recursive
 #
-# # Copy the mpf user profile script from the extracted source code:
-# # Add /apps/install/bin to the system PATH variable:
-# RUN cp /home/mpf/openmpf-projects/openmpf/trunk/mpf-install/src/main/scripts/mpf-profile.sh /etc/profile.d/mpf.sh; \
-#     sh -c 'echo "PATH=\$PATH:/apps/install/bin" >> /etc/profile.d/mpf.sh'; \
-#     . /etc/profile.d/mpf.sh
-#
+# Add paths to mpf.sh
 # RUN sed -i '/^PATH/s/$/:\/opt\/apache-maven\/bin/' /etc/profile.d/mpf.sh; \
 #     sh -c 'echo "M2_HOME=/opt/apache-maven" >> /etc/profile.d/mpf.sh'
 #
 # RUN sed -i '/^PATH/s/$/:\/apps\/install\/lib\/pkgconfig/' /etc/profile.d/mpf.sh; \
 #     sh -c 'echo "export PKG_CONFIG_PATH=/apps/install/lib/pkgconfig" >> /etc/profile.d/mpf.sh'
+#
+# RUN sh -c 'echo "export CXXFLAGS=-isystem\ /apps/install/include" >> /etc/profile.d/mpf.sh'
+#
+# # Copy the mpf user profile script from the extracted source code:
+# # Add /apps/install/bin to the system PATH variable:
+# RUN cp /home/mpf/openmpf-projects/openmpf/trunk/mpf-install/src/main/scripts/mpf-profile.sh /etc/profile.d/mpf.sh; \
+#     sh -c 'echo "PATH=\$PATH:/apps/install/bin" >> /etc/profile.d/mpf.sh'; \
+#     . /etc/profile.d/mpf.sh
 #
 # # OpenMPF Administrative Tools:
 # RUN sudo -E pip install /home/mpf/openmpf-projects/openmpf/trunk/bin/mpf-scripts
