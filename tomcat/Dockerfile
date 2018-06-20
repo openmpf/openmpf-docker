@@ -25,10 +25,10 @@ RUN touch /etc/ld.so.conf.d/mpf-x86_64.conf; \
     sh -c 'echo "/apps/install/lib" >> /etc/ld.so.conf.d/mpf-x86_64.conf'; \
     ldconfig
 
-# Install needed build dependencies
+# Install needed build toolchain
 RUN yum install -y git python-pip python-devel python-setuptools file \
     python-setuptools-devel gcc gcc-c++ make autoconf automake \
-    libtool; yum clean all
+    libtool yasm nasm bzip2; yum clean all
 
 # C Foreign Function Interface (CFFI):
 RUN cd /home/mpf; yum install libffi-devel -y; yum clean all
@@ -54,7 +54,7 @@ RUN alternatives --install /usr/bin/java java /usr/java/jdk1.8.0_144/jre/bin/jav
 # Apache Tomcat 7.0.72:
 RUN wget -nv -O /apps/bin/apache/apache-tomcat-7.0.72.tar.gz \
     "http://archive.apache.org/dist/tomcat/tomcat-7/v7.0.72/bin/apache-tomcat-7.0.72.tar.gz"
-RUN cd /apps/bin/apache; tar xzvf apache-tomcat-7.0.72.tar.gz
+RUN cd /apps/bin/apache; tar xzf apache-tomcat-7.0.72.tar.gz
 RUN mkdir -p /usr/share/apache-tomcat; \
     cp -Rf /apps/bin/apache/apache-tomcat-7.0.72/* /usr/share/apache-tomcat/
 RUN chown -R mpf /usr/share/apache-tomcat; chmod -R 755 /usr/share/apache-tomcat
@@ -65,7 +65,7 @@ RUN rm -rf /opt/apache-tomcat/webapps/*
 # Apache Maven 3.3.3:
 RUN wget -nv -O /apps/bin/apache/apache-maven-3.3.3-bin.tar.gz \
     "https://archive.apache.org/dist/maven/maven-3/3.3.3/binaries/apache-maven-3.3.3-bin.tar.gz"
-RUN cd /apps/bin/apache; tar xzvf apache-maven-3.3.3-bin.tar.gz
+RUN cd /apps/bin/apache; tar xzf apache-maven-3.3.3-bin.tar.gz
 RUN mkdir /opt/apache-maven; cp -Rf /apps/bin/apache/apache-maven-3.3.3/* /opt/apache-maven/
 RUN chown -R mpf /opt/apache-maven;
 
@@ -74,8 +74,7 @@ RUN chown -R mpf /opt/apache-maven;
 # Cmake 2.8.12.2
 RUN wget -nv -O /apps/source/cmake_sources/cmake-2.8.12.2.tar.gz \
     "https://cmake.org/files/v2.8/cmake-2.8.12.2.tar.gz";
-
-RUN cd /apps/source/cmake_sources; tar xvzf cmake-2.8.12.2.tar.gz; \
+RUN cd /apps/source/cmake_sources; tar xzf cmake-2.8.12.2.tar.gz; \
     cd cmake-2.8.12.2; chmod +x *; ./configure --prefix=/apps/install; make -j; \
     make install;
 RUN ldconfig; ln -s /apps/install/bin/cmake /usr/local/bin/cmake;
@@ -83,7 +82,7 @@ RUN ldconfig; ln -s /apps/install/bin/cmake /usr/local/bin/cmake;
 # FFmpeg 3.3.3
 RUN wget -nv -O /apps/source/ffmpeg_sources/opencore-amr-0.1.4.tar.gz \
     "https://downloads.sf.net/project/opencore-amr/opencore-amr/opencore-amr-0.1.4.tar.gz"; \
-    cd /apps/source/ffmpeg_sources; tar xvzf opencore-amr-0.1.4.tar.gz; \
+    cd /apps/source/ffmpeg_sources; tar xzf opencore-amr-0.1.4.tar.gz; \
     cd opencore-amr-0.1.4; autoreconf -fiv; \
     ./configure --prefix="/apps/install" --enable-shared; \
     make; make install; make distclean; ldconfig;
@@ -91,17 +90,85 @@ RUN wget -nv -O /apps/source/ffmpeg_sources/opencore-amr-0.1.4.tar.gz \
 # libfdk_aac
 RUN wget -nv -O /apps/source/ffmpeg_sources/fdk-aac-0.1.5.tar.gz \
     "https://github.com/mstorsjo/fdk-aac/archive/v0.1.5.tar.gz"; \
-    cd /apps/source/ffmpeg_sources; tar xvzf fdk-aac-0.1.5.tar.gz; \
+    cd /apps/source/ffmpeg_sources; tar xzf fdk-aac-0.1.5.tar.gz; \
     cd fdk-aac-0.1.5; autoreconf -fiv; ./configure --prefix="/apps/install" --enable-shared; \
     make; make install; make distclean; ldconfig;
 
 # libmp3lame
 RUN wget -nv -O /apps/source/ffmpeg_sources/lame-3.99.5.tar.gz \
     "http://downloads.sourceforge.net/project/lame/lame/3.99/lame-3.99.5.tar.gz"; \
-    cd /apps/source/ffmpeg_sources; tar xzvf lame-3.99.5.tar.gz; cd lame-3.99.5; \
+    cd /apps/source/ffmpeg_sources; tar xzf lame-3.99.5.tar.gz; cd lame-3.99.5; \
     ./configure --prefix="/apps/install" --bindir="/apps/install/bin" --enable-shared --enable-nasm; \
     make; make install; make distclean; ldconfig;
 
+# libogg
+RUN wget -nv -O /apps/source/ffmpeg_sources/libogg-1.3.2.tar.gz \
+    "http://downloads.xiph.org/releases/ogg/libogg-1.3.2.tar.gz"; \
+    cd /apps/source/ffmpeg_sources; tar xzf libogg-1.3.2.tar.gz; \
+    cd libogg-1.3.2; ./configure --prefix="/apps/install" --enable-shared; \
+    make; make install; make distclean; ldconfig;
+
+# libopus
+RUN wget -nv -O /apps/source/ffmpeg_sources/libopus-1.2.tar.gz \
+    "https://archive.mozilla.org/pub/opus/opus-1.2.tar.gz"; \
+    cd /apps/source/ffmpeg_sources; tar xzf libopus-1.2.tar.gz; \
+    cd opus-1.2; autoreconf -fiv; ./configure --prefix="/apps/install" --enable-shared; \
+    make; make install; make distclean; ldconfig;
+
+# libspeex
+RUN wget -nv -O /apps/source/ffmpeg_sources/speex-1.2rc2.tar.gz \
+    "http://downloads.xiph.org/releases/speex/speex-1.2rc2.tar.gz"; \
+    cd /apps/source/ffmpeg_sources; tar xzf speex-1.2rc2.tar.gz; \
+    cd speex-1.2rc2; LDFLAGS="-L/apps/install/lib" CPPFLAGS="-I/apps/install/include" \
+    ./configure --prefix="/apps/install" --enable-shared; make; make install; \
+    make distclean; ldconfig;
+
+# libvorbis
+RUN wget -nv -O /apps/source/ffmpeg_sources/libvorbis-1.3.5.tar.gz \
+    "http://downloads.xiph.org/releases/vorbis/libvorbis-1.3.5.tar.gz"; \
+    cd /apps/source/ffmpeg_sources; tar xzf libvorbis-1.3.5.tar.gz; \
+    cd libvorbis-1.3.5; LDFLAGS="-L/apps/install/lib" CPPFLAGS="-I/apps/install/include" \
+    ./configure --prefix="/apps/install" --with-ogg="/apps/install" --enable-shared; \
+    make; make install; make distclean; ldconfig;
+
+# libtheora
+RUN wget -nv -O /apps/source/ffmpeg_sources/libtheora-1.1.1.tar.gz \
+    "http://downloads.xiph.org/releases/theora/libtheora-1.1.1.tar.gz"; \
+    cd /apps/source/ffmpeg_sources; tar xzf libtheora-1.1.1.tar.gz; \
+    cd libtheora-1.1.1; ./configure --prefix="/apps/install" \
+    --with-ogg="/apps/install" --enable-shared; make; make install; \
+    make distclean; ldconfig;
+
+# libvpx
+RUN wget -nv -O /apps/source/ffmpeg_sources/v1.6.1.tar.gz \
+    "https://codeload.github.com/webmproject/libvpx/tar.gz/v1.6.1"; \
+    cd /apps/source/ffmpeg_sources; tar xzf v1.6.1.tar.gz; cd libvpx-1.6.1; \
+    ./configure --prefix="/apps/install" --enable-shared --enable-vp8 \
+    --enable-vp9 --enable-pic --disable-debug --disable-examples --disable-docs; \
+    make; make install; make distclean; ldconfig;
+
+# libx264
+RUN wget -nv -O /apps/source/ffmpeg_sources/x264-snapshot-20170226-2245-stable.tar.bz2 \
+    "ftp://ftp.videolan.org/pub/videolan/x264/snapshots/x264-snapshot-20170226-2245-stable.tar.bz2"; \
+    cd /apps/source/ffmpeg_sources; tar xvjf x264-snapshot-20170226-2245-stable.tar.bz2; \
+    cd x264-snapshot-20170226-2245-stable; PKG_CONFIG_PATH="/apps/install/lib/pkgconfig" \
+    ./configure --prefix="/apps/install" --bindir="/apps/install" --enable-shared --disable-cli; \
+    make; make install; make distclean; ldconfig;
+
+# libx265
+RUN wget -nv -O /apps/source/ffmpeg_sources/x265_2.3.tar.gz \
+    "https://download.videolan.org/pub/videolan/x265/x265_2.3.tar.gz"; \
+    cd /apps/source/ffmpeg_sources; tar xzf x265_2.3.tar.gz; cd x265_2.3/build/linux; \
+    MAKEFLAGS="-j" ./multilib.sh; cd 8bit; cmake ../../../source -DEXTRA_LIB="x265_main10.a;x265_main12.a" \
+    -DEXTRA_LINK_FLAGS=-L. -DLINKED_10BIT=ON -DLINKED_12BIT=ON -DCMAKE_INSTALL_PREFIX="/apps/install"; \
+    make install; make clean; cd ../10bit; make clean; cd ../12bit; make clean; ldconfig;
+
+# xvidcore
+RUN wget -nv -O /apps/source/ffmpeg_sources/xvidcore-1.3.4.tar.gz \
+    "http://downloads.xvid.org/downloads/xvidcore-1.3.4.tar.gz"; \
+    cd /apps/source/ffmpeg_sources; tar zxf xvidcore-1.3.4.tar.gz; \
+    cd xvidcore/build/generic; ./configure --prefix="/apps/install"; \
+    make; make install; make distclean; ldconfig;
 
 # # TODO mount as volume
 # RUN mkdir /opt/mpf/; mkdir /opt/mpf/share
@@ -122,6 +189,9 @@ RUN wget -nv -O /apps/source/ffmpeg_sources/lame-3.99.5.tar.gz \
 # RUN sed -i '/^PATH/s/$/:\/opt\/apache-maven\/bin/' /etc/profile.d/mpf.sh; \
 #     sh -c 'echo "M2_HOME=/opt/apache-maven" >> /etc/profile.d/mpf.sh'
 #
+# RUN sed -i '/^PATH/s/$/:\/apps\/install\/lib\/pkgconfig/' /etc/profile.d/mpf.sh; \
+#     sh -c 'echo "export PKG_CONFIG_PATH=/apps/install/lib/pkgconfig" >> /etc/profile.d/mpf.sh'
+#
 # # OpenMPF Administrative Tools:
 # RUN sudo -E pip install /home/mpf/openmpf-projects/openmpf/trunk/bin/mpf-scripts
 
@@ -129,6 +199,7 @@ RUN wget -nv -O /apps/source/ffmpeg_sources/lame-3.99.5.tar.gz \
 #   to include only the WAR file and a JRE
 # FROM openjdk:8-jdk
 # COPY --from=build target/workflow-manager.war /opt/apache-tomcat/webapps/workflow-manager.war
+# COPY --from=build /apps/install/* /apps/install
 RUN echo "while true; do echo 'Tomcat running'; sleep 5; done" > /home/mpf/run.sh
 ENTRYPOINT ["sh", "/home/mpf/run.sh"]
 # ENTRYPOINT ["/opt/apache-tomcat/bin/catalina.sh","run"]
