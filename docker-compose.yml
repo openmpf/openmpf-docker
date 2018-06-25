@@ -57,6 +57,8 @@ services:
     ports:
       - "80:80"
       - "7800:7800"
+    volumes:
+      - mpf-data:/opt/mpf/share
 
 volumes:
   mpf-data:

@@ -1,4 +1,4 @@
-FROM centos:7.4.1708
+FROM centos:7.4.1708 as mpf_build
 WORKDIR /home/mpf
 
 # Set up yum repo
@@ -28,7 +28,7 @@ RUN touch /etc/ld.so.conf.d/mpf-x86_64.conf; \
 # Install needed build toolchain
 RUN yum install -y git python-pip python-devel python-setuptools file \
     python-setuptools-devel gcc gcc-c++ make autoconf automake \
-    libtool yasm nasm bzip2 cmake3; yum clean all
+    libtool yasm nasm bzip2 cmake3 numpy perl-File-Find-Rule which; yum clean all
 
 # C Foreign Function Interface (CFFI):
 RUN cd /home/mpf; yum install libffi-devel -y; yum clean all
@@ -53,21 +53,24 @@ RUN alternatives --install /usr/bin/java java /usr/java/jdk1.8.0_144/jre/bin/jav
 
 # Apache Tomcat 7.0.72:
 RUN wget -nv -O /apps/bin/apache/apache-tomcat-7.0.72.tar.gz \
-    "http://archive.apache.org/dist/tomcat/tomcat-7/v7.0.72/bin/apache-tomcat-7.0.72.tar.gz"
-RUN cd /apps/bin/apache; tar xzf apache-tomcat-7.0.72.tar.gz
-RUN mkdir -p /usr/share/apache-tomcat; \
-    cp -Rf /apps/bin/apache/apache-tomcat-7.0.72/* /usr/share/apache-tomcat/
-RUN chown -R mpf /usr/share/apache-tomcat; chmod -R 755 /usr/share/apache-tomcat
-RUN ln -s /usr/share/apache-tomcat /opt/apache-tomcat
-RUN perl -i -p0e 's/<!--\n    <Manager pathname="" \/>\n      -->.*?/<!-- -->\n    <Manager pathname="" \/>/s' /opt/apache-tomcat/conf/context.xml
-RUN rm -rf /opt/apache-tomcat/webapps/*
+    "http://archive.apache.org/dist/tomcat/tomcat-7/v7.0.72/bin/apache-tomcat-7.0.72.tar.gz"; \
+    cd /apps/bin/apache; tar xzf apache-tomcat-7.0.72.tar.gz; \
+    mkdir -p /usr/share/apache-tomcat; \
+    cp -Rf /apps/bin/apache/apache-tomcat-7.0.72/* /usr/share/apache-tomcat/; \
+    chown -R mpf /usr/share/apache-tomcat; chmod -R 755 /usr/share/apache-tomcat; \
+    ln -s /usr/share/apache-tomcat /opt/apache-tomcat; \
+    perl -i -p0e 's/<!--\n    <Manager pathname="" \/>\n      -->.*?/<!-- -->\n    <Manager pathname="" \/>/s' \
+        /opt/apache-tomcat/conf/context.xml; \
+    rm -rf /opt/apache-tomcat/webapps/*
 
 # Apache Maven 3.3.3:
 RUN wget -nv -O /apps/bin/apache/apache-maven-3.3.3-bin.tar.gz \
-    "https://archive.apache.org/dist/maven/maven-3/3.3.3/binaries/apache-maven-3.3.3-bin.tar.gz"
-RUN cd /apps/bin/apache; tar xzf apache-maven-3.3.3-bin.tar.gz
-RUN mkdir /opt/apache-maven; cp -Rf /apps/bin/apache/apache-maven-3.3.3/* /opt/apache-maven/
-RUN chown -R mpf /opt/apache-maven;
+    "https://archive.apache.org/dist/maven/maven-3/3.3.3/binaries/apache-maven-3.3.3-bin.tar.gz"; \
+    cd /apps/bin/apache; tar xzf apache-maven-3.3.3-bin.tar.gz; \
+    mkdir /opt/apache-maven; cp -Rf /apps/bin/apache/apache-maven-3.3.3/* /opt/apache-maven/; \
+    chown -R mpf /opt/apache-maven; \
+    alternatives --install "/usr/bin/mvn" "mvn" "/opt/apache-maven/bin/mvn" 0; \
+    alternatives --set mvn /opt/apache-maven/bin/mvn
 
 ### BUILD DEPENDENCIES
 
@@ -172,9 +175,6 @@ RUN wget -nv -O /apps/source/ffmpeg_sources/xvidcore-1.3.4.tar.gz \
     cd xvidcore/build/generic; ./configure --prefix="/apps/install"; \
     make; make install; make distclean; ldconfig;
 
-# TODO move up
-RUN yum install -y numpy; yum clean all
-
 # FFmpeg (end)
 RUN cd /apps/source/ffmpeg_sources; git clone https://git.ffmpeg.org/ffmpeg.git ffmpeg; \
     cd ffmpeg; git checkout release/3.3; PKG_CONFIG_PATH="/apps/install/lib/pkgconfig" \
@@ -222,34 +222,190 @@ RUN cd /apps/source/opencv_sources; git clone https://github.com/opencv/opencv.g
     ln -sf /apps/install/opencv3.3.0/include/opencv /usr/local/include/opencv; \
     ldconfig; export OpenCV_DIR=/opt/opencv-3.3.0/share/OpenCV;
 
+# dlib
+RUN wget -nv -O /apps/source/config4cpp.tar.gz "http://www.config4star.org/download/config4cpp.tar.gz"; \
+    cd /apps/source; tar xvzf config4cpp.tar.gz; cd config4cpp; make; \
+    cd /apps/source/dlib-sources; wget -nv -O /apps/source/dlib-sources/dlib-18.18.tar.bz2 \
+    "http://dlib.net/files/dlib-18.18.tar.bz2"; tar xvjf dlib-18.18.tar.bz2; \
+    cd dlib-18.18/dlib; mkdir build; cd build; cmake3 ../; \
+    cmake3 --build . --config Release; make install
 
-# # TODO mount as volume
-# RUN mkdir /opt/mpf/; mkdir /opt/mpf/share
-#
-# ################################################################################
-# # Clone the OpenMPF repository * this will change the most often so it should  #
-# #   be as far down in the Dockerfile are possible                              #
-# ################################################################################
-# RUN cd /home/mpf; \
-#     git clone https://github.com/openmpf/openmpf-projects.git --recursive
-#
+# Leptonica 1.72
+RUN wget -nv -O /apps/source/openalpr_sources/leptonica-1.72.tar.gz \
+    "https://github.com/DanBloomberg/leptonica/archive/v1.72.tar.gz"; \
+    cd /apps/source/openalpr_sources; tar xzf leptonica-1.72.tar.gz; \
+    mkdir /usr/local/src/openalpr; \
+    cp -R /apps/source/openalpr_sources/leptonica-1.72 /usr/local/src/openalpr/; \
+    chown -R mpf /usr/local/src/openalpr; chmod -R 755 /usr/local/src/openalpr; \
+    cd /usr/local/src/openalpr/leptonica-1.72; ./configure --prefix=/usr/local; \
+    make --directory /usr/local/src/openalpr/leptonica-1.72 -j; \
+    make --directory /usr/local/src/openalpr/leptonica-1.72 install; \
+    make --directory /usr/local/src/openalpr/leptonica-1.72 distclean; \
+    ldconfig;
+
+# Tesseract 3.04.00
+RUN wget -nv -O /apps/source/openalpr_sources/tesseract-3.04.00.tar.gz \
+    "https://github.com/tesseract-ocr/tesseract/archive/3.04.00.tar.gz"; \
+    cd /apps/source/openalpr_sources; tar xzf tesseract-3.04.00.tar.gz; \
+    wget -nv -O /apps/source/openalpr_sources/tessdata-3.04.00.tar.gz \
+    "https://github.com/tesseract-ocr/tessdata/archive/3.04.00.tar.gz"; \
+    tar xzf tessdata-3.04.00.tar.gz; mkdir -p /usr/local/src/openalpr/tesseract-ocr; \
+    cp -a /apps/source/openalpr_sources/tessdata-3.04.00/. \
+    /usr/local/src/openalpr/tesseract-ocr/tessdata/; \
+    cp -a /apps/source/openalpr_sources/tesseract-3.04.00/. \
+    /usr/local/src/openalpr/tesseract-ocr/; \
+    chown -R mpf /usr/local/src/openalpr; chmod -R 755 /usr/local/src/openalpr; \
+    cd /usr/local/src/openalpr/tesseract-ocr; sh autogen.sh; ./configure; \
+    make --directory /usr/local/src/openalpr/tesseract-ocr -j; \
+    make --directory /usr/local/src/openalpr/tesseract-ocr install; \
+    ldconfig;
+
+# OpenALPR 2.3.0:
+RUN cd /apps/source/openalpr_sources; git clone https://github.com/openalpr/openalpr.git; \
+    cd openalpr; git checkout 469c4fd6d782ac63a55246d1073b0f88edd0d230; \
+    cp -a /apps/source/openalpr_sources/openalpr /usr/local/src/openalpr/ ; \
+    mkdir -p /usr/local/src/openalpr/openalpr/src/build; \
+    cd /usr/local/src/openalpr/openalpr/src/build; \
+    cmake3 -j --DCmake3 -j_INSTALL_PREFIX:PATH=/usr -D WITH_DAEMON=OFF ../; \
+    make --directory /usr/local/src/openalpr/openalpr/src/build -j; \
+    make --directory /usr/local/src/openalpr/openalpr/src/build install; \
+    ln -sf /usr/local/src/openalpr/openalpr /usr/share/openalpr; \
+    cp -a /usr/local/lib/libopenalpr.so /usr/lib/libopenalpr.so; \
+    cp /usr/local/lib/libopenalpr.so.2 /usr/lib/libopenalpr.so.2; \
+    sh -c 'echo "export TESSDATA_PREFIX=/usr/local/src/openalpr/openalpr/runtime_data/ocr" >> /etc/profile.d/mpf.sh'; \
+    ldconfig;
+
+# Apr 1.5.2:
+RUN wget -nv -O /apps/source/apache_sources/apr-1.5.2.tar.gz \
+    "http://archive.apache.org/dist/apr/apr-1.5.2.tar.gz"; \
+    cd /apps/source/apache_sources; tar -zxvf apr-1.5.2.tar.gz; \
+    cd /apps/source/apache_sources/apr-1.5.2; ./configure --prefix=/apps/install; \
+    make -j8; make install; make distclean; ldconfig;
+
+# Apr-util 1.5.4:
+RUN wget -nv -O /apps/source/apache_sources/apr-util-1.5.4.tar.gz \
+    "http://archive.apache.org/dist/apr/apr-util-1.5.4.tar.gz"; \
+    cd /apps/source/apache_sources; tar -xzvf apr-util-1.5.4.tar.gz; \
+    cd /apps/source/apache_sources/apr-util-1.5.4; \
+    ./configure --with-apr=/apps/install --prefix=/apps/install; \
+    make -j8; make install; make distclean; ldconfig;
+
+# Further dependencies TODO move up
+RUN yum install -y apr apr-util apr-util-ldap; \
+    yum clean all
+
+# Activemqcpp 3.9.0
+RUN wget -nv -O /apps/source/apache_sources/activemq-cpp-library-3.9.0-src.tar.gz \
+    "https://archive.apache.org/dist/activemq/activemq-cpp/3.9.0/activemq-cpp-library-3.9.0-src.tar.gz"; \
+    cd /apps/source/apache_sources; tar zxf activemq-cpp-library-3.9.0-src.tar.gz; \
+    cd /apps/source/apache_sources/activemq-cpp-library-3.9.0; ./autogen.sh; \
+    ./configure --disable-ssl --prefix="/apps/install" --with-apr=/apps/install; \
+    make -j8; make install; make distclean; ldconfig; \
+    ln -s /apps/install/lib/libactivemq-cpp.so.19.0.0 /usr/lib/libactivemq-cpp.so
+
+# TODO mount as volume
+# RUN mkdir -p /opt/mpf/share
+VOLUME /opt/mpf/share
+
+################################################################################
+# Clone the OpenMPF repository * this will change the most often so it should  #
+#   be as far down in the Dockerfile are possible                              #
+################################################################################
+RUN cd /home/mpf; \
+    git clone https://github.com/openmpf/openmpf-projects.git --recursive
+
+# Copy the mpf user profile script from the extracted source code:
+# Add /apps/install/bin to the system PATH variable:
+RUN cp /home/mpf/openmpf-projects/openmpf/trunk/mpf-install/src/main/scripts/mpf-profile.sh /etc/profile.d/mpf.sh; \
+    sh -c 'echo "PATH=\$PATH:/apps/install/bin" >> /etc/profile.d/mpf.sh'; \
+    . /etc/profile.d/mpf.sh
+
 # Add paths to mpf.sh
-# RUN sed -i '/^PATH/s/$/:\/opt\/apache-maven\/bin/' /etc/profile.d/mpf.sh; \
-#     sh -c 'echo "M2_HOME=/opt/apache-maven" >> /etc/profile.d/mpf.sh'
+RUN sed -i '/^PATH/s/$/:\/opt\/apache-maven\/bin/' /etc/profile.d/mpf.sh; \
+    sh -c 'echo "M2_HOME=/opt/apache-maven" >> /etc/profile.d/mpf.sh'
+
+RUN sed -i '/^PATH/s/$/:\/apps\/install\/lib\/pkgconfig/' /etc/profile.d/mpf.sh; \
+    sh -c 'echo "export PKG_CONFIG_PATH=/apps/install/lib/pkgconfig" >> /etc/profile.d/mpf.sh'
+
+RUN sh -c 'echo "export CXXFLAGS=-isystem\ /apps/install/include" >> /etc/profile.d/mpf.sh'
+
+# Tomcat (http) Configuration
+RUN echo 'export CATALINA_OPTS="-server -Xms256m -XX:PermSize=512m -XX:MaxPermSize=512m -Djgroups.tcp.port=7800 -Djava.library.path=$MPF_HOME/lib -Djgroups.tcpping.initial_hosts='$ALL_MPF_NODES' -Dtransport.guarantee='NONE' -Dweb.rest.protocol='http'"' \
+    >> /opt/apache-tomcat/bin/setenv.sh
+
+# OpenMPF Administrative Tools:
+RUN sudo -E pip install /home/mpf/openmpf-projects/openmpf/trunk/bin/mpf-scripts
+
+# Add Maven dependencies TODO: get tar from git submodule and extract straight to ~/.m2
+RUN wget -nv -O /home/mpf/openmpf-projects/openmpf-build-tools/mpf-maven-deps.tar.gz \
+    "https://raw.githubusercontent.com/openmpf/openmpf-build-tools/master/mpf-maven-deps.tar.gz"; \
+    cd /home/mpf; mkdir -p .m2/repository; tar xvzf \
+    /home/mpf/openmpf-projects/openmpf-build-tools/mpf-maven-deps.tar.gz \
+    -C /home/mpf/.m2/repository/; \
+    cp /home/mpf/.m2/repository/edu/cmu/sphinx/sphinx4-core/5prealpha-SNAPSHOT/sphinx4-core-5prealpha-20151218.160007-5.pom \
+    /home/mpf/.m2/repository/edu/cmu/sphinx/sphinx4-core/5prealpha-SNAPSHOT/sphinx4-core-5prealpha-SNAPSHOT.pom; \
+    cp /home/mpf/.m2/repository/edu/cmu/sphinx/sphinx4-core/5prealpha-SNAPSHOT/sphinx4-core-5prealpha-20151218.160007-5.jar \
+    /home/mpf/.m2/repository/edu/cmu/sphinx/sphinx4-core/5prealpha-SNAPSHOT/sphinx4-core-5prealpha-SNAPSHOT.jar; \
+    cp /home/mpf/.m2/repository/edu/cmu/sphinx/sphinx4-data/5prealpha-SNAPSHOT/sphinx4-data-5prealpha-20151218.160017-5.pom \
+    /home/mpf/.m2/repository/edu/cmu/sphinx/sphinx4-data/5prealpha-SNAPSHOT/sphinx4-data-5prealpha-SNAPSHOT.pom; \
+    cp /home/mpf/.m2/repository/edu/cmu/sphinx/sphinx4-data/5prealpha-SNAPSHOT/sphinx4-data-5prealpha-20151218.160017-5.jar \
+    /home/mpf/.m2/repository/edu/cmu/sphinx/sphinx4-data/5prealpha-SNAPSHOT/sphinx4-data-5prealpha-SNAPSHOT.jar; \
+    cp -a /home/mpf/.m2/ ~/.m2/
+
+RUN mkdir -p /mpfdata/ansible/install/repo/rpms/management; \
+    mkdir /mpfdata/ansible/install/repo/rpms/mpf; \
+    mkdir /mpfdata/ansible/install/repo/rpms/mpf-deps; \
+    mkdir /mpfdata/ansible/install/repo/files; \
+    mkdir /mpfdata/ansible/install/repo/pip; \
+    mkdir /mpfdata/ansible/install/repo/tars; \
+    mkdir /mpfdata/releases; \
+    chown -R mpf /mpfdata
+
+### Build the OpenMPF Package
+
+# Further dependencies TODO move up
+RUN yum install -y log4cxx log4cxx-devel qt qt-devel qt-x11 boost boost-devel; \
+    yum clean all
+
+# Remove the development properties file:
+RUN cd /home/mpf/openmpf-projects/openmpf; \
+    rm -f trunk/workflow-manager/src/main/resources/properties/mpf-private.properties
+
+# # compile the code artifacts, place them in the local maven repository,
+# #    and create the necessary component RPMs and tar files
+# RUN cd /home/mpf/openmpf-projects/openmpf/trunk/jenkins/scripts; \
+#     perl PackageRPMS.pl /home/mpf/openmpf-projects/openmpf master 0 1 \
+#     /home/mpf/openmpf-projects/openmpf/trunk/jenkins/scripts/config_files/openmpf-open-source-package.json
 #
-# RUN sed -i '/^PATH/s/$/:\/apps\/install\/lib\/pkgconfig/' /etc/profile.d/mpf.sh; \
-#     sh -c 'echo "export PKG_CONFIG_PATH=/apps/install/lib/pkgconfig" >> /etc/profile.d/mpf.sh'
-#
-# RUN sh -c 'echo "export CXXFLAGS=-isystem\ /apps/install/include" >> /etc/profile.d/mpf.sh'
-#
-# # Copy the mpf user profile script from the extracted source code:
-# # Add /apps/install/bin to the system PATH variable:
-# RUN cp /home/mpf/openmpf-projects/openmpf/trunk/mpf-install/src/main/scripts/mpf-profile.sh /etc/profile.d/mpf.sh; \
-#     sh -c 'echo "PATH=\$PATH:/apps/install/bin" >> /etc/profile.d/mpf.sh'; \
-#     . /etc/profile.d/mpf.sh
-#
-# # OpenMPF Administrative Tools:
-# RUN sudo -E pip install /home/mpf/openmpf-projects/openmpf/trunk/bin/mpf-scripts
+# # the final package is created by running the Perl script
+# RUN cd /home/mpf/openmpf-projects/openmpf/trunk/jenkins/scripts \
+#     perl CreateCustomPackage.pl /home/mpf/openmpf-projects/openmpf master 1 \
+#     /home/mpf/openmpf-projects/openmpf/trunk/jenkins/scripts/config_files/openmpf-open-source-package.json
+
+# Copy the development properties file back if you wish to run the OpenMPF on the OpenMPF Build VM
+RUN cp /home/mpf/openmpf-projects/openmpf/trunk/workflow-manager/src/main/resources/properties/mpf-private-example.properties \
+    /home/mpf/openmpf-projects/openmpf/trunk/workflow-manager/src/main/resources/properties/mpf-private.properties
+
+# TODO move to Activemqcpp section
+RUN mkdir -p /home/mpf/openmpf-projects/openmpf/trunk/install/lib/; \
+    cp /apps/install/lib/libactivemq-cpp.so.19.0.0 \
+    /home/mpf/openmpf-projects/openmpf/trunk/install/lib/libactivemq-cpp.so
+
+### Build and Run the Web Application
+RUN cd /home/mpf/openmpf-projects/openmpf; \
+    cp trunk/workflow-manager/src/main/resources/properties/mpf-private-example.properties \
+      trunk/workflow-manager/src/main/resources/properties/mpf-private.properties; \
+#    sed -i '11s/.*/# Ex 1: Ungrouped hosts, specify before any group headers.\n[mpf-child]\nlocalhost.localdomain/' /etc/ansible/hosts
+    mvn clean install -DskipTests -Dmaven.test.skip=true -DskipITs \
+    -Dmaven.tomcat.skip=true  \
+    -Dcomponents.build.package.json=/home/mpf/openmpf-projects/openmpf/trunk/jenkins/scripts/config_files/openmpf-open-source-package.json \
+    -Dstartup.auto.registration.skip=false \
+    -Dcomponents.build.dir=/home/mpf/openmpf-projects/openmpf/mpf-component-build;
+
+RUN cd /home/mpf/openmpf-projects/openmpf/trunk/workflow-manager; \
+    rm -rf /opt/apache-tomcat/webapps/workflow-manager*; \
+    cp target/workflow-manager.war /opt/apache-tomcat/webapps/workflow-manager.war; \
+    cd ../..; cp trunk/install/libexec/node-manager /etc/init.d/; systemctl daemon-reload;
 
 # When build is finished and WAR file is created, a new container can be made
 #   to include only the WAR file and a JRE
@@ -257,5 +413,6 @@ RUN cd /apps/source/opencv_sources; git clone https://github.com/opencv/opencv.g
 # COPY --from=build target/workflow-manager.war /opt/apache-tomcat/webapps/workflow-manager.war
 # COPY --from=build /apps/install/* /apps/install
 RUN echo "while true; do echo 'Tomcat running'; sleep 5; done" > /home/mpf/run.sh
-ENTRYPOINT ["sh", "/home/mpf/run.sh"]
+# ENTRYPOINT ["sh", "/home/mpf/run.sh"]
 # ENTRYPOINT ["/opt/apache-tomcat/bin/catalina.sh","run"]
+ENTRYPOINT ["mpf","start"]
