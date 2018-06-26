@@ -391,6 +391,9 @@ RUN mkdir -p /home/mpf/openmpf-projects/openmpf/trunk/install/lib/; \
     cp /apps/install/lib/libactivemq-cpp.so.19.0.0 \
     /home/mpf/openmpf-projects/openmpf/trunk/install/lib/libactivemq-cpp.so
 
+ARG PKG_CONFIG_PATH=/apps/install/lib/pkgconfig
+ARG CXXFLAGS=-isystem\ /apps/install/include
+
 ### Build and Run the Web Application
 RUN cd /home/mpf/openmpf-projects/openmpf; \
     cp trunk/workflow-manager/src/main/resources/properties/mpf-private-example.properties \
@@ -405,14 +408,15 @@ RUN cd /home/mpf/openmpf-projects/openmpf; \
 RUN cd /home/mpf/openmpf-projects/openmpf/trunk/workflow-manager; \
     rm -rf /opt/apache-tomcat/webapps/workflow-manager*; \
     cp target/workflow-manager.war /opt/apache-tomcat/webapps/workflow-manager.war; \
-    cd ../..; cp trunk/install/libexec/node-manager /etc/init.d/; systemctl daemon-reload;
+    cd ../..; cp trunk/install/libexec/node-manager /etc/init.d/;
 
 # When build is finished and WAR file is created, a new container can be made
 #   to include only the WAR file and a JRE
 # FROM openjdk:8-jdk
 # COPY --from=build target/workflow-manager.war /opt/apache-tomcat/webapps/workflow-manager.war
 # COPY --from=build /apps/install/* /apps/install
-RUN echo "while true; do echo 'Tomcat running'; sleep 5; done" > /home/mpf/run.sh
+
+# RUN echo "while true; do echo 'Tomcat running'; sleep 5; done" > /home/mpf/run.sh
 # ENTRYPOINT ["sh", "/home/mpf/run.sh"]
 # ENTRYPOINT ["/opt/apache-tomcat/bin/catalina.sh","run"]
 ENTRYPOINT ["mpf","start"]

@@ -32,6 +32,7 @@ services:
 
   tomcat:
     # workflow manager
+    # docker build -t tomcat:latest tomcat/
     container_name: tomcat
     build: ./tomcat
     depends_on:
