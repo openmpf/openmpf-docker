@@ -341,16 +341,7 @@ RUN wget -nv -O /home/mpf/openmpf-projects/openmpf-build-tools/mpf-maven-deps.ta
     "https://raw.githubusercontent.com/openmpf/openmpf-build-tools/master/mpf-maven-deps.tar.gz"; \
     cd /home/mpf; mkdir -p .m2/repository; tar xvzf \
     /home/mpf/openmpf-projects/openmpf-build-tools/mpf-maven-deps.tar.gz \
-    -C /home/mpf/.m2/repository/; \
-    cp /home/mpf/.m2/repository/edu/cmu/sphinx/sphinx4-core/5prealpha-SNAPSHOT/sphinx4-core-5prealpha-20151218.160007-5.pom \
-    /home/mpf/.m2/repository/edu/cmu/sphinx/sphinx4-core/5prealpha-SNAPSHOT/sphinx4-core-5prealpha-SNAPSHOT.pom; \
-    cp /home/mpf/.m2/repository/edu/cmu/sphinx/sphinx4-core/5prealpha-SNAPSHOT/sphinx4-core-5prealpha-20151218.160007-5.jar \
-    /home/mpf/.m2/repository/edu/cmu/sphinx/sphinx4-core/5prealpha-SNAPSHOT/sphinx4-core-5prealpha-SNAPSHOT.jar; \
-    cp /home/mpf/.m2/repository/edu/cmu/sphinx/sphinx4-data/5prealpha-SNAPSHOT/sphinx4-data-5prealpha-20151218.160017-5.pom \
-    /home/mpf/.m2/repository/edu/cmu/sphinx/sphinx4-data/5prealpha-SNAPSHOT/sphinx4-data-5prealpha-SNAPSHOT.pom; \
-    cp /home/mpf/.m2/repository/edu/cmu/sphinx/sphinx4-data/5prealpha-SNAPSHOT/sphinx4-data-5prealpha-20151218.160017-5.jar \
-    /home/mpf/.m2/repository/edu/cmu/sphinx/sphinx4-data/5prealpha-SNAPSHOT/sphinx4-data-5prealpha-SNAPSHOT.jar; \
-    cp -a /home/mpf/.m2/ ~/.m2/
+    -C /home/mpf/.m2/repository/; cp -a /home/mpf/.m2/ ~/.m2/
 
 RUN mkdir -p /mpfdata/ansible/install/repo/rpms/management; \
     mkdir /mpfdata/ansible/install/repo/rpms/mpf; \
@@ -371,26 +362,12 @@ RUN yum install -y log4cxx log4cxx-devel qt qt-devel qt-x11 boost boost-devel; \
 RUN cd /home/mpf/openmpf-projects/openmpf; \
     rm -f trunk/workflow-manager/src/main/resources/properties/mpf-private.properties
 
-# # compile the code artifacts, place them in the local maven repository,
-# #    and create the necessary component RPMs and tar files
-# RUN cd /home/mpf/openmpf-projects/openmpf/trunk/jenkins/scripts; \
-#     perl PackageRPMS.pl /home/mpf/openmpf-projects/openmpf master 0 1 \
-#     /home/mpf/openmpf-projects/openmpf/trunk/jenkins/scripts/config_files/openmpf-open-source-package.json
-#
-# # the final package is created by running the Perl script
-# RUN cd /home/mpf/openmpf-projects/openmpf/trunk/jenkins/scripts \
-#     perl CreateCustomPackage.pl /home/mpf/openmpf-projects/openmpf master 1 \
-#     /home/mpf/openmpf-projects/openmpf/trunk/jenkins/scripts/config_files/openmpf-open-source-package.json
-
 # Copy the development properties file back if you wish to run the OpenMPF on the OpenMPF Build VM
 RUN cp /home/mpf/openmpf-projects/openmpf/trunk/workflow-manager/src/main/resources/properties/mpf-private-example.properties \
     /home/mpf/openmpf-projects/openmpf/trunk/workflow-manager/src/main/resources/properties/mpf-private.properties
 
-# TODO move to Activemqcpp section
-RUN mkdir -p /home/mpf/openmpf-projects/openmpf/trunk/install/lib/; \
-    cp /apps/install/lib/libactivemq-cpp.so.19.0.0 \
-    /home/mpf/openmpf-projects/openmpf/trunk/install/lib/libactivemq-cpp.so
-
+# Set env variables from /etc/profile.d/mpf.sh
+# TODO set remaining env variables
 ARG PKG_CONFIG_PATH=/apps/install/lib/pkgconfig
 ARG CXXFLAGS=-isystem\ /apps/install/include
 
@@ -416,7 +393,5 @@ RUN cd /home/mpf/openmpf-projects/openmpf/trunk/workflow-manager; \
 # COPY --from=build target/workflow-manager.war /opt/apache-tomcat/webapps/workflow-manager.war
 # COPY --from=build /apps/install/* /apps/install
 
-# RUN echo "while true; do echo 'Tomcat running'; sleep 5; done" > /home/mpf/run.sh
-# ENTRYPOINT ["sh", "/home/mpf/run.sh"]
-# ENTRYPOINT ["/opt/apache-tomcat/bin/catalina.sh","run"]
-ENTRYPOINT ["mpf","start"]
+ENTRYPOINT ["/opt/apache-tomcat/bin/catalina.sh","run"]
+# ENTRYPOINT ["mpf","start"]
