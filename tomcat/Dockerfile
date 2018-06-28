@@ -371,6 +371,14 @@ RUN cp /home/mpf/openmpf-projects/openmpf/trunk/workflow-manager/src/main/resour
 ARG PKG_CONFIG_PATH=/apps/install/lib/pkgconfig
 ARG CXXFLAGS=-isystem\ /apps/install/include
 
+# TODO remove this when source is updated
+RUN sed -i '37s/.*/p:hostName="${REDIS_HOST:localhost}"    p:usePool="true"/' \
+    /home/mpf/openmpf-projects/openmpf/trunk/workflow-manager/src/main/resources/applicationContext-redis.xml; \
+    sed -i '49s/.*/jmx.amq.broker.uri=service:jmx:rmi:\/\/\/jndi\/rmi:\/\/${AMQ_HOST:localhost}:1099\/jmxrmi/' \
+    /home/mpf/openmpf-projects/openmpf/trunk/workflow-manager/src/main/resources/properties/mpf.properties; \
+    sed -i '71s/.*/jdbc.url=jdbc:simon:mysql:\/\/${MYSQL_HOST:localhost}:3306\/mpf/' \
+    /home/mpf/openmpf-projects/openmpf/trunk/workflow-manager/src/main/resources/properties/mpf.properties
+
 ### Build and Run the Web Application
 RUN cd /home/mpf/openmpf-projects/openmpf; \
     cp trunk/workflow-manager/src/main/resources/properties/mpf-private-example.properties \
@@ -387,11 +395,28 @@ RUN cd /home/mpf/openmpf-projects/openmpf/trunk/workflow-manager; \
     cp target/workflow-manager.war /opt/apache-tomcat/webapps/workflow-manager.war; \
     cd ../..; cp trunk/install/libexec/node-manager /etc/init.d/;
 
-# When build is finished and WAR file is created, a new container can be made
+# When the build is finished and a WAR file is created, a new container can be made
 #   to include only the WAR file and a JRE
 # FROM openjdk:8-jdk
 # COPY --from=build target/workflow-manager.war /opt/apache-tomcat/webapps/workflow-manager.war
 # COPY --from=build /apps/install/* /apps/install
+# COPY --from-build /opt/apache-tomcat/bin/catalina.sh /opt/apache-tomcat/bin/catalina.sh
+
+#ENV PATH=/apps/install/bin
+ENV MPF_HOME=/home/mpf/openmpf-projects/openmpf/trunk/install
+ENV AMQ_HOST=activemq
+ENV ACTIVE_MQ_HOST=failover://(tcp://$AMQ_HOST:61616)?jms.prefetchPolicy.all=1&startupMaxReconnectAttempts=1
+ENV REDIS_HOST=redis
+ENV MYSQL_HOST=mysql_database
+ENV no_proxy=localhost
+ENV MPF_USER=mpf
+ENV MPF_LOG_PATH=$MPF_HOME/logs
+ENV JAVA_HOME=/usr/java/latest
+ENV THIS_MPF_NODE=tomcat
+ENV ALL_MPF_NODES=$THIS_MPF_NODE[7800]
+ENV CATALINA_OPTS="-server -Xms256m -XX:PermSize=512m -XX:MaxPermSize=512m -Djgroups.tcp.port=7800 -Djava.library.path=$MPF_HOME/lib -Djgroups.tcpping.initial_hosts='$ALL_MPF_NODES' -Dtransport.guarantee='NONE' -Dweb.rest.protocol='http'"
+
+EXPOSE 8080
 
 ENTRYPOINT ["/opt/apache-tomcat/bin/catalina.sh","run"]
 # ENTRYPOINT ["mpf","start"]
