@@ -41,7 +41,15 @@ This repository contains code for the OpenMPF Dockerfiles and related files.
 
 ## Getting Started
 
-TODO
+### With Docker
+
+OpenMPF can be build and deployed using Docker. In order to do this, clone the
+[Openmpf-docker repository](https://github.com/openmpf/openmpf-docker). Once
+cloned (and assuming you have docker installed), you can run the following
+command to build the OpenMPF project inside a docker container tagged as
+mpf_build:latest `docker build mpf_build/ -t mpf_build:latest`. This container
+will take a while to build, but once it is complete, you can run
+`docker-compose build` and `docker-compose up` to run the project.
 
 ### Quick Start
 
