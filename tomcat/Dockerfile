@@ -28,11 +28,12 @@ RUN touch /etc/ld.so.conf.d/mpf-x86_64.conf; \
 # Install needed build toolchain
 RUN yum install -y git python-pip python-devel python-setuptools file \
     python-setuptools-devel gcc gcc-c++ make autoconf automake \
-    libtool yasm nasm bzip2 cmake3 numpy perl-File-Find-Rule which; yum clean all
+    libtool yasm nasm bzip2 cmake3 numpy perl-File-Find-Rule which \
+    libffi-devel openssl-devel apr apr-util apr-util-ldap log4cxx \
+    log4cxx-devel qt qt-devel qt-x11 boost boost-devel; yum clean all
 
 # C Foreign Function Interface (CFFI):
-RUN cd /home/mpf; yum install libffi-devel -y; yum clean all
-RUN sudo -E easy_install -U cffi
+RUN cd /home/mpf; sudo -E easy_install -U cffi
 
 ### BINARY PACKAGES
 
@@ -51,6 +52,8 @@ RUN alternatives --install /usr/bin/java java /usr/java/jdk1.8.0_144/jre/bin/jav
     alternatives --install /usr/bin/jar jar /usr/java/jdk1.8.0_144/bin/jar 20000; \
     alternatives --set jar /usr/java/jdk1.8.0_144/bin/jar;
 
+#TODO pipe all tars into extract command s
+#  wget -qO- your_link_here | tar xvz -C /target/directory
 # Apache Tomcat 7.0.72:
 RUN wget -nv -O /apps/bin/apache/apache-tomcat-7.0.72.tar.gz \
     "http://archive.apache.org/dist/tomcat/tomcat-7/v7.0.72/bin/apache-tomcat-7.0.72.tar.gz"; \
@@ -290,10 +293,6 @@ RUN wget -nv -O /apps/source/apache_sources/apr-util-1.5.4.tar.gz \
     ./configure --with-apr=/apps/install --prefix=/apps/install; \
     make -j8; make install; make distclean; ldconfig;
 
-# Further dependencies TODO move up
-RUN yum install -y apr apr-util apr-util-ldap; \
-    yum clean all
-
 # Activemqcpp 3.9.0
 RUN wget -nv -O /apps/source/apache_sources/activemq-cpp-library-3.9.0-src.tar.gz \
     "https://archive.apache.org/dist/activemq/activemq-cpp/3.9.0/activemq-cpp-library-3.9.0-src.tar.gz"; \
@@ -303,7 +302,6 @@ RUN wget -nv -O /apps/source/apache_sources/activemq-cpp-library-3.9.0-src.tar.g
     make -j8; make install; make distclean; ldconfig; \
     ln -s /apps/install/lib/libactivemq-cpp.so.19.0.0 /usr/lib/libactivemq-cpp.so
 
-# TODO mount as volume
 # RUN mkdir -p /opt/mpf/share
 VOLUME /opt/mpf/share
 
@@ -312,34 +310,15 @@ VOLUME /opt/mpf/share
 #   be as far down in the Dockerfile are possible                              #
 ################################################################################
 RUN cd /home/mpf; \
-    git clone https://github.com/openmpf/openmpf-projects.git --recursive
-
-# Copy the mpf user profile script from the extracted source code:
-# Add /apps/install/bin to the system PATH variable:
-RUN cp /home/mpf/openmpf-projects/openmpf/trunk/mpf-install/src/main/scripts/mpf-profile.sh /etc/profile.d/mpf.sh; \
-    sh -c 'echo "PATH=\$PATH:/apps/install/bin" >> /etc/profile.d/mpf.sh'; \
-    . /etc/profile.d/mpf.sh
-
-# Add paths to mpf.sh
-RUN sed -i '/^PATH/s/$/:\/opt\/apache-maven\/bin/' /etc/profile.d/mpf.sh; \
-    sh -c 'echo "M2_HOME=/opt/apache-maven" >> /etc/profile.d/mpf.sh'
-
-RUN sed -i '/^PATH/s/$/:\/apps\/install\/lib\/pkgconfig/' /etc/profile.d/mpf.sh; \
-    sh -c 'echo "export PKG_CONFIG_PATH=/apps/install/lib/pkgconfig" >> /etc/profile.d/mpf.sh'
-
-RUN sh -c 'echo "export CXXFLAGS=-isystem\ /apps/install/include" >> /etc/profile.d/mpf.sh'
-
-# Tomcat (http) Configuration
-RUN echo 'export CATALINA_OPTS="-server -Xms256m -XX:PermSize=512m -XX:MaxPermSize=512m -Djgroups.tcp.port=7800 -Djava.library.path=$MPF_HOME/lib -Djgroups.tcpping.initial_hosts='$ALL_MPF_NODES' -Dtransport.guarantee='NONE' -Dweb.rest.protocol='http'"' \
-    >> /opt/apache-tomcat/bin/setenv.sh
+    git clone https://github.com/openmpf/openmpf-projects.git --recursive; \
+    cd openmpf-projects; git checkout develop; git submodule update --init; \
+    cd openmpf; git checkout update-config-docker;
 
 # OpenMPF Administrative Tools:
 RUN sudo -E pip install /home/mpf/openmpf-projects/openmpf/trunk/bin/mpf-scripts
 
-# Add Maven dependencies TODO: get tar from git submodule and extract straight to ~/.m2
-RUN wget -nv -O /home/mpf/openmpf-projects/openmpf-build-tools/mpf-maven-deps.tar.gz \
-    "https://raw.githubusercontent.com/openmpf/openmpf-build-tools/master/mpf-maven-deps.tar.gz"; \
-    cd /home/mpf; mkdir -p .m2/repository; tar xvzf \
+# Add Maven dependencies
+RUN cd /home/mpf; mkdir -p .m2/repository; tar xzf \
     /home/mpf/openmpf-projects/openmpf-build-tools/mpf-maven-deps.tar.gz \
     -C /home/mpf/.m2/repository/; cp -a /home/mpf/.m2/ ~/.m2/
 
@@ -355,8 +334,7 @@ RUN mkdir -p /mpfdata/ansible/install/repo/rpms/management; \
 ### Build the OpenMPF Package
 
 # Further dependencies TODO move up
-RUN yum install -y log4cxx log4cxx-devel qt qt-devel qt-x11 boost boost-devel; \
-    yum clean all
+RUN pip install --upgrade pip; pip install wheel virtualenv;
 
 # Remove the development properties file:
 RUN cd /home/mpf/openmpf-projects/openmpf; \
@@ -367,17 +345,20 @@ RUN cp /home/mpf/openmpf-projects/openmpf/trunk/workflow-manager/src/main/resour
     /home/mpf/openmpf-projects/openmpf/trunk/workflow-manager/src/main/resources/properties/mpf-private.properties
 
 # Set env variables from /etc/profile.d/mpf.sh
-# TODO set remaining env variables
 ARG PKG_CONFIG_PATH=/apps/install/lib/pkgconfig
 ARG CXXFLAGS=-isystem\ /apps/install/include
+ENV PATH=$PATH:/apps/install/bin:/opt/apache-maven/bin:/apps/install/lib/pkgconfig:/usr/bin/
 
 # TODO remove this when source is updated
-RUN sed -i '37s/.*/p:hostName="${REDIS_HOST:localhost}"    p:usePool="true"/' \
-    /home/mpf/openmpf-projects/openmpf/trunk/workflow-manager/src/main/resources/applicationContext-redis.xml; \
-    sed -i '49s/.*/jmx.amq.broker.uri=service:jmx:rmi:\/\/\/jndi\/rmi:\/\/${AMQ_HOST:localhost}:1099\/jmxrmi/' \
-    /home/mpf/openmpf-projects/openmpf/trunk/workflow-manager/src/main/resources/properties/mpf.properties; \
-    sed -i '71s/.*/jdbc.url=jdbc:simon:mysql:\/\/${MYSQL_HOST:localhost}:3306\/mpf/' \
-    /home/mpf/openmpf-projects/openmpf/trunk/workflow-manager/src/main/resources/properties/mpf.properties
+
+# TODO see if this can be converted to use ARG variable, this strategy is
+#    very brittle because it's based on line number
+RUN sed -i '37s/.*/              p:hostName="redis"/' \
+    /home/mpf/openmpf-projects/openmpf/trunk/workflow-manager/src/main/resources/applicationContext-redis.xml;
+
+# TODO check if this can be removed
+ENV JGROUPS_TCP_ADDRESS=tomcat
+ENV REDIS_HOST=redis
 
 ### Build and Run the Web Application
 RUN cd /home/mpf/openmpf-projects/openmpf; \
@@ -397,26 +378,28 @@ RUN cd /home/mpf/openmpf-projects/openmpf/trunk/workflow-manager; \
 
 # When the build is finished and a WAR file is created, a new container can be made
 #   to include only the WAR file and a JRE
-# FROM openjdk:8-jdk
-# COPY --from=build target/workflow-manager.war /opt/apache-tomcat/webapps/workflow-manager.war
-# COPY --from=build /apps/install/* /apps/install
-# COPY --from-build /opt/apache-tomcat/bin/catalina.sh /opt/apache-tomcat/bin/catalina.sh
+FROM openjdk:8-jdk
+COPY --from=mpf_build /apps/install/ /apps/install/
+COPY --from=mpf_build /opt/apache-tomcat/ /opt/apache-tomcat/
+COPY --from=mpf_build /home/mpf/openmpf-projects/openmpf/trunk/install/ \
+    /home/mpf/openmpf-projects/openmpf/trunk/install/
+COPY --from=mpf_build /etc/ld.so.conf.d/ /etc/ld.so.conf.d/
+RUN ldconfig
 
-#ENV PATH=/apps/install/bin
 ENV MPF_HOME=/home/mpf/openmpf-projects/openmpf/trunk/install
 ENV AMQ_HOST=activemq
 ENV ACTIVE_MQ_HOST=failover://(tcp://$AMQ_HOST:61616)?jms.prefetchPolicy.all=1&startupMaxReconnectAttempts=1
-ENV REDIS_HOST=redis
 ENV MYSQL_HOST=mysql_database
+ENV JGROUPS_TCP_ADDRESS=tomcat
 ENV no_proxy=localhost
 ENV MPF_USER=mpf
 ENV MPF_LOG_PATH=$MPF_HOME/logs
-ENV JAVA_HOME=/usr/java/latest
+ENV JAVA_HOME=/docker-java-home
 ENV THIS_MPF_NODE=tomcat
-ENV ALL_MPF_NODES=$THIS_MPF_NODE[7800]
-ENV CATALINA_OPTS="-server -Xms256m -XX:PermSize=512m -XX:MaxPermSize=512m -Djgroups.tcp.port=7800 -Djava.library.path=$MPF_HOME/lib -Djgroups.tcpping.initial_hosts='$ALL_MPF_NODES' -Dtransport.guarantee='NONE' -Dweb.rest.protocol='http'"
+ENV CORE_MPF_NODES=localhost
+ENV LD_LIBRARY_PATH=/lib/x86_64-linux-gnu:$MPF_HOME/lib
+ENV CATALINA_OPTS="-server -Xms256m -XX:PermSize=512m -XX:MaxPermSize=512m -Duser.country=US -Djava.library.path=$MPF_HOME/lib -Dtransport.guarantee='NONE' -Dweb.rest.protocol='http'"
 
 EXPOSE 8080
-
+#CMD /bin/bash
 ENTRYPOINT ["/opt/apache-tomcat/bin/catalina.sh","run"]
-# ENTRYPOINT ["mpf","start"]
