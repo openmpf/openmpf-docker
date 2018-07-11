@@ -302,7 +302,6 @@ RUN wget -nv -O /apps/source/apache_sources/activemq-cpp-library-3.9.0-src.tar.g
     make -j8; make install; make distclean; ldconfig; \
     ln -s /apps/install/lib/libactivemq-cpp.so.19.0.0 /usr/lib/libactivemq-cpp.so
 
-# RUN mkdir -p /opt/mpf/share
 VOLUME /opt/mpf/share
 
 ################################################################################
@@ -349,16 +348,10 @@ ARG PKG_CONFIG_PATH=/apps/install/lib/pkgconfig
 ARG CXXFLAGS=-isystem\ /apps/install/include
 ENV PATH=$PATH:/apps/install/bin:/opt/apache-maven/bin:/apps/install/lib/pkgconfig:/usr/bin/
 
-# TODO remove this when source is updated
-
 # TODO see if this can be converted to use ARG variable, this strategy is
 #    very brittle because it's based on line number
 RUN sed -i '37s/.*/              p:hostName="redis"/' \
     /home/mpf/openmpf-projects/openmpf/trunk/workflow-manager/src/main/resources/applicationContext-redis.xml;
-
-# TODO check if this can be removed
-ENV JGROUPS_TCP_ADDRESS=tomcat
-ENV REDIS_HOST=redis
 
 ### Build and Run the Web Application
 RUN cd /home/mpf/openmpf-projects/openmpf; \
@@ -375,31 +368,3 @@ RUN cd /home/mpf/openmpf-projects/openmpf/trunk/workflow-manager; \
     rm -rf /opt/apache-tomcat/webapps/workflow-manager*; \
     cp target/workflow-manager.war /opt/apache-tomcat/webapps/workflow-manager.war; \
     cd ../..; cp trunk/install/libexec/node-manager /etc/init.d/;
-
-# When the build is finished and a WAR file is created, a new container can be made
-#   to include only the WAR file and a JRE
-FROM openjdk:8-jdk
-COPY --from=mpf_build /apps/install/ /apps/install/
-COPY --from=mpf_build /opt/apache-tomcat/ /opt/apache-tomcat/
-COPY --from=mpf_build /home/mpf/openmpf-projects/openmpf/trunk/install/ \
-    /home/mpf/openmpf-projects/openmpf/trunk/install/
-COPY --from=mpf_build /etc/ld.so.conf.d/ /etc/ld.so.conf.d/
-RUN ldconfig
-
-ENV MPF_HOME=/home/mpf/openmpf-projects/openmpf/trunk/install
-ENV AMQ_HOST=activemq
-ENV ACTIVE_MQ_HOST=failover://(tcp://$AMQ_HOST:61616)?jms.prefetchPolicy.all=1&startupMaxReconnectAttempts=1
-ENV MYSQL_HOST=mysql_database
-ENV JGROUPS_TCP_ADDRESS=tomcat
-ENV no_proxy=localhost
-ENV MPF_USER=mpf
-ENV MPF_LOG_PATH=$MPF_HOME/logs
-ENV JAVA_HOME=/docker-java-home
-ENV THIS_MPF_NODE=tomcat
-ENV CORE_MPF_NODES=localhost
-ENV LD_LIBRARY_PATH=/lib/x86_64-linux-gnu:$MPF_HOME/lib
-ENV CATALINA_OPTS="-server -Xms256m -XX:PermSize=512m -XX:MaxPermSize=512m -Duser.country=US -Djava.library.path=$MPF_HOME/lib -Dtransport.guarantee='NONE' -Dweb.rest.protocol='http'"
-
-EXPOSE 8080
-#CMD /bin/bash
-ENTRYPOINT ["/opt/apache-tomcat/bin/catalina.sh","run"]

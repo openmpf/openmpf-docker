@@ -17,7 +17,7 @@ services:
 
   active_mq:
     container_name: activemq
-    build: ./active-mq
+    build: ./active_mq
     restart: always
     ports:
       - "61616:61616"
@@ -35,7 +35,7 @@ services:
     # workflow manager
     # docker build -t tomcat:latest tomcat/
     container_name: tomcat
-    build: ./tomcat
+    build: ./workflow_manager
     depends_on:
       - mysql
     restart: always
@@ -54,7 +54,7 @@ services:
 
   node_manager:
     container_name: node_manager
-    build: ./node-manager
+    build: ./node_manager
     restart: always
     ports:
       - "80:80"
