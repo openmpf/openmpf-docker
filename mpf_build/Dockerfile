@@ -30,7 +30,7 @@ RUN yum install -y git python-pip python-devel python-setuptools file \
     python-setuptools-devel gcc gcc-c++ make autoconf automake \
     libtool yasm nasm bzip2 cmake3 numpy perl-File-Find-Rule which \
     libffi-devel openssl-devel apr apr-util apr-util-ldap log4cxx \
-    log4cxx-devel qt qt-devel qt-x11 boost boost-devel; yum clean all
+    log4cxx-devel qt qt-devel qt-x11 boost boost-devel wget; yum clean all
 
 # C Foreign Function Interface (CFFI):
 RUN cd /home/mpf; sudo -E easy_install -U cffi
@@ -38,8 +38,8 @@ RUN cd /home/mpf; sudo -E easy_install -U cffi
 ### BINARY PACKAGES
 
 # Oracle JDK:
-RUN cd /apps/bin/; yum install wget -y; yum clean all; \
-    wget -nv https://mirror.its.sfu.ca/mirror/CentOS-Third-Party/NSG/common/x86_64/jdk-8u144-linux-x64.rpm
+RUN cd /apps/bin/; wget -nv \
+    https://mirror.its.sfu.ca/mirror/CentOS-Third-Party/NSG/common/x86_64/jdk-8u144-linux-x64.rpm
 RUN yum -y localinstall --nogpgcheck /apps/bin/jdk-8u144-linux-x64.rpm
 RUN alternatives --install /usr/bin/java java /usr/java/jdk1.8.0_144/jre/bin/java 20000; \
     alternatives --install /usr/bin/jar jar /usr/java/jdk1.8.0_144/bin/jar 20000; \
@@ -52,7 +52,7 @@ RUN alternatives --install /usr/bin/java java /usr/java/jdk1.8.0_144/jre/bin/jav
     alternatives --install /usr/bin/jar jar /usr/java/jdk1.8.0_144/bin/jar 20000; \
     alternatives --set jar /usr/java/jdk1.8.0_144/bin/jar;
 
-#TODO pipe all tars into extract command s
+# TODO pipe all tars into extract command s
 #  wget -qO- your_link_here | tar xvz -C /target/directory
 # Apache Tomcat 7.0.72:
 RUN wget -nv -O /apps/bin/apache/apache-tomcat-7.0.72.tar.gz \
@@ -302,7 +302,6 @@ RUN wget -nv -O /apps/source/apache_sources/activemq-cpp-library-3.9.0-src.tar.g
     make -j8; make install; make distclean; ldconfig; \
     ln -s /apps/install/lib/libactivemq-cpp.so.19.0.0 /usr/lib/libactivemq-cpp.so
 
-VOLUME /opt/mpf/share
 
 ################################################################################
 # Clone the OpenMPF repository * this will change the most often so it should  #
@@ -353,7 +352,10 @@ ENV PATH=$PATH:/apps/install/bin:/opt/apache-maven/bin:/apps/install/lib/pkgconf
 RUN sed -i '37s/.*/              p:hostName="redis"/' \
     /home/mpf/openmpf-projects/openmpf/trunk/workflow-manager/src/main/resources/applicationContext-redis.xml;
 
-### Build and Run the Web Application
+################################################################################
+# Build and Run the Web Application                                            #
+#                                                                              #
+################################################################################
 RUN cd /home/mpf/openmpf-projects/openmpf; \
     cp trunk/workflow-manager/src/main/resources/properties/mpf-private-example.properties \
       trunk/workflow-manager/src/main/resources/properties/mpf-private.properties; \
@@ -368,3 +370,7 @@ RUN cd /home/mpf/openmpf-projects/openmpf/trunk/workflow-manager; \
     rm -rf /opt/apache-tomcat/webapps/workflow-manager*; \
     cp target/workflow-manager.war /opt/apache-tomcat/webapps/workflow-manager.war; \
     cd ../..; cp trunk/install/libexec/node-manager /etc/init.d/;
+
+# For troubleshooting purposes, you may run a bash console in this container
+#    using docker run -it <container_id, container_name>
+CMD ["/bin/bash"]

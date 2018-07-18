@@ -31,10 +31,8 @@ services:
       - "6379:6379"
     restart: always
 
-  tomcat:
-    # workflow manager
-    # docker build -t tomcat:latest tomcat/
-    container_name: tomcat
+  workflow_manager:
+    container_name: workflow_manager
     build: ./workflow_manager
     depends_on:
       - mysql
