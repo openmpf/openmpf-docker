@@ -36,7 +36,7 @@ RUN yum -y localinstall --nogpgcheck /apps/bin/jdk-8u144-linux-x64.rpm; \
 # Install Ansible dependencies
 RUN yum update -y; yum install -y epel-release git asciidoc rpm-build \
     python2-devel PyYAML python-httplib2 python-jinja2 libtomcrypt \
-    python-paramiko python-six sshpass which python-keyczar; yum clean all
+    python-paramiko python-six sshpass which; yum clean all
 
 # for some reason this needs to be a seperate step. I think it's because the
 #   mirror is choses for the other yum install does not have python-keyczar
@@ -54,13 +54,17 @@ RUN mkdir -p /apps/source/ansible_sources; cd /apps/source/ansible_sources; \
     cd /apps/source/ansible_sources/ansible; make rpm; \
     cd /apps/source/ansible_sources/ansible; rpm -Uvh ./rpm-build/ansible-*.noarch.rpm
 
+# Exract tar.gz (using tar xzf) components to $MPF_HOME/plugins
+RUN mkdir $MPF_HOME/plugins; cd $MPF_HOME/plugins; \
+    for file in $MPF_HOME/share/components/*.tar.gz; do tar xzf "$file"; done
+
 RUN ldconfig
 
 ENV AMQ_HOST=activemq
 ENV MYSQL_HOST=mysql_database
 ENV JGROUPS_TCP_ADDRESS=workflow_manager
 ENV THIS_MPF_NODE=workflow_manager
-ENV CORE_MPF_NODES=localhost
+ENV CORE_MPF_NODES=node_manager
 ENV ACTIVE_MQ_HOST=failover://(tcp://$AMQ_HOST:61616)?jms.prefetchPolicy.all=1&startupMaxReconnectAttempts=1
 ENV no_proxy=localhost
 ENV MPF_USER=mpf
@@ -72,7 +76,9 @@ ENV JGROUPS_FILE_PING_LOCATION=$MPF_HOME/share/nodes
 RUN echo '[mpf-master]' >> /etc/ansible/hosts; \
     echo $THIS_MPF_NODE >> /etc/ansible/hosts; \
     echo '' >> /etc/ansible/hosts; echo '[mpf-child]' >> /etc/ansible/hosts; \
-    echo $THIS_MPF_NODE >> /etc/ansible/hosts
+    echo "node_manager" >> /etc/ansible/hosts
 
 EXPOSE 8080
-ENTRYPOINT ["/opt/apache-tomcat/bin/catalina.sh","run"]
+RUN echo "rm $MPF_HOME/share/nodes/MPF_Channel/*workflow_manager*.list; /opt/apache-tomcat/bin/catalina.sh run" > /home/run.sh
+ENTRYPOINT ["sh", "/home/run.sh"]
+# ENTRYPOINT ["/opt/apache-tomcat/bin/catalina.sh","run"]
