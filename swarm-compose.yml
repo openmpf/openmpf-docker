@@ -2,6 +2,7 @@
 version: '3.3'
 services:
   # docker swarm join --token SWMTKN-1-2lzxqdveg2op2oy08bugdlrgoiig5roxx0yyth6t4hhh11roxb-cwuu3f1cm27r6yqaqzq5g2skr 192.168.65.3:2377
+  # docker stack deploy --compose-file swarm-compose.yml mpf
   mysql_database:
     image: mariadb:latest
     restart: always
@@ -55,6 +56,9 @@ services:
       - "7800:7800"
     volumes:
       - mpf-data:/opt/mpf/share
+    deploy:
+      mode: replicated
+      replicas: 2
 
 volumes:
   mpf-data:

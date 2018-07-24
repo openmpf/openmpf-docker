@@ -42,13 +42,6 @@ services:
       - "7801:7801"
     volumes:
       - mpf-data:/opt/mpf/share
-    # deploy:
-    #   placement:
-    #     constraints:
-    #       - node.role == manager
-    #       - engine.labels.operatingsystem == ubuntu 14.04
-    #     preferences:
-    #       - spread: node.labels.zone
 
   node_manager:
     container_name: node_manager
