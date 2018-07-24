@@ -32,8 +32,16 @@ RUN yum install -y git python-pip python-devel python-setuptools file \
     libffi-devel openssl-devel apr apr-util apr-util-ldap log4cxx \
     log4cxx-devel qt qt-devel qt-x11 boost boost-devel wget; yum clean all
 
+# Further dependencies
+RUN pip install --upgrade pip; pip install wheel virtualenv;
+
 # C Foreign Function Interface (CFFI):
 RUN cd /home/mpf; sudo -E easy_install -U cffi
+
+# TODO use conditional operator to combine commands when useful. This will
+#    Ensure that the build fails early when it runs into errors, and that
+#    later commands will not be executed in a cascading failure. This makes
+#    the build more efficient and can cut down on wasted build time.
 
 ### BINARY PACKAGES
 
@@ -331,9 +339,6 @@ RUN mkdir -p /mpfdata/ansible/install/repo/rpms/management; \
 
 ### Build the OpenMPF Package
 
-# Further dependencies TODO move up
-RUN pip install --upgrade pip; pip install wheel virtualenv;
-
 # Remove the development properties file:
 RUN cd /home/mpf/openmpf-projects/openmpf; \
     rm -f trunk/workflow-manager/src/main/resources/properties/mpf-private.properties
@@ -351,6 +356,8 @@ ENV PATH=$PATH:/apps/install/bin:/opt/apache-maven/bin:/apps/install/lib/pkgconf
 #    very brittle because it's based on line number
 RUN sed -i '37s/.*/              p:hostName="redis"/' \
     /home/mpf/openmpf-projects/openmpf/trunk/workflow-manager/src/main/resources/applicationContext-redis.xml;
+
+# TODO get the server set up with https
 
 ################################################################################
 # Build and Run the Web Application                                            #

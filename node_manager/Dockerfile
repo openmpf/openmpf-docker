@@ -15,7 +15,6 @@ ENV MPF_HOME=/opt/mpf
 # Create the MPF user
 RUN useradd -d /home/mpf -ms /bin/bash -g wheel -p mpf mpf
 
-# TODO map ffmpeg
 COPY --from=mpf_build /apps/install/ /apps/install/
 COPY --from=mpf_build /home/mpf/openmpf-projects/openmpf/trunk/install/ \
     /opt/mpf/
@@ -98,9 +97,12 @@ RUN mkdir -p /opt/mpf/share/logs/node_manager/; chown mpf /opt/mpf/share/logs/no
 
 RUN cp -a ${MPF_HOME}/bin/* /bin/
 
+# Link ffmpeg
+RUN ln -s /apps/install/bin/ffmpeg /usr/bin/ffmpeg
+
 # The commneted out variables are the exact values found on an mpf child host
-ENV AMQ_HOST=activemq
-ENV ACTIVE_MQ_HOST=failover://(tcp://$AMQ_HOST:61616)?jms.prefetchPolicy.all=1&startupMaxReconnectAttempts=1
+ENV ACTIVE_MQ_HOST=activemq
+ENV ACTIVE_MQ_BROKER_URI=failover://(tcp://$ACTIVE_MQ_HOST:61616)?jms.prefetchPolicy.all=1&startupMaxReconnectAttempts=1
 ENV MYSQL_HOST=mysql_database
 ENV JGROUPS_TCP_ADDRESS=workflow_manager
 ENV JGROUPS_TCP_PORT=7800
@@ -132,5 +134,5 @@ RUN echo "export JAVA_HOME=/usr" >> /etc/profile.d/mpf.sh; \
 
 # RUN echo "while true; do echo 'Node manager running'; sleep 30; done" > /home/run.sh
 # ENTRYPOINT ["sh", "/home/run.sh"]
-ENTRYPOINT ["/bin/bash","-c","rm $MPF_HOME/share/nodes/MPF_Channel/*node_manager*.list && $MPF_HOME/libexec/node-manager start && tail -f $MPF_HOME/share/logs/node_manager/log/node-manager.log"]
+ENTRYPOINT ["/bin/bash","-c","rm -f $MPF_HOME/share/nodes/MPF_Channel/*node_manager*.list && $MPF_HOME/libexec/node-manager start && tail -f $MPF_HOME/share/logs/node_manager/log/node-manager.log"]
 # CMD ["/bin/bash"]

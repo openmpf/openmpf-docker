@@ -8,6 +8,7 @@ FROM centos:7.4.1708
 ENV MPF_HOME=/opt/mpf
 VOLUME $MPF_HOME/share
 
+# TODO try to trim the fat from the copies
 COPY --from=mpf_build /apps/install/ /apps/install/
 COPY --from=mpf_build /opt/apache-tomcat/ /opt/apache-tomcat/
 COPY --from=mpf_build /home/mpf/openmpf-projects/openmpf/mpf-component-build/plugin-packages \
@@ -58,14 +59,17 @@ RUN mkdir -p /apps/source/ansible_sources; cd /apps/source/ansible_sources; \
 RUN mkdir $MPF_HOME/plugins; cd $MPF_HOME/plugins; \
     for file in $MPF_HOME/share/components/*.tar.gz; do tar xzf "$file"; done
 
+# Link ffmpeg
+RUN ln -s /apps/install/bin/ffmpeg /usr/bin/ffmpeg
+
 RUN ldconfig
 
-ENV AMQ_HOST=activemq
+ENV ACTIVE_MQ_HOST=activemq
 ENV MYSQL_HOST=mysql_database
 ENV JGROUPS_TCP_ADDRESS=workflow_manager
 ENV THIS_MPF_NODE=workflow_manager
 ENV CORE_MPF_NODES=node_manager
-ENV ACTIVE_MQ_HOST=failover://(tcp://$AMQ_HOST:61616)?jms.prefetchPolicy.all=1&startupMaxReconnectAttempts=1
+ENV ACTIVE_MQ_BROKER_URI=failover://(tcp://$ACTIVE_MQ_HOST:61616)?jms.prefetchPolicy.all=1&startupMaxReconnectAttempts=1
 ENV no_proxy=localhost
 ENV MPF_USER=mpf
 ENV MPF_LOG_PATH=$MPF_HOME/logs
@@ -79,6 +83,6 @@ RUN echo '[mpf-master]' >> /etc/ansible/hosts; \
     echo "node_manager" >> /etc/ansible/hosts
 
 EXPOSE 8080
-RUN echo "rm $MPF_HOME/share/nodes/MPF_Channel/*workflow_manager*.list; /opt/apache-tomcat/bin/catalina.sh run" > /home/run.sh
+RUN echo "rm -f $MPF_HOME/share/nodes/MPF_Channel/*workflow_manager*.list && /opt/apache-tomcat/bin/catalina.sh run" > /home/run.sh
 ENTRYPOINT ["sh", "/home/run.sh"]
 # ENTRYPOINT ["/opt/apache-tomcat/bin/catalina.sh","run"]
