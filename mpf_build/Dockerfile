@@ -318,7 +318,7 @@ RUN wget -nv -O /apps/source/apache_sources/activemq-cpp-library-3.9.0-src.tar.g
 RUN cd /home/mpf; \
     git clone https://github.com/openmpf/openmpf-projects.git --recursive; \
     cd openmpf-projects; git checkout develop; git submodule update --init; \
-    cd openmpf; git checkout update-config-docker;
+    cd openmpf; git checkout develop;
 
 # OpenMPF Administrative Tools:
 RUN sudo -E pip install /home/mpf/openmpf-projects/openmpf/trunk/bin/mpf-scripts
