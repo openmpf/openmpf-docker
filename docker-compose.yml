@@ -37,7 +37,7 @@ services:
       - MYSQL_USER=mpf
       - MYSQL_PASSWORD=mpf
     volumes:
-      - mysql-data:/var/lib/mysql
+      - mysql_data:/var/lib/mysql
     ports:
       - "3306:3306"
 
@@ -67,7 +67,7 @@ services:
       - "8080:8080"
       - "7801:7801"
     volumes:
-      - mpf-data:/opt/mpf/share
+      - mpf_data:/opt/mpf/share
     # deploy:
     #   placement:
     #     constraints:
@@ -84,8 +84,8 @@ services:
       - "80:80"
       - "7800:7800"
     volumes:
-      - mpf-data:/opt/mpf/share
+      - mpf_data:/opt/mpf/share
 
 volumes:
-  mpf-data:
-  mysql-data:
+  mpf_data:
+  mysql_data:
