@@ -60,8 +60,8 @@ RUN yum -y localinstall --nogpgcheck /apps/bin/jdk-8u144-linux-x64.rpm; \
     alternatives --set javaws /usr/java/jdk1.8.0_144/jre/bin/javaws; \
     alternatives --set javac /usr/java/jdk1.8.0_144/bin/javac; \
     alternatives --set jar /usr/java/jdk1.8.0_144/bin/jar; \
-    alternatives --install /usr/bin/jar jar /usr/java/jdk1.8.0_144/bin/jar 20000; \
-    alternatives --set jar /usr/java/jdk1.8.0_144/bin/jar;
+    alternatives --install /usr/bin/jar jar /usr/java/jdk1.8.0_144/bin/jar 20000 && \
+    alternatives --set jar /usr/java/jdk1.8.0_144/bin/jar
 
 ################################################################################
 # Install yum Dependencies                                                     #
@@ -70,7 +70,7 @@ RUN yum -y localinstall --nogpgcheck /apps/bin/jdk-8u144-linux-x64.rpm; \
 RUN yum update -y; yum install -y log4cxx libdc1394 unzip libjpeg-turbo libpng \
     libtiff jasper-libs gtk2 atk pango gdk-pixbuf2 cairo fontconfig gstreamer \
     gstreamer-plugins-base libv4l mesa-libGLU libSM libICE qt-x11 python-pip \
-    python-virtualenv initscripts sudo; yum clean all; rm -rf /var/cache/yum/*
+    python-virtualenv initscripts sudo && yum clean all && rm -rf /var/cache/yum/*
 
 ################################################################################
 # NVIDIA CUDA setup for Darknet                                                #
@@ -149,8 +149,8 @@ RUN mkdir $MPF_HOME/plugins; cd $MPF_HOME/plugins; \
 
 RUN ldconfig
 
-# Create log path:
-RUN mkdir -p /opt/mpf/share/logs/node_manager/; chown mpf /opt/mpf/share/logs/node_manager
+# Create log path
+RUN mkdir -p /opt/mpf/share/logs/node_manager/ && chown mpf /opt/mpf/share/logs/node_manager
 
 # Copy binaries:
 RUN cp -a ${MPF_HOME}/bin/* /bin/
@@ -180,15 +180,15 @@ ENV HOME=/home/mpf
 ENV LOGNAME=mpf
 
 # TODO: This shouldn't be needed, but for some reason the node-manager script is
-#   not able to see the ENV variables:
-RUN echo "export JAVA_HOME=/usr" >> /etc/profile.d/mpf.sh; \
-    echo "export MPF_HOME=/opt/mpf" >> /etc/profile.d/mpf.sh; \
-    echo "export USER=root" >> /etc/profile.d/mpf.sh; \
-    echo "export THIS_MPF_NODE=node_manager" >> /etc/profile.d/mpf.sh; \
-    echo "export MASTER_MPF_NODE=workflow_manager" >> /etc/profile.d/mpf.sh; \
-    echo "export MPF_LOG_PATH=$MPF_HOME/share/logs" >> /etc/profile.d/mpf.sh; \
-    echo "export JGROUPS_TCP_ADDRESS=node_manager" >> /etc/profile.d/mpf.sh; \
-    echo "export JGROUPS_FILE_PING_LOCATION=$MPF_HOME/share/nodes" >> /etc/profile.d/mpf.sh;
+#   not able to see the ENV variables
+RUN echo "export JAVA_HOME=/usr" >> /etc/profile.d/mpf.sh && \
+    echo "export MPF_HOME=/opt/mpf" >> /etc/profile.d/mpf.sh && \
+    echo "export USER=root" >> /etc/profile.d/mpf.sh && \
+    echo "export THIS_MPF_NODE=node_manager" >> /etc/profile.d/mpf.sh && \
+    echo "export MASTER_MPF_NODE=workflow_manager" >> /etc/profile.d/mpf.sh && \
+    echo "export MPF_LOG_PATH=$MPF_HOME/share/logs" >> /etc/profile.d/mpf.sh && \
+    echo "export JGROUPS_TCP_ADDRESS=node_manager" >> /etc/profile.d/mpf.sh && \
+    echo "export JGROUPS_FILE_PING_LOCATION=$MPF_HOME/share/nodes" >> /etc/profile.d/mpf.sh
 
 ENTRYPOINT ["/bin/bash","-c","rm -f $MPF_HOME/share/nodes/MPF_Channel/*node_manager*.list && $MPF_HOME/libexec/node-manager start && touch $MPF_HOME/share/logs/node_manager/log/node-manager.log && tail -f $MPF_HOME/share/logs/node_manager/log/node-manager.log"]
 # CMD ["/bin/bash"]
