@@ -26,8 +26,6 @@
 
 FROM mpf_build
 
-# probably do nothing
-
 # a new container can be made to include only the WAR file and a JRE
 FROM centos:7.4.1708
 
@@ -43,7 +41,6 @@ COPY --from=mpf_build /home/mpf/openmpf-projects/openmpf/trunk/install/ \
     $MPF_HOME
 COPY --from=mpf_build /home/mpf/openmpf-projects/openmpf/trunk/ansible/ \
     /home/mpf/openmpf-projects/openmpf/trunk/ansible/
-#   /home/mpf/openmpf-projects/openmpf/trunk/install/
 COPY --from=mpf_build /etc/ld.so.conf.d/ /etc/ld.so.conf.d/
 
 # Install Oracle JDK:

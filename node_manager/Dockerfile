@@ -26,8 +26,6 @@
 
 FROM mpf_build
 
-# probably do nothing
-
 # a new container can be made to include only a JRE and executables needed
 FROM centos:7.4.1708
 
