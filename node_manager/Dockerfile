@@ -141,4 +141,5 @@ RUN echo "export JAVA_HOME=/usr" >> /etc/profile.d/mpf.sh; \
     echo "export JGROUPS_TCP_ADDRESS=node_manager" >> /etc/profile.d/mpf.sh; \
     echo "export JGROUPS_FILE_PING_LOCATION=$MPF_HOME/share/nodes" >> /etc/profile.d/mpf.sh;
 
-ENTRYPOINT ["/bin/bash","-c","rm -f $MPF_HOME/share/nodes/MPF_Channel/*node_manager*.list && $MPF_HOME/libexec/node-manager start && tail -f $MPF_HOME/share/logs/node_manager/log/node-manager.log"]
+ENTRYPOINT ["/bin/bash","-c","rm -f $MPF_HOME/share/nodes/MPF_Channel/*node_manager*.list && $MPF_HOME/libexec/node-manager start && touch $MPF_HOME/share/logs/node_manager/log/node-manager.log && tail -f $MPF_HOME/share/logs/node_manager/log/node-manager.log"]
+# CMD ["/bin/bash"]
