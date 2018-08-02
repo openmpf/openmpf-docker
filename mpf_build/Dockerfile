@@ -377,8 +377,7 @@ RUN wget -nv -O /apps/source/apache_sources/activemq-cpp-library-3.9.0-src.tar.g
 
 RUN cd /home/mpf; \
     git clone https://github.com/openmpf/openmpf-projects.git --recursive; \
-    cd openmpf-projects; git checkout develop; git submodule update --init; \
-    cd openmpf; git checkout develop;
+    cd openmpf-projects; git checkout develop; git submodule update --init
 
 # Install OpenMPF command line tools:
 RUN sudo -E pip install /home/mpf/openmpf-projects/openmpf/trunk/bin/mpf-scripts
@@ -431,7 +430,10 @@ RUN cd /home/mpf/openmpf-projects/openmpf; \
     -Dmaven.tomcat.skip=true  \
     -Dcomponents.build.package.json=/home/mpf/openmpf-projects/openmpf/trunk/jenkins/scripts/config_files/openmpf-open-source-package.json \
     -Dstartup.auto.registration.skip=false \
-    -Dcomponents.build.dir=/home/mpf/openmpf-projects/openmpf/mpf-component-build;
+    -Dcomponents.build.dir=/home/mpf/openmpf-projects/openmpf/mpf-component-build \
+    -DgitBranch=`cd ..; git rev-parse --abbrev-ref HEAD` \
+    -DgitShortId=`cd ..; git rev-parse --short HEAD` \
+    -DjenkinsBuildNumber=1;
 
 RUN cd /home/mpf/openmpf-projects/openmpf/trunk/workflow-manager; \
     rm -rf /opt/apache-tomcat/webapps/workflow-manager*; \

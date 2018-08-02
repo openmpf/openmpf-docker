@@ -42,6 +42,7 @@ FROM centos:7.4.1708
 ################################################################################
 
 ENV MPF_HOME=/opt/mpf
+VOLUME $MPF_HOME/share
 
 # TODO: The more steps that can be kept the same (and in the same order) as the
 #   workflow_manager Dockerfile, the more docker can share the build steps
@@ -98,8 +99,6 @@ RUN yum update -y; yum install -y log4cxx libdc1394 unzip libjpeg-turbo libpng \
 ################################################################################
 # Create Paths and Copy Files                                                  #
 ################################################################################
-
-VOLUME /opt/mpf/share
 
 # Create log path:
 RUN mkdir -p /opt/mpf/share/logs/node_manager/; chown mpf /opt/mpf/share/logs/node_manager
