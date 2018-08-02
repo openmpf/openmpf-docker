@@ -54,7 +54,7 @@ Clone the [openmpf-docker repository](https://github.com/openmpf/openmpf-docker)
 
 Once cloned, you can run the following command to build the OpenMPF project inside a docker container tagged as
 `mpf_build:latest`:
-- `docker build mpf_build/ -t mpf_build:latest`.
+- `docker build mpf_build/ -t mpf_build:latest`
 
 Note that it can take 1.5 - 2 hours for this command to complete if you're starting from scratch.
 
