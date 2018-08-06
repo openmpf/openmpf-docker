@@ -44,37 +44,13 @@ FROM centos:7.4.1708
 ENV MPF_HOME=/opt/mpf
 VOLUME $MPF_HOME/share
 
-# TODO: The more steps that can be kept the same (and in the same order) as the
-#   workflow_manager Dockerfile, the more docker can share the build steps
-#   between the containers. All shared steps (installing java, copying files
-#   from mpf_build) should be moved to the top of both Dockerfiles.
-
-# Create the "mpf" user:
-RUN useradd -d /home/mpf -ms /bin/bash -g wheel -p mpf mpf
-
-COPY --from=mpf_build /apps/install/ /apps/install/
-COPY --from=mpf_build /home/mpf/openmpf-projects/openmpf/trunk/install/ \
-    /opt/mpf/
-COPY --from=mpf_build /etc/ld.so.conf.d/ /etc/ld.so.conf.d/
-COPY --from=mpf_build /etc/profile.d/mpf.sh /etc/profile.d/mpf.sh
-
-# Extract tar.gz (using tar xzf) components to $MPF_HOME/plugins:
-COPY --from=mpf_build /home/mpf/openmpf-projects/openmpf/mpf-component-build/plugin-packages \
-    $MPF_HOME/share/components
-
-# Extract components:
-RUN mkdir $MPF_HOME/plugins; cd $MPF_HOME/plugins; \
-    for file in $MPF_HOME/share/components/*.tar.gz; do tar xzf "$file"; done
-
-COPY --from=mpf_build /apps/bin/jdk-8u144-linux-x64.rpm /apps/bin/jdk-8u144-linux-x64.rpm
-
-RUN ldconfig
-
 ################################################################################
 # Install Oracle JDK                                                           #
 ################################################################################
 
-# Oracle JDK:
+COPY --from=mpf_build /apps/bin/jdk-8u144-linux-x64.rpm /apps/bin/jdk-8u144-linux-x64.rpm
+
+# Install Oracle JDK:
 RUN yum -y localinstall --nogpgcheck /apps/bin/jdk-8u144-linux-x64.rpm; \
     alternatives --install /usr/bin/java java /usr/java/jdk1.8.0_144/jre/bin/java 20000; \
     alternatives --install /usr/bin/jar jar /usr/java/jdk1.8.0_144/bin/jar 20000; \
@@ -97,8 +73,37 @@ RUN yum update -y; yum install -y log4cxx libdc1394 unzip libjpeg-turbo libpng \
     python-virtualenv initscripts sudo ; yum clean all
 
 ################################################################################
-# Create Paths and Copy Files                                                  #
+# Copy Files                                                                   #
 ################################################################################
+
+# NOTE: This will change the most often so it should  be as far down in the Dockerfile as possible.
+
+# TODO: The more steps that can be kept the same (and in the same order) as the
+#   workflow_manager Dockerfile, the more docker can share the build steps
+#   between the containers. All shared steps (installing java, copying files
+#   from mpf_build) should be moved to the top of both Dockerfiles.
+
+# Create the "mpf" user:
+RUN useradd -d /home/mpf -ms /bin/bash -g wheel -p mpf mpf
+
+# TODO: Trim the fat from the copies.
+
+# Copy files from the build image:
+COPY --from=mpf_build /apps/install/ /apps/install/
+COPY --from=mpf_build /etc/ld.so.conf.d/ /etc/ld.so.conf.d/
+COPY --from=mpf_build /etc/profile.d/mpf.sh /etc/profile.d/mpf.sh
+
+# TODO: Copy files from a shared "artifacts" build context:
+COPY --from=mpf_build /home/mpf/openmpf-projects/openmpf/trunk/install/ \
+    /opt/mpf/
+COPY --from=mpf_build /home/mpf/openmpf-projects/openmpf/mpf-component-build/plugin-packages \
+    $MPF_HOME/share/components
+
+# Extract components:
+RUN mkdir $MPF_HOME/plugins; cd $MPF_HOME/plugins; \
+    for file in $MPF_HOME/share/components/*.tar.gz; do tar xzf "$file"; done
+
+RUN ldconfig
 
 # Create log path:
 RUN mkdir -p /opt/mpf/share/logs/node_manager/; chown mpf /opt/mpf/share/logs/node_manager

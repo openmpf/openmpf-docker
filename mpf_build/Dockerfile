@@ -77,11 +77,13 @@ RUN cd /home/mpf; sudo -E easy_install -U cffi
 # Install Oracle JDK                                                           #
 ################################################################################
 
-# Oracle JDK:
+# TODO: Require user to download this separately.
 RUN cd /apps/bin/; wget -nv \
     https://mirror.its.sfu.ca/mirror/CentOS-Third-Party/NSG/common/x86_64/jdk-8u144-linux-x64.rpm
-RUN yum -y localinstall --nogpgcheck /apps/bin/jdk-8u144-linux-x64.rpm
-RUN alternatives --install /usr/bin/java java /usr/java/jdk1.8.0_144/jre/bin/java 20000; \
+
+# Install Oracle JDK:
+RUN yum -y localinstall --nogpgcheck /apps/bin/jdk-8u144-linux-x64.rpm; \
+    alternatives --install /usr/bin/java java /usr/java/jdk1.8.0_144/jre/bin/java 20000; \
     alternatives --install /usr/bin/jar jar /usr/java/jdk1.8.0_144/bin/jar 20000; \
     alternatives --install /usr/bin/javac javac /usr/java/jdk1.8.0_144/bin/javac 20000; \
     alternatives --install /usr/bin/javaws javaws /usr/java/jdk1.8.0_144/jre/bin/javaws 20000; \
@@ -139,6 +141,9 @@ RUN ldconfig; ln -s /apps/install/bin/cmake /usr/local/bin/cmake;
 ################################################################################
 # Build Audio and Video Codecs and FFmpeg                                      #
 ################################################################################
+
+# TODO: FFmpeg comes with many decoders by default. It may not be necessary to
+#    build all or any of these encoders if we only need decoding functionality.
 
 # opencore-amr:
 RUN wget -nv -O /apps/source/ffmpeg_sources/opencore-amr-0.1.4.tar.gz \

@@ -36,23 +36,13 @@ FROM centos:7.4.1708
 ENV MPF_HOME=/opt/mpf
 VOLUME $MPF_HOME/share
 
-# TODO: Trim the fat from the copies:
-COPY --from=mpf_build /apps/install/ /apps/install/
-COPY --from=mpf_build /opt/apache-tomcat/ /opt/apache-tomcat/
-COPY --from=mpf_build /home/mpf/openmpf-projects/openmpf/mpf-component-build/plugin-packages \
-    $MPF_HOME/share/components
-COPY --from=mpf_build /home/mpf/openmpf-projects/openmpf/trunk/install/ \
-    $MPF_HOME
-COPY --from=mpf_build /home/mpf/openmpf-projects/openmpf/trunk/ansible/ \
-    /home/mpf/openmpf-projects/openmpf/trunk/ansible/
-COPY --from=mpf_build /etc/ld.so.conf.d/ /etc/ld.so.conf.d/
-
 ################################################################################
 # Install Oracle JDK                                                           #
 ################################################################################
 
-# Install Oracle JDK:
 COPY --from=mpf_build /apps/bin/jdk-8u144-linux-x64.rpm /apps/bin/jdk-8u144-linux-x64.rpm
+
+# Install Oracle JDK:
 RUN yum -y localinstall --nogpgcheck /apps/bin/jdk-8u144-linux-x64.rpm; \
     alternatives --install /usr/bin/java java /usr/java/jdk1.8.0_144/jre/bin/java 20000; \
     alternatives --install /usr/bin/jar jar /usr/java/jdk1.8.0_144/bin/jar 20000; \
@@ -94,8 +84,30 @@ RUN mkdir -p /apps/source/ansible_sources; cd /apps/source/ansible_sources; \
     cd /apps/source/ansible_sources/ansible; rpm -Uvh ./rpm-build/ansible-*.noarch.rpm
 
 ################################################################################
-# Create Paths and Copy Files                                                  #
+# Copy Files                                                                   #
 ################################################################################
+
+# NOTE: This will change the most often so it should  be as far down in the Dockerfile as possible.
+
+# TODO: The more steps that can be kept the same (and in the same order) as the
+#   node_manager Dockerfile, the more docker can share the build steps
+#   between the containers. All shared steps (installing java, copying files
+#   from mpf_build) should be moved to the top of both Dockerfiles.
+
+# TODO: Trim the fat from the copies.
+
+# Copy files from the build image:
+COPY --from=mpf_build /apps/install/ /apps/install/
+COPY --from=mpf_build /etc/ld.so.conf.d/ /etc/ld.so.conf.d/
+COPY --from=mpf_build /opt/apache-tomcat/ /opt/apache-tomcat/
+COPY --from=mpf_build /home/mpf/openmpf-projects/openmpf/trunk/ansible/ \
+    /home/mpf/openmpf-projects/openmpf/trunk/ansible/
+
+# TODO: Copy files from a shared "artifacts" build context:
+COPY --from=mpf_build /home/mpf/openmpf-projects/openmpf/trunk/install/ \
+    $MPF_HOME
+COPY --from=mpf_build /home/mpf/openmpf-projects/openmpf/mpf-component-build/plugin-packages \
+    $MPF_HOME/share/components
 
 # Extract tar.gz (using tar xzf) components to $MPF_HOME/plugins:
 RUN mkdir $MPF_HOME/plugins; cd $MPF_HOME/plugins; \
