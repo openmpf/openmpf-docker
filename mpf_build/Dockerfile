@@ -31,6 +31,9 @@ WORKDIR /home/mpf
 # Initial Setup                                                                #
 ################################################################################
 
+# Copy the Oracle jdk from build context
+COPY jdk-8u144-linux-x64.rpm /apps/bin/
+
 # Set up yum repo:
 RUN yum install -y epel-release deltarpm; yum clean all
 RUN yum update -y; yum clean all
@@ -76,10 +79,6 @@ RUN cd /home/mpf; sudo -E easy_install -U cffi
 ################################################################################
 # Install Oracle JDK                                                           #
 ################################################################################
-
-# TODO: Require user to download this separately.
-RUN cd /apps/bin/; wget -nv \
-    https://mirror.its.sfu.ca/mirror/CentOS-Third-Party/NSG/common/x86_64/jdk-8u144-linux-x64.rpm
 
 # Install Oracle JDK:
 RUN yum -y localinstall --nogpgcheck /apps/bin/jdk-8u144-linux-x64.rpm; \
