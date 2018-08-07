@@ -377,31 +377,15 @@ RUN wget -nv -O /apps/source/apache_sources/activemq-cpp-library-3.9.0-src.tar.g
 ################################################################################
 # NVIDIA CUDA setup for Darknet                                                #
 ################################################################################
-ENV NVIDIA_GPGKEY_SUM=d1be581509378368edeec8c1eb2958702feedf3bc3d17011adbf24efacce4ab5
-RUN curl -fsSL https://developer.download.nvidia.com/compute/cuda/repos/rhel7/x86_64/7fa2af80.pub \
-    | sed '/^Version/d' > /etc/pki/rpm-gpg/RPM-GPG-KEY-NVIDIA && \
-    echo "$NVIDIA_GPGKEY_SUM  /etc/pki/rpm-gpg/RPM-GPG-KEY-NVIDIA" \
-    | sha256sum -c --strict -
-
-COPY cuda.repo /etc/yum.repos.d/cuda.repo
-
-ENV CUDA_VERSION 9.2.148
-
-ENV CUDA_PKG_VERSION 9-2-$CUDA_VERSION-1
-RUN yum install -y \
-        cuda-cudart-$CUDA_PKG_VERSION && \
-    ln -s cuda-9.2 /usr/local/cuda && \
-    rm -rf /var/cache/yum/*
-
-# nvidia-docker 1.0
-LABEL com.nvidia.volumes.needed="nvidia_driver"
-LABEL com.nvidia.cuda.version="${CUDA_VERSION}"
-
-RUN echo "/usr/local/nvidia/lib" >> /etc/ld.so.conf.d/nvidia.conf && \
-    echo "/usr/local/nvidia/lib64" >> /etc/ld.so.conf.d/nvidia.conf
-
-ENV PATH /usr/local/nvidia/bin:/usr/local/cuda/bin:${PATH}
-ENV LD_LIBRARY_PATH /usr/local/nvidia/lib:/usr/local/nvidia/lib64
+RUN mkdir -p /apps/source/cuda && cd /apps/source/cuda && \
+    wget -nv -O cuda_9.0.176_384.81_linux.run \
+    "https://developer.nvidia.com/compute/cuda/9.0/Prod/local_installers/cuda_9.0.176_384.81_linux-run" && \
+    cd /apps/source/cuda && sh cuda_9.0.176_384.81_linux.run --toolkit \
+    --toolkitpath=/apps/install/cuda-9.0 --silent --verbose && \
+    ls -l /usr/local/cuda /apps/install/cuda-9.0 && \
+    echo "PATH=\$PATH:/usr/local/cuda/bin" >> /etc/profile.d/mpf.sh && \
+    . /etc/profile.d/mpf.sh && echo "/usr/local/cuda/lib64" >> \
+    /etc/ld.so.conf.d/mpf-x86_64.conf
 
 ################################################################################
 # Clone the OpenMPF Repository                                                 #
