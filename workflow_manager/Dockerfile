@@ -40,10 +40,10 @@ VOLUME $MPF_HOME/share
 # Install Oracle JDK                                                           #
 ################################################################################
 
-COPY --from=mpf_build /apps/bin/jdk*.rpm /apps/bin/
+COPY --from=mpf_build /apps/bin/jdk-*-linux-x64.rpm /apps/bin/
 
 # Install Oracle JDK:
-RUN yum -y localinstall --nogpgcheck /apps/bin/jdk-8u144-linux-x64.rpm; \
+RUN yum -y localinstall --nogpgcheck /apps/bin/jdk-*-linux-x64.rpm; \
     alternatives --install /usr/bin/java java /usr/java/jdk1.8.0_144/jre/bin/java 20000; \
     alternatives --install /usr/bin/jar jar /usr/java/jdk1.8.0_144/bin/jar 20000; \
     alternatives --install /usr/bin/javac javac /usr/java/jdk1.8.0_144/bin/javac 20000; \
