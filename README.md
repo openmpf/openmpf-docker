@@ -53,7 +53,8 @@ Clone the [openmpf-docker repository](https://github.com/openmpf/openmpf-docker)
 - `git clone https://github.com/openmpf/openmpf-docker.git`
 
 Download the following Oracle JDK and place it in the mpf_build/ directory.
-- jdk-8u144-linux-x64.rpm from http://www.oracle.com/technetwork/java/javase/downloads/java-archive-javase8-2177648.html
+- Please choose a RPM JDK that supports Java 8 or newer
+- http://www.oracle.com/technetwork/java/javase/downloads/java-archive-javase8-2177648.html
 
 Once cloned, you can run the following command to build the OpenMPF project inside a docker container tagged as
 `mpf_build:latest`:

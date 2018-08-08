@@ -32,7 +32,7 @@ WORKDIR /home/mpf
 ################################################################################
 
 # Copy the Oracle jdk from build context
-COPY jdk-8u144-linux-x64.rpm /apps/bin/
+COPY jdk*.rpm /apps/bin/
 
 # Set up yum repo:
 RUN yum install -y epel-release deltarpm; yum clean all
