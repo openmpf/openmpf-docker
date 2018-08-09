@@ -1,0 +1,83 @@
+#############################################################################
+# NOTICE                                                                    #
+#                                                                           #
+# This software (or technical data) was produced for the U.S. Government    #
+# under contract, and is subject to the Rights in Data-General Clause       #
+# 52.227-14, Alt. IV (DEC 2007).                                            #
+#                                                                           #
+# Copyright 2018 The MITRE Corporation. All Rights Reserved.                #
+#############################################################################
+
+#############################################################################
+# Copyright 2018 The MITRE Corporation                                      #
+#                                                                           #
+# Licensed under the Apache License, Version 2.0 (the "License");           #
+# you may not use this file except in compliance with the License.          #
+# You may obtain a copy of the License at                                   #
+#                                                                           #
+#    http://www.apache.org/licenses/LICENSE-2.0                             #
+#                                                                           #
+# Unless required by applicable law or agreed to in writing, software       #
+# distributed under the License is distributed on an "AS IS" BASIS,         #
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  #
+# See the License for the specific language governing permissions and       #
+# limitations under the License.                                            #
+#############################################################################
+
+version: '3.3'
+services:
+  mysql:
+    container_name: mysql_database
+    image: mariadb:latest
+    restart: always
+    environment:
+      - MYSQL_ROOT_PASSWORD=password
+      - MYSQL_DATABASE=mpf
+      - MYSQL_USER=mpf
+      - MYSQL_PASSWORD=mpf
+    volumes:
+      - mysql_data:/var/lib/mysql
+    ports:
+      - "3306:3306"
+
+  active_mq:
+    container_name: activemq
+    build: ./active_mq
+    restart: always
+    ports:
+      - "61616:61616"
+      - "1099:1099"
+    restart: always
+
+  redis:
+    container_name: redis
+    image: redis
+    ports:
+      - "6379:6379"
+    restart: always
+
+  workflow_manager:
+    container_name: workflow_manager
+    build: ./workflow_manager
+    depends_on:
+      - mysql
+    restart: always
+    ports:
+      - "8080:8080"
+      - "7801:7801"
+    volumes:
+      - mpf_data:/opt/mpf/share
+
+  node_manager:
+    container_name: node_manager
+    build: ./node_manager
+    restart: always
+    ports:
+      - "80:80"
+      - "7800:7800"
+    volumes:
+      - mpf_data:/opt/mpf/share
+
+volumes:
+  mpf_data:
+  mysql_data:
