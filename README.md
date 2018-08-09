@@ -53,7 +53,7 @@ Clone the [openmpf-docker repository](https://github.com/openmpf/openmpf-docker)
 - `git clone https://github.com/openmpf/openmpf-docker.git`
 
 Download the most recent Oracle Java SE JDK 8 64-bit Linux RPM from
-[here](http://www.oracle.com/technetwork/java/javase/downloads/index.html)
+[here](http://www.oracle.com/technetwork/java/javase/downloads/java-archive-javase8-2177648.html)
 and place it in the mpf_build/ directory. The file should be named
 jdk-8u144-linux-x64.rpm, or something similar where "8u144" is a different
 version number. Do not download Java SE 9 or 10.
