@@ -43,29 +43,29 @@ VOLUME $MPF_HOME/share
 COPY --from=mpf_build /apps/bin/jdk-*-linux-x64.rpm /apps/bin/
 
 # Install Oracle JDK:
-RUN yum -y localinstall --nogpgcheck /apps/bin/jdk-*-linux-x64.rpm; \
-    alternatives --install /usr/bin/java java /usr/java/jdk*/jre/bin/java 20000; \
-    alternatives --install /usr/bin/jar jar /usr/java/jdk*/bin/jar 20000; \
-    alternatives --install /usr/bin/javac javac /usr/java/jdk*/bin/javac 20000; \
-    alternatives --install /usr/bin/javaws javaws /usr/java/jdk*/jre/bin/javaws 20000; \
-    alternatives --set java /usr/java/jdk*/jre/bin/java; \
-    alternatives --set javaws /usr/java/jdk*/jre/bin/javaws; \
-    alternatives --set javac /usr/java/jdk*/bin/javac; \
+RUN yum -y localinstall --nogpgcheck /apps/bin/jdk-*-linux-x64.rpm && \
+    alternatives --install /usr/bin/java java /usr/java/jdk*/jre/bin/java 20000 && \
+    alternatives --install /usr/bin/jar jar /usr/java/jdk*/bin/jar 20000 && \
+    alternatives --install /usr/bin/javac javac /usr/java/jdk*/bin/javac 20000 && \
+    alternatives --install /usr/bin/javaws javaws /usr/java/jdk*/jre/bin/javaws 20000 && \
+    alternatives --set java /usr/java/jdk*/jre/bin/java && \
+    alternatives --set javaws /usr/java/jdk*/jre/bin/javaws && \
+    alternatives --set javac /usr/java/jdk*/bin/javac && \
     alternatives --set jar /usr/java/jdk*/bin/jar; \
-    alternatives --install /usr/bin/jar jar /usr/java/jdk*/bin/jar 20000; \
+    alternatives --install /usr/bin/jar jar /usr/java/jdk*/bin/jar 20000 && \
     alternatives --set jar /usr/java/jdk*/bin/jar;
 
 ################################################################################
 # Install yum Dependencies                                                     #
 ################################################################################
 
-RUN yum update -y; yum install -y epel-release git asciidoc rpm-build \
+RUN yum update -y && yum install -y python-keyczar epel-release git asciidoc rpm-build \
     python2-devel PyYAML python-httplib2 python-jinja2 libtomcrypt \
-    python-paramiko python-six sshpass which; yum clean all
+    python-paramiko python-six sshpass which && yum clean all
 
 # TODO: For some reason this needs to be a separate step. I think it's because the
 #   mirror is choses for the other yum install does not have python-keyczar.
-RUN yum install -y python-keyczar; yum clean all
+# RUN yum install -y ; yum clean all
 
 ################################################################################
 # Install Ansible                                                              #

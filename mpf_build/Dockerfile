@@ -83,16 +83,16 @@ RUN cd /home/mpf; sudo -E easy_install -U cffi
 ################################################################################
 
 # Install Oracle JDK:
-RUN yum -y localinstall --nogpgcheck /apps/bin/jdk-*-linux-x64.rpm; \
-    alternatives --install /usr/bin/java java /usr/java/jdk*/jre/bin/java 20000; \
-    alternatives --install /usr/bin/jar jar /usr/java/jdk*/bin/jar 20000; \
-    alternatives --install /usr/bin/javac javac /usr/java/jdk*/bin/javac 20000; \
-    alternatives --install /usr/bin/javaws javaws /usr/java/jdk*/jre/bin/javaws 20000; \
-    alternatives --set java /usr/java/jdk*/jre/bin/java; \
-    alternatives --set javaws /usr/java/jdk*/jre/bin/javaws; \
-    alternatives --set javac /usr/java/jdk*/bin/javac; \
+RUN yum -y localinstall --nogpgcheck /apps/bin/jdk-*-linux-x64.rpm && \
+    alternatives --install /usr/bin/java java /usr/java/jdk*/jre/bin/java 20000 && \
+    alternatives --install /usr/bin/jar jar /usr/java/jdk*/bin/jar 20000 && \
+    alternatives --install /usr/bin/javac javac /usr/java/jdk*/bin/javac 20000 && \
+    alternatives --install /usr/bin/javaws javaws /usr/java/jdk*/jre/bin/javaws 20000 && \
+    alternatives --set java /usr/java/jdk*/jre/bin/java && \
+    alternatives --set javaws /usr/java/jdk*/jre/bin/javaws && \
+    alternatives --set javac /usr/java/jdk*/bin/javac && \
     alternatives --set jar /usr/java/jdk*/bin/jar; \
-    alternatives --install /usr/bin/jar jar /usr/java/jdk*/bin/jar 20000; \
+    alternatives --install /usr/bin/jar jar /usr/java/jdk*/bin/jar 20000 && \
     alternatives --set jar /usr/java/jdk*/bin/jar;
 
 # TODO: Pipe all tars into extract command:
@@ -444,7 +444,9 @@ RUN sed -i '37s/.*/              p:hostName="redis"/' \
 # Build OpenMPF                                                                #
 ################################################################################
 
-RUN cd /home/mpf/openmpf-projects/openmpf; \
+RUN cd /home/mpf/openmpf-projects/openmpf && mvn verify
+
+RUN cd /home/mpf/openmpf-projects/openmpf && \
     mvn clean install -DskipTests -Dmaven.test.skip=true -DskipITs \
     -Dmaven.tomcat.skip=true  \
     -Dcomponents.build.package.json=/home/mpf/openmpf-projects/openmpf/trunk/jenkins/scripts/config_files/openmpf-open-source-package.json \
@@ -452,9 +454,8 @@ RUN cd /home/mpf/openmpf-projects/openmpf; \
     -Dcomponents.build.dir=/home/mpf/openmpf-projects/openmpf/mpf-component-build \
     -DgitBranch=`cd ..; git rev-parse --abbrev-ref HEAD` \
     -DgitShortId=`cd ..; git rev-parse --short HEAD` \
-    -DjenkinsBuildNumber=1;
+    -DjenkinsBuildNumber=1 && rm -rf /opt/apache-tomcat/webapps/workflow-manager*
 
 RUN cd /home/mpf/openmpf-projects/openmpf/trunk/workflow-manager; \
-    rm -rf /opt/apache-tomcat/webapps/workflow-manager*; \
     cp target/workflow-manager.war /opt/apache-tomcat/webapps/workflow-manager.war; \
     cd ../..; cp trunk/install/libexec/node-manager /etc/init.d/;
