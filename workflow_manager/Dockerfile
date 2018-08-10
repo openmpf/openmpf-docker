@@ -40,20 +40,20 @@ VOLUME $MPF_HOME/share
 # Install Oracle JDK                                                           #
 ################################################################################
 
-COPY --from=mpf_build /apps/bin/jdk-8u144-linux-x64.rpm /apps/bin/jdk-8u144-linux-x64.rpm
+COPY --from=mpf_build /apps/bin/jdk-*-linux-x64.rpm /apps/bin/
 
 # Install Oracle JDK:
-RUN yum -y localinstall --nogpgcheck /apps/bin/jdk-8u144-linux-x64.rpm; \
-    alternatives --install /usr/bin/java java /usr/java/jdk1.8.0_144/jre/bin/java 20000; \
-    alternatives --install /usr/bin/jar jar /usr/java/jdk1.8.0_144/bin/jar 20000; \
-    alternatives --install /usr/bin/javac javac /usr/java/jdk1.8.0_144/bin/javac 20000; \
-    alternatives --install /usr/bin/javaws javaws /usr/java/jdk1.8.0_144/jre/bin/javaws 20000; \
-    alternatives --set java /usr/java/jdk1.8.0_144/jre/bin/java; \
-    alternatives --set javaws /usr/java/jdk1.8.0_144/jre/bin/javaws; \
-    alternatives --set javac /usr/java/jdk1.8.0_144/bin/javac; \
-    alternatives --set jar /usr/java/jdk1.8.0_144/bin/jar; \
-    alternatives --install /usr/bin/jar jar /usr/java/jdk1.8.0_144/bin/jar 20000; \
-    alternatives --set jar /usr/java/jdk1.8.0_144/bin/jar;
+RUN yum -y localinstall --nogpgcheck /apps/bin/jdk-*-linux-x64.rpm; \
+    alternatives --install /usr/bin/java java /usr/java/jdk*/jre/bin/java 20000; \
+    alternatives --install /usr/bin/jar jar /usr/java/jdk*/bin/jar 20000; \
+    alternatives --install /usr/bin/javac javac /usr/java/jdk*/bin/javac 20000; \
+    alternatives --install /usr/bin/javaws javaws /usr/java/jdk*/jre/bin/javaws 20000; \
+    alternatives --set java /usr/java/jdk*/jre/bin/java; \
+    alternatives --set javaws /usr/java/jdk*/jre/bin/javaws; \
+    alternatives --set javac /usr/java/jdk*/bin/javac; \
+    alternatives --set jar /usr/java/jdk*/bin/jar; \
+    alternatives --install /usr/bin/jar jar /usr/java/jdk*/bin/jar 20000; \
+    alternatives --set jar /usr/java/jdk*/bin/jar;
 
 ################################################################################
 # Install yum Dependencies                                                     #

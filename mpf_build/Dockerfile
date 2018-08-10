@@ -31,6 +31,9 @@ WORKDIR /home/mpf
 # Initial Setup                                                                #
 ################################################################################
 
+# Copy the Oracle jdk from build context
+COPY jdk-*-linux-x64.rpm /apps/bin/
+
 # Set up yum repo:
 RUN yum install -y epel-release deltarpm; yum clean all
 RUN yum update -y; yum clean all
@@ -38,6 +41,8 @@ RUN yum install sudo -y; yum clean all
 
 # Create the "mpf" user:
 RUN useradd -d /home/mpf -ms /bin/bash -g wheel -p mpf mpf
+
+ENV MPF_HOME=/home/mpf/git/openmpf-projects/openmpf/trunk/install
 
 # Create directories for sources:
 RUN mkdir -p /apps/install/lib; mkdir -p /apps/bin/apache; \
@@ -77,22 +82,18 @@ RUN cd /home/mpf; sudo -E easy_install -U cffi
 # Install Oracle JDK                                                           #
 ################################################################################
 
-# TODO: Require user to download this separately.
-RUN cd /apps/bin/; wget -nv \
-    https://mirror.its.sfu.ca/mirror/CentOS-Third-Party/NSG/common/x86_64/jdk-8u144-linux-x64.rpm
-
 # Install Oracle JDK:
-RUN yum -y localinstall --nogpgcheck /apps/bin/jdk-8u144-linux-x64.rpm; \
-    alternatives --install /usr/bin/java java /usr/java/jdk1.8.0_144/jre/bin/java 20000; \
-    alternatives --install /usr/bin/jar jar /usr/java/jdk1.8.0_144/bin/jar 20000; \
-    alternatives --install /usr/bin/javac javac /usr/java/jdk1.8.0_144/bin/javac 20000; \
-    alternatives --install /usr/bin/javaws javaws /usr/java/jdk1.8.0_144/jre/bin/javaws 20000; \
-    alternatives --set java /usr/java/jdk1.8.0_144/jre/bin/java; \
-    alternatives --set javaws /usr/java/jdk1.8.0_144/jre/bin/javaws; \
-    alternatives --set javac /usr/java/jdk1.8.0_144/bin/javac; \
-    alternatives --set jar /usr/java/jdk1.8.0_144/bin/jar; \
-    alternatives --install /usr/bin/jar jar /usr/java/jdk1.8.0_144/bin/jar 20000; \
-    alternatives --set jar /usr/java/jdk1.8.0_144/bin/jar;
+RUN yum -y localinstall --nogpgcheck /apps/bin/jdk-*-linux-x64.rpm; \
+    alternatives --install /usr/bin/java java /usr/java/jdk*/jre/bin/java 20000; \
+    alternatives --install /usr/bin/jar jar /usr/java/jdk*/bin/jar 20000; \
+    alternatives --install /usr/bin/javac javac /usr/java/jdk*/bin/javac 20000; \
+    alternatives --install /usr/bin/javaws javaws /usr/java/jdk*/jre/bin/javaws 20000; \
+    alternatives --set java /usr/java/jdk*/jre/bin/java; \
+    alternatives --set javaws /usr/java/jdk*/jre/bin/javaws; \
+    alternatives --set javac /usr/java/jdk*/bin/javac; \
+    alternatives --set jar /usr/java/jdk*/bin/jar; \
+    alternatives --install /usr/bin/jar jar /usr/java/jdk*/bin/jar 20000; \
+    alternatives --set jar /usr/java/jdk*/bin/jar;
 
 # TODO: Pipe all tars into extract command:
 #  wget -qO- your_link_here | tar xvz -C /target/directory
