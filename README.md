@@ -41,19 +41,28 @@ This repository contains code for the OpenMPF Dockerfiles and related files.
 
 ## Getting Started
 
-### With Docker
+### Install and Configure Docker
 
-OpenMPF can be build and deployed using Docker. In order to do this, clone the
-[Openmpf-docker repository](https://github.com/openmpf/openmpf-docker). Once
-cloned (and assuming you have docker installed), you can run the following
-command to build the OpenMPF project inside a docker container tagged as
-mpf_build:latest `docker build mpf_build/ -t mpf_build:latest`. This container
-will take a while to build, but once it is complete, you can run
-`docker-compose build` and `docker-compose up` to run the project.
+Download and install Docker for your OS [here](https://www.docker.com/community-edition#/download).
 
-### Quick Start
+We recommend that you allocate extra system resources to Docker before executing the build steps. This is especially important because the build requires a large amount of memory and will likely fail if it does not have enough. We recommend that you allocate the Docker daemon 4 CPU cores, 10240 MB (10 GB) of memory (you may be able to get away with less but this is what we have been successful with), and 4096 MB (4 GB) of disk swap space.
 
-TODO
+### Build and Run the OpenMPF Containers
+
+Clone the [openmpf-docker repository](https://github.com/openmpf/openmpf-docker):
+- `git clone https://github.com/openmpf/openmpf-docker.git`
+
+Download the most recent Oracle Java SE JDK 8 64-bit Linux RPM from [here](http://www.oracle.com/technetwork/java/javase/downloads/index.html). If it's not listed there, check [here](http://www.oracle.com/technetwork/java/javase/downloads/java-archive-javase8-2177648.html). Place the file in the mpf_build/ directory. The file should be named jdk-8u144-linux-x64.rpm, or something similar where "8u144" is a different version number. Do not download Java SE 9 or 10.
+
+Once cloned, you can run the following command to build the OpenMPF project inside a docker container tagged as
+`mpf_build:latest`:
+- `docker build mpf_build/ -t mpf_build:latest`
+
+Note that it can take 1.5 - 2 hours for this command to complete if you're starting from scratch.
+
+Once it is complete, you can run the project using:
+- `docker-compose build`
+- `docker-compose up`
 
 ## Project Website
 
