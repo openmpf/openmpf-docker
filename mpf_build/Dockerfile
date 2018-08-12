@@ -444,8 +444,6 @@ RUN sed -i '37s/.*/              p:hostName="redis"/' \
 # Build OpenMPF                                                                #
 ################################################################################
 
-RUN cd /home/mpf/openmpf-projects/openmpf && mvn verify
-
 RUN cd /home/mpf/openmpf-projects/openmpf && \
     mvn clean install -DskipTests -Dmaven.test.skip=true -DskipITs \
     -Dmaven.tomcat.skip=true  \
@@ -454,7 +452,7 @@ RUN cd /home/mpf/openmpf-projects/openmpf && \
     -Dcomponents.build.dir=/home/mpf/openmpf-projects/openmpf/mpf-component-build \
     -DgitBranch=`cd ..; git rev-parse --abbrev-ref HEAD` \
     -DgitShortId=`cd ..; git rev-parse --short HEAD` \
-    -DjenkinsBuildNumber=1 && rm -rf /opt/apache-tomcat/webapps/workflow-manager*
+    -DjenkinsBuildNumber=1
 
 RUN cd /home/mpf/openmpf-projects/openmpf/trunk/workflow-manager; \
     cp target/workflow-manager.war /opt/apache-tomcat/webapps/workflow-manager.war; \

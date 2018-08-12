@@ -53,19 +53,21 @@ RUN yum -y localinstall --nogpgcheck /apps/bin/jdk-*-linux-x64.rpm && \
     alternatives --set javac /usr/java/jdk*/bin/javac && \
     alternatives --set jar /usr/java/jdk*/bin/jar; \
     alternatives --install /usr/bin/jar jar /usr/java/jdk*/bin/jar 20000 && \
-    alternatives --set jar /usr/java/jdk*/bin/jar;
+    alternatives --set jar /usr/java/jdk*/bin/jar; \
+    rm /apps/bin/jdk-*-linux-x64.rpm
 
 ################################################################################
 # Install yum Dependencies                                                     #
 ################################################################################
 
-RUN yum update -y && yum install -y python-keyczar epel-release git asciidoc rpm-build \
+RUN yum update -y && yum install -y epel-release git asciidoc rpm-build \
     python2-devel PyYAML python-httplib2 python-jinja2 libtomcrypt \
     python-paramiko python-six sshpass which && yum clean all
 
 # TODO: For some reason this needs to be a separate step. I think it's because the
-#   mirror is choses for the other yum install does not have python-keyczar.
-# RUN yum install -y ; yum clean all
+#   mirror it choses for the other yum install does not have python-keyczar.
+#   This happens even if python-keyczar is the first thing in the list.
+RUN yum install -y python-keyczar; yum clean all
 
 ################################################################################
 # Install Ansible                                                              #
@@ -81,7 +83,8 @@ RUN mkdir -p /apps/source/ansible_sources; cd /apps/source/ansible_sources; \
     cd /apps/source/ansible_sources/ansible/lib/ansible/modules/extras; \
     git checkout 32338612b38d1ddfd0d42b1245c597010da02970; \
     cd /apps/source/ansible_sources/ansible; make rpm; \
-    cd /apps/source/ansible_sources/ansible; rpm -Uvh ./rpm-build/ansible-*.noarch.rpm
+    cd /apps/source/ansible_sources/ansible; \
+    rpm -Uvh ./rpm-build/ansible-*.noarch.rpm; rm -rf /apps/source
 
 ################################################################################
 # Copy Files                                                                   #
@@ -97,7 +100,8 @@ RUN mkdir -p /apps/source/ansible_sources; cd /apps/source/ansible_sources; \
 # TODO: Trim the fat from the copies.
 
 # Copy files from the build image:
-COPY --from=mpf_build /apps/install/ /apps/install/
+COPY --from=mpf_build /apps/install/bin/ffmpeg /apps/install/bin/ffprobe \
+     /apps/install/bin/ffserver /opt/mpf/bin/ffmpeg
 COPY --from=mpf_build /etc/ld.so.conf.d/ /etc/ld.so.conf.d/
 COPY --from=mpf_build /opt/apache-tomcat/ /opt/apache-tomcat/
 COPY --from=mpf_build /home/mpf/openmpf-projects/openmpf/trunk/ansible/ \
@@ -114,7 +118,9 @@ RUN mkdir $MPF_HOME/plugins; cd $MPF_HOME/plugins; \
     for file in $MPF_HOME/share/components/*.tar.gz; do tar xzf "$file"; done
 
 # Link FFmpeg:
-RUN ln -s /apps/install/bin/ffmpeg /usr/bin/ffmpeg
+RUN ln -s /opt/mpf/bin/ffmpeg/ffmpeg /usr/bin/ffmpeg && \
+    ln -s /opt/mpf/bin/ffmpeg/ffserver /usr/bin/ffserver && \
+    ln -s /opt/mpf/bin/ffmpeg/ffprobe /usr/bin/ffprobe
 
 RUN ldconfig
 
