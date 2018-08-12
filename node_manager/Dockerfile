@@ -67,7 +67,7 @@ RUN yum -y localinstall --nogpgcheck /apps/bin/jdk-*-linux-x64.rpm && \
 # Install yum Dependencies                                                     #
 ################################################################################
 
-RUN yum update -y; yum install -y log4cxx libdc1394 unzip libjpeg-turbo libpng \
+RUN yum update -y && yum install -y log4cxx libdc1394 unzip libjpeg-turbo libpng \
     libtiff jasper-libs gtk2 atk pango gdk-pixbuf2 cairo fontconfig gstreamer \
     gstreamer-plugins-base libv4l mesa-libGLU libSM libICE qt-x11 python-pip \
     python-virtualenv initscripts sudo && yum clean all && rm -rf /var/cache/yum/*
@@ -145,7 +145,7 @@ COPY --from=mpf_build /home/mpf/openmpf-projects/openmpf/mpf-component-build/plu
     $MPF_HOME/share/components
 
 # Extract components:
-RUN mkdir $MPF_HOME/plugins; cd $MPF_HOME/plugins; \
+RUN mkdir $MPF_HOME/plugins && cd $MPF_HOME/plugins && \
     for file in $MPF_HOME/share/components/*.tar.gz; do tar xzf "$file"; done
 
 RUN ldconfig

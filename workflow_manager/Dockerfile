@@ -67,24 +67,24 @@ RUN yum update -y && yum install -y epel-release git asciidoc rpm-build \
 # TODO: For some reason this needs to be a separate step. I think it's because the
 #   mirror it choses for the other yum install does not have python-keyczar.
 #   This happens even if python-keyczar is the first thing in the list.
-RUN yum install -y python-keyczar; yum clean all
+RUN yum install -y python-keyczar && yum clean all
 
 ################################################################################
 # Install Ansible                                                              #
 ################################################################################
 
 # Ansible:
-RUN mkdir -p /apps/source/ansible_sources; cd /apps/source/ansible_sources; \
-    git clone https://github.com/ansible/ansible.git --recursive; \
-    cd ansible; git checkout e71cce777685f96223856d5e6cf506a9ea2ef3ff; \
-    git submodule update --init --recursive; \
-    cd /apps/source/ansible_sources/ansible/lib/ansible/modules/core; \
-    git checkout 36f512abc1a75b01ae7207c74cdfbcb54a84be54; \
-    cd /apps/source/ansible_sources/ansible/lib/ansible/modules/extras; \
-    git checkout 32338612b38d1ddfd0d42b1245c597010da02970; \
-    cd /apps/source/ansible_sources/ansible; make rpm; \
-    cd /apps/source/ansible_sources/ansible; \
-    rpm -Uvh ./rpm-build/ansible-*.noarch.rpm; rm -rf /apps/source
+RUN mkdir -p /apps/source/ansible_sources && cd /apps/source/ansible_sources && \
+    git clone https://github.com/ansible/ansible.git --recursive && \
+    cd ansible && git checkout e71cce777685f96223856d5e6cf506a9ea2ef3ff && \
+    git submodule update --init --recursive && \
+    cd /apps/source/ansible_sources/ansible/lib/ansible/modules/core && \
+    git checkout 36f512abc1a75b01ae7207c74cdfbcb54a84be54 && \
+    cd /apps/source/ansible_sources/ansible/lib/ansible/modules/extras && \
+    git checkout 32338612b38d1ddfd0d42b1245c597010da02970 && \
+    cd /apps/source/ansible_sources/ansible && make rpm && \
+    cd /apps/source/ansible_sources/ansible && \
+    rpm -Uvh ./rpm-build/ansible-*.noarch.rpm && rm -rf /apps/source
 
 ################################################################################
 # Copy Files                                                                   #
@@ -114,7 +114,7 @@ COPY --from=mpf_build /home/mpf/openmpf-projects/openmpf/mpf-component-build/plu
     $MPF_HOME/share/components
 
 # Extract tar.gz (using tar xzf) components to $MPF_HOME/plugins:
-RUN mkdir $MPF_HOME/plugins; cd $MPF_HOME/plugins; \
+RUN mkdir $MPF_HOME/plugins && cd $MPF_HOME/plugins && \
     for file in $MPF_HOME/share/components/*.tar.gz; do tar xzf "$file"; done
 
 # Link FFmpeg:
@@ -142,9 +142,10 @@ ENV CORE_MPF_NODES=node_manager
 ENV LD_LIBRARY_PATH=/usr/lib64:$MPF_HOME/lib
 ENV CATALINA_OPTS="-server -Xms256m -XX:PermSize=512m -XX:MaxPermSize=512m -Duser.country=US -Djava.library.path=$MPF_HOME/lib -Dtransport.guarantee='NONE' -Dweb.rest.protocol='http'"
 
-RUN echo '[mpf-master]' >> /etc/ansible/hosts; \
-    echo $THIS_MPF_NODE >> /etc/ansible/hosts; \
-    echo '' >> /etc/ansible/hosts; echo '[mpf-child]' >> /etc/ansible/hosts; \
+RUN echo '[mpf-master]' >> /etc/ansible/hosts && \
+    echo $THIS_MPF_NODE >> /etc/ansible/hosts && \
+    echo '' >> /etc/ansible/hosts && \
+    echo '[mpf-child]' >> /etc/ansible/hosts && \
     echo "node_manager" >> /etc/ansible/hosts
 
 EXPOSE 8080
