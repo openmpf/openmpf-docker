@@ -60,7 +60,7 @@ RUN touch /etc/ld.so.conf.d/mpf-x86_64.conf && \
     ldconfig
 
 # Install build tools:
-RUN yum install -y sudogit python-pip python-devel python-setuptools file \
+RUN yum install -y sudo git python-pip python-devel python-setuptools file \
     python-setuptools-devel gcc gcc-c++ make autoconf automake \
     libtool yasm nasm bzip2 cmake3 numpy perl-File-Find-Rule which \
     libffi-devel openssl-devel apr apr-util apr-util-ldap log4cxx \

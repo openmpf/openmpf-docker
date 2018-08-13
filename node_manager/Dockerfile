@@ -134,7 +134,7 @@ RUN useradd -d /home/mpf -ms /bin/bash -g wheel -p mpf mpf
 
 # Copy files from the build image:
 COPY --from=mpf_build /apps/install/bin/ffmpeg /apps/install/bin/ffprobe \
-     /apps/install/bin/ffserver /opt/mpf/bin/ffmpeg
+     /apps/install/bin/ffserver /opt/mpf/bin/ffmpeg/
 COPY --from=mpf_build /etc/ld.so.conf.d/ /etc/ld.so.conf.d/
 COPY --from=mpf_build /etc/profile.d/mpf.sh /etc/profile.d/mpf.sh
 
@@ -154,7 +154,10 @@ RUN ldconfig
 RUN mkdir -p /opt/mpf/share/logs/node_manager/ && chown mpf /opt/mpf/share/logs/node_manager
 
 # Copy binaries:
-RUN cp -a ${MPF_HOME}/bin/* /bin/
+#   command returns a non-zero exit code becuase it does not copy the directory.
+#   This behavior is expected so we OR the command with true so that docker
+#   does not think that the command failed.
+RUN cp ${MPF_HOME}/bin/* /bin || true
 
 # Link FFmpeg:
 RUN ln -s /opt/mpf/bin/ffmpeg/ffmpeg /usr/bin/ffmpeg && \

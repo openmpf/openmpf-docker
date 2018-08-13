@@ -101,7 +101,7 @@ RUN mkdir -p /apps/source/ansible_sources && cd /apps/source/ansible_sources && 
 
 # Copy files from the build image:
 COPY --from=mpf_build /apps/install/bin/ffmpeg /apps/install/bin/ffprobe \
-     /apps/install/bin/ffserver /opt/mpf/bin/ffmpeg
+     /apps/install/bin/ffserver /opt/mpf/bin/ffmpeg/
 COPY --from=mpf_build /etc/ld.so.conf.d/ /etc/ld.so.conf.d/
 COPY --from=mpf_build /opt/apache-tomcat/ /opt/apache-tomcat/
 COPY --from=mpf_build /home/mpf/openmpf-projects/openmpf/trunk/ansible/ \
