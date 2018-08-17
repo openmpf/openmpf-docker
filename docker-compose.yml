@@ -35,6 +35,9 @@ services:
       - MYSQL_DATABASE=mpf
       - MYSQL_USER=mpf
       - MYSQL_PASSWORD=mpf
+    command: [
+      '--wait_timeout=28800',
+    ]
     volumes:
       - mysql_data:/var/lib/mysql
     ports:
