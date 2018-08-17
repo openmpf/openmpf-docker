@@ -24,7 +24,7 @@
 # limitations under the License.                                            #
 #############################################################################
 
-version: '3.3'
+version: '2.3'
 services:
   mysql:
     container_name: mysql_database
@@ -35,6 +35,7 @@ services:
       - MYSQL_DATABASE=mpf
       - MYSQL_USER=mpf
       - MYSQL_PASSWORD=mpf
+      - wait_timeout=28800
     volumes:
       - mysql_data:/var/lib/mysql
     ports:
@@ -71,9 +72,10 @@ services:
   node_manager:
     container_name: node_manager
     build: ./node_manager
+    # runtime: nvidia
     restart: always
     ports:
-      - "80:80"
+      - "8008:8008"
       - "7800:7800"
     volumes:
       - mpf_data:/opt/mpf/share
