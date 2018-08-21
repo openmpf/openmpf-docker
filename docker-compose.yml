@@ -35,6 +35,7 @@ services:
       - MYSQL_DATABASE=mpf
       - MYSQL_USER=mpf
       - MYSQL_PASSWORD=mpf
+    # https://github.com/docker-library/mariadb/issues/113
     command: [
       '--wait_timeout=28800',
     ]
