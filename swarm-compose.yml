@@ -1,8 +1,5 @@
-# sudo usermod -a -G docker $USER
 version: '3.3'
 services:
-  # docker swarm join --token SWMTKN-1-2lzxqdveg2op2oy08bugdlrgoiig5roxx0yyth6t4hhh11roxb-cwuu3f1cm27r6yqaqzq5g2skr 192.168.65.3:2377
-  # docker stack deploy --compose-file swarm-compose.yml mpf
   mysql_database:
     image: mariadb:latest
     restart: always
@@ -14,30 +11,30 @@ services:
     volumes:
       - mysql-data:/var/lib/mysql
     ports:
-      - "3306:3306"
+      - 3306:3306
 
   activemq:
-    image: mpf_docker_active_mq:latest
+    image: <repository_url>/<username>/mpf_active_mq
     restart: always
     ports:
-      - "61616:61616"
-      - "1099:1099"
+      - 61616:61616
+      - 1099:1099
     restart: always
 
   redis:
     image: redis
     ports:
-      - "6379:6379"
+      - 6379:6379
     restart: always
 
   workflow_manager:
-    image: mpf_docker_workflow_manager:latest
+    image: <repository_url>/<username>/mpf_workflow_manager:latest
     depends_on:
       - mysql
     restart: always
     ports:
-      - "8080:8080"
-      - "7801:7801"
+      - 8080:8080
+      - 7801:7801
     volumes:
       - mpf-data:/opt/mpf/share
     # deploy:
@@ -49,16 +46,16 @@ services:
     #       - spread: node.labels.zone
 
   node_manager:
-    image: mpf_docker_node_manager:latest
+    image: <repository_url>/<username>/mpf_node_manager:latest
     restart: always
     ports:
-      - "80:80"
-      - "7800:7800"
+      - 80:80
+      - 7800:7800
     volumes:
       - mpf-data:/opt/mpf/share
     deploy:
       mode: replicated
-      replicas: 2
+      replicas: 1
 
 volumes:
   mpf-data:
