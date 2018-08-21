@@ -50,7 +50,7 @@ RUN mkdir -p /apps/install/lib && mkdir -p /apps/bin/apache && \
     mkdir /apps/source/opencv_sources && mkdir /apps/source/ffmpeg_sources && \
     mkdir /apps/source/dlib-sources && mkdir /apps/source/openalpr_sources && \
     mkdir /apps/source/ansible_sources && \
-    chown -R mpf /apps;chmod -R 755 /apps
+    chown -R mpf /apps && chmod -R 755 /apps
 
 # Create the OpenMPF ldconfig file:
 # Add /apps/install/lib to the OpenMPF ldconfig file:
@@ -60,7 +60,7 @@ RUN touch /etc/ld.so.conf.d/mpf-x86_64.conf && \
     ldconfig
 
 # Install build tools:
-RUN yum install -y sudo git python-pip python-devel python-setuptools file \
+RUN yum install -y git python-pip python-devel python-setuptools file \
     python-setuptools-devel gcc gcc-c++ make autoconf automake \
     libtool yasm nasm bzip2 cmake3 numpy perl-File-Find-Rule which \
     libffi-devel openssl-devel apr apr-util apr-util-ldap log4cxx \
@@ -70,7 +70,7 @@ RUN yum install -y sudo git python-pip python-devel python-setuptools file \
 RUN pip install --upgrade pip && pip install wheel virtualenv
 
 # Install C Foreign Function Interface (CFFI):
-RUN cd /home/mpf && sudo -E easy_install -U cffi
+RUN cd /home/mpf && easy_install -U cffi
 
 ################################################################################
 # Install Oracle JDK                                                           #
@@ -87,7 +87,7 @@ RUN yum -y localinstall --nogpgcheck /apps/bin/jdk-*-linux-x64.rpm && \
     alternatives --set javac /usr/java/jdk*/bin/javac && \
     alternatives --set jar /usr/java/jdk*/bin/jar; \
     alternatives --install /usr/bin/jar jar /usr/java/jdk*/bin/jar 20000 && \
-    alternatives --set jar /usr/java/jdk*/bin/jar;
+    alternatives --set jar /usr/java/jdk*/bin/jar
 
 # TODO: Pipe all tars into extract command:
 #  wget -qO- your_link_here | tar xvz -C /target/directory
@@ -130,7 +130,7 @@ RUN wget -nv -O /apps/source/cmake_sources/cmake-2.8.12.2.tar.gz \
     "https://cmake.org/files/v2.8/cmake-2.8.12.2.tar.gz" && \
     cd /apps/source/cmake_sources && tar xzf cmake-2.8.12.2.tar.gz && \
     cd cmake-2.8.12.2 && chmod +x * && ./configure --prefix=/apps/install && make -j && \
-    make install && ldconfig && ln -s /apps/install/bin/cmake /usr/local/bin/cmake;
+    make install && ldconfig && ln -s /apps/install/bin/cmake /usr/local/bin/cmake
 
 ################################################################################
 # Build Audio and Video Codecs and FFmpeg                                      #
@@ -145,35 +145,35 @@ RUN wget -nv -O /apps/source/ffmpeg_sources/opencore-amr-0.1.4.tar.gz \
     cd /apps/source/ffmpeg_sources && tar xzf opencore-amr-0.1.4.tar.gz && \
     cd opencore-amr-0.1.4 && autoreconf -fiv && \
     ./configure --prefix="/apps/install" --enable-shared && \
-    make && make install && make distclean && ldconfig;
+    make && make install && make distclean && ldconfig
 
 # libfdk_aac:
 RUN wget -nv -O /apps/source/ffmpeg_sources/fdk-aac-0.1.5.tar.gz \
     "https://github.com/mstorsjo/fdk-aac/archive/v0.1.5.tar.gz" && \
     cd /apps/source/ffmpeg_sources && tar xzf fdk-aac-0.1.5.tar.gz && \
     cd fdk-aac-0.1.5 && autoreconf -fiv && ./configure --prefix="/apps/install" --enable-shared && \
-    make && make install && make distclean && ldconfig;
+    make && make install && make distclean && ldconfig
 
 # libmp3lame:
 RUN wget -nv -O /apps/source/ffmpeg_sources/lame-3.99.5.tar.gz \
     "http://downloads.sourceforge.net/project/lame/lame/3.99/lame-3.99.5.tar.gz" && \
     cd /apps/source/ffmpeg_sources && tar xzf lame-3.99.5.tar.gz && cd lame-3.99.5 && \
     ./configure --prefix="/apps/install" --bindir="/apps/install/bin" --enable-shared --enable-nasm && \
-    make && make install && make distclean && ldconfig;
+    make && make install && make distclean && ldconfig
 
 # libogg:
 RUN wget -nv -O /apps/source/ffmpeg_sources/libogg-1.3.2.tar.gz \
     "http://downloads.xiph.org/releases/ogg/libogg-1.3.2.tar.gz" && \
     cd /apps/source/ffmpeg_sources && tar xzf libogg-1.3.2.tar.gz && \
     cd libogg-1.3.2 && ./configure --prefix="/apps/install" --enable-shared && \
-    make && make install && make distclean && ldconfig;
+    make && make install && make distclean && ldconfig
 
 # libopus:
 RUN wget -nv -O /apps/source/ffmpeg_sources/libopus-1.2.tar.gz \
     "https://archive.mozilla.org/pub/opus/opus-1.2.tar.gz" && \
     cd /apps/source/ffmpeg_sources && tar xzf libopus-1.2.tar.gz && \
     cd opus-1.2 && autoreconf -fiv && ./configure --prefix="/apps/install" --enable-shared && \
-    make && make install && make distclean && ldconfig;
+    make && make install && make distclean && ldconfig
 
 # libspeex:
 RUN wget -nv -O /apps/source/ffmpeg_sources/speex-1.2rc2.tar.gz \
@@ -181,7 +181,7 @@ RUN wget -nv -O /apps/source/ffmpeg_sources/speex-1.2rc2.tar.gz \
     cd /apps/source/ffmpeg_sources && tar xzf speex-1.2rc2.tar.gz && \
     cd speex-1.2rc2 && LDFLAGS="-L/apps/install/lib" CPPFLAGS="-I/apps/install/include" \
     ./configure --prefix="/apps/install" --enable-shared && make && make install && \
-    make distclean && ldconfig;
+    make distclean && ldconfig
 
 # libvorbis:
 RUN wget -nv -O /apps/source/ffmpeg_sources/libvorbis-1.3.5.tar.gz \
@@ -189,7 +189,7 @@ RUN wget -nv -O /apps/source/ffmpeg_sources/libvorbis-1.3.5.tar.gz \
     cd /apps/source/ffmpeg_sources && tar xzf libvorbis-1.3.5.tar.gz && \
     cd libvorbis-1.3.5 && LDFLAGS="-L/apps/install/lib" CPPFLAGS="-I/apps/install/include" \
     ./configure --prefix="/apps/install" --with-ogg="/apps/install" --enable-shared && \
-    make && make install && make distclean && ldconfig;
+    make && make install && make distclean && ldconfig
 
 # libtheora:
 RUN wget -nv -O /apps/source/ffmpeg_sources/libtheora-1.1.1.tar.gz \
@@ -197,7 +197,7 @@ RUN wget -nv -O /apps/source/ffmpeg_sources/libtheora-1.1.1.tar.gz \
     cd /apps/source/ffmpeg_sources && tar xzf libtheora-1.1.1.tar.gz && \
     cd libtheora-1.1.1 && ./configure --prefix="/apps/install" \
     --with-ogg="/apps/install" --enable-shared && make && make install && \
-    make distclean && ldconfig;
+    make distclean && ldconfig
 
 # libvpx:
 RUN wget -nv -O /apps/source/ffmpeg_sources/v1.6.1.tar.gz \
@@ -205,7 +205,7 @@ RUN wget -nv -O /apps/source/ffmpeg_sources/v1.6.1.tar.gz \
     cd /apps/source/ffmpeg_sources && tar xzf v1.6.1.tar.gz && cd libvpx-1.6.1 && \
     ./configure --prefix="/apps/install" --enable-shared --enable-vp8 \
     --enable-vp9 --enable-pic --disable-debug --disable-examples --disable-docs \
-    --as=yasm && make && make install && make distclean && ldconfig;
+    --as=yasm && make && make install && make distclean && ldconfig
 
 # libx264:
 RUN wget -nv -O /apps/source/ffmpeg_sources/x264-snapshot-20170226-2245-stable.tar.bz2 \
@@ -213,7 +213,7 @@ RUN wget -nv -O /apps/source/ffmpeg_sources/x264-snapshot-20170226-2245-stable.t
     cd /apps/source/ffmpeg_sources && tar xvjf x264-snapshot-20170226-2245-stable.tar.bz2 && \
     cd x264-snapshot-20170226-2245-stable && PKG_CONFIG_PATH="/apps/install/lib/pkgconfig" \
     ./configure --prefix="/apps/install" --bindir="/apps/install" --enable-shared --disable-cli && \
-    make && make install && make distclean && ldconfig;
+    make && make install && make distclean && ldconfig
 
 # libx265:
 RUN wget -nv -O /apps/source/ffmpeg_sources/x265_2.3.tar.gz \
@@ -221,14 +221,14 @@ RUN wget -nv -O /apps/source/ffmpeg_sources/x265_2.3.tar.gz \
     cd /apps/source/ffmpeg_sources && tar xzf x265_2.3.tar.gz && cd x265_2.3/build/linux && \
     MAKEFLAGS="-j" ./multilib.sh && cd 8bit && cmake ../../../source -DEXTRA_LIB="x265_main10.a;x265_main12.a" \
     -DEXTRA_LINK_FLAGS=-L. -DLINKED_10BIT=ON -DLINKED_12BIT=ON -DCMAKE_INSTALL_PREFIX="/apps/install" && \
-    make install && make clean && cd ../10bit && make clean && cd ../12bit && make clean && ldconfig;
+    make install && make clean && cd ../10bit && make clean && cd ../12bit && make clean && ldconfig
 
 # xvidcore:
 RUN wget -nv -O /apps/source/ffmpeg_sources/xvidcore-1.3.4.tar.gz \
     "http://downloads.xvid.org/downloads/xvidcore-1.3.4.tar.gz" && \
     cd /apps/source/ffmpeg_sources && tar zxf xvidcore-1.3.4.tar.gz && \
     cd xvidcore/build/generic && ./configure --prefix="/apps/install" && \
-    make && make install && make distclean && ldconfig;
+    make && make install && make distclean && ldconfig
 
 # FFmpeg 3.3.3:
 RUN cd /apps/source/ffmpeg_sources && git clone https://git.ffmpeg.org/ffmpeg.git ffmpeg && \
@@ -241,7 +241,7 @@ RUN cd /apps/source/ffmpeg_sources && git clone https://git.ffmpeg.org/ffmpeg.gi
     --enable-shared --enable-version3 --extra-cflags="-I/apps/install/include" \
     --extra-ldflags="-L/apps/install/lib" --extra-libs=-ldl --prefix="/apps/install" && \
     make && make install && make distclean && ln -s /apps/install/bin/ffmpeg /usr/bin/ffmpeg && \
-    ldconfig;
+    ldconfig
 
 ################################################################################
 # Build Google Protocol Buffers                                                #
@@ -253,7 +253,7 @@ RUN wget -nv -O /apps/source/google_sources/protobuf-2.5.0.tar.gz \
     cd /apps/source/google_sources && tar xzf protobuf-2.5.0.tar.gz && cd protobuf-2.5.0 && \
     ./configure --prefix=/apps/install && make -j8 && make install && make distclean && \
     ldconfig && ln -s /apps/install/bin/protoc /usr/local/bin/protoc && \
-    ln -s /usr/lib64/libuuid.so.1.3.0 /usr/lib64/libuuid.so;
+    ln -s /usr/lib64/libuuid.so.1.3.0 /usr/lib64/libuuid.so
 
 ################################################################################
 # Build OpenCV                                                                 #
@@ -281,7 +281,7 @@ RUN cd /apps/source/opencv_sources && git clone https://github.com/opencv/opencv
     ln -sf /apps/install/opencv3.3.0 /opt/opencv-3.3.0 && \
     ln -sf /apps/install/opencv3.3.0/include/opencv2 /usr/local/include/opencv2 && \
     ln -sf /apps/install/opencv3.3.0/include/opencv /usr/local/include/opencv && \
-    ldconfig && export OpenCV_DIR=/opt/opencv-3.3.0/share/OpenCV;
+    ldconfig && export OpenCV_DIR=/opt/opencv-3.3.0/share/OpenCV
 
 ################################################################################
 # Build Component-Specific Dependencies                                        #
@@ -306,7 +306,7 @@ RUN wget -nv -O /apps/source/openalpr_sources/leptonica-1.72.tar.gz \
     make --directory /usr/local/src/openalpr/leptonica-1.72 -j && \
     make --directory /usr/local/src/openalpr/leptonica-1.72 install && \
     make --directory /usr/local/src/openalpr/leptonica-1.72 distclean && \
-    ldconfig;
+    ldconfig
 
 # Tesseract 3.04.00:
 RUN wget -nv -O /apps/source/openalpr_sources/tesseract-3.04.00.tar.gz \
@@ -323,7 +323,7 @@ RUN wget -nv -O /apps/source/openalpr_sources/tesseract-3.04.00.tar.gz \
     cd /usr/local/src/openalpr/tesseract-ocr && sh autogen.sh && ./configure && \
     make --directory /usr/local/src/openalpr/tesseract-ocr -j && \
     make --directory /usr/local/src/openalpr/tesseract-ocr install && \
-    ldconfig;
+    ldconfig
 
 # OpenALPR 2.3.0:
 RUN cd /apps/source/openalpr_sources && git clone https://github.com/openalpr/openalpr.git && \
@@ -338,7 +338,7 @@ RUN cd /apps/source/openalpr_sources && git clone https://github.com/openalpr/op
     cp -a /usr/local/lib/libopenalpr.so /usr/lib/libopenalpr.so && \
     cp /usr/local/lib/libopenalpr.so.2 /usr/lib/libopenalpr.so.2 && \
     sh -c 'echo "export TESSDATA_PREFIX=/usr/local/src/openalpr/openalpr/runtime_data/ocr" >> /etc/profile.d/mpf.sh' && \
-    ldconfig;
+    ldconfig
 
 ################################################################################
 # Build ActiveMQ                                                               #
@@ -349,7 +349,7 @@ RUN wget -nv -O /apps/source/apache_sources/apr-1.5.2.tar.gz \
     "http://archive.apache.org/dist/apr/apr-1.5.2.tar.gz" && \
     cd /apps/source/apache_sources && tar -zxvf apr-1.5.2.tar.gz && \
     cd /apps/source/apache_sources/apr-1.5.2 && ./configure --prefix=/apps/install && \
-    make -j8 && make install && make distclean && ldconfig;
+    make -j8 && make install && make distclean && ldconfig
 
 # apr-util 1.5.4:
 RUN wget -nv -O /apps/source/apache_sources/apr-util-1.5.4.tar.gz \
@@ -357,7 +357,7 @@ RUN wget -nv -O /apps/source/apache_sources/apr-util-1.5.4.tar.gz \
     cd /apps/source/apache_sources && tar -xzvf apr-util-1.5.4.tar.gz && \
     cd /apps/source/apache_sources/apr-util-1.5.4 && \
     ./configure --with-apr=/apps/install --prefix=/apps/install && \
-    make -j8 && make install && make distclean && ldconfig;
+    make -j8 && make install && make distclean && ldconfig
 
 # Activemqcpp 3.9.0:
 RUN wget -nv -O /apps/source/apache_sources/activemq-cpp-library-3.9.0-src.tar.gz \
@@ -369,7 +369,7 @@ RUN wget -nv -O /apps/source/apache_sources/activemq-cpp-library-3.9.0-src.tar.g
     ln -s /apps/install/lib/libactivemq-cpp.so.19.0.0 /usr/lib/libactivemq-cpp.so
 
 ################################################################################
-# NVIDIA CUDA setup for Darknet                                                #
+# NVIDIA CUDA toolkit setup                                                    #
 ################################################################################
 RUN mkdir -p /apps/source/cuda && cd /apps/source/cuda && \
     wget -nv -O cuda_9.0.176_384.81_linux.run \
@@ -429,7 +429,7 @@ ENV PATH=$PATH:/apps/install/bin:/opt/apache-maven/bin:/apps/install/lib/pkgconf
 # TODO: See if this can be converted to use ARG variable, this strategy is
 #    very brittle because it's based on line number:
 RUN sed -i '37s/.*/              p:hostName="redis"/' \
-    /home/mpf/openmpf-projects/openmpf/trunk/workflow-manager/src/main/resources/applicationContext-redis.xml;
+    /home/mpf/openmpf-projects/openmpf/trunk/workflow-manager/src/main/resources/applicationContext-redis.xml
 
 # TODO: Get the server set up with HTTPS.
 
@@ -449,4 +449,4 @@ RUN cd /home/mpf/openmpf-projects/openmpf && \
 
 RUN cd /home/mpf/openmpf-projects/openmpf/trunk/workflow-manager && \
     cp target/workflow-manager.war /opt/apache-tomcat/webapps/workflow-manager.war && \
-    cd ../.. && cp trunk/install/libexec/node-manager /etc/init.d/;
+    cd ../.. && cp trunk/install/libexec/node-manager /etc/init.d/

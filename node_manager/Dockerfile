@@ -61,7 +61,7 @@ RUN yum -y localinstall --nogpgcheck /apps/bin/jdk-*-linux-x64.rpm && \
     alternatives --set javac /usr/java/jdk*/bin/javac && \
     alternatives --set jar /usr/java/jdk*/bin/jar; \
     alternatives --install /usr/bin/jar jar /usr/java/jdk*/bin/jar 20000 && \
-    alternatives --set jar /usr/java/jdk*/bin/jar;
+    alternatives --set jar /usr/java/jdk*/bin/jar
 
 ################################################################################
 # Install yum Dependencies                                                     #
@@ -73,7 +73,7 @@ RUN yum update -y && yum install -y log4cxx libdc1394 unzip libjpeg-turbo libpng
     python-virtualenv initscripts sudo && yum clean all && rm -rf /var/cache/yum/*
 
 ################################################################################
-# NVIDIA CUDA setup for Darknet                                                #
+# NVIDIA CUDA runtime setup                                                    #
 ################################################################################
 
 ENV CUDA_VERSION 9.1.85
@@ -87,10 +87,6 @@ RUN echo "/usr/local/nvidia/lib" >> /etc/ld.so.conf.d/nvidia.conf && \
 
 ENV PATH /usr/local/nvidia/bin:/usr/local/cuda/bin:${PATH}
 ENV LD_LIBRARY_PATH /usr/local/nvidia/lib:/usr/local/nvidia/lib64
-
-################################################################################
-# End CUDA setup                                                               #
-################################################################################
 
 ################################################################################
 # Copy Files                                                                   #
@@ -130,7 +126,7 @@ RUN ldconfig
 RUN mkdir -p /opt/mpf/share/logs/node_manager/ && chown mpf /opt/mpf/share/logs/node_manager
 
 # Copy binaries:
-#   command returns a non-zero exit code becuase it does not copy the directory.
+#   command returns a non-zero exit code because it does not copy the directory.
 #   This behavior is expected so we OR the command with true so that docker
 #   does not think that the command failed.
 RUN cp ${MPF_HOME}/bin/* /bin || true
