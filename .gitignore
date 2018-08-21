@@ -1,3 +1,4 @@
 # ignore files that will not be kept in the repository and must be downloaded.
 mpf_build/jdk*.rpm
+# docker image archives
 *.tar.gz
