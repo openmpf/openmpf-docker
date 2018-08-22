@@ -52,7 +52,8 @@ We recommend that you allocate extra system resources to Docker before executing
 Clone the [openmpf-docker repository](https://github.com/openmpf/openmpf-docker):
 - `git clone https://github.com/openmpf/openmpf-docker.git`
 
-Clone the [openmpf-projects repository](https://github.com/openmpf/openmpf-projects):
+Clone the [openmpf-projects repository](https://github.com/openmpf/openmpf-projects) into the mpf_build directory:
+- `cd openmpf-docker/mpf_build/`
 - `git clone https://github.com/openmpf/openmpf-projects.git --recursive`
 - (Optional) checkout a branch or commit
   - `cd openmpf-projects`
