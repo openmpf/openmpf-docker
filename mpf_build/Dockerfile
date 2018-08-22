@@ -380,13 +380,10 @@ RUN wget -nv -O /apps/source/apache_sources/activemq-cpp-library-3.9.0-src.tar.g
 ################################################################################
 
 # NOTE: This will change the most often so it should  be as far down in the Dockerfile as possible.
-
-RUN cd /home/mpf; \
-    git clone https://github.com/openmpf/openmpf-projects.git --recursive; \
-    cd openmpf-projects; git checkout develop; git submodule update --init
+COPY openmpf-projects /home/mpf/openmpf-projects
 
 # Install OpenMPF command line tools:
-RUN sudo -E pip install /home/mpf/openmpf-projects/openmpf/trunk/bin/mpf-scripts
+RUN pip install /home/mpf/openmpf-projects/openmpf/trunk/bin/mpf-scripts
 
 # Add Maven dependencies (CMU Sphinx, etc.):
 RUN cd /home/mpf; mkdir -p .m2/repository; tar xzf \
