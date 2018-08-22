@@ -106,13 +106,13 @@ RUN useradd -d /home/mpf -ms /bin/bash -g wheel -p mpf mpf
 
 # Copy files from the build image:
 COPY --from=mpf_build /apps/install/bin/ffmpeg /apps/install/bin/ffprobe \
-     /apps/install/bin/ffserver /usr/bin/
+     /apps/install/bin/ffserver $MPF_HOME/bin/
 COPY --from=mpf_build /etc/ld.so.conf.d/ /etc/ld.so.conf.d/
 COPY --from=mpf_build /etc/profile.d/mpf.sh /etc/profile.d/mpf.sh
 
 # TODO: Copy files from a shared "artifacts" build context:
 COPY --from=mpf_build /home/mpf/openmpf-projects/openmpf/trunk/install/ \
-    /opt/mpf/
+    $MPF_HOME/
 COPY --from=mpf_build /home/mpf/openmpf-projects/openmpf/mpf-component-build/plugin-packages \
     $MPF_HOME/share/components
 
@@ -120,13 +120,15 @@ COPY --from=mpf_build /home/mpf/openmpf-projects/openmpf/mpf-component-build/plu
 RUN mkdir $MPF_HOME/plugins && cd $MPF_HOME/plugins && \
     for file in $MPF_HOME/share/components/*.tar.gz; do tar xzf "$file"; done
 
+# Link FFmpeg:
+RUN ln -s $MPF_HOME/bin/ffmpeg /usr/bin/ffmpeg && \
+    ln -s $MPF_HOME/bin/ffserver /usr/bin/ffserver && \
+    ln -s $MPF_HOME/bin/ffprobe /usr/bin/ffprobe
+
 RUN ldconfig
 
 # Create log path
-RUN mkdir -p /opt/mpf/share/logs/node_manager/ && chown mpf /opt/mpf/share/logs/node_manager
-
-# Copy binaries:
-RUN cp -R ${MPF_HOME}/bin/* /bin
+RUN mkdir -p $MPF_HOME/share/logs/node_manager/ && chown mpf $MPF_HOME/share/logs/node_manager
 
 ################################################################################
 # Configure Environment Variables                                              #
@@ -144,7 +146,7 @@ ENV MPF_LOG_PATH=$MPF_HOME/share/logs
 ENV THIS_MPF_NODE=node_manager
 ENV MASTER_MPF_NODE=workflow_manager
 ENV MAIL=/var/spool/mail/mpf
-ENV PATH=$PATH:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin:/home/mpf/.local/bin:/home/mpf/bin:/usr/bin/
+ENV PATH=$PATH:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin:$MPF_HOME/bin:/usr/bin/
 ENV JAVA_HOME=/usr/bin/java
 ENV HOME=/home/mpf
 ENV LOGNAME=mpf
@@ -152,7 +154,7 @@ ENV LOGNAME=mpf
 # TODO: This shouldn't be needed, but for some reason the node-manager script is
 #   not able to see the ENV variables
 RUN echo "export JAVA_HOME=/usr" >> /etc/profile.d/mpf.sh && \
-    echo "export MPF_HOME=/opt/mpf" >> /etc/profile.d/mpf.sh && \
+    echo "export MPF_HOME=$MPF_HOME" >> /etc/profile.d/mpf.sh && \
     echo "export USER=root" >> /etc/profile.d/mpf.sh && \
     echo "export THIS_MPF_NODE=node_manager" >> /etc/profile.d/mpf.sh && \
     echo "export MASTER_MPF_NODE=workflow_manager" >> /etc/profile.d/mpf.sh && \

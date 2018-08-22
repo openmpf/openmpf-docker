@@ -101,7 +101,7 @@ RUN mkdir -p /apps/source/ansible_sources && cd /apps/source/ansible_sources && 
 
 # Copy files from the build image:
 COPY --from=mpf_build /apps/install/bin/ffmpeg /apps/install/bin/ffprobe \
-     /apps/install/bin/ffserver /opt/mpf/bin/ffmpeg/
+     /apps/install/bin/ffserver $MPF_HOME/bin/
 COPY --from=mpf_build /etc/ld.so.conf.d/ /etc/ld.so.conf.d/
 COPY --from=mpf_build /opt/apache-tomcat/ /opt/apache-tomcat/
 COPY --from=mpf_build /home/mpf/openmpf-projects/openmpf/trunk/ansible/ \
@@ -116,11 +116,6 @@ COPY --from=mpf_build /home/mpf/openmpf-projects/openmpf/mpf-component-build/plu
 # Extract tar.gz (using tar xzf) components to $MPF_HOME/plugins:
 RUN mkdir $MPF_HOME/plugins && cd $MPF_HOME/plugins && \
     for file in $MPF_HOME/share/components/*.tar.gz; do tar xzf "$file"; done
-
-# Link FFmpeg:
-RUN ln -s /opt/mpf/bin/ffmpeg/ffmpeg /usr/bin/ffmpeg && \
-    ln -s /opt/mpf/bin/ffmpeg/ffserver /usr/bin/ffserver && \
-    ln -s /opt/mpf/bin/ffmpeg/ffprobe /usr/bin/ffprobe
 
 RUN ldconfig
 
@@ -140,6 +135,7 @@ ENV MPF_LOG_PATH=$MPF_HOME/share/logs
 ENV THIS_MPF_NODE=workflow_manager
 ENV CORE_MPF_NODES=node_manager
 ENV LD_LIBRARY_PATH=/usr/lib64:$MPF_HOME/lib
+ENV PATH=$PATH:$MPF_HOME/bin
 ENV CATALINA_OPTS="-server -Xms256m -XX:PermSize=512m -XX:MaxPermSize=512m -Duser.country=US -Djava.library.path=$MPF_HOME/lib -Dtransport.guarantee='NONE' -Dweb.rest.protocol='http'"
 
 RUN echo '[mpf-master]' >> /etc/ansible/hosts && \
