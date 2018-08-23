@@ -64,6 +64,26 @@ Once it is complete, you can run the project using:
 - `docker-compose build`
 - `docker-compose up`
 
+### (Optional) Add GPU support with NVIDIA CUDA
+To run OpenMPF components that use the NVIDIA GPUs, you must
+ensure that the host OS of the GPU machine has version 9.1 or higher of the
+NVIDIA GPU drivers installed. To install the drivers, please see the full
+instructions [here](https://docs.nvidia.com/cuda/cuda-installation-guide-linux/index.html).
+
+Once you have the drivers installed on the host OS, you need to install the
+NVIDIA Docker runtime. Follow
+[this](https://github.com/NVIDIA/nvidia-docker/blob/master/README.md)
+installation guide.
+
+Now that you have both of those installed, you can specify the `runtime: nvidia`
+flag for the node manager container. This can be done by uncommenting the flag
+in the [docker-compose.yml](docker-compose.yml) file.
+
+After you launch OpenMPF with the NVIDIA runtime specified, you need to login
+and go to the Properties page under Configuration in the top menu bar, then set
+the `detection.cuda.device.id property` to 0, or the CUDA index of your GPU
+device.
+
 ## Project Website
 
 For more information about OpenMPF, including documentation, guides, and other material, visit our  [website](https://openmpf.github.io/).
