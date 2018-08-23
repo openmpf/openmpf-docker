@@ -122,24 +122,24 @@ RUN ldconfig
 # Configure Environment Variables                                              #
 ################################################################################
 
-ENV ACTIVE_MQ_HOST=activemq
+ENV ACTIVE_MQ_HOST=mpf_activemq
 ENV ACTIVE_MQ_BROKER_URI=failover://(tcp://$ACTIVE_MQ_HOST:61616)?jms.prefetchPolicy.all=1&startupMaxReconnectAttempts=1
-ENV MYSQL_HOST=mysql_database
-ENV JGROUPS_TCP_ADDRESS=workflow_manager
+ENV MYSQL_HOST=mpf_mysql_database
+ENV JGROUPS_TCP_ADDRESS=mpf_workflow_manager
 ENV JGROUPS_TCP_PORT=7800
 ENV JGROUPS_FILE_PING_LOCATION=$MPF_HOME/share/nodes
 ENV no_proxy=localhost
 ENV MPF_USER=mpf
 ENV MPF_LOG_PATH=$MPF_HOME/share/logs
-ENV THIS_MPF_NODE=workflow_manager
-ENV CORE_MPF_NODES=node_manager
+ENV THIS_MPF_NODE=mpf_workflow_manager
+ENV CORE_MPF_NODES=mpf_node_manager
 ENV LD_LIBRARY_PATH=/usr/lib64:$MPF_HOME/lib
 ENV CATALINA_OPTS="-server -Xms256m -XX:PermSize=512m -XX:MaxPermSize=512m -Duser.country=US -Djava.library.path=$MPF_HOME/lib -Dtransport.guarantee='NONE' -Dweb.rest.protocol='http'"
 
 RUN echo '[mpf-master]' >> /etc/ansible/hosts; \
     echo $THIS_MPF_NODE >> /etc/ansible/hosts; \
     echo '' >> /etc/ansible/hosts; echo '[mpf-child]' >> /etc/ansible/hosts; \
-    echo "node_manager" >> /etc/ansible/hosts
+    echo "$CORE_MPF_NODES" >> /etc/ansible/hosts
 
 EXPOSE 8080
 RUN echo "rm -f $MPF_HOME/share/nodes/MPF_Channel/*workflow_manager*.list && /opt/apache-tomcat/bin/catalina.sh run" > /home/run.sh

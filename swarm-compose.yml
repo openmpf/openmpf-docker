@@ -2,7 +2,6 @@ version: '3.3'
 services:
   mysql_database:
     image: mariadb:latest
-    restart: always
     environment:
       - MYSQL_ROOT_PASSWORD=password
       - MYSQL_DATABASE=mpf
@@ -11,46 +10,40 @@ services:
     volumes:
       - mysql-data:/var/lib/mysql
     ports:
-      - 3306:3306
+      - "3306:3306"
 
   activemq:
-    image: <repository_url>/<username>/mpf_active_mq
-    restart: always
+    image: openmpf_docker_active_mq
     ports:
-      - 61616:61616
-      - 1099:1099
-    restart: always
+      - "61616:61616"
+      - "1099:1099"
 
   redis:
     image: redis
     ports:
-      - 6379:6379
-    restart: always
+      - "6379:6379"
 
   workflow_manager:
-    image: <repository_url>/<username>/mpf_workflow_manager:latest
+    image: openmpf_docker_workflow_manager:latest
     depends_on:
       - mysql
-    restart: always
     ports:
-      - 8080:8080
-      - 7801:7801
+      - "8080:8080"
+      - "7801:7801"
     volumes:
       - mpf-data:/opt/mpf/share
     # deploy:
     #   placement:
     #     constraints:
-    #       - node.role == manager
-    #       - engine.labels.operatingsystem == ubuntu 14.04
+    #       - engine.labels.gpu == 1
     #     preferences:
     #       - spread: node.labels.zone
 
   node_manager:
-    image: <repository_url>/<username>/mpf_node_manager:latest
-    restart: always
+    image: openmpf_docker_node_manager:latest
     ports:
-      - 80:80
-      - 7800:7800
+      - "80:80"
+      - "7800:7800"
     volumes:
       - mpf-data:/opt/mpf/share
     deploy:
@@ -60,3 +53,6 @@ services:
 volumes:
   mpf-data:
   mysql-data:
+
+networks:
+  mpf_default:

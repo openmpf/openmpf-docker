@@ -118,17 +118,17 @@ RUN ln -s /apps/install/bin/ffmpeg /usr/bin/ffmpeg
 # Configure Environment Variables                                              #
 ################################################################################
 
-ENV ACTIVE_MQ_HOST=activemq
+ENV ACTIVE_MQ_HOST=mpf_activemq
 ENV ACTIVE_MQ_BROKER_URI=failover://(tcp://$ACTIVE_MQ_HOST:61616)?jms.prefetchPolicy.all=1&startupMaxReconnectAttempts=1
-ENV MYSQL_HOST=mysql_database
-ENV JGROUPS_TCP_ADDRESS=workflow_manager
+ENV MYSQL_HOST=mpf_mysql_database
+ENV THIS_MPF_NODE=mpf_node_manager
+ENV JGROUPS_TCP_ADDRESS=$THIS_MPF_NODE
 ENV JGROUPS_TCP_PORT=7800
 ENV JGROUPS_FILE_PING_LOCATION=$MPF_HOME/share/nodes
-ENV no_proxy=localhost,node_manager
+ENV no_proxy=localhost,$THIS_MPF_NODE
 ENV MPF_USER=root
 ENV MPF_LOG_PATH=$MPF_HOME/share/logs
-ENV THIS_MPF_NODE=node_manager
-ENV MASTER_MPF_NODE=workflow_manager
+ENV MASTER_MPF_NODE=mpf_workflow_manager
 ENV MAIL=/var/spool/mail/mpf
 ENV PATH=$PATH:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin:/home/mpf/.local/bin:/home/mpf/bin:/usr/bin/
 ENV JAVA_HOME=/usr/bin/java
@@ -138,13 +138,13 @@ ENV LOGNAME=mpf
 # TODO: This shouldn't be needed, but for some reason the node-manager script is
 #   not able to see the ENV variables:
 RUN echo "export JAVA_HOME=/usr" >> /etc/profile.d/mpf.sh; \
-    echo "export MPF_HOME=/opt/mpf" >> /etc/profile.d/mpf.sh; \
+    echo "export MPF_HOME=$MPF_HOME" >> /etc/profile.d/mpf.sh; \
     echo "export USER=root" >> /etc/profile.d/mpf.sh; \
-    echo "export THIS_MPF_NODE=node_manager" >> /etc/profile.d/mpf.sh; \
-    echo "export MASTER_MPF_NODE=workflow_manager" >> /etc/profile.d/mpf.sh; \
-    echo "export MPF_LOG_PATH=$MPF_HOME/share/logs" >> /etc/profile.d/mpf.sh; \
-    echo "export JGROUPS_TCP_ADDRESS=node_manager" >> /etc/profile.d/mpf.sh; \
-    echo "export JGROUPS_FILE_PING_LOCATION=$MPF_HOME/share/nodes" >> /etc/profile.d/mpf.sh;
+    echo "export THIS_MPF_NODE=$THIS_MPF_NODE" >> /etc/profile.d/mpf.sh; \
+    echo "export MASTER_MPF_NODE=$MASTER_MPF_NODE" >> /etc/profile.d/mpf.sh; \
+    echo "export MPF_LOG_PATH=$MPF_LOG_PATH" >> /etc/profile.d/mpf.sh; \
+    echo "export JGROUPS_TCP_ADDRESS=$JGROUPS_TCP_ADDRESS" >> /etc/profile.d/mpf.sh; \
+    echo "export JGROUPS_FILE_PING_LOCATION=$JGROUPS_FILE_PING_LOCATION" >> /etc/profile.d/mpf.sh
 
-ENTRYPOINT ["/bin/bash","-c","rm -f $MPF_HOME/share/nodes/MPF_Channel/*node_manager*.list && $MPF_HOME/libexec/node-manager start && touch $MPF_HOME/share/logs/node_manager/log/node-manager.log && tail -f $MPF_HOME/share/logs/node_manager/log/node-manager.log"]
+ENTRYPOINT ["/bin/bash","-c","rm -f $MPF_HOME/share/nodes/MPF_Channel/*node_manager*.list && $MPF_HOME/libexec/node-manager start && touch $MPF_HOME/share/logs/$THIS_MPF_NODE/log/node-manager.log && tail -f $MPF_HOME/share/logs/$THIS_MPF_NODE/log/node-manager.log"]
 # CMD ["/bin/bash"]
