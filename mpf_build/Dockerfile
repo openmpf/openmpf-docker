@@ -41,7 +41,7 @@ RUN yum update -y && yum clean all
 # Create the "mpf" user:
 RUN useradd -d /home/mpf -ms /bin/bash -g wheel -p mpf mpf
 
-ENV MPF_HOME=/home/mpf/git/openmpf-projects/openmpf/trunk/install
+ENV MPF_HOME=/home/mpf/openmpf-projects/openmpf/trunk/install
 
 # Create directories for sources:
 RUN mkdir -p /apps/install/lib && mkdir -p /apps/bin/apache && \
@@ -64,7 +64,8 @@ RUN yum install -y git python-pip python-devel python-setuptools file \
     python-setuptools-devel gcc gcc-c++ make autoconf automake \
     libtool yasm nasm bzip2 cmake3 numpy perl-File-Find-Rule which \
     libffi-devel openssl-devel apr apr-util apr-util-ldap log4cxx \
-    log4cxx-devel qt qt-devel qt-x11 boost boost-devel wget && yum clean all
+    log4cxx-devel qt qt-devel qt-x11 boost boost-devel wget dos2unix && \
+    yum clean all
 
 # Install Python dependencies:
 RUN pip install --upgrade pip && pip install wheel virtualenv
@@ -382,11 +383,14 @@ RUN mkdir -p /apps/source/cuda && cd /apps/source/cuda && \
     /etc/ld.so.conf.d/mpf-x86_64.conf
 
 ################################################################################
-# Clone the OpenMPF Repository                                                 #
+# Copy the OpenMPF Repository                                                  #
 ################################################################################
 
 # NOTE: This will change the most often so it should  be as far down in the Dockerfile as possible.
 COPY openmpf-projects /home/mpf/openmpf-projects
+
+# Make sure the source code line endings are correct if copying the source from a Windows host.
+RUN cd /home/mpf/openmpf-projects && find . -type f -exec dos2unix {} \;
 
 # Install OpenMPF command line tools:
 RUN pip install /home/mpf/openmpf-projects/openmpf/trunk/bin/mpf-scripts
