@@ -134,11 +134,11 @@ RUN mkdir -p $MPF_HOME/share/logs/node_manager/ && chown mpf $MPF_HOME/share/log
 # Configure Environment Variables                                              #
 ################################################################################
 
-ENV ACTIVE_MQ_HOST=mpf_activemq
+ENV ACTIVE_MQ_HOST=activemq
 ENV ACTIVE_MQ_BROKER_URI=failover://(tcp://$ACTIVE_MQ_HOST:61616)?jms.prefetchPolicy.all=1&startupMaxReconnectAttempts=1
 ENV MYSQL_HOST=mpf_mysql_database
 ENV THIS_MPF_NODE=mpf_node_manager
-ENV JGROUPS_TCP_ADDRESS=$THIS_MPF_NODE
+ENV JGROUPS_TCP_ADDRESS=site_local,match-interface:eth0:10.0.*
 ENV JGROUPS_TCP_PORT=7800
 ENV JGROUPS_FILE_PING_LOCATION=$MPF_HOME/share/nodes
 ENV no_proxy=localhost,$THIS_MPF_NODE

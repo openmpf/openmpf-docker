@@ -123,16 +123,16 @@ RUN ldconfig
 # Configure Environment Variables                                              #
 ################################################################################
 
-ENV ACTIVE_MQ_HOST=mpf_activemq
+ENV ACTIVE_MQ_HOST=activemq
 ENV ACTIVE_MQ_BROKER_URI=failover://(tcp://$ACTIVE_MQ_HOST:61616)?jms.prefetchPolicy.all=1&startupMaxReconnectAttempts=1
 ENV MYSQL_HOST=mpf_mysql_database
-ENV JGROUPS_TCP_ADDRESS=mpf_workflow_manager
+ENV THIS_MPF_NODE=mpf_workflow_manager
+ENV JGROUPS_TCP_ADDRESS=site_local,match-interface:eth0:10.0.*
 ENV JGROUPS_TCP_PORT=7800
 ENV JGROUPS_FILE_PING_LOCATION=$MPF_HOME/share/nodes
 ENV no_proxy=localhost
 ENV MPF_USER=mpf
 ENV MPF_LOG_PATH=$MPF_HOME/share/logs
-ENV THIS_MPF_NODE=mpf_workflow_manager
 ENV CORE_MPF_NODES=mpf_node_manager
 ENV LD_LIBRARY_PATH=/usr/lib64:$MPF_HOME/lib
 ENV PATH=$PATH:$MPF_HOME/bin
