@@ -156,11 +156,11 @@ ENV LOGNAME=mpf
 RUN echo "export JAVA_HOME=/usr" >> /etc/profile.d/mpf.sh; \
     echo "export MPF_HOME=$MPF_HOME" >> /etc/profile.d/mpf.sh; \
     echo "export USER=root" >> /etc/profile.d/mpf.sh; \
-    echo "export THIS_MPF_NODE=$THIS_MPF_NODE" >> /etc/profile.d/mpf.sh; \
+    # echo "export THIS_MPF_NODE=$THIS_MPF_NODE" >> /etc/profile.d/mpf.sh; \
     echo "export MASTER_MPF_NODE=$MASTER_MPF_NODE" >> /etc/profile.d/mpf.sh; \
-    echo "export MPF_LOG_PATH=$MPF_LOG_PATH" >> /etc/profile.d/mpf.sh; \
+    # echo "export MPF_LOG_PATH=$MPF_LOG_PATH" >> /etc/profile.d/mpf.sh; \
     echo "export JGROUPS_TCP_ADDRESS=$JGROUPS_TCP_ADDRESS" >> /etc/profile.d/mpf.sh; \
     echo "export JGROUPS_FILE_PING_LOCATION=$JGROUPS_FILE_PING_LOCATION" >> /etc/profile.d/mpf.sh
 
-ENTRYPOINT ["/bin/bash","-c","rm -f $MPF_HOME/share/nodes/MPF_Channel/*node_manager*.list && $MPF_HOME/libexec/node-manager start && touch $MPF_HOME/share/logs/$THIS_MPF_NODE/log/node-manager.log && tail -f $MPF_HOME/share/logs/$THIS_MPF_NODE/log/node-manager.log"]
+ENTRYPOINT ["/bin/bash","-c","rm -f $MPF_HOME/share/nodes/MPF_Channel/*node_manager*.list && echo \"export THIS_MPF_NODE=${THIS_MPF_NODE}_id_${HOSTNAME}\" >> /etc/profile.d/mpf.sh && $MPF_HOME/libexec/node-manager start && touch ${MPF_LOG_PATH}/${THIS_MPF_NODE}_id_${HOSTNAME}/log/node-manager.log && tail -f ${MPF_LOG_PATH}/${THIS_MPF_NODE}_id_${HOSTNAME}/log/node-manager.log"]
 # CMD ["/bin/bash"]

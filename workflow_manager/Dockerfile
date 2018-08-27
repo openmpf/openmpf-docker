@@ -125,7 +125,7 @@ RUN ldconfig
 
 ENV ACTIVE_MQ_HOST=activemq
 ENV ACTIVE_MQ_BROKER_URI=failover://(tcp://$ACTIVE_MQ_HOST:61616)?jms.prefetchPolicy.all=1&startupMaxReconnectAttempts=1
-ENV MYSQL_HOST=mpf_mysql_database
+ENV MYSQL_HOST=mysql_database
 ENV THIS_MPF_NODE=mpf_workflow_manager
 ENV JGROUPS_TCP_ADDRESS=site_local,match-interface:eth0:10.0.*
 ENV JGROUPS_TCP_PORT=7800
@@ -144,5 +144,6 @@ RUN echo '[mpf-master]' >> /etc/ansible/hosts; \
     echo "$CORE_MPF_NODES" >> /etc/ansible/hosts
 
 EXPOSE 8080
+# TODO implement wait for mysql script
 RUN echo "rm -f $MPF_HOME/share/nodes/MPF_Channel/*workflow_manager*.list && /opt/apache-tomcat/bin/catalina.sh run" > /home/run.sh
 ENTRYPOINT ["sh", "/home/run.sh"]

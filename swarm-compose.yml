@@ -7,26 +7,33 @@ services:
       - MYSQL_DATABASE=mpf
       - MYSQL_USER=mpf
       - MYSQL_PASSWORD=mpf
+    command: [
+      '--wait_timeout=28800',
+    ]
     volumes:
       - mysql-data:/var/lib/mysql
     ports:
       - "3306:3306"
 
   activemq:
-    image: openmpf_docker_active_mq
+    image: openmpf_docker_active_mq:latest
+    # image: <repository_address>:5000/<user>/openmpf_docker_active_mq:latest
     ports:
       - "61616:61616"
       - "1099:1099"
 
   redis:
-    image: redis
+    image: redis:latest
     ports:
       - "6379:6379"
 
   workflow_manager:
     image: openmpf_docker_workflow_manager:latest
+    # image: <repository_address>:5000/<user>/openmpf_docker_workflow_manager:latest
     depends_on:
       - mysql
+    environment:
+      - MYSQL_HOST=mpf_mysql_database
     ports:
       - "8080:8080"
       - "7801:7801"
@@ -41,6 +48,7 @@ services:
 
   node_manager:
     image: openmpf_docker_node_manager:latest
+    # image: <repository_address>:5000/<user>/openmpf_docker_node_manager:latest
     ports:
       - "80:80"
       - "7800:7800"
@@ -48,7 +56,7 @@ services:
       - mpf-data:/opt/mpf/share
     deploy:
       mode: replicated
-      replicas: 1
+      replicas: 2
 
 volumes:
   mpf-data:
