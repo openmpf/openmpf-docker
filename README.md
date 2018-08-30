@@ -100,10 +100,10 @@ device.
 
 ### (Optional) Docker Swarm Deployment
 OpenMPF can be deployed in a distributed environment if you would like to take
-advantage of running the project and scheduling jobs across multiple hosts. The
+advantage of running the project, and scheduling jobs, across multiple hosts. The
 simplest way to do this is to set up a Docker Swarm deployment. If you would
 like a walkthrough on how to do that, please see the
-[Swarm deployment guide](SWARM.md)
+[Swarm deployment guide](SWARM.md).
 
 ## Project Website
 
