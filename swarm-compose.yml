@@ -16,8 +16,8 @@ services:
       - "3306:3306"
 
   activemq:
-    image: openmpf_docker_active_mq:latest
-    # image: <repository_address>:5000/<user>/openmpf_docker_active_mq:latest
+    # image: openmpf_docker_active_mq:latest # use for local testing
+    image: <repository_address>:5000/<user>/openmpf_docker_active_mq:latest
     ports:
       - "61616:61616"
       - "1099:1099"
@@ -28,10 +28,8 @@ services:
       - "6379:6379"
 
   workflow_manager:
-    image: openmpf_docker_workflow_manager:latest
-    # image: <repository_address>:5000/<user>/openmpf_docker_workflow_manager:latest
-    depends_on:
-      - mysql
+    # image: openmpf_docker_workflow_manager:latest # use for local testing
+    image: <repository_address>:5000/<user>/openmpf_docker_workflow_manager:latest
     environment:
       - MYSQL_HOST=mpf_mysql_database
     ports:
@@ -39,16 +37,10 @@ services:
       - "7801:7801"
     volumes:
       - mpf-data:/opt/mpf/share
-    # deploy:
-    #   placement:
-    #     constraints:
-    #       - engine.labels.gpu == 1
-    #     preferences:
-    #       - spread: node.labels.zone
 
   node_manager:
-    image: openmpf_docker_node_manager:latest
-    # image: <repository_address>:5000/<user>/openmpf_docker_node_manager:latest
+    # image: openmpf_docker_node_manager:latest # use for local testing
+    image: <repository_address>:5000/<user>/openmpf_docker_node_manager:latest
     ports:
       - "80:80"
       - "7800:7800"
@@ -57,6 +49,11 @@ services:
     deploy:
       mode: replicated
       replicas: 2
+  #   placement:
+  #     constraints:
+  #       - engine.labels.gpu == 1
+  #     preferences:
+  #       - spread: node.labels.zone
 
 volumes:
   mpf-data:
