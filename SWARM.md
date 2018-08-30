@@ -67,7 +67,7 @@ are many other volume drivers that you can explore (i.e. REX-Ray).
 This guide will be showing how to do a deployment with NFS.
 - `docker volume create --driver local --opt type=nfs --opt o=addr=<address of \
 file share server>,rw --opt device=:<path to mounted share> \
-<stack name>_<name of volume>`
+mpf_mpf-data`
 
 ### Deploy the stack to the swarm and watch the services come up.
 

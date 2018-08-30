@@ -43,22 +43,35 @@ This repository contains code for the OpenMPF Dockerfiles and related files.
 
 ### Install and Configure Docker
 
-Download and install Docker for your OS [here](https://www.docker.com/community-edition#/download).
+Download and install Docker for your OS
+[here](https://www.docker.com/community-edition#/download).
 
-We recommend that you allocate extra system resources to Docker before executing the build steps. This is especially important because the build requires a large amount of memory and will likely fail if it does not have enough. We recommend that you allocate the Docker daemon 4 CPU cores, 10240 MB (10 GB) of memory (you may be able to get away with less but this is what we have been successful with), and 4096 MB (4 GB) of disk swap space.
+We recommend that you allocate extra system resources to Docker before executing
+the build steps. This is especially important because the build requires a large
+amount of memory and will likely fail if it does not have enough. We recommend
+that you allocate the Docker daemon 4 CPU cores, 10240 MB (10 GB) of memory
+(you may be able to get away with less but this is what we have been successful
+with), and 4096 MB (4 GB) of disk swap space.
 
 ### Build and Run the OpenMPF Containers
 
 Clone the [openmpf-docker repository](https://github.com/openmpf/openmpf-docker):
 - `git clone https://github.com/openmpf/openmpf-docker.git`
 
-Download the most recent Oracle Java SE JDK 8 64-bit Linux RPM from [here](http://www.oracle.com/technetwork/java/javase/downloads/index.html). If it's not listed there, check [here](http://www.oracle.com/technetwork/java/javase/downloads/java-archive-javase8-2177648.html). Place the file in the mpf_build/ directory. The file should be named jdk-8u144-linux-x64.rpm, or something similar where "8u144" is a different version number. Do not download Java SE 9 or 10.
+Download the most recent Oracle Java SE JDK 8 64-bit Linux RPM from [here](http://www.oracle.com/technetwork/java/javase/downloads/index.html). If
+it's not listed there, check
+[here](http://www.oracle.com/technetwork/java/javase/downloads/java-archive-javase8-2177648.html).
+Place the file in the mpf_build/ directory. The file should be named
+`jdk-8u144-linux-x64.rpm`, or something similar where "8u144" is a different
+version number. Do not download Java SE 9 or 10.
 
-Once cloned, you can run the following command to build the OpenMPF project inside a docker container tagged as
+Once cloned, you can run the following command to build the OpenMPF project
+inside a docker container tagged as
 `mpf_build:latest`:
 - `docker build mpf_build/ -t mpf_build:latest`
 
-Note that it can take 1.5 - 2 hours for this command to complete if you're starting from scratch.
+Note that it can take 1.5 - 2 hours for this command to complete if you're
+starting from scratch.
 
 Once it is complete, you can run the project using:
 - `docker-compose build`
@@ -68,7 +81,8 @@ Once it is complete, you can run the project using:
 To run OpenMPF components that use the NVIDIA GPUs, you must
 ensure that the host OS of the GPU machine has version 9.1 or higher of the
 NVIDIA GPU drivers installed. To install the drivers, please see the full
-instructions [here](https://docs.nvidia.com/cuda/cuda-installation-guide-linux/index.html).
+instructions
+[here](https://docs.nvidia.com/cuda/cuda-installation-guide-linux/index.html).
 
 Once you have the drivers installed on the host OS, you need to install the
 NVIDIA Docker runtime. Follow
@@ -83,6 +97,13 @@ After you launch OpenMPF with the NVIDIA runtime specified, you need to login
 and go to the Properties page under Configuration in the top menu bar, then set
 the `detection.cuda.device.id property` to 0, or the CUDA index of your GPU
 device.
+
+### (Optional) Docker Swarm Deployment
+OpenMPF can be deployed in a distributed environment if you would like to take
+advantage of running the project and scheduling jobs across multiple hosts. The
+simplest way to do this is to set up a Docker Swarm deployment. If you would
+like a walkthrough on how to do that, please see the
+[Swarm deployment guide](SWARM.md)
 
 ## Project Website
 
