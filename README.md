@@ -53,7 +53,7 @@ that you allocate the Docker daemon 4 CPU cores, 10240 MB (10 GB) of memory
 (you may be able to get away with less but this is what we have been successful
 with), and 4096 MB (4 GB) of disk swap space.
 
-### Build and Run the OpenMPF Containers
+### Build the OpenMPF Docker Images
 
 Clone the [openmpf-docker repository](https://github.com/openmpf/openmpf-docker):
 - `git clone https://github.com/openmpf/openmpf-docker.git`
@@ -66,18 +66,22 @@ Place the file in the mpf_build/ directory. The file should be named
 version number. Do not download Java SE 9 or 10.
 
 Once cloned, you can run the following command to build the OpenMPF project
-inside a docker container tagged as
+inside a Docker container tagged as
 `mpf_build:latest`:
 - `docker build mpf_build/ -t mpf_build:latest`
 
 Note that it can take 1.5 - 2 hours for this command to complete if you're
 starting from scratch.
 
-Once it is complete, you can run the project using:
 - `docker-compose build`
+
+## Run OpenMPF using Docker Compose
+
+Once the images are built, you can run OpenMPF using:
 - `docker-compose up`
 
 ### (Optional) Add GPU support with NVIDIA CUDA
+
 To run OpenMPF components that use the NVIDIA GPUs, you must
 ensure that the host OS of the GPU machine has version 9.1 or higher of the
 NVIDIA GPU drivers installed. To install the drivers, please see the full
@@ -99,10 +103,11 @@ the `detection.cuda.device.id property` to 0, or the CUDA index of your GPU
 device.
 
 ### (Optional) Docker Swarm Deployment
+
 OpenMPF can be deployed in a distributed environment if you would like to take
-advantage of running the project, and scheduling jobs, across multiple hosts. The
-simplest way to do this is to set up a Docker Swarm deployment. If you would
-like a walkthrough on how to do that, please see the
+advantage of running the project, and scheduling jobs, across multiple physical
+or virtual machines. The simplest way to do this is to set up a Docker Swarm
+deployment. If you would like a walkthrough on how to do that, please see the
 [Swarm deployment guide](SWARM.md).
 
 ## Project Website

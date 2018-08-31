@@ -1,61 +1,83 @@
-# Deploying OpenMPF With Docker Swarm
+# Deploying OpenMPF with Docker Swarm
+
+## Do I need Swarm Deployment?
+
+If you would like to run OpenMPF across multiple physical or virtual machines
+then we recommend following this guide to setup a
+[Docker Swarm](https://docs.docker.com/engine/swarm/) deployment. Instead, if
+you would like to run OpenMPF on one machine, for example, to quickly test out
+the software, then we recommend running `docker compose up` as explained in the
+[README](README.md).
 
 ## Prerequisites
-- A cluster of machine running the docker daemon.
 
-- The client and daemon API must both be at least 1.24 to use this command.
-Use the `docker version` command on the client to check your client and daemon
-API versions.
+- A cluster of machines running the docker daemon. The client and daemon
+(server) API must both be at least 1.24. Use the `docker version` command to
+check your client and daemon API versions. See the [Install and Configure
+Docker](README.md#install-and-configure-docker) section in the README.
 
-- A Docker registry that is accessible by each machine that you plan to join to
-the swarm. There are many offering for docker registries. Including public
-cloud-hosted registries, private cloud-hosted registries, or self-hosted
-registries. Feel free to pick the solution that works best for you, but please
-note that if you choose to host any images on a public registry, you accept
-responsibility for the usage of those images.
+- A [Docker registry](https://docs.docker.com/registry/) that is accessible by
+each machine that you plan to join to
+the swarm. There are many offerings for docker registries, including public
+cloud-hosted registries, such as [Docker Hub](https://hub.docker.com/),
+private cloud-hosted registries, or
+[self-hosted registries](https://github.com/docker/distribution).
+Feel free to pick the solution that works best for you, but please note that if
+you choose to host any images on a public registry, you accept responsibility
+for the usage of those images.
 
 ## Set Up The Swarm Cluster
 
-### Initialize the swarm on the docker machine that you wish to act as the manager node.
+### Initialize the Swarm Cluster
 
-This manager node is where you will be able to deploy and manager the stack
-from.
+Choose a machine that you wish to act as the manager node. You will be able to
+deploy and manager the stack from this node. Run the following command on that
+node:
 - `docker stack init`
 
-### Join the other nodes to the swarm cluster.
-After you run swarm init, you should see an output that looks like the follow.
+### Join other machines to the Swarm Cluster
+
+After you run init command above, you should see an output that looks like the
+following:
+
+```
+docker swarm join
+    --token <token>
+    <manager ip address>:2377
+```
+
 Copy that command and run it on each machine that you want to be a part of the
-cluster.
-`docker swarm join \
-    --token <token> \
-    <manager ip address>:2377`
+swarm cluster.
 
-## Build and Push The Images
+## Build and Push the OpenMPF Docker Images
 
-### Build the images using this repository.
-Next you can build the OpenMPF Docker images on the machine that you cloned
-this repository on.
-If you have not already done so, see the "Install and Configure Docker"
-in the [README](README.md) for information on how to prepare the project to be
-build. Note that you only do this once since you will be pushing the images to a
-central repository.
-`docker-compose build`
+If you have not already done so, build the OpenMPF Docker images on the machine
+that you used to clone the openmpf-docker repository by following the
+steps in the [Build the OpenMPF Docker Images](README.md#build-the-openmpf-docker-images)
+section in the README.
 
-### Login to the repository.
-`docker login`
+Log into the Docker registry:
 
-** IMPORTANT the tag must match the tag that is used in the swarm-compose.yml
-file. The naming convention is as follows:
-<repository_address>:5000/<user>/<image_name>:latest
+- `docker login <server>:<port>`
 
-- `docker tag` (follow how they look in swarm-compose.yml fie)
+Note that the `<server>:<port>` part is optional. If omitted, you will try to
+log into the [Docker Hub](https://hub.docker.com/). Use the appropriate server hostname and port number for your Docker registry.
 
-- change the image names in swarm-compose.yml file.
+Next, tag the images you built:
 
-- `docker-compose -f swarm-compose.yml push` \
-    (if registry is specified in compose file)
+- `docker tag openmpf_active_mq <server>:<port>/<user>/openmpf_active_mq:latest`
+- `docker tag openmpf_docker_workflow_manager <server>:<port>/<user>/openmpf_docker_workflow_manager:latest`
+- `docker tag openmpf_docker_node_manager <server>:<port>/<user>/openmpf_docker_node_manager:latest`
 
-## Deploy To the Swarm
+Use the appropriate server hostname, port number, and username for your Docker registry.
+
+Change the image names in the swarm-compose.yml file to match your tags.
+
+Next, push the images to the Docker registry:
+
+- `docker-compose -f swarm-compose.yml push`
+
+## Deploy to the Swarm Cluster
 
 ### Setup up a volume driver to keep the volumes in sync between swarm nodes.
 
