@@ -33,7 +33,7 @@ for the usage of those images.
 Choose a machine that you wish to act as the manager node. You will be able to
 deploy and manager the stack from this node. Run the following command on that
 node:
-- `docker stack init`
+- `docker swarm init`
 
 ### Join other machines to the Swarm Cluster
 
@@ -41,8 +41,8 @@ After you run init command above, you should see an output that looks like the
 following:
 
 ```
-docker swarm join
-    --token <token>
+docker swarm join \
+    --token <token> \
     <manager ip address>:2377
 ```
 
@@ -58,18 +58,18 @@ section in the README.
 
 Log into the Docker registry:
 
-- `docker login <server>:<port>`
+- `docker login <registry_host>:<registry_port>`
 
-Note that the `<server>:<port>` part is optional. If omitted, you will try to
-log into the [Docker Hub](https://hub.docker.com/). Use the appropriate server hostname and port number for your Docker registry.
+Note that the `<registry_host>:<registry_port>` part is optional. If omitted, you will try to
+log into the [Docker Hub](https://hub.docker.com/). Use the appropriate hostname and port number for your Docker registry.
 
 Next, tag the images you built:
 
-- `docker tag openmpf_active_mq <server>:<port>/<user>/openmpf_active_mq:latest`
-- `docker tag openmpf_docker_workflow_manager <server>:<port>/<user>/openmpf_docker_workflow_manager:latest`
-- `docker tag openmpf_docker_node_manager <server>:<port>/<user>/openmpf_docker_node_manager:latest`
+- `docker tag openmpf_active_mq <registry_host>:<registry_port>/<user>/openmpf_active_mq:latest`
+- `docker tag openmpf_docker_workflow_manager <registry_host>:<registry_port>/<user>/openmpf_docker_workflow_manager:latest`
+- `docker tag openmpf_docker_node_manager <registry_host>:<registry_port>/<user>/openmpf_docker_node_manager:latest`
 
-Use the appropriate server hostname, port number, and username for your Docker registry.
+Use the appropriate hostname, port number, and username for your Docker registry.
 
 Change the image names in the swarm-compose.yml file to match your tags.
 

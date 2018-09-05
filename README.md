@@ -75,7 +75,7 @@ starting from scratch.
 
 - `docker-compose build`
 
-## Run OpenMPF using Docker Compose
+### Run OpenMPF using Docker Compose
 
 Once the images are built, you can run OpenMPF using:
 - `docker-compose up`
