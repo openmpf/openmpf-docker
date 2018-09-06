@@ -56,19 +56,19 @@ that you used to clone the openmpf-docker repository by following the
 steps in the [Build the OpenMPF Docker Images](README.md#build-the-openmpf-docker-images)
 section in the README.
 
-Log into the Docker registry:
+### Log into the Docker registry:
 
-- `docker login <registry_host>:<registry_port>`
+- `docker login -u <username> -p <password> <registry_host>:<registry_port>`
 
-Note that the `<registry_host>:<registry_port>` part is optional. If omitted, you will try to
-log into the [Docker Hub](https://hub.docker.com/). Use the appropriate hostname and port number for your Docker registry.
+Note that the `<registry_host>:<registry_port>` part is optional. If omitted,
+you will try to log into the [Docker Hub](https://hub.docker.com/). Use the
+appropriate hostname and port number for your Docker registry.
 
 Next, tag the images you built:
 
-- `docker tag openmpf_active_mq <registry_host>:<registry_port>/<user>/openmpf_active_mq:latest`
-- `docker tag openmpf_docker_workflow_manager <registry_host>:<registry_port>/<user>/openmpf_docker_workflow_manager:latest`
-- `docker tag openmpf_docker_node_manager <registry_host>:<registry_port>/<user>/openmpf_docker_node_manager:latest`
-
+** IMPORTANT the tag must match the tag that is used in the swarm-compose.yml
+file. The naming convention is as follows:
+<repository_address>:<port>/<user>/<image_name>:latest
 Use the appropriate hostname, port number, and username for your Docker registry.
 
 Change the image names in the swarm-compose.yml file to match your tags.
@@ -88,7 +88,7 @@ you would like to make use of a cloud provider's storage solution, then there
 are many other volume drivers that you can explore (i.e. REX-Ray).
 This guide will be showing how to do a deployment with NFS.
 - `docker volume create --driver local --opt type=nfs --opt o=addr=<address of \
-file share server>,rw --opt device=:<path to mounted share> \
+file share server>,rw --opt device=:<path to share on server> \
 mpf_mpf-data`
 
 ### Deploy the stack to the swarm and watch the services come up.
