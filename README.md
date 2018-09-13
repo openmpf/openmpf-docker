@@ -53,6 +53,15 @@ that you allocate the Docker daemon 4 CPU cores, 10240 MB (10 GB) of memory
 (you may be able to get away with less but this is what we have been successful
 with), and 4096 MB (4 GB) of disk swap space.
 
+Also install the docker-compose command
+
+If you installed Docker for Mac or Docker for Windows, then docker-compose
+should already be included. If you are installing on Linux, you will need to
+follow the instructions found [here](https://docs.docker.com/compose/install/).
+
+Please make sure you have at least `version 1.22.0` installed before continuing.
+To check this, run `docker-compose --version`.
+
 ### Build the OpenMPF Docker Images
 
 Clone the [openmpf-docker repository](https://github.com/openmpf/openmpf-docker):
@@ -79,6 +88,12 @@ starting from scratch.
 
 Once the images are built, you can run OpenMPF using:
 - `docker-compose up`
+
+You can stop the containers pressing ctrl+c and then running
+- `docker-compose stop`
+
+You can also stop and remove all of the containers, and networks by running
+- `docker-compose down`
 
 ### (Optional) Add GPU support with NVIDIA CUDA
 
