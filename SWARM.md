@@ -185,6 +185,29 @@ time. This will be much faster later once the images are downloaded on the
 nodes. If the images are updated, only the changes are downloaded from the
 Docker registry.
 
+#### Monitor the Swarm Services
+
+List all of the services running across all of the nodes in the cluster:
+
+- `docker service ls`
+
+It may take a minute for all of the services to come up. It may be helpful to
+run this command as:
+
+- `watch -n 1 docker service ls`
+
+That will run the command every second. Watch the `REPLICAS` column. Once all
+of the replicas are up, then the stack is ready for use. If one of the replicas
+does not come up, then there is a problem. Press ctrl+c when done.
+
+List the task being executed by each service in the stack:
+
+- `docker stack ps mpf`
+
+Show the containers running on the current node:
+
+- `docker ps`
+
 #### Log into the Workflow Manager and Add Nodes
 
 You can reach the workflow manager using IP address or hostname of any of the
@@ -198,20 +221,6 @@ nodes. You should see that they each end in a unique ID. That number corresponds
 to the ID of the Docker container. The number of node manager containers that
 come up is determined by the `replicas:` field for each service listed in the
 `swarm-compose.yml` file. Feel free to change it if you please.
-
-#### Commands for Monitoring Swarm Services
-
-List all of the services running across all of the nodes in the cluster:
-
-- `docker service ls`
-
-List the task being executed by each service in the stack:
-
-- `docker stack ps mpf`
-
-Show the containers running on the current node:
-
-- `docker ps`
 
 #### Tearing Down the Stack
 
