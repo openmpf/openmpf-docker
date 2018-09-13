@@ -58,7 +58,7 @@ with), and 4096 MB (4 GB) of disk swap space.
 Clone the [openmpf-docker repository](https://github.com/openmpf/openmpf-docker):
 - `git clone https://github.com/openmpf/openmpf-docker.git`
 
-Clone the [openmpf-projects repository](https://github.com/openmpf/openmpf-projects) into the mpf_build directory:
+Clone the [openmpf-projects repository](https://github.com/openmpf/openmpf-projects) into the `mpf_build` directory:
 - `cd openmpf-docker/mpf_build/`
 - `git clone https://github.com/openmpf/openmpf-projects.git --recursive`
 - (Optional) checkout a branch or commit
@@ -66,16 +66,18 @@ Clone the [openmpf-projects repository](https://github.com/openmpf/openmpf-proje
   - `git checkout <branch or commit>`
   - `git submodule update --init`
 
-  Download the most recent Oracle Java SE JDK 8 64-bit Linux RPM from [here](http://www.oracle.com/technetwork/java/javase/downloads/index.html). If
-  it's not listed there, check
-  [here](http://www.oracle.com/technetwork/java/javase/downloads/java-archive-javase8-2177648.html).
-  Place the file in the mpf_build/ directory. The file should be named
-  `jdk-8u144-linux-x64.rpm`, or something similar where "8u144" is a different
-  version number. Do not download Java SE 9 or 10.
+Download the most recent Oracle Java SE JDK 8 64-bit Linux RPM from
+[here](http://www.oracle.com/technetwork/java/javase/downloads/index.html). If
+it's not listed there, check
+[here](http://www.oracle.com/technetwork/java/javase/downloads/java-archive-javase8-2177648.html).
+Place the file in the `mpf_build` directory. The file should be named
+`jdk-8u144-linux-x64.rpm`, or something similar where "8u144" is a different
+version number. Do not download Java SE 9 or 10.
 
-Once cloned, you can run the following command to build the OpenMPF project
-inside a docker container tagged as
+Once cloned, you can run the following command with the `openmpf-docker`
+directory to build the OpenMPF project inside a docker container tagged as
 `mpf_build:latest`:
+
 - `docker build mpf_build/ -t mpf_build:latest`
 
 Note that it can take 1.5 - 2 hours for this command to complete if you're
