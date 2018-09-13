@@ -75,7 +75,7 @@ Place the file in the `mpf_build` directory. The file should be named
 version number. Do not download Java SE 9 or 10.
 
 Once cloned, you can run the following command with the `openmpf-docker`
-directory to build the OpenMPF project inside a docker container tagged as
+directory to build the OpenMPF project inside a docker image tagged as
 `mpf_build:latest`:
 
 - `docker build mpf_build/ -t mpf_build:latest`
