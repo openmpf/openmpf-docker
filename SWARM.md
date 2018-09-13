@@ -35,7 +35,7 @@ deploy and manager the stack from this node. Run the following command on that
 node:
 - `docker swarm init`
 
-### Join other machines to the Swarm Cluster
+### Join other Machines to the Swarm Cluster
 
 After you run init command above, you should see an output that looks like the
 following:
@@ -79,27 +79,80 @@ Next, push the images to the Docker registry:
 
 ## Deploy to the Swarm Cluster
 
-### Setup up a volume driver to keep the volumes in sync between swarm nodes.
+### Setup a Volume Driver
 
 In order for Docker Swarm to keep a synchronized volume between the nodes in the
 swarm, it needs a 3rd party volume driver. One of the simplest ways to do this
-is to utilize NFS. If your network configuration does not support NFS, or if
-you would like to make use of a cloud provider's storage solution, then there
-are many other volume drivers that you can explore (i.e. REX-Ray).
-This guide will be showing how to do a deployment with NFS.
+is to utilize a Network File System (NFS). If your network configuration does
+not support NFS, or if you would like to make use of a cloud provider's storage
+solution, then there are many other volume drivers that you can explore (i.e.
+REX-Ray). This guide will be showing how to do a deployment with NFS.
+
 - `docker volume create --driver local --opt type=nfs --opt o=addr=<address of \
 file share server>,rw --opt device=:<path to mounted share> \
 mpf_mpf-data`
+
+### Prevent Conflicts with the Host Network
+
+#### Docker Ingress Network
+
+When you run `docker swarm init`, Docker will automatically create an ingress routing mesh network across all of the nodes. Sometimes the subnet that Docker chooses conflicts with the subnet of the host machines running docker. This results in a condition where clients outside of the host subnet cannot access Docker services running in that ingress network.
+
+To prevent this, first inspect the ingress network that Docker created:
+
+- `docker network inspect ingress`
+
+Look for the following section in the output:
+
+```
+"IPAM": {
+    "Driver": "default",
+    "Options": null,
+    "Config": [
+        {
+            "Subnet": "10.255.0.0/16",
+            "Gateway": "10.255.0.1"
+        }
+    ]
+},
+```
+
+Ensure that that subnet does not conflict with any of the subnets for the network interfaces on the host machines. If so, recreate the ingress network as follows:
+
+- `docker network rm ingress`
+
+Agree to the prompt.
+
+- `docker network create -d overlay --subnet=<ingress-subnet-cidr> --ingress ingress`
+
+Replace `<ingress-subnet-cidr>` with an appropriate non-conflicting IP address range. For example, `8.8.8.0/24`.
+
+#### Docker Overlay Network
+
+Unless a subnet is specified for the application stack's network in `swarm-compose.yml`, Docker will automatically create an overlay network for secure node-to-node communication when you run `docker stack deploy`. Similar to the ingress network issue described above, sometimes the subnet that Docker chooses conflicts with the subnet of the host machines running docker.
+
+To prevent this, manually specify a subnet IP address range for the overlay network in `swarm-compose.yml` as follows:
+
+```
+networks:
+  mpf_default:
+    driver: overlay
+    ipam:
+      config:
+        - subnet: <overlay-subnet-cidr>
+```
+
+Replace `<overlay-subnet-cidr>` with an appropriate non-conflicting IP address range. For example, `9.9.9.0/24`. Make sure this does not conflict with `<ingress-subnet-cidr>`.
 
 ### Deploy the stack to the swarm and watch the services come up.
 
 - `docker stack deploy -c swarm-compose.yml mpf --with-registry-auth`
 
-That stack will likely take long time to come up the first time you deploy it
+That stack will likely take a long time to come up the first time you deploy it
 because if a container gets scheduled on a node where the image is not present
-it needs to download the image from the docker registry, which takes some time.
-This will be much faster later one once the images are downloaded on the nodes.
-If the images are updated, only the changes are downloaded from the docker
+then it needs to download the image from the Docker registry, which takes some time.
+This will be much faster later once the images are downloaded on the nodes.
+If the images are updated, only the changes are downloaded from the Docker
 registry.
 
 - Log in to the workflow manager and add the nodes in the Nodes page.
