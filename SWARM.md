@@ -64,11 +64,18 @@ Note that the `<registry_host>:<registry_port>` part is optional. If omitted,
 you will try to log into the [Docker Hub](https://hub.docker.com/). Use the
 appropriate hostname and port number for your Docker registry.
 
-Next, tag the images you built:
+Next, tag the images you built using this format:
+docker tag <image_name> <registry_url>:<port>/<user>/<image_name>:latest
+
+- `docker tag openmpf_active_mq <registry_url>:<port>/<repository>/openmpf_active_mq:latest`
+
+- `docker tag openmpf_docker_workflow_manager <registry_url>:<port>/<repository>/openmpf_docker_workflow_manager:latest`
+
+- `docker tag openmpf_docker_node_manager <registry_url>:<port>/<repository>/openmpf_docker_node_manager:latest`
 
 ** IMPORTANT the tag must match the tag that is used in the swarm-compose.yml
 file. The naming convention is as follows:
-<repository_address>:<port>/<user>/<image_name>:latest
+`<registry_url>:<port>/<repository>/<image_name>:latest`
 Use the appropriate hostname, port number, and username for your Docker registry.
 
 Change the image names in the swarm-compose.yml file to match your tags.
@@ -93,7 +100,7 @@ mpf_mpf-data`
 
 ### Deploy the stack to the swarm and watch the services come up.
 
-- `docker stack deploy -c swarm-compose.yml mpf --with-registry-auth`
+#### `docker stack deploy -c swarm-compose.yml mpf --with-registry-auth`
 
 That stack will likely take long time to come up the first time you deploy it
 because if a container gets scheduled on a node where the image is not present
@@ -102,7 +109,7 @@ This will be much faster later one once the images are downloaded on the nodes.
 If the images are updated, only the changes are downloaded from the docker
 registry.
 
-- Log in to the workflow manager and add the nodes in the Nodes page.
+#### Log in to the workflow manager and add the nodes in the Nodes page.
 
 You can reach the workflow manager with the url and port 8080 of any of the
 nodes in the swarm. The request will be forwarded to the node that is hosting
@@ -114,10 +121,14 @@ ID of the container. The number of node manager containers that come up is
 determined by the `replicas:` in the swarm-compose file, feel free to change it
 if you please.
 
-- Monitoring the services from swarm.
+#### Commands for monitoring the services from swarm.
 
-A couple useful commands for monitoring the services are:
+- `docker service ls`
+- `docker stack ps mpf`
+- `docker ps` to show what services are running on that node
 
--- `docker service ls`
--- `docker stack ps mpf`
--- `docker ps` to show what services are running on that node
+#### Tearing down the stack
+
+When you are ready to tear down the stack and remove the containers, run.
+
+- `docker stack rm mpf`
