@@ -53,18 +53,21 @@ that you allocate the Docker daemon 4 CPU cores, 10240 MB (10 GB) of memory
 (you may be able to get away with less but this is what we have been successful
 with), and 4096 MB (4 GB) of disk swap space.
 
-Also install the docker-compose command
+#### Install Docker Compose
 
-If you installed Docker for Mac or Docker for Windows, then docker-compose
+If you installed Docker for Mac or Docker for Windows, then `docker-compose`
 should already be included. If you are installing on Linux, you will need to
 follow the instructions found [here](https://docs.docker.com/compose/install/).
 
 Please make sure you have at least `version 1.22.0` installed before continuing.
-To check this, run `docker-compose --version`.
+To check this, run:
+
+-  `docker-compose --version`.
 
 ### Build the OpenMPF Docker Images
 
 Clone the [openmpf-docker repository](https://github.com/openmpf/openmpf-docker):
+
 - `git clone https://github.com/openmpf/openmpf-docker.git`
 
 Download the most recent Oracle Java SE JDK 8 64-bit Linux RPM from [here](http://www.oracle.com/technetwork/java/javase/downloads/index.html). If
@@ -75,8 +78,8 @@ Place the file in the mpf_build/ directory. The file should be named
 version number. Do not download Java SE 9 or 10.
 
 Once cloned, you can run the following command to build the OpenMPF project
-inside a Docker container tagged as
-`mpf_build:latest`:
+inside a Docker container tagged as `mpf_build:latest`:
+
 - `docker build mpf_build/ -t mpf_build:latest`
 
 Note that it can take 1.5 - 2 hours for this command to complete if you're
@@ -87,12 +90,36 @@ starting from scratch.
 ### Run OpenMPF using Docker Compose
 
 Once the images are built, you can run OpenMPF using:
+
 - `docker-compose up`
 
-You can stop the containers pressing ctrl+c and then running
+The output from each of the services will be piped to the terminal.
+
+#### Log into the Workflow Manager and Add Nodes
+
+You can reach the workflow manager at the following URL:
+
+`http://<ip-address-or-hostname-of-docker-host>:8080/workflow-manager`
+
+Once you have logged in, go to the Nodes page and add all of the available
+nodes.
+
+#### Commands for Monitoring Containers
+
+Show the containers running on the current node:
+
+- `docker ps`
+
+#### Tearing Down the Containers
+
+You can stop the containers by pressing ctrl+c (sometimes, twice) in the
+terminal you ran `docker-compose up` and then running:
+
 - `docker-compose stop`
 
-You can also stop and remove all of the containers, and networks by running
+If you prefer, you can also stop and remove all of the containers and networks
+by running:
+
 - `docker-compose down`
 
 ### (Optional) Add GPU support with NVIDIA CUDA
