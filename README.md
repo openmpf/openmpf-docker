@@ -55,21 +55,35 @@ with), and 4096 MB (4 GB) of disk swap space.
 
 #### Check the Linux Host Storage Driver
 
-The [official Docker documentation](https://docs.docker.com/storage/storagedriver/select-storage-driver/) recommends using the overlay2 storage driver for Linux hosts over the devicemapper storage driver. In general, the devicemapper storage driver does not perform well in production environments. When installing Docker on Linux, check which storage driver Docker chose by default:
+The [official Docker
+documentation](https://docs.docker.com/storage/storagedriver/select-storage-driver/)
+recommends using the overlay2 storage driver for Linux hosts over the
+devicemapper storage driver. In general, the devicemapper storage driver does
+not perform well in production environments. When installing Docker on Linux,
+check which storage driver Docker chose by default:
 
 - `docker info | grep Storage`
 
-If this prints out `Storage Driver: overlay2` then nothing more needs to be done. Instead, if it prints out `Storage Driver: devicemapper`, then we recommend changing it. The following steps assume that you've installed Docker Community Edition (CE) on a CentOS 7 host. If you installed Docker Enterprise Edition (EE), and/or are using a different flavor of Linux, then refer to the official steps [here](https://docs.docker.com/storage/storagedriver/overlayfs-driver/).
+If this prints out `Storage Driver: overlay2` then nothing more needs to be
+done. Instead, if it prints out `Storage Driver: devicemapper`, then we
+recommend changing it. The following steps assume that you've installed Docker
+Community Edition (CE) on a CentOS 7 host. If you installed Docker Enterprise
+Edition (EE), and/or are using a different flavor of Linux, then refer to the
+official steps
+[here](https://docs.docker.com/storage/storagedriver/overlayfs-driver/).
 
-First check that you're running at least version 3.10.0-514 of higher of the Linux kernel:
+First check that you're running at least version 3.10.0-514 of higher of the
+Linux kernel:
 
 - `uname -r`
 
-If you're running an older version of the kernel then consider upgrading your system. Next, stop Docker:
+If you're running an older version of the kernel then consider upgrading your
+system. Next, stop Docker:
 
 - `sudo systemctl stop docker`
 
-Edit `/etc/docker/daemon.json`. If that file does not already exist, then create it. Assuming it's empty, add the following content:
+Edit `/etc/docker/daemon.json`. If that file does not already exist, then create
+it. Assuming it's empty, add the following content:
 
 ```
 {
@@ -85,7 +99,8 @@ Check that the correct storage driver is now in use:
 
 - `docker info | grep Storage`
 
-This should now print out `Storage Driver: overlay2`.
+This should now print out `Storage Driver: overlay2`. Repeat these steps on each
+of your Docker nodes.
 
 #### Install Docker Compose
 
