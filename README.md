@@ -78,7 +78,50 @@ Linux kernel:
 - `uname -r`
 
 If you're running an older version of the kernel then consider upgrading your
-system. Next, stop Docker:
+system. Next, check which filesystem you're currently using:
+
+- `df -hT`
+
+This will print some output. For example:
+
+```
+Filesystem                                    Type      Size  Used Avail Use% Mounted on
+/dev/mapper/centos-root                       xfs        50G  8.5G   42G  17% /
+devtmpfs                                      devtmpfs  3.9G     0  3.9G   0% /dev
+tmpfs                                         tmpfs     3.9G     0  3.9G   0% /dev/shm
+tmpfs                                         tmpfs     3.9G  417M  3.5G  11% /run
+tmpfs                                         tmpfs     3.9G     0  3.9G   0% /sys/fs/cgroup
+/dev/sda1                                     xfs       497M  305M  192M  62% /boot
+/dev/mapper/centos-home                       xfs        87G  5.1G   82G   6% /home
+```
+
+Here we see that the root partition is mounted to '/' and has type 'xfs'. In
+order to use overlay2 on an xfs filesystem, the d_type option must be enabled.
+To check that run:
+
+- `xfs_info <mount_point>`
+
+For example:
+
+```
+[root@128 ~]# xfs_info /
+meta-data=/dev/mapper/centos-root isize=256    agcount=4, agsize=3276800 blks
+         =                       sectsz=512   attr=2, projid32bit=1
+         =                       crc=0        finobt=0 spinodes=0
+data     =                       bsize=4096   blocks=13107200, imaxpct=25
+         =                       sunit=0      swidth=0 blks
+naming   =version 2              bsize=4096   ascii-ci=0 ftype=0
+log      =internal               bsize=4096   blocks=6400, version=2
+         =                       sectsz=512   sunit=0 blks, lazy-count=1
+realtime =none                   extsz=4096   blocks=0, rtextents=0
+```
+
+Here we see that `ftype=0`. That means d_type is not enabled, so if you wish to
+use overlay2 you will need to recreate the root partition with that option
+enabled. See
+[here](http://www.pimwiddershoven.nl/entry/docker-on-centos-7-machine-with-xfs-filesystem-can-cause-trouble-when-d-type-is-not-supported).
+
+Once you've determined that your Linux setup can support overlay2, stop Docker:
 
 - `sudo systemctl stop docker`
 
