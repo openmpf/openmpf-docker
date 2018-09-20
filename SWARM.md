@@ -176,7 +176,7 @@ range. For example, `9.9.9.0/24`. Make sure this does not conflict with
 
 ### Deploy the Stack to the Swarm
 
-`docker stack deploy -c swarm-compose.yml mpf --with-registry-auth`
+`docker stack deploy -c swarm-compose.yml openmpf --with-registry-auth`
 
 That stack will likely take a long time to come up the first time you deploy it
 because if a container gets scheduled on a node where the image is not present

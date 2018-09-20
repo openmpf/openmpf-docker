@@ -37,13 +37,13 @@ services:
       '--wait_timeout=28800',
     ]
     volumes:
-      - mysql-data:/var/lib/mysql
+      - mysql_data:/var/lib/mysql
     ports:
       - "3306:3306"
 
   activemq:
-    # image: openmpf_docker_active_mq:latest # use for local testing
-    image: <registry_host>:<registry_port>/<user>/openmpf_docker_active_mq:latest
+    image: openmpf_docker_active_mq:latest # use for local testing
+    # image: <registry_host>:<registry_port>/<user>/openmpf_docker_active_mq:latest
     ports:
       - "61616:61616"
       - "1099:1099"
@@ -54,24 +54,24 @@ services:
       - "6379:6379"
 
   workflow_manager:
-    # image: openmpf_docker_workflow_manager:latest # use for local testing
-    image: <registry_host>:<registry_port>/<user>/openmpf_docker_workflow_manager:latest
+    image: openmpf_docker_workflow_manager:latest # use for local testing
+    # image: <registry_host>:<registry_port>/<user>/openmpf_docker_workflow_manager:latest
     environment:
       - MYSQL_HOST=mpf_mysql_database
     ports:
       - "8080:8080"
       - "7801:7801"
     volumes:
-      - mpf-data:/opt/mpf/share
+      - shared_data:/opt/mpf/share
 
   node_manager:
-    # image: openmpf_docker_node_manager:latest # use for local testing
-    image: <registry_host>:<registry_port>/<user>/openmpf_docker_node_manager:latest
+    image: openmpf_docker_node_manager:latest # use for local testing
+    # image: <registry_host>:<registry_port>/<user>/openmpf_docker_node_manager:latest
     ports:
       - "80:80"
       - "7800:7800"
     volumes:
-      - mpf-data:/opt/mpf/share
+      - shared_data:/opt/mpf/share
     deploy:
       mode: replicated
       replicas: 2
@@ -82,8 +82,8 @@ services:
   #       - spread: node.labels.zone
 
 volumes:
-  mpf-data:
-  mysql-data:
+  shared_data:
+  mysql_data:
 
 networks:
-  mpf_default:
+  openmpf_default:
