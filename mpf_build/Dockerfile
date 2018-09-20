@@ -395,11 +395,6 @@ RUN cd /home/mpf/openmpf-projects && find . -type f -exec dos2unix {} \;
 # Install OpenMPF command line tools:
 RUN pip install /home/mpf/openmpf-projects/openmpf/trunk/bin/mpf-scripts
 
-# Add Maven dependencies (CMU Sphinx, etc.):
-RUN cd /home/mpf && mkdir -p .m2/repository && tar xzf \
-    /home/mpf/openmpf-projects/openmpf-build-tools/mpf-maven-deps.tar.gz \
-    -C /home/mpf/.m2/repository/ && cp -a /home/mpf/.m2/ ~/.m2/
-
 RUN mkdir -p /mpfdata/ansible/install/repo/rpms/management && \
     mkdir /mpfdata/ansible/install/repo/rpms/mpf && \
     mkdir /mpfdata/ansible/install/repo/rpms/mpf-deps && \
@@ -422,10 +417,11 @@ RUN cp /home/mpf/openmpf-projects/openmpf/trunk/workflow-manager/src/main/resour
 RUN sed -i 's/startup.num.services.per.component.*/startup.num.services.per.component=0/' \
     /home/mpf/openmpf-projects/openmpf/trunk/workflow-manager/src/main/resources/properties/mpf-private.properties
 
+# TODO: Move this to docker-entrypoint.sh
 # Set env variables from /etc/profile.d/mpf.sh:
-ARG PKG_CONFIG_PATH=/apps/install/lib/pkgconfig
-ARG CXXFLAGS=-isystem\ /apps/install/include
-ENV PATH=$PATH:/apps/install/bin:/opt/apache-maven/bin:/apps/install/lib/pkgconfig:/usr/bin/
+#ARG PKG_CONFIG_PATH=/apps/install/lib/pkgconfig
+#ARG CXXFLAGS=-isystem\ /apps/install/include
+#ENV PATH=$PATH:/apps/install/bin:/opt/apache-maven/bin:/apps/install/lib/pkgconfig:/usr/bin/
 
 # TODO: See if this can be converted to use ARG variable, this strategy is
 #    very brittle because it's based on line number:
@@ -438,16 +434,8 @@ RUN sed -i '37s/.*/              p:hostName="redis"/' \
 # Build OpenMPF                                                                #
 ################################################################################
 
-RUN cd /home/mpf/openmpf-projects/openmpf && \
-    mvn clean install -DskipTests -Dmaven.test.skip=true -DskipITs \
-    -Dmaven.tomcat.skip=true  \
-    -Dcomponents.build.package.json=/home/mpf/openmpf-projects/openmpf/trunk/jenkins/scripts/config_files/openmpf-open-source-package.json \
-    -Dstartup.auto.registration.skip=false \
-    -Dcomponents.build.dir=/home/mpf/openmpf-projects/openmpf/mpf-component-build \
-    -DgitBranch=`cd .. && git rev-parse --abbrev-ref HEAD` \
-    -DgitShortId=`cd .. && git rev-parse --short HEAD` \
-    -DjenkinsBuildNumber=1
+COPY docker-entrypoint.sh /home/mpf
 
-RUN cd /home/mpf/openmpf-projects/openmpf/trunk/workflow-manager && \
-    cp target/workflow-manager.war /opt/apache-tomcat/webapps/workflow-manager.war && \
-    cd ../.. && cp trunk/install/libexec/node-manager /etc/init.d/
+RUN dos2unix /home/mpf/docker-entrypoint.sh
+
+ENTRYPOINT ["/home/mpf/docker-entrypoint.sh"]

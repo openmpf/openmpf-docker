@@ -115,11 +115,15 @@ To check this, run:
 
 ### Build the OpenMPF Docker Images
 
+Note that this process can take 1.5 - 2 hours if you're starting from scratch.
+
 Clone the [openmpf-docker repository](https://github.com/openmpf/openmpf-docker):
 
 - `git clone https://github.com/openmpf/openmpf-docker.git`
 
-Clone the [openmpf-projects repository](https://github.com/openmpf/openmpf-projects) into the `mpf_build` directory:
+Clone the [openmpf-projects
+repository](https://github.com/openmpf/openmpf-projects) into the `mpf_build`
+directory:
 - `cd openmpf-docker/mpf_build/`
 - `git clone https://github.com/openmpf/openmpf-projects.git --recursive`
 - (Optional) checkout a branch or commit
@@ -135,19 +139,33 @@ Place the file in the `mpf_build` directory. The file should be named
 `jdk-8u144-linux-x64.rpm`, or something similar where "8u144" is a different
 version number. Do not download Java SE 9 or 10.
 
-Once cloned, you can run the following command, from the openmpf-docker directory, to build the OpenMPF project
-inside a Docker container tagged as `mpf_build:latest`:
+Once cloned, you can run the following command from within the `openmpf-docker`
+directory to create the OpenMPF build image.
 
 - `docker build mpf_build/ -t mpf_build:latest`
 
-Note that it can take 1.5 - 2 hours for this command to complete if you're
-starting from scratch.
+This image does not build OpenMPF, rather, it is an environment in which
+OpenMPF will be built. Perform the build using the following commands:
+
+- `mkdir mpf_build/.m2`
+- `docker run mpf_build --mount type=bind,source="$(pwd)"/mpf_build/.m2,target=/root/.m2`
+
+The first command will create a directory to store Maven dependencies on your
+host system. The first time OpenMPF is built it will download 300+ MB of Maven
+dependencies. It is most efficient to store them all on the host system so that
+they do not need to be downloaded again if and when you rebuild OpenMPF.
+
+The second command will mount that directory to a Docker container created from
+the OpenMPF build image and perform the build inside of that container.
+
+Once that command completes with `BUILD SUCCESS`, run the following command to
+create the runtime images:
 
 - `docker-compose build`
 
 ### Run OpenMPF using Docker Compose
 
-Once the images are built, you can run OpenMPF using:
+Once the runtime images are built, you can run OpenMPF using:
 
 - `docker-compose up`
 
