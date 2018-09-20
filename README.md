@@ -78,7 +78,7 @@ Linux kernel:
 - `uname -r`
 
 If you're running an older version of the kernel then consider upgrading your
-system. Next, check which filesystem you're currently using:
+system. Next, check the root partition:
 
 - `df -hT`
 
@@ -95,7 +95,7 @@ tmpfs                                         tmpfs     3.9G     0  3.9G   0% /s
 /dev/mapper/centos-home                       xfs        87G  5.1G   82G   6% /home
 ```
 
-Here we see that the root partition is mounted to '/' and has type 'xfs'. In
+Here we see that the root partition is mounted to `/` and has type `xfs`. In
 order to use overlay2 on an xfs filesystem, the d_type option must be enabled.
 To check that run:
 
@@ -104,7 +104,7 @@ To check that run:
 For example:
 
 ```
-[root@128 ~]# xfs_info /
+[root@somehost ~]# xfs_info /
 meta-data=/dev/mapper/centos-root isize=256    agcount=4, agsize=3276800 blks
          =                       sectsz=512   attr=2, projid32bit=1
          =                       crc=0        finobt=0 spinodes=0
