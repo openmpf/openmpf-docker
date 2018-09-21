@@ -62,7 +62,9 @@ services:
 
   workflow_manager:
     container_name: workflow_manager
-    build: ./workflow_manager
+    build:
+      context: ./mpf_runtime
+      dockerfile: workflow_manager/Dockerfile
     depends_on:
       - mysql
     restart: always
@@ -74,7 +76,9 @@ services:
 
   node_manager:
     container_name: node_manager
-    build: ./node_manager
+    build:
+      context: ./mpf_runtime
+      dockerfile: node_manager/Dockerfile
     # Uncomment this once you have the NVIDIA docker runtime installed if you
     #   want to make use of NVIDIA GPUs.
     # runtime: nvidia

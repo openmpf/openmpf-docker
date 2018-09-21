@@ -26,21 +26,22 @@
 # limitations under the License.                                            #
 #############################################################################
 
-# Usage:
-# mkdir $(pwd)"/mpf_build/.m2
-# docker run mpf_build \
-#  --mount type=bind,source="$(pwd)"/mpf_build/.m2,target=/root/.m2
-
-set -Eeo pipefail
+set -Ee -o pipefail -o xtrace
 
 export PKG_CONFIG_PATH=/apps/install/lib/pkgconfig
 export CXXFLAGS=-isystem\ /apps/install/include
 export PATH=$PATH:/apps/install/bin:/opt/apache-maven/bin:/apps/install/lib/pkgconfig:/usr/bin
 
-# Add Maven dependencies (CMU Sphinx, etc.):
+export BUILD_ARTIFACTS_PATH=/home/mpf/build_artifacts
+
+# Start with a clean slate
+rm -rf $BUILD_ARTIFACTS_PATH/*
+
+# Add Maven dependencies (CMU Sphinx, etc.)
 tar xzf /home/mpf/openmpf-projects/openmpf-build-tools/mpf-maven-deps.tar.gz \
     -C /root/.m2/repository/
 
+# Perform build
 cd /home/mpf/openmpf-projects/openmpf
 mvn clean install -DskipTests -Dmaven.test.skip=true -DskipITs \
     -Dmaven.tomcat.skip=true  \
@@ -51,20 +52,13 @@ mvn clean install -DskipTests -Dmaven.test.skip=true -DskipITs \
     -DgitShortId=`cd .. && git rev-parse --short HEAD` \
     -DjenkinsBuildNumber=1
 
-# TODO: Copy artifacts to host
-# cd /home/mpf/openmpf-projects/openmpf/trunk/workflow-manager
-# cp target/workflow-manager.war /opt/apache-tomcat/webapps/workflow-manager.war
-# cd ../..
-# cp trunk/install/libexec/node-manager /etc/init.d/
+# Copy build artifacts to host
+cd /home/mpf/openmpf-projects/openmpf/trunk
+cp workflow-manager/target/workflow-manager.war $BUILD_ARTIFACTS_PATH
 
-# node_manager
-#COPY --from=mpf_build /apps/bin/jdk-*-linux-x64.rpm /apps/bin/
-#COPY --from=mpf_build /apps/install/bin/ffmpeg /apps/install/bin/ffprobe /apps/install/bin/ffserver $MPF_HOME/bin/
-#COPY --from=mpf_build /etc/ld.so.conf.d/ /etc/ld.so.conf.d/
-#COPY --from=mpf_build /etc/profile.d/mpf.sh /etc/profile.d/mpf.sh
-#COPY --from=mpf_build /home/mpf/openmpf-projects/openmpf/trunk/install/ $MPF_HOME/
-#COPY --from=mpf_build /home/mpf/openmpf-projects/openmpf/mpf-component-build/plugin-packages $MPF_HOME/share/components
+# Exclude the share directory since it can't be extracted to the share volume.
+# Docker cannot extract tars, or mv files to, volumes when the container is being created.
+tar -czf $BUILD_ARTIFACTS_PATH/install.tar -C install --exclude="share" .
+tar -czf $BUILD_ARTIFACTS_PATH/ansible.tar ansible
 
-# workflow_manager specific
-#COPY --from=mpf_build /opt/apache-tomcat/ /opt/apache-tomcat/
-#COPY --from=mpf_build /home/mpf/openmpf-projects/openmpf/trunk/ansible/ /home/mpf/openmpf-projects/openmpf/trunk/ansible/
+cp -R ../mpf-component-build/plugin-packages $BUILD_ARTIFACTS_PATH

@@ -1,6 +1,9 @@
 # ignore files that will not be kept in the repository and must be downloaded.
 mpf_build/jdk*.rpm
 mpf_build/openmpf-projects
-mpf_build/.m2
+
 # docker image archives
 *.tar.gz
+
+# build artifacts
+mpf_runtime/build_artifacts/*

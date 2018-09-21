@@ -139,27 +139,36 @@ Place the file in the `mpf_build` directory. The file should be named
 `jdk-8u144-linux-x64.rpm`, or something similar where "8u144" is a different
 version number. Do not download Java SE 9 or 10.
 
-Once cloned, you can run the following command from within the `openmpf-docker`
-directory to create the OpenMPF build image.
+Once cloned, run  following command from within the `openmpf-docker` directory
+to create the OpenMPF build image:
 
 - `docker build mpf_build/ -t mpf_build:latest`
 
-This image does not build OpenMPF, rather, it is an environment in which
-OpenMPF will be built. Perform the build using the following commands:
+This image has not yet built OpenMPF, rather, it is an environment in which
+OpenMPF will be built in the next step.
 
-- `mkdir mpf_build/.m2`
-- `docker run mpf_build --mount type=bind,source="$(pwd)"/mpf_build/.m2,target=/root/.m2`
+Next, decide where you would like to store the Maven dependencies on your host
+system. On Linux systems, they are usually stored in `~/.m2`. Create a new `.m2`
+directory if necessary.
 
-The first command will create a directory to store Maven dependencies on your
-host system. The first time OpenMPF is built it will download 300+ MB of Maven
-dependencies. It is most efficient to store them all on the host system so that
-they do not need to be downloaded again if and when you rebuild OpenMPF.
+The first time OpenMPF is built it will download 300+ MB of Maven dependencies.
+It is most efficient to store them all on the host system so that they do not
+need to be downloaded again if and when you rebuild OpenMPF.
 
-The second command will mount that directory to a Docker container created from
-the OpenMPF build image and perform the build inside of that container.
+Perform the build using the following command:
 
-Once that command completes with `BUILD SUCCESS`, run the following command to
-create the runtime images:
+```
+docker run \
+  --mount type=bind,source=<path-to-.m2-dir>,target=/root/.m2 \
+  --mount type=bind,source="$(pwd)"/mpf_runtime/build_artifacts,target=/home/mpf/build_artifacts \
+  mpf_build
+```
+
+If that command does output `BUILD SUCCESS` then you may try to run it again.
+Sometimes Maven will time out while trying to download dependencies within a
+Docker container.
+
+Once the command completes successfully, create the runtime images:
 
 - `docker-compose build`
 
