@@ -7,3 +7,4 @@ mpf_build/openmpf-projects
 
 # build artifacts
 mpf_runtime/build_artifacts/*
+!mpf_runtime/build_artifacts/.gitkeep
