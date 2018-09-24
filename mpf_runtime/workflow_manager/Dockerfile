@@ -36,6 +36,15 @@ FROM centos:7.4.1708
 ENV MPF_HOME=/opt/mpf
 VOLUME $MPF_HOME/share
 
+# Create the "mpf" user:
+RUN useradd -u 376 -U -d /home/mpf -ms /bin/bash -G wheel -p mpf mpf
+
+RUN chown -R mpf:mpf $MPF_HOME/share
+
+# Set up yum repo:
+RUN yum install -y epel-release deltarpm && yum clean all
+RUN yum update -y && yum clean all
+
 ################################################################################
 # Install Oracle JDK                                                           #
 ################################################################################
@@ -60,9 +69,10 @@ RUN yum -y localinstall --nogpgcheck /apps/bin/jdk-*-linux-x64.rpm && \
 # Install yum Dependencies                                                     #
 ################################################################################
 
-RUN yum update -y && yum install -y epel-release git asciidoc rpm-build \
+RUN yum install -y git asciidoc rpm-build \
     python2-devel PyYAML python-httplib2 python-jinja2 libtomcrypt \
-    python-paramiko python-six sshpass which && yum clean all
+    python-paramiko python-six sshpass which dos2unix && \
+    yum clean all && rm -rf /var/cache/yum/*
 
 # TODO: For some reason this needs to be a separate step. I think it's because the
 #   mirror it choses for the other yum install does not have python-keyczar.
@@ -149,7 +159,14 @@ RUN echo '[mpf-master]' >> /etc/ansible/hosts; \
     echo $THIS_MPF_NODE >> /etc/ansible/hosts; \
     echo '' >> /etc/ansible/hosts; echo '[mpf-child]' >> /etc/ansible/hosts
 
+################################################################################
+# Prepare Entrypoint                                                           #
+################################################################################
+
 EXPOSE 8080
+
 # TODO implement wait for mysql script
-RUN echo "rm -f $MPF_HOME/share/nodes/MPF_Channel/*workflow_manager*.list && /opt/apache-tomcat/bin/catalina.sh run" > /home/run.sh
-ENTRYPOINT ["sh", "/home/run.sh"]
+
+COPY workflow_manager/docker-entrypoint.sh /home/mpf
+RUN dos2unix /home/mpf/docker-entrypoint.sh
+ENTRYPOINT ["/home/mpf/docker-entrypoint.sh"]

@@ -28,38 +28,11 @@
 
 set -Ee -o pipefail -o xtrace
 
-export PKG_CONFIG_PATH=/apps/install/lib/pkgconfig
-export CXXFLAGS=-isystem\ /apps/install/include
-export PATH=$PATH:/apps/install/bin:/opt/apache-maven/bin:/apps/install/lib/pkgconfig:/usr/bin
+# Cleanup
+rm -f $MPF_HOME/share/nodes/MPF_Channel/*workflow_manager*.list
 
-BUILD_PACKAGE_JSON=${BUILD_PACKAGE_JSON:=openmpf-open-source-package.json}
-BUILD_ARTIFACTS_PATH=/home/mpf/build_artifacts
+# Swith to "mpf" user
+# sudo su mpf
 
-# Start with a clean slate
-rm -rf $BUILD_ARTIFACTS_PATH/*
-
-# Add Maven dependencies (CMU Sphinx, etc.)
-tar xzf /home/mpf/openmpf-projects/openmpf-build-tools/mpf-maven-deps.tar.gz \
-    -C /root/.m2/repository/
-
-# Perform build
-cd /home/mpf/openmpf-projects/openmpf
-mvn clean install -DskipTests -Dmaven.test.skip=true -DskipITs \
-    -Dmaven.tomcat.skip=true  \
-    -Dcomponents.build.package.json=/home/mpf/openmpf-projects/openmpf/trunk/jenkins/scripts/config_files/$BUILD_PACKAGE_JSON \
-    -Dstartup.auto.registration.skip=false \
-    -Dcomponents.build.dir=/home/mpf/openmpf-projects/openmpf/mpf-component-build \
-    -DgitBranch=`cd .. && git rev-parse --abbrev-ref HEAD` \
-    -DgitShortId=`cd .. && git rev-parse --short HEAD` \
-    -DjenkinsBuildNumber=1
-
-# Copy build artifacts to host
-cd /home/mpf/openmpf-projects/openmpf/trunk
-cp workflow-manager/target/workflow-manager.war $BUILD_ARTIFACTS_PATH
-
-# Exclude the share directory since it can't be extracted to the share volume.
-# Docker cannot extract tars, or mv files to, volumes when the container is being created.
-tar -czf $BUILD_ARTIFACTS_PATH/install.tar -C install --exclude="share" .
-tar -czf $BUILD_ARTIFACTS_PATH/ansible.tar ansible
-
-cp -R ../mpf-component-build/plugin-packages $BUILD_ARTIFACTS_PATH
+# Run Tomcat (as root user)
+/opt/apache-tomcat/bin/catalina.sh run

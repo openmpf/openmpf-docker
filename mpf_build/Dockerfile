@@ -31,15 +31,12 @@ WORKDIR /home/mpf
 # Initial Setup                                                                #
 ################################################################################
 
-# Copy the Oracle jdk from build context
-COPY jdk-*-linux-x64.rpm /apps/bin/
-
 # Set up yum repo:
 RUN yum install -y epel-release deltarpm && yum clean all
 RUN yum update -y && yum clean all
 
 # Create the "mpf" user:
-RUN useradd -d /home/mpf -ms /bin/bash -g wheel -p mpf mpf
+RUN useradd -u 376 -U -d /home/mpf -ms /bin/bash -G wheel -p mpf mpf
 
 ENV MPF_HOME=/home/mpf/openmpf-projects/openmpf/trunk/install
 
@@ -65,7 +62,7 @@ RUN yum install -y git python-pip python-devel python-setuptools file \
     libtool yasm nasm bzip2 cmake3 numpy perl-File-Find-Rule which \
     libffi-devel openssl-devel apr apr-util apr-util-ldap log4cxx \
     log4cxx-devel qt qt-devel qt-x11 boost boost-devel wget dos2unix && \
-    yum clean all
+    yum clean all && rm -rf /var/cache/yum/*
 
 # Install Python dependencies:
 RUN pip install --upgrade pip && pip install wheel virtualenv
@@ -76,6 +73,9 @@ RUN cd /home/mpf && easy_install -U cffi
 ################################################################################
 # Install Oracle JDK                                                           #
 ################################################################################
+
+# Copy the Oracle jdk from build context
+COPY jdk-*-linux-x64.rpm /apps/bin/
 
 # Install Oracle JDK:
 RUN yum -y localinstall --nogpgcheck /apps/bin/jdk-*-linux-x64.rpm && \
@@ -431,11 +431,9 @@ RUN sed -i '37s/.*/              p:hostName="redis"/' \
 # TODO: Get the server set up with HTTPS.
 
 ################################################################################
-# Build OpenMPF                                                                #
+# Prepare Entrypoint                                                           #
 ################################################################################
 
 COPY docker-entrypoint.sh /home/mpf
-
 RUN dos2unix /home/mpf/docker-entrypoint.sh
-
 ENTRYPOINT ["/home/mpf/docker-entrypoint.sh"]

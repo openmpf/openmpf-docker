@@ -111,7 +111,7 @@ follow the instructions found [here](https://docs.docker.com/compose/install/).
 Please make sure you have at least `version 1.22.0` installed before continuing.
 To check this, run:
 
--  `docker-compose --version`.
+-  `docker-compose --version`
 
 ### Build the OpenMPF Docker Images
 
@@ -168,7 +168,14 @@ If that command does output `BUILD SUCCESS` then you may try to run it again.
 Sometimes Maven will time out while trying to download dependencies within a
 Docker container.
 
-Once the command completes successfully, create the runtime images:
+If you built the runtime images before, then run the following commands to
+remove the old containers and volumes:
+
+- `docker-compose rm`
+- `docker volume rm openmpf-docker_mpf_data`
+- `docker volume rm openmpf-docker_mysql_data`
+
+Create the new runtime images:
 
 - `docker-compose build`
 

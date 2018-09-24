@@ -44,6 +44,15 @@ FROM centos:7.4.1708
 ENV MPF_HOME=/opt/mpf
 VOLUME $MPF_HOME/share
 
+# Create the "mpf" user:
+RUN useradd -u 376 -U -d /home/mpf -ms /bin/bash -G wheel -p mpf mpf
+
+RUN chown -R mpf:mpf $MPF_HOME/share
+
+# Set up yum repo:
+RUN yum install -y epel-release deltarpm && yum clean all
+RUN yum update -y && yum clean all
+
 ################################################################################
 # Install Oracle JDK                                                           #
 ################################################################################
@@ -67,10 +76,11 @@ RUN yum -y localinstall --nogpgcheck /apps/bin/jdk-*-linux-x64.rpm && \
 # Install yum Dependencies                                                     #
 ################################################################################
 
-RUN yum update -y && yum install -y log4cxx libdc1394 unzip libjpeg-turbo libpng \
+RUN yum install -y log4cxx libdc1394 unzip libjpeg-turbo libpng \
     libtiff jasper-libs gtk2 atk pango gdk-pixbuf2 cairo fontconfig gstreamer \
     gstreamer-plugins-base libv4l mesa-libGLU libSM libICE qt-x11 python-pip \
-    python-virtualenv initscripts sudo && yum clean all && rm -rf /var/cache/yum/*
+    python-virtualenv initscripts sudo dos2unix && \
+    yum clean all && rm -rf /var/cache/yum/*
 
 ################################################################################
 # NVIDIA CUDA runtime setup                                                    #
@@ -99,9 +109,6 @@ ENV LD_LIBRARY_PATH /usr/local/nvidia/lib:/usr/local/nvidia/lib64
 #   between the containers. All shared steps (installing java, copying files
 #   from mpf_build) should be moved to the top of both Dockerfiles.
 
-# Create the "mpf" user:
-RUN useradd -d /home/mpf -ms /bin/bash -g wheel -p mpf mpf
-
 # TODO: Trim the fat from the copies.
 
 # Copy files from the build image:
@@ -121,6 +128,12 @@ COPY build_artifacts/plugin-packages $MPF_HOME/share/components
 # Extract components:
 RUN mkdir $MPF_HOME/plugins && cd $MPF_HOME/plugins && \
     for file in $MPF_HOME/share/components/*.tar.gz; do tar xzf "$file"; done
+
+COPY node_manager/setup-python-component-venv.py /home/mpf
+RUN dos2unix /home/mpf/setup-python-component-venv.py
+
+# Setup venv for Python components:
+RUN for dir in $MPF_HOME/plugins/*; do /home/mpf/setup-python-component-venv.py "$dir"; done
 
 # Link FFmpeg:
 RUN ln -s $MPF_HOME/bin/ffmpeg /usr/bin/ffmpeg && \
@@ -158,11 +171,16 @@ ENV LOGNAME=mpf
 RUN echo "export JAVA_HOME=/usr" >> /etc/profile.d/mpf.sh; \
     echo "export MPF_HOME=$MPF_HOME" >> /etc/profile.d/mpf.sh; \
     echo "export USER=root" >> /etc/profile.d/mpf.sh; \
-    # echo "export THIS_MPF_NODE=$THIS_MPF_NODE" >> /etc/profile.d/mpf.sh; \
+    echo "export THIS_MPF_NODE=$THIS_MPF_NODE" >> /etc/profile.d/mpf.sh; \
     echo "export MASTER_MPF_NODE=$MASTER_MPF_NODE" >> /etc/profile.d/mpf.sh; \
-    # echo "export MPF_LOG_PATH=$MPF_LOG_PATH" >> /etc/profile.d/mpf.sh; \
+    echo "export MPF_LOG_PATH=$MPF_LOG_PATH" >> /etc/profile.d/mpf.sh; \
     echo "export JGROUPS_TCP_ADDRESS=$JGROUPS_TCP_ADDRESS" >> /etc/profile.d/mpf.sh; \
     echo "export JGROUPS_FILE_PING_LOCATION=$JGROUPS_FILE_PING_LOCATION" >> /etc/profile.d/mpf.sh
 
-ENTRYPOINT ["/bin/bash","-c","rm -f $MPF_HOME/share/nodes/MPF_Channel/*node_manager*.list && echo \"export THIS_MPF_NODE=${THIS_MPF_NODE}_id_${HOSTNAME}\" >> /etc/profile.d/mpf.sh && $MPF_HOME/libexec/node-manager start && touch ${MPF_LOG_PATH}/${THIS_MPF_NODE}_id_${HOSTNAME}/log/node-manager.log && tail -f ${MPF_LOG_PATH}/${THIS_MPF_NODE}_id_${HOSTNAME}/log/node-manager.log"]
-# CMD ["/bin/bash"]
+################################################################################
+# Prepare Entrypoint                                                           #
+################################################################################
+
+COPY node_manager/docker-entrypoint.sh /home/mpf
+RUN dos2unix /home/mpf/docker-entrypoint.sh
+ENTRYPOINT ["/home/mpf/docker-entrypoint.sh"]
