@@ -45,8 +45,8 @@ services:
 
 
   activemq:
-    image: openmpf_docker_active_mq:latest # use for local testing
-    # image: <registry_host>:<registry_port>/<user>/openmpf_docker_active_mq:latest
+    # image: openmpf_docker_active_mq:latest # use for local testing
+    image: <registry_host>:<registry_port>/<user>/openmpf_docker_active_mq:latest
     ports:
       - "61616:61616"
       - "1099:1099"
@@ -61,10 +61,10 @@ services:
       - openmpf_default
 
   workflow_manager:
-    image: openmpf_docker_workflow_manager:latest # use for local testing
-    # image: <registry_host>:<registry_port>/<user>/openmpf_docker_workflow_manager:latest
+    # image: openmpf_docker_workflow_manager:latest # use for local testing
+    image: <registry_host>:<registry_port>/<user>/openmpf_docker_workflow_manager:latest
     environment:
-      - MYSQL_HOST=mpf_mysql_database
+      - MYSQL_HOST=openmpf_mysql_database
     ports:
       - "8080:8080"
       - "7801:7801"
@@ -74,8 +74,8 @@ services:
       - openmpf_default
 
   node_manager:
-    image: openmpf_docker_node_manager:latest # use for local testing
-    # image: <registry_host>:<registry_port>/<user>/openmpf_docker_node_manager:latest
+    # image: openmpf_docker_node_manager:latest # use for local testing
+    image: <registry_host>:<registry_port>/<user>/openmpf_docker_node_manager:latest
     ports:
       - "80:80"
       - "7800:7800"

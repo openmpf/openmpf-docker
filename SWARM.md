@@ -202,7 +202,7 @@ does not come up, then there is a problem. Press ctrl+c when done.
 
 List the task being executed by each service in the stack:
 
-- `docker stack ps mpf`
+- `docker stack ps openmpf`
 
 Show the containers running on the current node:
 
@@ -226,7 +226,7 @@ come up is determined by the `replicas:` field for each service listed in the
 
 When you are ready to tear down the stack and remove the containers, run:
 
-- `docker stack rm mpf`
+- `docker stack rm openmpf`
 
 To redeploy the stack, run the command that begins with `docker stack deploy`
 again.

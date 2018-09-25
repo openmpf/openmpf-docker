@@ -62,7 +62,7 @@ RUN yum -y localinstall --nogpgcheck /apps/bin/jdk-*-linux-x64.rpm && \
 
 RUN yum update -y && yum install -y epel-release git asciidoc rpm-build \
     python2-devel PyYAML python-httplib2 python-jinja2 libtomcrypt \
-    python-paramiko python-six sshpass which && yum clean all
+    python-paramiko python-six sshpass which mysql && yum clean all
 
 # TODO: For some reason this needs to be a separate step. I think it's because the
 #   mirror it choses for the other yum install does not have python-keyczar.
@@ -145,6 +145,7 @@ RUN echo '[mpf-master]' >> /etc/ansible/hosts; \
     echo '' >> /etc/ansible/hosts; echo '[mpf-child]' >> /etc/ansible/hosts
 
 EXPOSE 8080
-# TODO implement wait for mysql script
-RUN echo "rm -f $MPF_HOME/share/nodes/MPF_Channel/*workflow_manager*.list && /opt/apache-tomcat/bin/catalina.sh run" > /home/run.sh
+COPY wait-for-mysql.sh /home/
+RUN chmod +x /home/wait-for-mysql.sh
+RUN echo "rm -f $MPF_HOME/share/nodes/MPF_Channel/*workflow_manager*.list && /home/wait-for-mysql.sh $MYSQL_HOST && /opt/apache-tomcat/bin/catalina.sh run" > /home/run.sh
 ENTRYPOINT ["sh", "/home/run.sh"]

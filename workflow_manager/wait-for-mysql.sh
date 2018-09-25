@@ -29,14 +29,16 @@
 
 set -e
 
-host="$1"
+MYSQL_HOST="$1"
 shift
-cmd="$@"
+MYSQL_PWD="$2"
+
+echo "MYSQL Password: "
+echo $MYSQL_PWD
 
 until mysql -h $MYSQL_HOST -u root -ppassword -e"quit"; do
   >&2 echo "MySQL is unavailable - sleeping"
   sleep 1
 done
 
->&2 echo "MySQL is up - executing command"
-exec $cmd
+>&2 echo "MySQL is up"
