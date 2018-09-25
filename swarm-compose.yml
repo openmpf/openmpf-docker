@@ -40,6 +40,9 @@ services:
       - mysql_data:/var/lib/mysql
     ports:
       - "3306:3306"
+    networks:
+      - openmpf_default
+
 
   activemq:
     image: openmpf_docker_active_mq:latest # use for local testing
@@ -47,11 +50,15 @@ services:
     ports:
       - "61616:61616"
       - "1099:1099"
+    networks:
+      - openmpf_default
 
   redis:
     image: redis:latest
     ports:
       - "6379:6379"
+    networks:
+      - openmpf_default
 
   workflow_manager:
     image: openmpf_docker_workflow_manager:latest # use for local testing
@@ -63,6 +70,8 @@ services:
       - "7801:7801"
     volumes:
       - shared_data:/opt/mpf/share
+    networks:
+      - openmpf_default
 
   node_manager:
     image: openmpf_docker_node_manager:latest # use for local testing
@@ -75,6 +84,8 @@ services:
     deploy:
       mode: replicated
       replicas: 2
+    networks:
+      - openmpf_default
   #   placement:
   #     constraints:
   #       - engine.labels.gpu == 1

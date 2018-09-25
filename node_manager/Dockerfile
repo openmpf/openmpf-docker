@@ -156,9 +156,7 @@ ENV LOGNAME=mpf
 RUN echo "export JAVA_HOME=/usr" >> /etc/profile.d/mpf.sh; \
     echo "export MPF_HOME=$MPF_HOME" >> /etc/profile.d/mpf.sh; \
     echo "export USER=root" >> /etc/profile.d/mpf.sh; \
-    # echo "export THIS_MPF_NODE=$THIS_MPF_NODE" >> /etc/profile.d/mpf.sh; \
     echo "export MASTER_MPF_NODE=$MASTER_MPF_NODE" >> /etc/profile.d/mpf.sh; \
-    # echo "export MPF_LOG_PATH=$MPF_LOG_PATH" >> /etc/profile.d/mpf.sh; \
     echo "export JGROUPS_TCP_ADDRESS=$JGROUPS_TCP_ADDRESS" >> /etc/profile.d/mpf.sh; \
     echo "export JGROUPS_FILE_PING_LOCATION=$JGROUPS_FILE_PING_LOCATION" >> /etc/profile.d/mpf.sh
 
