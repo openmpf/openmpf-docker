@@ -65,8 +65,8 @@ services:
     build:
       context: ./mpf_runtime
       dockerfile: workflow_manager/Dockerfile
-      args:
-        - IMAGE_TAG=latest
+    # The following line is used during a Jenkins build:
+    # image: workflow_manager:$IMAGE_TAG
     depends_on:
       - mysql
     restart: always
@@ -81,10 +81,10 @@ services:
     build:
       context: ./mpf_runtime
       dockerfile: node_manager/Dockerfile
-      args:
-        - IMAGE_TAG=latest
-    # Uncomment this once you have the NVIDIA docker runtime installed if you
-    #   want to make use of NVIDIA GPUs.
+    # The following line is used during a Jenkins build:
+    # image: node_manager:$IMAGE_TAG
+    # Uncomment the following line once you have the NVIDIA docker runtime
+    #   installed if you want to make use of NVIDIA GPUs:
     # runtime: nvidia
     restart: always
     ports:

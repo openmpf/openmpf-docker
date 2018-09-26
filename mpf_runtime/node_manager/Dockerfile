@@ -24,7 +24,7 @@
 # limitations under the License.                                            #
 #############################################################################
 
-ARG IMAGE_TAG
+ARG IMAGE_TAG=latest
 
 FROM mpf_build:$IMAGE_TAG
 
