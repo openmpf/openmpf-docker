@@ -65,6 +65,8 @@ services:
     build:
       context: ./mpf_runtime
       dockerfile: workflow_manager/Dockerfile
+      args:
+        - IMAGE_TAG=latest
     depends_on:
       - mysql
     restart: always
@@ -79,6 +81,8 @@ services:
     build:
       context: ./mpf_runtime
       dockerfile: node_manager/Dockerfile
+      args:
+        - IMAGE_TAG=latest
     # Uncomment this once you have the NVIDIA docker runtime installed if you
     #   want to make use of NVIDIA GPUs.
     # runtime: nvidia

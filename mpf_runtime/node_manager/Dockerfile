@@ -24,7 +24,9 @@
 # limitations under the License.                                            #
 #############################################################################
 
-FROM mpf_build
+ARG IMAGE_TAG
+
+FROM mpf_build:$IMAGE_TAG
 
 # TODO: A new container can be made to include only a JRE and executables needed.
 FROM centos:7.4.1708
