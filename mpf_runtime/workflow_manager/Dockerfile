@@ -26,7 +26,7 @@
 
 ARG IMAGE_TAG=latest
 
-FROM mpf_build:$IMAGE_TAG
+FROM mpf_build:$IMAGE_TAG as mpf_build
 
 # TODO: A new container can be made to include only the WAR file and a JRE.
 FROM centos:7.4.1708
