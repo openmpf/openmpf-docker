@@ -47,6 +47,8 @@ services:
   active_mq:
     container_name: activemq
     build: ./active_mq
+    # The following line is used during a Jenkins build:
+    # image: activemq:IMAGE_TAG
     restart: always
     ports:
       - "61616:61616"
