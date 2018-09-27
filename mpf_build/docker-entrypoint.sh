@@ -92,30 +92,29 @@ else
     -DgitShortId=`cd .. && git rev-parse --short HEAD` \
     -DjenkinsBuildNumber=1
   mavenRetVal=$?
+
+  # Run Gtests
+  # TODO: Update A-RunGTests.pl to return a non-zero value
+  cd /home/mpf/openmpf-projects/openmpf/trunk/jenkins/scripts
+  perl A-RunGTests.pl /home/mpf/openmpf-projects/openmpf 2>&1 | tee A-RunGTests.log
+  gtestRetVal=`grep -q "GTESTS TESTS FAILED!" A-RunGTests.log`
+  rm A-RunGTests.log
   set -e # Turn on exit on error
 
   # Copy Maven test reports to host
+  cd /home/mpf/openmpf-projects
   mkdir -p $BUILD_ARTIFACTS_PATH/surefire-reports
   find . -path  \*\surefire-reports\*.xml -exec cp {} $BUILD_ARTIFACTS_PATH/surefire-reports \;
 
   mkdir -p $BUILD_ARTIFACTS_PATH/failsafe-reports
   find . -path  \*\failsafe-reports\*.xml -exec cp {} $BUILD_ARTIFACTS_PATH/failsafe-reports \;
 
-  # Run Gtests
-  cd /home/mpf/openmpf-projects/openmpf/trunk/jenkins/scripts
-  gtestOutput=$((perl A-RunGTests.pl /home/mpf/openmpf-projects/openmpf) 2>&1)
-
   # Copy Gtest reports to host
-  mkdir -p $BUILD_ARTIFACTS_PATH/gtest-reports
   cd /home/mpf/openmpf-projects/openmpf/mpf-component-build
+  mkdir -p $BUILD_ARTIFACTS_PATH/gtest-reports
   find . -name *junit.xml -exec cp {} $BUILD_ARTIFACTS_PATH/gtest-reports \;
 
-  # TODO: Update A-RunGTests.pl to return a non-zero value
   set +o xtrace
-  gtestRetval=0
-  if [[ $gtestOutput = *"GTESTS TESTS FAILED!"* ]]; then
-    gtestRetval=1
-  fi
   # Exit now if any tests failed
   if [ $mavenRetVal -ne 0 ] || [ $gtestRetval -ne 0 ]; then
       echo 'DETECTED TEST FAILURE(S)'
