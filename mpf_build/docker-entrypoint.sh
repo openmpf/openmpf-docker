@@ -67,7 +67,7 @@ else
   cd /home/mpf/openmpf-projects/openmpf
   set +e # Turn off exit on error
   mvn clean verify \
-    -Dspring.profiles.active=jenkins -Pxvfb,jenkins \
+    -Dspring.profiles.active=jenkins -Pjenkins \
     -DfailIfNoTests=false -DskipITs \
     -Dtest=TestImageMediaSegmenter \
     -Dmaven.tomcat.skip=true \
