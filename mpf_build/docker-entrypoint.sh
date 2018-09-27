@@ -36,6 +36,9 @@ BUILD_PACKAGE_JSON=${BUILD_PACKAGE_JSON:=openmpf-open-source-package.json}
 BUILD_ARTIFACTS_PATH=/home/mpf/build_artifacts
 RUN_TESTS=${RUN_TESTS:=0}
 
+# Give some time for "docker attach"
+sleep 3
+
 # Start with a clean slate
 rm -rf $BUILD_ARTIFACTS_PATH/*
 
@@ -57,23 +60,6 @@ if [ $RUN_TESTS -le 0 ]; then
     -DgitShortId=`cd .. && git rev-parse --short HEAD` \
     -DjenkinsBuildNumber=1
 else
-  # DEBUG
-  # cd /home/mpf/openmpf-projects/openmpf-cpp-component-sdk
-  # mkdir build
-  # cd build
-  # cmake3 ..
-  # make install
-  #
-  # cd /home/mpf/openmpf-projects/openmpf-components/cpp/CaffeDetection
-  # mkdir build
-  # cd build
-  # cmake3 ..
-  # make install
-  # cd test
-  # ./CaffeDetectionTest
-  #
-  # exit 0
-
   # Perform build with unit tests
   # TODO: Use JSON package with examples
   # TODO: Remove -Dtest
