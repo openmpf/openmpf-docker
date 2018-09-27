@@ -34,24 +34,95 @@ export PATH=$PATH:/apps/install/bin:/opt/apache-maven/bin:/apps/install/lib/pkgc
 
 BUILD_PACKAGE_JSON=${BUILD_PACKAGE_JSON:=openmpf-open-source-package.json}
 BUILD_ARTIFACTS_PATH=/home/mpf/build_artifacts
+RUN_TESTS=${RUN_TESTS:=0}
 
 # Start with a clean slate
 rm -rf $BUILD_ARTIFACTS_PATH/*
 
 # Add Maven dependencies (CMU Sphinx, etc.)
+mkdir -p /root/.m2/repository
 tar xzf /home/mpf/openmpf-projects/openmpf-build-tools/mpf-maven-deps.tar.gz \
-    -C /root/.m2/repository/
+  -C /root/.m2/repository/
 
-# Perform build
-cd /home/mpf/openmpf-projects/openmpf
-mvn clean install -DskipTests -Dmaven.test.skip=true -DskipITs \
-    -Dmaven.tomcat.skip=true  \
+if [ $RUN_TESTS -le 0 ]; then
+  # Perform build
+  cd /home/mpf/openmpf-projects/openmpf
+  mvn clean install
+    -DskipTests -Dmaven.test.skip=true -DskipITs \
+    -Dmaven.tomcat.skip=true \
     -Dcomponents.build.package.json=/home/mpf/openmpf-projects/openmpf/trunk/jenkins/scripts/config_files/$BUILD_PACKAGE_JSON \
     -Dstartup.auto.registration.skip=false \
     -Dcomponents.build.dir=/home/mpf/openmpf-projects/openmpf/mpf-component-build \
     -DgitBranch=`cd .. && git rev-parse --abbrev-ref HEAD` \
     -DgitShortId=`cd .. && git rev-parse --short HEAD` \
     -DjenkinsBuildNumber=1
+else
+  # DEBUG
+  # cd /home/mpf/openmpf-projects/openmpf-cpp-component-sdk
+  # mkdir build
+  # cd build
+  # cmake3 ..
+  # make install
+  #
+  # cd /home/mpf/openmpf-projects/openmpf-components/cpp/CaffeDetection
+  # mkdir build
+  # cd build
+  # cmake3 ..
+  # make install
+  # cd test
+  # ./CaffeDetectionTest
+  #
+  # exit 0
+
+  # Perform build with unit tests
+  # TODO: Use JSON package with examples
+  # TODO: Remove -Dtest
+  # TODO: Create different application context?
+  cd /home/mpf/openmpf-projects/openmpf
+  set +e # Turn off exit on error
+  mvn clean verify \
+    -Dspring.profiles.active=jenkins -Pxvfb,jenkins \
+    -DfailIfNoTests=false -DskipITs \
+    -Dtest=TestImageMediaSegmenter \
+    -Dmaven.tomcat.skip=true \
+    -Dcomponents.build.package.json=/home/mpf/openmpf-projects/openmpf/trunk/jenkins/scripts/config_files/$BUILD_PACKAGE_JSON \
+    -Dstartup.auto.registration.skip=false \
+    -Dcomponents.build.dir=/home/mpf/openmpf-projects/openmpf/mpf-component-build \
+    -DgitBranch=`cd .. && git rev-parse --abbrev-ref HEAD` \
+    -DgitShortId=`cd .. && git rev-parse --short HEAD` \
+    -DjenkinsBuildNumber=1
+  mavenRetVal=$?
+  set -e # Turn on exit on error
+
+  # Copy Maven test reports to host
+  mkdir -p $BUILD_ARTIFACTS_PATH/surefire-reports
+  find . -path  \*\surefire-reports\*.xml -exec cp {} $BUILD_ARTIFACTS_PATH/surefire-reports \;
+
+  mkdir -p $BUILD_ARTIFACTS_PATH/failsafe-reports
+  find . -path  \*\failsafe-reports\*.xml -exec cp {} $BUILD_ARTIFACTS_PATH/failsafe-reports \;
+
+  # Run Gtests
+  cd /home/mpf/openmpf-projects/openmpf/trunk/jenkins/scripts
+  gtestOutput=$((perl A-RunGTests.pl /home/mpf/openmpf-projects/openmpf) 2>&1)
+
+  # Copy Gtest reports to host
+  mkdir -p $BUILD_ARTIFACTS_PATH/gtest-reports
+  cd /home/mpf/openmpf-projects/openmpf/mpf-component-build
+  find . -name *junit.xml -exec cp {} $BUILD_ARTIFACTS_PATH/gtest-reports \;
+
+  # TODO: Update A-RunGTests.pl to return a non-zero value
+  set +o xtrace
+  gtestRetval=0
+  if [[ $gtestOutput = *"GTESTS TESTS FAILED!"* ]]; then
+    gtestRetval=1
+  fi
+  # Exit now if any tests failed
+  if [ $mavenRetVal -ne 0 ] || [ $gtestRetval -ne 0 ]; then
+      echo 'DETECTED TEST FAILURE(S)'
+      exit 1
+  fi
+  set -o xtrace
+fi
 
 # Copy build artifacts to host
 cd /home/mpf/openmpf-projects/openmpf/trunk

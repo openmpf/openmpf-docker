@@ -27,6 +27,8 @@
 FROM centos:7.4.1708 as mpf_build
 WORKDIR /home/mpf
 
+# TODO: "&&" remove source code after building libs.
+
 ################################################################################
 # Initial Setup                                                                #
 ################################################################################
@@ -372,6 +374,7 @@ RUN wget -nv -O /apps/source/apache_sources/activemq-cpp-library-3.9.0-src.tar.g
 ################################################################################
 # NVIDIA CUDA toolkit setup                                                    #
 ################################################################################
+
 RUN mkdir -p /apps/source/cuda && cd /apps/source/cuda && \
     wget -nv -O cuda_9.0.176_384.81_linux.run \
     "https://developer.nvidia.com/compute/cuda/9.0/Prod/local_installers/cuda_9.0.176_384.81_linux-run" && \
@@ -417,18 +420,23 @@ RUN cp /home/mpf/openmpf-projects/openmpf/trunk/workflow-manager/src/main/resour
 RUN sed -i 's/startup.num.services.per.component.*/startup.num.services.per.component=0/' \
     /home/mpf/openmpf-projects/openmpf/trunk/workflow-manager/src/main/resources/properties/mpf-private.properties
 
-# TODO: Move this to docker-entrypoint.sh
-# Set env variables from /etc/profile.d/mpf.sh:
-#ARG PKG_CONFIG_PATH=/apps/install/lib/pkgconfig
-#ARG CXXFLAGS=-isystem\ /apps/install/include
-#ENV PATH=$PATH:/apps/install/bin:/opt/apache-maven/bin:/apps/install/lib/pkgconfig:/usr/bin/
-
 # TODO: See if this can be converted to use ARG variable, this strategy is
 #    very brittle because it's based on line number:
 RUN sed -i '37s/.*/              p:hostName="redis"/' \
     /home/mpf/openmpf-projects/openmpf/trunk/workflow-manager/src/main/resources/applicationContext-redis.xml
 
 # TODO: Get the server set up with HTTPS.
+
+################################################################################
+# Build Google Test Framework                                                  #
+################################################################################
+
+# Google Test 1.8.1:
+RUN mkdir /apps/source/gtest_sources
+RUN cd /apps/source/gtest_sources && git clone https://github.com/google/googletest.git googletest && \
+    cd googletest && git checkout release-1.8.1 && mkdir release && cd release && \
+    PKG_CONFIG_PATH="/apps/install/lib/pkgconfig" cmake3 .. && \
+    make && make install && ldconfig
 
 ################################################################################
 # Prepare Entrypoint                                                           #
