@@ -1,3 +1,5 @@
+#!/usr/bin/bash
+
 #############################################################################
 # NOTICE                                                                    #
 #                                                                           #
@@ -24,67 +26,34 @@
 # limitations under the License.                                            #
 #############################################################################
 
-version: '3.3'
-services:
-  mysql_database:
-    image: mariadb:latest
-    environment:
-      - MYSQL_ROOT_PASSWORD=password
-      - MYSQL_DATABASE=mpf
-      - MYSQL_USER=mpf
-      - MYSQL_PASSWORD=mpf
-    command: [
-      '--wait_timeout=28800',
-    ]
-    volumes:
-      - mysql-data:/var/lib/mysql
-    ports:
-      - "3306:3306"
+set -Ee -o pipefail -o xtrace
 
-  activemq:
-    # image: openmpf_docker_active_mq:latest # use for local testing
-    image: <registry_host>:<registry_port>/<user>/openmpf_docker_active_mq:latest
-    ports:
-      - "61616:61616"
-      - "1099:1099"
+BUILD_PACKAGE_JSON=${BUILD_PACKAGE_JSON:=openmpf-open-source-package.json}
 
-  redis:
-    image: redis:latest
-    ports:
-      - "6379:6379"
+# Cleanup
+rm -f $MPF_HOME/share/nodes/MPF_Channel/*workflow_manager*.list
 
-  workflow_manager:
-    # image: openmpf_docker_workflow_manager:latest # use for local testing
-    image: <registry_host>:<registry_port>/<user>/openmpf_docker_workflow_manager:latest
-    # TODO: Remove this?
-    # environment:
-    #  - MYSQL_HOST=mpf_mysql_database
-    ports:
-      - "8080:8080"
-      - "7801:7801"
-    volumes:
-      - mpf-data:/opt/mpf/share
+# echo "THIS IS A WFM TEST!"
 
-  node_manager:
-    # image: openmpf_docker_node_manager:latest # use for local testing
-    image: <registry_host>:<registry_port>/<user>/openmpf_docker_node_manager:latest
-    ports:
-      - "80:80"
-      - "7800:7800"
-    volumes:
-      - mpf-data:/opt/mpf/share
-    deploy:
-      mode: replicated
-      replicas: 2
-  #   placement:
-  #     constraints:
-  #       - engine.labels.gpu == 1
-  #     preferences:
-  #       - spread: node.labels.zone
+# TODO: Move to mpf_build Dockerfile
+export PKG_CONFIG_PATH=/apps/install/lib/pkgconfig
+export CXXFLAGS=-isystem\ /apps/install/include
+export PATH=$PATH:/apps/install/bin:/opt/apache-maven/bin:/apps/install/lib/pkgconfig:/usr/bin
 
-volumes:
-  mpf-data:
-  mysql-data:
+cd /home/mpf/openmpf-projects/openmpf
+# TODO: -Dit.test=ITComponentLifecycle,ITWebREST,ITComponentRegistration,ITWebStreamingReports, -DskipITs
+mvn verify \
+  -Dspring.profiles.active=jenkins -Pjenkins \
+  -DfailIfNoTests=false \
+  -Dit.test=ITComponentRegistration,ITWebStreamingReports \
+  -Dtransport.guarantee="NONE" -Dweb.rest.protocol="http" \
+  -Dcomponents.build.package.json=/home/mpf/openmpf-projects/openmpf/trunk/jenkins/scripts/config_files/$BUILD_PACKAGE_JSON \
+  -Dstartup.auto.registration.skip=false \
+  -Dcomponents.build.dir=/home/mpf/openmpf-projects/openmpf/mpf-component-build \
+  -DgitBranch=`cd .. && git rev-parse --abbrev-ref HEAD` \
+  -DgitShortId=`cd .. && git rev-parse --short HEAD` \
+  -DjenkinsBuildNumber=1
+mavenRetVal=$?
 
-networks:
-  mpf_default:
+echo 'MAVEN RETVAL: $mavenRetVal' # DEBUG
+exit $mavenRetVal # DEBUG

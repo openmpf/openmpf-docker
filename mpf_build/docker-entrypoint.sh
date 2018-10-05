@@ -28,12 +28,18 @@
 
 set -Ee -o pipefail -o xtrace
 
+################################################################################
+# Initial Setup                                                                #
+################################################################################
+
 export PKG_CONFIG_PATH=/apps/install/lib/pkgconfig
 export CXXFLAGS=-isystem\ /apps/install/include
 export PATH=$PATH:/apps/install/bin:/opt/apache-maven/bin:/apps/install/lib/pkgconfig:/usr/bin
 
+SOURCE_CODE_PATH=/mnt/openmpf-projects
+BUILD_ARTIFACTS_PATH=/mnt/build_artifacts
+
 BUILD_PACKAGE_JSON=${BUILD_PACKAGE_JSON:=openmpf-open-source-package.json}
-BUILD_ARTIFACTS_PATH=/home/mpf/build_artifacts
 RUN_TESTS=${RUN_TESTS:=0}
 
 # Give some time for "docker attach"
@@ -42,10 +48,47 @@ sleep 3
 # Start with a clean slate
 rm -rf $BUILD_ARTIFACTS_PATH/*
 
+################################################################################
+# Copy the OpenMPF Repository                                                  #
+################################################################################
+
+cp -R $SOURCE_CODE_PATH /home/mpf/openmpf-projects
+
+# Make sure the source code line endings are correct if copying the source from a Windows host.
+cd /home/mpf/openmpf-projects && find . -type f -exec dos2unix -q {} \;
+
+# TODO: Update the command line tools to remove Redis, mySQL, and ActiveMQ startup
+# Install OpenMPF command line tools:
+pip install /home/mpf/openmpf-projects/openmpf/trunk/bin/mpf-scripts
+
+################################################################################
+# Prepare to Build OpenMPF                                                     #
+################################################################################
+
+# Copy the development properties file to run the OpenMPF on the OpenMPF Build Machine:
+cp /home/mpf/openmpf-projects/openmpf/trunk/workflow-manager/src/main/resources/properties/mpf-private-example.properties \
+    /home/mpf/openmpf-projects/openmpf/trunk/workflow-manager/src/main/resources/properties/mpf-private.properties
+
+# Update startup.num.services.per.component=0 so that services are not added to the master node during
+# component auto registration when the workflow manager starts:
+sed -i 's/startup.num.services.per.component.*/startup.num.services.per.component=0/' \
+    /home/mpf/openmpf-projects/openmpf/trunk/workflow-manager/src/main/resources/properties/mpf-private.properties
+
+# TODO: See if this can be converted to use ARG variable, this strategy is
+#    very brittle because it's based on line number:
+sed -i '37s/.*/              p:hostName="redis"/' \
+    /home/mpf/openmpf-projects/openmpf/trunk/workflow-manager/src/main/resources/applicationContext-redis.xml
+
+# TODO: Get the server set up with HTTPS.
+
 # Add Maven dependencies (CMU Sphinx, etc.)
 mkdir -p /root/.m2/repository
 tar xzf /home/mpf/openmpf-projects/openmpf-build-tools/mpf-maven-deps.tar.gz \
   -C /root/.m2/repository/
+
+################################################################################
+# Build OpenMPF                                                                #
+################################################################################
 
 if [ $RUN_TESTS -le 0 ]; then
   # Perform build
@@ -109,7 +152,10 @@ else
   set -o xtrace
 fi
 
-# Copy build artifacts to host
+################################################################################
+# Copy Artifacts to Host                                                       #
+################################################################################
+
 cd /home/mpf/openmpf-projects/openmpf/trunk
 cp workflow-manager/target/workflow-manager.war $BUILD_ARTIFACTS_PATH
 

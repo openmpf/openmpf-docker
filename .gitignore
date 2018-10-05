@@ -1,6 +1,9 @@
-# ignore files that will not be kept in the repository and must be downloaded.
+# IDE
+*.idea*
+*.iml
+
+# files that must be downloaded separately
 mpf_build/jdk*.rpm
-mpf_build/openmpf-projects
 
 # docker image archives
 *.tar.gz

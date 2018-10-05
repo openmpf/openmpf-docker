@@ -31,8 +31,9 @@ set -Ee -o pipefail -o xtrace
 # Cleanup
 rm -f $MPF_HOME/share/nodes/MPF_Channel/*workflow_manager*.list
 
-# Swith to "mpf" user
-# sudo su mpf
+# Configure
+echo 'node.auto.config.enabled=true' >> $MPF_HOME/config/mpf-custom.properties
+echo 'node.auto.unconfig.enabled=true' >> $MPF_HOME/config/mpf-custom.properties
 
 # Run Tomcat (as root user)
 /opt/apache-tomcat/bin/catalina.sh run

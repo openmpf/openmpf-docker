@@ -122,9 +122,8 @@ Clone the [openmpf-docker repository](https://github.com/openmpf/openmpf-docker)
 - `git clone https://github.com/openmpf/openmpf-docker.git`
 
 Clone the [openmpf-projects
-repository](https://github.com/openmpf/openmpf-projects) into the `mpf_build`
-directory:
-- `cd openmpf-docker/mpf_build/`
+repository](https://github.com/openmpf/openmpf-projects) somewhere on your host
+system:
 - `git clone https://github.com/openmpf/openmpf-projects.git --recursive`
 - (Optional) checkout a branch or commit
   - `cd openmpf-projects`
@@ -160,7 +159,8 @@ Perform the build using the following command:
 ```
 docker run \
   --mount type=bind,source=<path-to-.m2-dir>,target=/root/.m2 \
-  --mount type=bind,source="$(pwd)"/mpf_runtime/build_artifacts,target=/home/mpf/build_artifacts \
+  --mount type=bind,source=<path-to-openmpf-projects>,target=/mnt/openmpf-projects \
+  --mount type=bind,source="$(pwd)"/mpf_runtime/build_artifacts,target=/mnt/build_artifacts \
   mpf_build
 ```
 

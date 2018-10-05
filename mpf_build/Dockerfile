@@ -386,48 +386,6 @@ RUN mkdir -p /apps/source/cuda && cd /apps/source/cuda && \
     /etc/ld.so.conf.d/mpf-x86_64.conf
 
 ################################################################################
-# Copy the OpenMPF Repository                                                  #
-################################################################################
-
-# NOTE: This will change the most often so it should  be as far down in the Dockerfile as possible.
-COPY openmpf-projects /home/mpf/openmpf-projects
-
-# Make sure the source code line endings are correct if copying the source from a Windows host.
-RUN cd /home/mpf/openmpf-projects && find . -type f -exec dos2unix {} \;
-
-# Install OpenMPF command line tools:
-RUN pip install /home/mpf/openmpf-projects/openmpf/trunk/bin/mpf-scripts
-
-RUN mkdir -p /mpfdata/ansible/install/repo/rpms/management && \
-    mkdir /mpfdata/ansible/install/repo/rpms/mpf && \
-    mkdir /mpfdata/ansible/install/repo/rpms/mpf-deps && \
-    mkdir /mpfdata/ansible/install/repo/files && \
-    mkdir /mpfdata/ansible/install/repo/pip && \
-    mkdir /mpfdata/ansible/install/repo/tars && \
-    mkdir /mpfdata/releases && \
-    chown -R mpf /mpfdata
-
-################################################################################
-# Prepare to Build OpenMPF                                                     #
-################################################################################
-
-# Copy the development properties file to run the OpenMPF on the OpenMPF Build Machine:
-RUN cp /home/mpf/openmpf-projects/openmpf/trunk/workflow-manager/src/main/resources/properties/mpf-private-example.properties \
-    /home/mpf/openmpf-projects/openmpf/trunk/workflow-manager/src/main/resources/properties/mpf-private.properties
-
-# Update startup.num.services.per.component=0 so that services are not added to the master node during
-# component auto registration when the workflow manager starts:
-RUN sed -i 's/startup.num.services.per.component.*/startup.num.services.per.component=0/' \
-    /home/mpf/openmpf-projects/openmpf/trunk/workflow-manager/src/main/resources/properties/mpf-private.properties
-
-# TODO: See if this can be converted to use ARG variable, this strategy is
-#    very brittle because it's based on line number:
-RUN sed -i '37s/.*/              p:hostName="redis"/' \
-    /home/mpf/openmpf-projects/openmpf/trunk/workflow-manager/src/main/resources/applicationContext-redis.xml
-
-# TODO: Get the server set up with HTTPS.
-
-################################################################################
 # Build Google Test Framework                                                  #
 ################################################################################
 
@@ -443,5 +401,5 @@ RUN cd /apps/source/gtest_sources && git clone https://github.com/google/googlet
 ################################################################################
 
 COPY docker-entrypoint.sh /home/mpf
-RUN dos2unix /home/mpf/docker-entrypoint.sh
+RUN dos2unix -q /home/mpf/docker-entrypoint.sh
 ENTRYPOINT ["/home/mpf/docker-entrypoint.sh"]

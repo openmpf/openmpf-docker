@@ -24,9 +24,9 @@
 # limitations under the License.                                            #
 #############################################################################
 
-ARG IMAGE_NAME=mpf_build:latest
+ARG BUILD_IMAGE_NAME=mpf_build:latest
 
-FROM $IMAGE_NAME as mpf_build
+FROM $BUILD_IMAGE_NAME as mpf_build
 
 # TODO: A new container can be made to include only a JRE and executables needed.
 FROM centos:7.4.1708
@@ -132,7 +132,7 @@ RUN mkdir $MPF_HOME/plugins && cd $MPF_HOME/plugins && \
     for file in $MPF_HOME/share/components/*.tar.gz; do tar xzf "$file"; done
 
 COPY node_manager/setup-python-component-venv.py /home/mpf
-RUN dos2unix /home/mpf/setup-python-component-venv.py
+RUN dos2unix -q /home/mpf/setup-python-component-venv.py
 
 # Setup venv for Python components:
 RUN for dir in $MPF_HOME/plugins/*; do /home/mpf/setup-python-component-venv.py "$dir"; done
@@ -153,15 +153,15 @@ RUN mkdir -p $MPF_HOME/share/logs/node_manager/ && chown mpf $MPF_HOME/share/log
 
 ENV ACTIVE_MQ_HOST=activemq
 ENV ACTIVE_MQ_BROKER_URI=failover://(tcp://$ACTIVE_MQ_HOST:61616)?jms.prefetchPolicy.all=1&startupMaxReconnectAttempts=1
-ENV MYSQL_HOST=mpf_mysql_database
-ENV THIS_MPF_NODE=mpf_node_manager
+ENV MYSQL_HOST=mysql_database
+ENV THIS_MPF_NODE=node_manager
 ENV JGROUPS_TCP_ADDRESS=match-interface:eth1
 ENV JGROUPS_TCP_PORT=7800
 ENV JGROUPS_FILE_PING_LOCATION=$MPF_HOME/share/nodes
 ENV no_proxy=localhost,$THIS_MPF_NODE
 ENV MPF_USER=root
 ENV MPF_LOG_PATH=$MPF_HOME/share/logs
-ENV MASTER_MPF_NODE=mpf_workflow_manager
+ENV MASTER_MPF_NODE=workflow_manager
 ENV MAIL=/var/spool/mail/mpf
 ENV PATH=$PATH:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin:$MPF_HOME/bin:/usr/bin/
 ENV JAVA_HOME=/usr/bin/java
@@ -184,5 +184,5 @@ RUN echo "export JAVA_HOME=/usr" >> /etc/profile.d/mpf.sh; \
 ################################################################################
 
 COPY node_manager/docker-entrypoint.sh /home/mpf
-RUN dos2unix /home/mpf/docker-entrypoint.sh
+RUN dos2unix -q /home/mpf/docker-entrypoint.sh
 ENTRYPOINT ["/home/mpf/docker-entrypoint.sh"]
