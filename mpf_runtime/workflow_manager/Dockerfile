@@ -155,7 +155,8 @@ ENV LD_LIBRARY_PATH=/usr/lib64:$MPF_HOME/lib
 ENV PATH=$PATH:$MPF_HOME/bin
 ENV CATALINA_OPTS="-server -Xms256m -XX:PermSize=512m -XX:MaxPermSize=512m -Duser.country=US -Djava.library.path=$MPF_HOME/lib -Dtransport.guarantee='NONE' -Dweb.rest.protocol='http'"
 
-# For testing purposes:
+# The workflow manager must be added as an mpf-child so that plugin packages are
+# extracted at startup, which is necessary for component auto-registration.
 RUN echo '[mpf-child]' >> /etc/ansible/hosts; \
     echo $THIS_MPF_NODE >> /etc/ansible/hosts;
 

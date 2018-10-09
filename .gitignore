@@ -11,3 +11,6 @@ mpf_build/jdk*.rpm
 # build artifacts
 mpf_runtime/build_artifacts/*
 !mpf_runtime/build_artifacts/.gitkeep
+
+# backup
+*.bak

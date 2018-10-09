@@ -168,12 +168,10 @@ If that command does output `BUILD SUCCESS` then you may try to run it again.
 Sometimes Maven will time out while trying to download dependencies within a
 Docker container.
 
-If you built the runtime images before, then run the following commands to
+If you built the runtime images before, then run the following script to
 remove the old containers and volumes:
 
-- `docker-compose rm`
-- `docker volume rm openmpf-docker_mpf_data`
-- `docker volume rm openmpf-docker_mysql_data`
+- `./docker-compose-cleanup.sh`
 
 Create the new runtime images:
 
