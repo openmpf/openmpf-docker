@@ -40,16 +40,16 @@ if json_data["sourceLanguage"] == "python":
     wheelhouse_dir = comp_dir + "/wheelhouse"
     venv_dir = comp_dir + "/venv"
 
+    subprocess.call(["virtualenv", "-p", "python2.7", venv_dir])
+
     if os.path.isdir(wheelhouse_dir):
         print "Setup virtualenv for Python setuptools-based component " + json_data["componentName"]
         comp_lib_name = json_data["batchLibrary"]
         if not comp_lib_name:
             comp_lib_name = json_data["streamLibrary"]
-        subprocess.call(["pip", "install", "--find-links", wheelhouse_dir, "--no-index", comp_lib_name])
+        subprocess.call([venv_dir + "/bin/pip", "install", "--find-links", wheelhouse_dir, "--no-index", comp_lib_name])
     else:
         print "Setup virtualenv for basic Python component " + json_data["componentName"]
-        subprocess.call(["pip", "install", "--find-links", os.environ['MPF_HOME'] + "/python/wheelhouse", "--no-index", "mpf_component_api"])
-
-    subprocess.call(["virtualenv", "-p", "python2.7", venv_dir])
+        subprocess.call([venv_dir + "/bin/pip", "install", "--find-links", os.environ['MPF_HOME'] + "/python/wheelhouse", "--no-index", "mpf_component_api"])
 
 json_file.close()

@@ -39,6 +39,7 @@ export PATH=$PATH:/apps/install/bin:/opt/apache-maven/bin:/apps/install/lib/pkgc
 SOURCE_CODE_PATH=/mnt/openmpf-projects
 BUILD_ARTIFACTS_PATH=/mnt/build_artifacts
 
+# Use "docker run --env BUILD_PACKAGE_JSON=openmpf-some-other-package.json" option
 BUILD_PACKAGE_JSON=${BUILD_PACKAGE_JSON:=openmpf-open-source-package.json}
 RUN_TESTS=${RUN_TESTS:=0}
 
