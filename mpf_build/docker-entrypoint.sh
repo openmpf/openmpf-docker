@@ -32,6 +32,7 @@ export PKG_CONFIG_PATH=/apps/install/lib/pkgconfig
 export CXXFLAGS=-isystem\ /apps/install/include
 export PATH=$PATH:/apps/install/bin:/opt/apache-maven/bin:/apps/install/lib/pkgconfig:/usr/bin
 
+# Use "docker run --env BUILD_PACKAGE_JSON=openmpf-some-other-package.json" option
 BUILD_PACKAGE_JSON=${BUILD_PACKAGE_JSON:=openmpf-open-source-package.json}
 BUILD_ARTIFACTS_PATH=/home/mpf/build_artifacts
 
