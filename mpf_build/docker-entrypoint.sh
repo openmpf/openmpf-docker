@@ -127,7 +127,9 @@ else
   # TODO: Update A-RunGTests.pl to return a non-zero value
   cd /home/mpf/openmpf-projects/openmpf/trunk/jenkins/scripts
   perl A-RunGTests.pl /home/mpf/openmpf-projects/openmpf 2>&1 | tee A-RunGTests.log
+  set +o xtrace
   gtestRetVal=`grep -q "GTESTS TESTS FAILED!" A-RunGTests.log`
+  set -o xtrace
   rm A-RunGTests.log
   set -e # Turn on exit on error
 

@@ -38,6 +38,9 @@ FROM centos:7.4.1708
 ENV MPF_HOME=/opt/mpf
 VOLUME $MPF_HOME/share
 
+# Do this right away so that we fail fast if the user doesn't provide the JDK:
+COPY --from=mpf_build /apps/bin/jdk-*-linux-x64.rpm /apps/bin/
+
 # Create the "mpf" user:
 RUN useradd -u 376 -U -d /home/mpf -ms /bin/bash -G wheel -p mpf mpf
 
@@ -50,8 +53,6 @@ RUN yum update -y && yum clean all
 ################################################################################
 # Install Oracle JDK                                                           #
 ################################################################################
-
-COPY --from=mpf_build /apps/bin/jdk-*-linux-x64.rpm /apps/bin/
 
 # Install Oracle JDK:
 RUN yum -y localinstall --nogpgcheck /apps/bin/jdk-*-linux-x64.rpm && \

@@ -147,8 +147,8 @@ This image has not yet built OpenMPF, rather, it is an environment in which
 OpenMPF will be built in the next step.
 
 Next, decide where you would like to store the Maven dependencies on your host
-system. On Linux systems, they are usually stored in `~/.m2`. Create a new `.m2`
-directory if necessary.
+system. On Linux systems, they are usually stored in `/home/<user>/.m2`. Create
+a new `.m2` directory if necessary.
 
 The first time OpenMPF is built it will download 300+ MB of Maven dependencies.
 It is most efficient to store them all on the host system so that they do not
