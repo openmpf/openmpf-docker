@@ -33,12 +33,15 @@ WORKDIR /home/mpf
 # Initial Setup                                                                #
 ################################################################################
 
-# Set up yum repo:
-RUN yum install -y epel-release deltarpm && yum clean all
-RUN yum update -y && yum clean all
+# Do this right away so that we fail fast if the user doesn't provide the JDK:
+COPY jdk-*-linux-x64.rpm /apps/bin/
 
 # Create the "mpf" user:
 RUN useradd -u 376 -U -d /home/mpf -ms /bin/bash -G wheel -p mpf mpf
+
+# Set up yum repo:
+RUN yum install -y epel-release deltarpm && yum clean all
+RUN yum update -y && yum clean all
 
 ENV MPF_HOME=/home/mpf/openmpf-projects/openmpf/trunk/install
 
@@ -75,9 +78,6 @@ RUN cd /home/mpf && easy_install -U cffi
 ################################################################################
 # Install Oracle JDK                                                           #
 ################################################################################
-
-# Copy the Oracle jdk from build context
-COPY jdk-*-linux-x64.rpm /apps/bin/
 
 # Install Oracle JDK:
 RUN yum -y localinstall --nogpgcheck /apps/bin/jdk-*-linux-x64.rpm && \
