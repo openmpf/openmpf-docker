@@ -171,7 +171,7 @@ Docker container.
 If you built the runtime images before, then run the following script to
 remove the old containers and volumes:
 
-- `./docker-compose-cleanup.sh`
+- `./scripts/docker-compose-cleanup.sh`
 
 Create the new runtime images:
 
