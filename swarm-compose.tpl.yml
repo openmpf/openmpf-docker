@@ -1,0 +1,90 @@
+#############################################################################
+# NOTICE                                                                    #
+#                                                                           #
+# This software (or technical data) was produced for the U.S. Government    #
+# under contract, and is subject to the Rights in Data-General Clause       #
+# 52.227-14, Alt. IV (DEC 2007).                                            #
+#                                                                           #
+# Copyright 2018 The MITRE Corporation. All Rights Reserved.                #
+#############################################################################
+
+#############################################################################
+# Copyright 2018 The MITRE Corporation                                      #
+#                                                                           #
+# Licensed under the Apache License, Version 2.0 (the "License");           #
+# you may not use this file except in compliance with the License.          #
+# You may obtain a copy of the License at                                   #
+#                                                                           #
+#    http://www.apache.org/licenses/LICENSE-2.0                             #
+#                                                                           #
+# Unless required by applicable law or agreed to in writing, software       #
+# distributed under the License is distributed on an "AS IS" BASIS,         #
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  #
+# See the License for the specific language governing permissions and       #
+# limitations under the License.                                            #
+#############################################################################
+
+version: '3.3'
+services:
+  mysql_database:
+    image: mariadb:latest
+    environment:
+      - MYSQL_ROOT_PASSWORD=password
+      - MYSQL_DATABASE=mpf
+      - MYSQL_USER=mpf
+      - MYSQL_PASSWORD=mpf
+    command: [
+      '--wait_timeout=28800',
+    ]
+    volumes:
+      - mysql-data:/var/lib/mysql
+    ports:
+      - "3306:3306"
+
+  activemq:
+    # image: openmpf_docker_active_mq:latest # use for local testing
+    image: <registry_host>:<registry_port>/<repository>/openmpf_docker_active_mq:latest
+    ports:
+      - "61616:61616"
+      - "1099:1099"
+
+  redis:
+    image: redis:latest
+    ports:
+      - "6379:6379"
+
+  workflow_manager:
+    # image: openmpf_docker_workflow_manager:latest # use for local testing
+    image: <registry_host>:<registry_port>/<repository>/openmpf_docker_workflow_manager:latest
+    # TODO: Remove this?
+    # environment:
+    #  - MYSQL_HOST=mpf_mysql_database
+    ports:
+      - "8080:8080"
+      - "7801:7801"
+    volumes:
+      - mpf-data:/opt/mpf/share
+
+  node_manager:
+    # image: openmpf_docker_node_manager:latest # use for local testing
+    image: <registry_host>:<registry_port>/<repository>/openmpf_docker_node_manager:latest
+    ports:
+      - "80:80"
+      - "7800:7800"
+    volumes:
+      - mpf-data:/opt/mpf/share
+    deploy:
+      mode: replicated
+      replicas: 2
+  #   placement:
+  #     constraints:
+  #       - engine.labels.gpu == 1
+  #     preferences:
+  #       - spread: node.labels.zone
+
+volumes:
+  mpf-data:
+  mysql-data:
+
+networks:
+  mpf_default:

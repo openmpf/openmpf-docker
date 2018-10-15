@@ -1,3 +1,5 @@
+#!/usr/bin/bash
+
 #############################################################################
 # NOTICE                                                                    #
 #                                                                           #
@@ -24,67 +26,22 @@
 # limitations under the License.                                            #
 #############################################################################
 
-version: '3.3'
-services:
-  mysql_database:
-    image: mariadb:latest
-    environment:
-      - MYSQL_ROOT_PASSWORD=password
-      - MYSQL_DATABASE=mpf
-      - MYSQL_USER=mpf
-      - MYSQL_PASSWORD=mpf
-    command: [
-      '--wait_timeout=28800',
-    ]
-    volumes:
-      - mysql-data:/var/lib/mysql
-    ports:
-      - "3306:3306"
+printUsage() {
+  echo "Usage:"
+  echo "docker-swarm-set-registry.sh <registry-host> <registry-port> [<repository>]"
+  exit -1
+}
 
-  activemq:
-    # image: openmpf_docker_active_mq:latest # use for local testing
-    image: <registry_host>:<registry_port>/<user>/openmpf_docker_active_mq:latest
-    ports:
-      - "61616:61616"
-      - "1099:1099"
+if [ $# = 2 ]; then
+  host="$1"
+  port="$2"
+  repository="openmpf"
+elif [ $# = 3 ]; then
+  host="$1"
+  port="$2"
+  repository="$3"
+else
+  printUsage
+fi
 
-  redis:
-    image: redis:latest
-    ports:
-      - "6379:6379"
-
-  workflow_manager:
-    # image: openmpf_docker_workflow_manager:latest # use for local testing
-    image: <registry_host>:<registry_port>/<user>/openmpf_docker_workflow_manager:latest
-    # TODO: Remove this?
-    # environment:
-    #  - MYSQL_HOST=mpf_mysql_database
-    ports:
-      - "8080:8080"
-      - "7801:7801"
-    volumes:
-      - mpf-data:/opt/mpf/share
-
-  node_manager:
-    # image: openmpf_docker_node_manager:latest # use for local testing
-    image: <registry_host>:<registry_port>/<user>/openmpf_docker_node_manager:latest
-    ports:
-      - "80:80"
-      - "7800:7800"
-    volumes:
-      - mpf-data:/opt/mpf/share
-    deploy:
-      mode: replicated
-      replicas: 2
-  #   placement:
-  #     constraints:
-  #       - engine.labels.gpu == 1
-  #     preferences:
-  #       - spread: node.labels.zone
-
-volumes:
-  mpf-data:
-  mysql-data:
-
-networks:
-  mpf_default:
+sed "s/<registry_host>:<registry_port>\\/<repository>/$host:$port\\/$repository/g" swarm-compose.tpl.yml > swarm-compose.yml

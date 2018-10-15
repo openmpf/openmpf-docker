@@ -84,7 +84,9 @@ registry:
 
 - `docker tag openmpf_docker_node_manager <registry_host>:<registry_port>/openmpf/openmpf_docker_node_manager:latest`
 
-**IMPORTANT:** Change the image names in `swarm-compose.yml` to match your tags.
+Run the following command to generate `swarm-compose.yml`:
+
+- `./scripts/docker-swarm-set-registry.sh <registry_host> <registry_port>`
 
 Next, push the images to the Docker registry:
 

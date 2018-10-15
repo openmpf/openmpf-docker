@@ -14,3 +14,6 @@ mpf_runtime/build_artifacts/*
 
 # backup
 *.bak
+
+# generated files
+swarm-compose.yml
