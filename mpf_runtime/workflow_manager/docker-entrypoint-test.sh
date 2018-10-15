@@ -28,7 +28,7 @@
 
 set -Ee -o pipefail -o xtrace
 
-BUILD_PACKAGE_JSON=${BUILD_PACKAGE_JSON:=openmpf-open-source-package.json}
+BUILD_ARTIFACTS_PATH=/mnt/build_artifacts
 
 # Cleanup
 rm -f $MPF_HOME/share/nodes/MPF_Channel/*workflow_manager*.list
@@ -51,7 +51,7 @@ mvn verify \
   -DfailIfNoTests=false \
   -Dit.test=ITComponentRegistration,ITWebStreamingReports \
   -Dtransport.guarantee="NONE" -Dweb.rest.protocol="http" \
-  -Dcomponents.build.package.json=/home/mpf/openmpf-projects/openmpf/trunk/jenkins/scripts/config_files/$BUILD_PACKAGE_JSON \
+  -Dcomponents.build.package.json= \ # leave blank; the components should have already been built in the mpf_post_build image
   -Dstartup.auto.registration.skip=false \
   -Dcomponents.build.dir=/home/mpf/openmpf-projects/openmpf/mpf-component-build \
   -DgitBranch=`cd .. && git rev-parse --abbrev-ref HEAD` \
