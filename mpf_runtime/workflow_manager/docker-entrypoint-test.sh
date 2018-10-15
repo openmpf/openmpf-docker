@@ -45,13 +45,15 @@ export CXXFLAGS=-isystem\ /apps/install/include
 export PATH=$PATH:/apps/install/bin:/opt/apache-maven/bin:/apps/install/lib/pkgconfig:/usr/bin
 
 cd /home/mpf/openmpf-projects/openmpf
+# Leave "components.build.package.json" blank. The components should have
+# already been built in the mpf_post_build image.
 # TODO: -Dit.test=ITComponentLifecycle,ITWebREST,ITComponentRegistration,ITWebStreamingReports, -DskipITs
 mvn verify \
   -Dspring.profiles.active=jenkins -Pjenkins \
   -DfailIfNoTests=false \
   -Dit.test=ITComponentRegistration,ITWebStreamingReports \
   -Dtransport.guarantee="NONE" -Dweb.rest.protocol="http" \
-  -Dcomponents.build.package.json= \ # leave blank; the components should have already been built in the mpf_post_build image
+  -Dcomponents.build.package.json= \
   -Dstartup.auto.registration.skip=false \
   -Dcomponents.build.dir=/home/mpf/openmpf-projects/openmpf/mpf-component-build \
   -DgitBranch=`cd .. && git rev-parse --abbrev-ref HEAD` \
