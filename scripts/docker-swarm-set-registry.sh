@@ -28,20 +28,28 @@
 
 printUsage() {
   echo "Usage:"
-  echo "docker-swarm-set-registry.sh <registry-host> <registry-port> [<repository>]"
+  echo "docker-swarm-set-registry.sh <registry-host> <registry-port> [<repository>] [<image-tag>]"
   exit -1
 }
 
-if [ $# = 2 ]; then
-  host="$1"
-  port="$2"
-  repository="openmpf"
-elif [ $# = 3 ]; then
-  host="$1"
-  port="$2"
-  repository="$3"
-else
+if [ $# -lt 2 ] || [ $# -gt 4 ]; then
   printUsage
 fi
 
+host="$1"
+port="$2"
+
+if [ $# -lt 3 ]; then
+  repository="openmpf"
+else
+  repository="$3"
+fi
+
+if [ $# -lt 4 ]; then
+  imageTag="latest"
+else
+  imageTag="$4"
+fi
+
 sed "s/<registry_host>:<registry_port>\\/<repository>/$host:$port\\/$repository/g" swarm-compose.tpl.yml > swarm-compose.yml
+sed -i "s/<image_tag>/$imageTag/g" swarm-compose.yml
