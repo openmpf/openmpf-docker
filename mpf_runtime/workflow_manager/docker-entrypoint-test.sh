@@ -59,5 +59,18 @@ mvn verify \
   -DjenkinsBuildNumber=1
 mavenRetVal=$?
 
-echo 'MAVEN RETVAL: $mavenRetVal' # DEBUG
-exit $mavenRetVal # DEBUG
+# Copy Maven test reports to host
+cd /home/mpf/openmpf-projects
+mkdir -p $BUILD_ARTIFACTS_PATH/surefire-reports
+find . -path  \*\surefire-reports\*.xml -exec cp {} $BUILD_ARTIFACTS_PATH/surefire-reports \;
+
+mkdir -p $BUILD_ARTIFACTS_PATH/failsafe-reports
+find . -path  \*\failsafe-reports\*.xml -exec cp {} $BUILD_ARTIFACTS_PATH/failsafe-reports \;
+
+set +o xtrace
+# Exit now if any tests failed
+if [ $mavenRetVal -ne 0 ]; then
+    echo 'DETECTED INTEGRATION TEST FAILURE(S)'
+    exit 1
+fi
+set -o xtrace

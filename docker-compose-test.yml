@@ -75,6 +75,7 @@ services:
       - mpf_data:/home/mpf/openmpf-projects/openmpf/trunk/install/share
       # The following line is updated during a Jenkins build:
       - ~/.m2:/root/.m2
+      - ./mpf_runtime/build_artifacts:/mnt/build_artifacts
 
   node_manager:
     build:
