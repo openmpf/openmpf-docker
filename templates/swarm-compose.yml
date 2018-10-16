@@ -24,77 +24,74 @@
 # limitations under the License.                                            #
 #############################################################################
 
-version: '2.3'
+version: '3.3'
 services:
-  mysql:
-    container_name: mysql_database
+  mysql_database:
     image: mariadb:latest
-    restart: always
     environment:
       - MYSQL_ROOT_PASSWORD=password
       - MYSQL_DATABASE=mpf
       - MYSQL_USER=mpf
       - MYSQL_PASSWORD=mpf
-    # https://github.com/docker-library/mariadb/issues/113
     command: [
       '--wait_timeout=28800',
     ]
     volumes:
-      - mysql_data:/var/lib/mysql
+      - mysql-data:/var/lib/mysql
+    ports:
+      - "3306:3306"
+    networks:
+      - openmpf_default
 
-  active_mq:
-    container_name: activemq
-    build: ./active_mq
-    # The following line is used during a Jenkins build:
-    # image: activemq:IMAGE_TAG
-    restart: always
+  activemq:
+    image: <registry_host>:<registry_port>/<repository>/openmpf-docker_active_mq:<image_tag>
+    ports:
+      - "61616:61616"
+      - "1099:1099"
+    networks:
+      - openmpf_default
 
   redis:
-    container_name: redis
-    image: redis
-    restart: always
+    image: redis:latest
+    ports:
+      - "6379:6379"
+    networks:
+      - openmpf_default
 
-  workflow_manager_test:
-    container_name: workflow_manager
-    build:
-      context: ./mpf_runtime
-      dockerfile: workflow_manager/Dockerfile-test
-    # The following entrypoint and image sections are for manual debugging:
-    # entrypoint:
-    #  - sleep
-    #  - infinity
-    # image: workflow_manager_test
-    # The following line is used during a Jenkins build:
-    # image: workflow_manager_test:IMAGE_TAG
-    depends_on:
-      - mysql
-    restart: always
+  workflow_manager:
+    image: <registry_host>:<registry_port>/<repository>/openmpf-docker_workflow_manager:<image_tag>
+    # TODO: Remove this?
+    # environment:
+    #  - MYSQL_HOST=mpf_mysql_database
     ports:
       - "8080:8080"
+      - "7801:7801"
     volumes:
-      - mpf_data:/home/mpf/openmpf-projects/openmpf/trunk/install/share
-      # The following line is updated during a Jenkins build:
-      - ~/.m2:/root/.m2
-      - ./mpf_runtime/build_artifacts:/mnt/build_artifacts
+      - shared_data:/opt/mpf/share
+    networks:
+      - openmpf_default
 
   node_manager:
-    build:
-      context: ./mpf_runtime
-      dockerfile: node_manager/Dockerfile
-    # The following line is used during a Jenkins build:
-    # image: node_manager:IMAGE_TAG
-    # Uncomment the following line once you have the NVIDIA docker runtime
-    #   installed if you want to make use of NVIDIA GPUs:
-    # runtime: nvidia
-    restart: always
-    # Uncomment the following lines to enable use of the node-manager status
-    #   page. You will also need to set mpf.node.status.page.enabled in the
-    #   node-manager properties file.
-    # ports:
-    #  - "8008:8008"
+    image: <registry_host>:<registry_port>/<repository>/openmpf-docker_node_manager:<image_tag>
+    ports:
+      - "80:80"
+      - "7800:7800"
     volumes:
-      - mpf_data:/opt/mpf/share
+      - mpf-shared_data:/opt/mpf/share
+    deploy:
+      mode: replicated
+      replicas: 2
+    networks:
+      - openmpf_default
+  #   placement:
+  #     constraints:
+  #       - engine.labels.gpu == 1
+  #     preferences:
+  #       - spread: node.labels.zone
 
 volumes:
-  mpf_data:
+  shared_data:
   mysql_data:
+
+networks:
+  openmpf_default:

@@ -1,5 +1,3 @@
-#!/usr/bin/bash
-
 #############################################################################
 # NOTICE                                                                    #
 #                                                                           #
@@ -26,30 +24,66 @@
 # limitations under the License.                                            #
 #############################################################################
 
-printUsage() {
-  echo "Usage:"
-  echo "docker-swarm-set-registry.sh <registry-host> <registry-port> [<repository>] [<image-tag>]"
-  exit -1
-}
+version: '2.3'
+services:
+  mysql:
+    container_name: mysql_database
+    image: mariadb:latest
+    restart: always
+    environment:
+      - MYSQL_ROOT_PASSWORD=password
+      - MYSQL_DATABASE=mpf
+      - MYSQL_USER=mpf
+      - MYSQL_PASSWORD=mpf
+    # https://github.com/docker-library/mariadb/issues/113
+    command: [
+      '--wait_timeout=28800',
+    ]
+    volumes:
+      - mysql_data:/var/lib/mysql
 
-if [ $# -lt 2 ] || [ $# -gt 4 ]; then
-  printUsage
-fi
+  active_mq:
+    image: <registry_host>:<registry_port>/<repository>/openmpf-docker_active_mq:<image_tag>
+    container_name: activemq
+    build: ./active_mq
+    restart: always
 
-host="$1"
-port="$2"
+  redis:
+    container_name: redis
+    image: redis
+    restart: always
 
-if [ $# -lt 3 ]; then
-  repository="openmpf"
-else
-  repository="$3"
-fi
+  workflow_manager:
+    image: <registry_host>:<registry_port>/<repository>/openmpf-docker_workflow_manager:<image_tag>
+    container_name: workflow_manager
+    build:
+      context: ./mpf_runtime
+      dockerfile: workflow_manager/Dockerfile
+    depends_on:
+      - mysql
+    restart: always
+    ports:
+      - "8080:8080"
+    volumes:
+      - shared_data:/opt/mpf/share
 
-if [ $# -lt 4 ]; then
-  imageTag="latest"
-else
-  imageTag="$4"
-fi
+  node_manager:
+    image: <registry_host>:<registry_port>/<repository>/openmpf-docker_node_manager:<image_tag>
+    build:
+      context: ./mpf_runtime
+      dockerfile: node_manager/Dockerfile
+    # Uncomment the following line once you have the NVIDIA docker runtime
+    #   installed if you want to make use of NVIDIA GPUs:
+    # runtime: nvidia
+    restart: always
+    # Uncomment the following lines to enable use of the node-manager status
+    #   page. You will also need to set mpf.node.status.page.enabled in the
+    #   node-manager properties file.
+    # ports:
+    #  - "8008:8008"
+    volumes:
+      - shared_data:/opt/mpf/share
 
-sed "s/<registry_host>:<registry_port>\\/<repository>/$host:$port\\/$repository/g" swarm-compose.tpl.yml > swarm-compose.yml
-sed -i "s/<image_tag>/$imageTag/g" swarm-compose.yml
+volumes:
+  shared_data:
+  mysql_data:

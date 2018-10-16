@@ -43,10 +43,9 @@ services:
       - mysql_data:/var/lib/mysql
 
   active_mq:
+    image: <registry_host>:<registry_port>/<repository>/openmpf-docker_active_mq:<image_tag>
     container_name: activemq
     build: ./active_mq
-    # The following line is used during a Jenkins build:
-    # image: activemq:IMAGE_TAG
     restart: always
 
   redis:
@@ -54,27 +53,32 @@ services:
     image: redis
     restart: always
 
-  workflow_manager:
+  workflow_manager_test:
+    image: <registry_host>:<registry_port>/<repository>/openmpf-docker_workflow_manager_test:<image_tag>
     container_name: workflow_manager
     build:
       context: ./mpf_runtime
-      dockerfile: workflow_manager/Dockerfile
-    # The following line is used during a Jenkins build:
-    # image: workflow_manager:IMAGE_TAG
+      dockerfile: workflow_manager/Dockerfile-test
+    # The following entrypoint and image sections are for manual debugging:
+    # entrypoint:
+    #  - sleep
+    #  - infinity
     depends_on:
       - mysql
     restart: always
     ports:
       - "8080:8080"
     volumes:
-      - mpf_data:/opt/mpf/share
+      - shared_data:/home/mpf/openmpf-projects/openmpf/trunk/install/share
+      # The following line is updated during a Jenkins build:
+      - ~/.m2:/root/.m2
+      - ./mpf_runtime/build_artifacts:/mnt/build_artifacts
 
   node_manager:
+    image: <registry_host>:<registry_port>/<repository>/openmpf-docker_node_manager:<image_tag>
     build:
       context: ./mpf_runtime
       dockerfile: node_manager/Dockerfile
-    # The following line is used during a Jenkins build:
-    # image: node_manager:IMAGE_TAG
     # Uncomment the following line once you have the NVIDIA docker runtime
     #   installed if you want to make use of NVIDIA GPUs:
     # runtime: nvidia
@@ -85,8 +89,8 @@ services:
     # ports:
     #  - "8008:8008"
     volumes:
-      - mpf_data:/opt/mpf/share
+      - shared_data:/opt/mpf/share
 
 volumes:
-  mpf_data:
+  shared_data:
   mysql_data:

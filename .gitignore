@@ -16,4 +16,6 @@ mpf_runtime/build_artifacts/*
 *.bak
 
 # generated files
-swarm-compose.yml
+/docker-compose.yml
+/docker-compose-test.yml
+/swarm-compose.yml

@@ -138,8 +138,8 @@ Place the file in the `mpf_build` directory. The file should be named
 `jdk-8u144-linux-x64.rpm`, or something similar where "8u144" is a different
 version number. Do not download Java SE 9 or 10.
 
-Once cloned, run  following command from within the `openmpf-docker` directory
-to create the OpenMPF build image:
+Run following command from within the `openmpf-docker` directory to create the
+OpenMPF build image:
 
 - `docker build mpf_build/ -t mpf_build:latest`
 
@@ -167,6 +167,18 @@ docker run \
 If that command does output `BUILD SUCCESS` then you may try to run it again.
 Sometimes Maven will time out while trying to download dependencies within a
 Docker container.
+
+Next, generate the `docker-compose.yml` file. If you don't have access to a
+private Docker registry, then run:
+
+- `./scripts/docker-generate-compose-files.sh`
+
+Otherwise, if you do have access to a private Docker registry, then run:
+
+- `./scripts/docker-generate-compose-files.sh <registry_host> <registry_port>`
+
+Note that this will also generate `swarm-compose.yml`, which you will use if you
+choose to follow the [Swarm deployment guide](SWARM.md).
 
 If you built the runtime images before, then run the following script to
 remove the old containers and volumes:

@@ -1,3 +1,5 @@
+#!/usr/bin/bash
+
 #############################################################################
 # NOTICE                                                                    #
 #                                                                           #
@@ -24,69 +26,6 @@
 # limitations under the License.                                            #
 #############################################################################
 
-version: '2.3'
-services:
-  mysql:
-    container_name: mysql_database
-    image: mariadb:latest
-    restart: always
-    environment:
-      - MYSQL_ROOT_PASSWORD=password
-      - MYSQL_DATABASE=mpf
-      - MYSQL_USER=mpf
-      - MYSQL_PASSWORD=mpf
-    # https://github.com/docker-library/mariadb/issues/113
-    command: [
-      '--wait_timeout=28800',
-    ]
-    volumes:
-      - mysql_data:/var/lib/mysql
+set -o xtrace
 
-  active_mq:
-    container_name: activemq
-    build: ./active_mq
-    # The following line is used during a Jenkins build:
-    # image: activemq:IMAGE_TAG
-    restart: always
-
-  redis:
-    container_name: redis
-    image: redis
-    restart: always
-
-  workflow_manager:
-    container_name: workflow_manager
-    build:
-      context: ./mpf_runtime
-      dockerfile: workflow_manager/Dockerfile
-    # The following line is used during a Jenkins build:
-    # image: workflow_manager:IMAGE_TAG
-    depends_on:
-      - mysql
-    restart: always
-    ports:
-      - "8080:8080"
-    volumes:
-      - mpf_data:/opt/mpf/share
-
-  node_manager:
-    build:
-      context: ./mpf_runtime
-      dockerfile: node_manager/Dockerfile
-    # The following line is used during a Jenkins build:
-    # image: node_manager:IMAGE_TAG
-    # Uncomment the following line once you have the NVIDIA docker runtime
-    #   installed if you want to make use of NVIDIA GPUs:
-    # runtime: nvidia
-    restart: always
-    # Uncomment the following lines to enable use of the node-manager status
-    #   page. You will also need to set mpf.node.status.page.enabled in the
-    #   node-manager properties file.
-    # ports:
-    #  - "8008:8008"
-    volumes:
-      - mpf_data:/opt/mpf/share
-
-volumes:
-  mpf_data:
-  mysql_data:
+docker system prune -f --volumes

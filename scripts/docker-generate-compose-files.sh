@@ -26,32 +26,66 @@
 # limitations under the License.                                            #
 #############################################################################
 
+set -Ee -o pipefail
+
 printUsage() {
   echo "Usages:"
-  echo "docker-compose-cleanup.sh [--remove-images]"
+  echo "docker-generate-compose-files.sh [<image-tag>]"
+  echo "docker-generate-compose-files.sh <registry-host> <registry-port> [<repository>] [<image-tag>]"
   exit -1
 }
 
-if [ $# -gt 1 ]; then
+# generateWithoutRegistry(fileName, imageTag)
+generateWithoutRegistry() {
+  sed "s/<registry_host>:<registry_port>\\/<repository>\\///g" templates/"$1" > "$1"
+  sed -i "s/<image_tag>/$2/g" "$1"
+}
+
+# generateWithoutRegistry(fileName, registryHost, registryPort, repository, imageTag)
+generateWithRegistry() {
+  sed "s/<registry_host>:<registry_port>\\/<repository>/$2:$3\\/$4/g" templates/"$1" > "$1"
+  sed -i "s/<image_tag>/$5/g" "$1"
+}
+
+if [ $# -gt 4 ]; then
   printUsage
 fi
 
 ################################################################################
-# Remove images                                                                #
+# Without registry                                                             #
 ################################################################################
 
-if [ $# -eq 1 ]; then
-  if [ "$1" != "--remove-images" ]; then
-    printUsage
+if [ $# -lt 2 ]; then
+  if [ $# -eq 0 ]; then
+    imageTag="latest"
+  else
+    imageTag="$1"
   fi
-  set -o xtrace
-  docker-compose down --rmi all
+  generateWithoutRegistry "docker-compose.yml" "$imageTag"
+  generateWithoutRegistry "docker-compose-test.yml" "$imageTag"
+  generateWithoutRegistry "swarm-compose.yml" "$imageTag"
   exit
 fi
 
 ################################################################################
-# Don't remove images                                                          #
+# With registry                                                                #
 ################################################################################
 
-set -o xtrace
-docker-compose down -v
+host="$1"
+port="$2"
+
+if [ $# -lt 3 ]; then
+  repository="openmpf"
+else
+  repository="$3"
+fi
+
+if [ $# -lt 4 ]; then
+  imageTag="latest"
+else
+  imageTag="$4"
+fi
+
+generateWithRegistry "docker-compose.yml" "$host" "$port" "$repository" "$imageTag"
+generateWithRegistry "docker-compose-test.yml" "$host" "$port" "$repository" "$imageTag"
+generateWithRegistry "swarm-compose.yml" "$host" "$port" "$repository" "$imageTag"
