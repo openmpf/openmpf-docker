@@ -43,7 +43,7 @@ services:
       - mysql_data:/var/lib/mysql
 
   active_mq:
-    image: <registry_host>:<registry_port>/<repository>/openmpf-docker_active_mq:<image_tag>
+    image: <registry_host>:<registry_port>/<repository>/openmpf_active_mq:<image_tag>
     container_name: activemq
     build: ./active_mq
     restart: always
@@ -54,7 +54,7 @@ services:
     restart: always
 
   workflow_manager_test:
-    image: <registry_host>:<registry_port>/<repository>/openmpf-docker_workflow_manager_test:<image_tag>
+    image: <registry_host>:<registry_port>/<repository>/openmpf_workflow_manager_test:<image_tag>
     container_name: workflow_manager
     build:
       context: ./mpf_runtime
@@ -75,7 +75,7 @@ services:
       - ./mpf_runtime/build_artifacts:/mnt/build_artifacts
 
   node_manager:
-    image: <registry_host>:<registry_port>/<repository>/openmpf-docker_node_manager:<image_tag>
+    image: <registry_host>:<registry_port>/<repository>/openmpf_node_manager:<image_tag>
     build:
       context: ./mpf_runtime
       dockerfile: node_manager/Dockerfile
