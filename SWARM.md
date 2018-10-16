@@ -60,7 +60,7 @@ that you used to clone the openmpf-docker repository by following the steps in
 the [Build the OpenMPF Docker Images](README.md#build-the-openmpf-docker-images)
 section in the README.
 
-### Log into the Docker Registry
+Log into the Docker registry:
 
 - `docker login -u <username> -p <password> <registry_host>:<registry_port>`
 
@@ -68,29 +68,9 @@ Note that the `<registry_host>:<registry_port>` part is optional. If omitted,
 you will try to log into the [Docker Hub](https://hub.docker.com/). Use the
 appropriate hostname and port number for your Docker registry.
 
-### Tag and Push Images
+Push the images:
 
-Next, tag the images you built using this format:
-
-`docker tag <image_name> <registry_host>:<registry_port>/<repository>/<image_name>:latest`
-
-We assume that you'll be using a `<repository>` called "openmpf". Tag the
-following images using the appropriate hostname and port number for your Docker
-registry:
-
-- `docker tag openmpf_active_mq <registry_host>:<registry_port>/openmpf/openmpf_active_mq:latest`
-
-- `docker tag openmpf_docker_workflow_manager <registry_host>:<registry_port>/openmpf/openmpf_docker_workflow_manager:latest`
-
-- `docker tag openmpf_docker_node_manager <registry_host>:<registry_port>/openmpf/openmpf_docker_node_manager:latest`
-
-Run the following command to generate `swarm-compose.yml`:
-
-- `./scripts/docker-swarm-set-registry.sh <registry_host> <registry_port>`
-
-Next, push the images to the Docker registry:
-
-- `docker-compose -f swarm-compose.yml push`
+- `docker-compose push`
 
 ## Deploy to the Swarm Cluster
 
@@ -165,7 +145,7 @@ network in `swarm-compose.yml` as follows:
 
 ```
 networks:
-  mpf_default:
+  openmpf_default:
     driver: overlay
     ipam:
       config:
@@ -178,7 +158,7 @@ range. For example, `9.9.9.0/24`. Make sure this does not conflict with
 
 ### Deploy the Stack to the Swarm
 
-`docker stack deploy -c swarm-compose.yml mpf --with-registry-auth`
+`docker stack deploy -c swarm-compose.yml openmpf --with-registry-auth`
 
 That stack will likely take a long time to come up the first time you deploy it
 because if a container gets scheduled on a node where the image is not present
@@ -204,7 +184,7 @@ does not come up, then there is a problem. Press ctrl+c when done.
 
 List the task being executed by each service in the stack:
 
-- `docker stack ps mpf`
+- `docker stack ps openmpf`
 
 Show the containers running on the current node:
 
@@ -228,7 +208,7 @@ come up is determined by the `replicas:` field for each service listed in the
 
 When you are ready to tear down the stack and remove the containers, run:
 
-- `docker stack rm mpf`
+- `docker stack rm openmpf`
 
 To redeploy the stack, run the command that begins with `docker stack deploy`
 again.

@@ -1,3 +1,5 @@
+#!/usr/bin/bash
+
 #############################################################################
 # NOTICE                                                                    #
 #                                                                           #
@@ -24,74 +26,29 @@
 # limitations under the License.                                            #
 #############################################################################
 
-version: '3.3'
-services:
-  mysql_database:
-    image: mariadb:latest
-    environment:
-      - MYSQL_ROOT_PASSWORD=password
-      - MYSQL_DATABASE=mpf
-      - MYSQL_USER=mpf
-      - MYSQL_PASSWORD=mpf
-    command: [
-      '--wait_timeout=28800',
-    ]
-    volumes:
-      - mysql-data:/var/lib/mysql
-    ports:
-      - "3306:3306"
-    networks:
-      - openmpf_default
+set -o xtrace
 
-  activemq:
-    image: <registry_host>:<registry_port>/<repository>/openmpf-docker_active_mq:<image_tag>
-    ports:
-      - "61616:61616"
-      - "1099:1099"
-    networks:
-      - openmpf_default
+# The following command does not always remove the stopped containers;
+# however, it should remove networks.
+# Refer to https://github.com/moby/moby/issues/32620.
+docker stack rm openmpf
 
-  redis:
-    image: redis:latest
-    ports:
-      - "6379:6379"
-    networks:
-      - openmpf_default
+containerIds=$(docker ps -a -f name=openmpf_ -q)
 
-  workflow_manager:
-    image: <registry_host>:<registry_port>/<repository>/openmpf-docker_workflow_manager:<image_tag>
-    # TODO: Remove this?
-    # environment:
-    #  - MYSQL_HOST=mpf_mysql_database
-    ports:
-      - "8080:8080"
-      - "7801:7801"
-    volumes:
-      - shared_data:/opt/mpf/share
-    networks:
-      - openmpf_default
+set +o xtrace
+if [ ! -z "$containerIds" ]; then
+  set -o xtrace
+  docker container rm -f $containerIds
+fi
 
-  node_manager:
-    image: <registry_host>:<registry_port>/<repository>/openmpf-docker_node_manager:<image_tag>
-    ports:
-      - "80:80"
-      - "7800:7800"
-    volumes:
-      - shared_data:/opt/mpf/share
-    deploy:
-      mode: replicated
-      replicas: 2
-    networks:
-      - openmpf_default
-  #   placement:
-  #     constraints:
-  #       - engine.labels.gpu == 1
-  #     preferences:
-  #       - spread: node.labels.zone
+set -o xtrace
 
-volumes:
-  shared_data:
-  mysql_data:
+volumeIds=$(docker volume ls -f name=openmpf_ -q)
 
-networks:
-  openmpf_default:
+set +o xtrace
+if [ ! -z "$volumeIds" ]; then
+  set -o xtrace
+  docker volume rm -f $volumeIds
+fi
+
+# TODO: Remove containers and volumes on every node in the cluster.
