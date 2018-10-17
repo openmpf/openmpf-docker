@@ -26,29 +26,52 @@
 # limitations under the License.                                            #
 #############################################################################
 
-set -o xtrace
+# NOTE: This script prioritizes convenience over security.
+# 1. StrictHostKeyChecking is turned off when using SSH.
+# 2. sshpass is used to provide a password to the ssh command.
+
+read -s -p "Enter SSH user: " sshUser
+echo
+
+read -s -p "Enter SSH password: " sshPass
+echo
+echo
 
 # The following command does not always remove the stopped containers;
 # however, it should remove networks.
 # Refer to https://github.com/moby/moby/issues/32620.
 docker stack rm openmpf
+echo
+
+nodeIds=$(docker node ls | sed -n '1!p' | cut -d ' ' -f 1)
+
+while read -r nodeId; do
+    nodeAddr=$(docker node inspect "$nodeId" --format '{{ .Status.Addr }}')
+    echo "Connecting to $nodeAddr ..."
+    
+sshpass -p "$sshPass" ssh -oStrictHostKeyChecking=no "$sshUser"@"$nodeAddr" /bin/bash << EOF
+# set -o xtrace
 
 containerIds=$(docker ps -a -f name=openmpf_ -q)
 
-set +o xtrace
-if [ ! -z "$containerIds" ]; then
-  set -o xtrace
-  docker container rm -f $containerIds
+if [ ! -z "$containerIds" ]; then \
+  docker container rm -f $containerIds; \
+else \
+  echo "No openmpf containers running."
 fi
-
-set -o xtrace
 
 volumeIds=$(docker volume ls -f name=openmpf_ -q)
 
-set +o xtrace
-if [ ! -z "$volumeIds" ]; then
-  set -o xtrace
-  docker volume rm -f $volumeIds
+if [ ! -z "$volumeIds" ]; then \
+  docker volume rm -f $volumeIds; \
+else \
+  echo "No openmpf volumes found."
 fi
 
-# TODO: Remove containers and volumes on every node in the cluster.
+exit
+EOF
+    
+    echo
+done <<< "$nodeIds"
+
+
