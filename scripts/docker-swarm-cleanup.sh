@@ -43,14 +43,17 @@ echo
 docker stack rm openmpf
 echo
 
+# Give the previous command time to work.
+sleep 10
+
 nodeIds=$(docker node ls | sed -n '1!p' | cut -d ' ' -f 1)
 
 while read -r nodeId; do
     nodeAddr=$(docker node inspect "$nodeId" --format '{{ .Status.Addr }}')
     echo "Connecting to $nodeAddr ..."
     
-sshpass -p "$sshPass" ssh -oStrictHostKeyChecking=no "$sshUser"@"$nodeAddr" /bin/bash << EOF
-# set -o xtrace
+sshpass -p "$sshPass" ssh -oStrictHostKeyChecking=no "$sshUser"@"$nodeAddr" /bin/bash << "EOF"
+set -o xtrace
 
 containerIds=$(docker ps -a -f name=openmpf_ -q)
 
