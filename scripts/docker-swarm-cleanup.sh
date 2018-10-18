@@ -93,19 +93,19 @@ echo
 
 recreateSharedDataVolume=0
 sharedDataVolumeInfo=$(docker volume inspect openmpf_shared_data)
- 
+
 if [ $? -eq 0 ]; then
   recreateSharedDataVolume=-1
   sharedDataVolumeDriver=$(docker volume inspect openmpf_shared_data --format '{{ .Driver }}')
 
   sharedDataVolumeDevice=$(docker volume inspect openmpf_shared_data --format '{{ .Options.device }}' )
- 
+
   if [ $? -eq 0 ] && [ "$sharedDataVolumeDevice" != "<no value>" ]; then
     sharedDataVolumeOtherOptions=$(docker volume inspect openmpf_shared_data --format '{{ .Options.o }}')
-   
-    if [ $? -eq 0 ] && [ "$sharedDataVolumeOtherOptions" != "<no value>" ]; then  
+
+    if [ $? -eq 0 ] && [ "$sharedDataVolumeOtherOptions" != "<no value>" ]; then
       sharedDataVolumeType=$(docker volume inspect openmpf_shared_data --format '{{ .Options.type }}')
-  
+
       if [ $? -eq 0 ] && [ "$sharedDataVolumeType" != "<no value>" ]; then
         recreateSharedDataVolume=1
       fi
@@ -140,3 +140,5 @@ EOF
   echo
 done <<< "$nodeIds"
 
+# TODO: Automate this, if possible.
+echo "IMPORTANT: Please manually remove the contents of the shared (NFS) volume."

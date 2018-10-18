@@ -74,7 +74,7 @@ Push the images:
 
 ## Deploy to the Swarm Cluster
 
-### Setup a Volume Driver
+### Setup a Shared Volume
 
 In order for Docker Swarm to keep a synchronized volume between the nodes in the
 swarm, it needs a third party volume driver. One of the simplest ways to do this
@@ -94,6 +94,11 @@ docker volume create --driver local --opt type=nfs \
     --opt o=addr=<address-of-file-share-server>,rw \
     --opt device=:<path-to-share-on-server> openmpf_shared_data
 ```
+
+Note that Docker takes care of mounting the NFS share on each node, so you do
+not need to mount the NFS share yourself (i.e. you don't need to modify
+`/etc/fstab` on each node). Also, note that removing the Docker volume does not
+delete the data generated in the NFS share.
 
 ### Prevent Conflicts with the Host Network
 
