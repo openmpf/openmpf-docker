@@ -36,12 +36,14 @@ printUsage() {
   exit -1
 }
 
-if [ $# -eq 1 ]; then
+if [ $# -eq 0 ]; then
+  askPass=0
+elif [ $# -eq 1 ]; then
   if [ "$1" != "--ask-pass" ]; then
     printUsage
   fi
   askPass=1
-elif [ $# -gt 1 ]; then
+else
   printUsage
 fi
 
@@ -67,31 +69,69 @@ nodeIds=$(docker node ls | sed -n '1!p' | cut -d ' ' -f 1)
 
 while read -r nodeId; do
   nodeAddr=$(docker node inspect "$nodeId" --format '{{ .Status.Addr }}')
+  echo
   echo "Connecting to $nodeAddr ..."
 
   if [ $askPass = 0 ]; then
-    sshCmd=( ssh -oStrictHostKeyChecking=no "$nodeAddr" /bin/bash )
+    sshCmd=(ssh -oStrictHostKeyChecking=no "$nodeAddr" /bin/bash)
   else
-    sshCmd=( sshpass -p "$sshPass" ssh -oStrictHostKeyChecking=no "$sshUser"@"$nodeAddr" /bin/bash )
+    sshCmd=(sshpass -p "$sshPass" ssh -oStrictHostKeyChecking=no "$sshUser"@"$nodeAddr" /bin/bash)
   fi
 
 "${sshCmd[@]}" << "EOF"
-set -o xtrace
+# set -o xtrace
 
 containerIds=$(docker ps -a -f name=openmpf_ -q)
 
-if [ ! -z "$containerIds" ]; then \
-  docker container rm -f $containerIds; \
+if [ ! -z "$containerIds" ]; then
+  echo "Removing openmpf containers:"
+  docker container rm -f $containerIds;
 else \
   echo "No openmpf containers running."
 fi
+echo
 
-volumeIds=$(docker volume ls -f name=openmpf_ -q)
+recreateSharedDataVolume=0
+sharedDataVolumeInfo=$(docker volume inspect openmpf_shared_data)
+ 
+if [ $? -eq 0 ]; then
+  recreateSharedDataVolume=-1
+  sharedDataVolumeDriver=$(docker volume inspect openmpf_shared_data --format '{{ .Driver }}')
 
-if [ ! -z "$volumeIds" ]; then \
-  docker volume rm -f $volumeIds; \
-else \
+  sharedDataVolumeDevice=$(docker volume inspect openmpf_shared_data --format '{{ .Options.device }}' )
+ 
+  if [ $? -eq 0 ] && [ "$sharedDataVolumeDevice" != "<no value>" ]; then
+    sharedDataVolumeOtherOptions=$(docker volume inspect openmpf_shared_data --format '{{ .Options.o }}')
+   
+    if [ $? -eq 0 ] && [ "$sharedDataVolumeOtherOptions" != "<no value>" ]; then  
+      sharedDataVolumeType=$(docker volume inspect openmpf_shared_data --format '{{ .Options.type }}')
+  
+      if [ $? -eq 0 ] && [ "$sharedDataVolumeType" != "<no value>" ]; then
+        recreateSharedDataVolume=1
+      fi
+    fi
+  fi
+fi
+
+volumeIds=$(docker volume ls -f name=openmpf -q)
+
+if [ ! -z "$volumeIds" ]; then
+  echo "Removing openmpf volumes:"
+  docker volume rm -f $volumeIds;
+else
   echo "No openmpf volumes found."
+fi
+echo
+
+if [ $recreateSharedDataVolume = 0 ]; then
+  echo "Missing openmpf_shared_data volume. Cannot recreate."
+elif [ $recreateSharedDataVolume = -1  ]; then
+  echo "Unrecognized or invalid openmpf_shared_data volume. Removed, but cannot recreate:"
+  echo "$sharedDataVolumeInfo"
+else
+  echo "Recreating volume:"
+  docker volume create --driver "$sharedDataVolumeDriver" --opt type="$sharedDataVolumeType" \
+    --opt o="$sharedDataVolumeOtherOptions" --opt device="$sharedDataVolumeDevice" openmpf_shared_data
 fi
 
 exit
@@ -99,3 +139,4 @@ EOF
 
   echo
 done <<< "$nodeIds"
+
