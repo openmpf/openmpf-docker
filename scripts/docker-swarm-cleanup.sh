@@ -28,14 +28,31 @@
 
 # NOTE: This script prioritizes convenience over security.
 # 1. StrictHostKeyChecking is turned off when using SSH.
-# 2. sshpass is used to provide a password to the ssh command.
+# 2. Optionally, sshpass is used to provide a password to the ssh command.
 
-read -s -p "Enter SSH user: " sshUser
-echo
+printUsage() {
+  echo "Usages:"
+  echo "docker-swarm-cleanup.sh [--ask-pass]"
+  exit -1
+}
 
-read -s -p "Enter SSH password: " sshPass
-echo
-echo
+if [ $# -eq 1 ]; then
+  if [ "$1" != "--ask-pass" ]; then
+    printUsage
+  fi
+  askPass=1
+elif [ $# -gt 1 ]; then
+  printUsage
+fi
+
+if [ $askPass = 1 ]; then
+  read -s -p "Enter SSH user: " sshUser
+  echo
+
+  read -s -p "Enter SSH password: " sshPass
+  echo
+  echo
+fi
 
 # The following command does not always remove the stopped containers;
 # however, it should remove networks.
@@ -49,10 +66,16 @@ sleep 10
 nodeIds=$(docker node ls | sed -n '1!p' | cut -d ' ' -f 1)
 
 while read -r nodeId; do
-    nodeAddr=$(docker node inspect "$nodeId" --format '{{ .Status.Addr }}')
-    echo "Connecting to $nodeAddr ..."
-    
-sshpass -p "$sshPass" ssh -oStrictHostKeyChecking=no "$sshUser"@"$nodeAddr" /bin/bash << "EOF"
+  nodeAddr=$(docker node inspect "$nodeId" --format '{{ .Status.Addr }}')
+  echo "Connecting to $nodeAddr ..."
+
+  if [ $askPass = 0 ]; then
+    sshCmd=( ssh -oStrictHostKeyChecking=no "$nodeAddr" /bin/bash )
+  else
+    sshCmd=( sshpass -p "$sshPass" ssh -oStrictHostKeyChecking=no "$sshUser"@"$nodeAddr" /bin/bash )
+  fi
+
+"${sshCmd[@]}" << "EOF"
 set -o xtrace
 
 containerIds=$(docker ps -a -f name=openmpf_ -q)
@@ -73,8 +96,6 @@ fi
 
 exit
 EOF
-    
-    echo
+
+  echo
 done <<< "$nodeIds"
-
-

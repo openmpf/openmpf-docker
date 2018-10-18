@@ -83,11 +83,11 @@ fi
 foundRowIndices=$(echo "$allElements" | grep "$searchStr" -n | cut -d ':' -f 1)
 
 while read -r line; do
-    rowId=$(($line + 1))
-    row=$(echo "$listing" | sed -n -e "$rowId"p)
-    rowsToRemove+=$row"\n"
-    imageId=$(echo "$row" | tr -s ' ' | cut -d ' ' -f $imageIdColIndex)
-    imageIdsToRemove+=$imageId" "
+  rowId=$(($line + 1))
+  row=$(echo "$listing" | sed -n -e "$rowId"p)
+  rowsToRemove+=$row"\n"
+  imageId=$(echo "$row" | tr -s ' ' | cut -d ' ' -f $imageIdColIndex)
+  imageIdsToRemove+=$imageId" "
 done <<< "$foundRowIndices"
 
 echo "Images to remove:"
