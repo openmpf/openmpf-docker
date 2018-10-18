@@ -141,4 +141,5 @@ EOF
 done <<< "$nodeIds"
 
 # TODO: Automate this, if possible.
+echo
 echo "IMPORTANT: Please manually remove the contents of the shared (NFS) volume."
