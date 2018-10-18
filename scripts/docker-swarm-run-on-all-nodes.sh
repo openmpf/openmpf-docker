@@ -28,36 +28,48 @@
 
 # NOTE: This script prioritizes convenience over security.
 # 1. StrictHostKeyChecking is turned off when using SSH.
-# 2. sshpass is used to provide a password to the ssh command.
+# 2. Optionally, sshpass is used to provide a password to the ssh command.
 
 printUsage() {
   echo "Usages:"
-  echo "docker-swarm-run-on-all-nodes.sh \"<command>\""
+  echo "docker-swarm-run-on-all-nodes.sh [--ask-pass] \"<command>\""
   exit -1
 }
 
-if [ ! $# -eq 1 ]; then
+if [ $# -eq 1 ]; then
+  askPass=0
+  command="$1"
+elif [ $# -eq 2 ]; then
+  if [ "$1" != "--ask-pass" ]; then 
+    printUsage
+  fi
+  askPass=1
+  command="$2"
+else
   printUsage
 fi
 
-command="$1"
+if [ $askPass = 1 ]; then
+  read -s -p "Enter SSH user: " sshUser
+  echo
 
-read -s -p "Enter SSH user: " sshUser
-echo
-
-read -s -p "Enter SSH password: " sshPass
-echo
-echo
+  read -s -p "Enter SSH password: " sshPass
+  echo
+  echo
+fi
 
 nodeIds=$(docker node ls | sed -n '1!p' | cut -d ' ' -f 1)
 
 while read -r nodeId; do
-    nodeAddr=$(docker node inspect "$nodeId" --format '{{ .Status.Addr }}')
-    echo "Connecting to $nodeAddr ..."
-    
+  nodeAddr=$(docker node inspect "$nodeId" --format '{{ .Status.Addr }}')
+  echo "Connecting to $nodeAddr ..."
+  
+  if [ $askPass = 1  ]; then
     sshpass -p "$sshPass" ssh -oStrictHostKeyChecking=no "$sshUser"@"$nodeAddr" "$command" < /dev/null
-    
-    echo
-done <<< "$nodeIds"
+  else
+    ssh -oStrictHostKeyChecking=no "$nodeAddr" "$command" < /dev/null
+  fi    
 
+  echo
+done <<< "$nodeIds"
 
