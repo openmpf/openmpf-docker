@@ -77,17 +77,22 @@ Push the images:
 ### Setup a Volume Driver
 
 In order for Docker Swarm to keep a synchronized volume between the nodes in the
-swarm, it needs a 3rd party volume driver. One of the simplest ways to do this
-is to utilize a Network File System (NFS). If your network configuration does
-not support NFS, or if you would like to make use of a cloud provider's storage
-solution, then there are many other volume drivers that you can explore (i.e.
-[REX-Ray](https://rexray.readthedocs.io/en/latest/)). This guide will be showing
-how to do a deployment with NFS.
+swarm, it needs a third party volume driver. One of the simplest ways to do this
+is to utilize a Network File System (NFS). [This
+guide](https://www.howtoforge.com/nfs-server-and-client-on-centos-7) explains
+how to set up an NFS share on CentOS machines.
+
+If your network configuration does not support NFS, or if you would like to make
+use of a cloud provider's storage solution, then there are many other volume
+drivers that you can explore (i.e.
+[REX-Ray](https://rexray.readthedocs.io/en/latest/)). Assuming you have an NFS
+share already setup, run the following command on each node to create a volume
+for sharing OpenMPF data:
 
 ```
 docker volume create --driver local --opt type=nfs \
     --opt o=addr=<address-of-file-share-server>,rw \
-    --opt device=:<path-to-share-on-server> mpf_mpf-data
+    --opt device=:<path-to-share-on-server> openmpf_shared_data
 ```
 
 ### Prevent Conflicts with the Host Network
@@ -160,7 +165,7 @@ range. For example, `9.9.9.0/24`. Make sure this does not conflict with
 
 `docker stack deploy -c swarm-compose.yml openmpf --with-registry-auth`
 
-That stack will likely take a long time to come up the first time you deploy it
+The stack will likely take a long time to come up the first time you deploy it
 because if a container gets scheduled on a node where the image is not present
 then it needs to download the image from the Docker registry, which takes some
 time. This will be much faster later once the images are downloaded on the
@@ -169,24 +174,27 @@ Docker registry.
 
 #### Monitor the Swarm Services
 
-List all of the services running across all of the nodes in the cluster:
+It may be helpful to run:
 
-- `docker service ls`
+- `watch -n 1 docker stack ps openmpf --no-trunc`
 
-It may take a minute for all of the services to come up. It may be helpful to
-run this command as:
+The output will update every second. Watch the `CURRENT STATE` column. Once
+all of the service are `Running`, then the stack is ready for use. Press ctrl+c
+when done.
+
+Additionally, it may be helpful to run:
 
 - `watch -n 1 docker service ls`
 
-That will run the command every second. Watch the `REPLICAS` column. Once all
-of the replicas are up, then the stack is ready for use. If one of the replicas
-does not come up, then there is a problem. Press ctrl+c when done.
+Again, the output will update every second. Watch the `REPLICAS` column. Once
+all of the replicas are up, then the stack is ready for use. If one of the
+replicas does not come up, then there is a problem. Press ctrl+c when done.
 
-List the task being executed by each service in the stack:
+To list the task being executed by each service in the stack, run:
 
 - `docker stack ps openmpf`
 
-Show the containers running on the current node:
+To show the containers running on the current node, run:
 
 - `docker ps`
 
