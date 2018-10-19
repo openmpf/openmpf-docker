@@ -31,6 +31,10 @@ set -Ee -o pipefail -o xtrace
 # Cleanup
 rm -f $MPF_HOME/share/nodes/MPF_Channel/*workflow_manager*.list
 
+# Setup
+# NOTE: $HOSTNAME is not known until runtime.
+echo "export JGROUPS_TCP_ADDRESS=${HOSTNAME}" >> /etc/profile.d/mpf.sh
+
 # Configure
 echo 'node.auto.config.enabled=true' >> $MPF_HOME/config/mpf-custom.properties
 echo 'node.auto.unconfig.enabled=true' >> $MPF_HOME/config/mpf-custom.properties

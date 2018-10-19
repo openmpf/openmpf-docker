@@ -38,51 +38,39 @@ services:
     ]
     volumes:
       - mysql_data:/var/lib/mysql
-    ports:
-      - "3306:3306"
     networks:
-      - openmpf_default
+      - swarm_overlay
 
   activemq:
     image: <registry_host>:<registry_port>/<repository>/openmpf_active_mq:<image_tag>
     ports:
-      - "61616:61616"
-      - "1099:1099"
+      - "8161:8161"
     networks:
-      - openmpf_default
+      - swarm_overlay
 
   redis:
     image: redis:latest
-    ports:
-      - "6379:6379"
     networks:
-      - openmpf_default
+      - swarm_overlay
 
   workflow_manager:
     image: <registry_host>:<registry_port>/<repository>/openmpf_workflow_manager:<image_tag>
-    # TODO: Remove this?
-    # environment:
-    #  - MYSQL_HOST=mpf_mysql_database
     ports:
       - "8080:8080"
-      - "7801:7801"
     volumes:
       - shared_data:/opt/mpf/share
     networks:
-      - openmpf_default
+      - swarm_overlay
 
   node_manager:
     image: <registry_host>:<registry_port>/<repository>/openmpf_node_manager:<image_tag>
-    ports:
-      - "80:80"
-      - "7800:7800"
     volumes:
       - shared_data:/opt/mpf/share
     deploy:
       mode: replicated
       replicas: 2
     networks:
-      - openmpf_default
+      - swarm_overlay
   #   placement:
   #     constraints:
   #       - engine.labels.gpu == 1
@@ -94,4 +82,4 @@ volumes:
   mysql_data:
 
 networks:
-  openmpf_default:
+  swarm_overlay:

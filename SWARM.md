@@ -195,13 +195,11 @@ Again, the output will update every second. Watch the `REPLICAS` column. Once
 all of the replicas are up, then the stack is ready for use. If one of the
 replicas does not come up, then there is a problem. Press ctrl+c when done.
 
-To list the task being executed by each service in the stack, run:
+To monitor the log of the workflow manager, run:
 
-- `docker stack ps openmpf`
+- `docker service logs --follow openmpf_workflow_manager`
 
-To show the containers running on the current node, run:
-
-- `docker ps`
+Press ctrl+c when done.
 
 #### Log into the Workflow Manager and Add Nodes
 
