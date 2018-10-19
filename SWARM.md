@@ -155,7 +155,7 @@ network in `swarm-compose.yml` as follows:
 
 ```
 networks:
-  openmpf_default:
+  swarm_overlay:
     driver: overlay
     ipam:
       config:

@@ -91,29 +91,8 @@ else \
 fi
 echo
 
-recreateSharedDataVolume=0
-sharedDataVolumeInfo=$(docker volume inspect openmpf_shared_data)
-
-if [ $? -eq 0 ]; then
-  recreateSharedDataVolume=-1
-  sharedDataVolumeDriver=$(docker volume inspect openmpf_shared_data --format '{{ .Driver }}')
-
-  sharedDataVolumeDevice=$(docker volume inspect openmpf_shared_data --format '{{ .Options.device }}' )
-
-  if [ $? -eq 0 ] && [ "$sharedDataVolumeDevice" != "<no value>" ]; then
-    sharedDataVolumeOtherOptions=$(docker volume inspect openmpf_shared_data --format '{{ .Options.o }}')
-
-    if [ $? -eq 0 ] && [ "$sharedDataVolumeOtherOptions" != "<no value>" ]; then
-      sharedDataVolumeType=$(docker volume inspect openmpf_shared_data --format '{{ .Options.type }}')
-
-      if [ $? -eq 0 ] && [ "$sharedDataVolumeType" != "<no value>" ]; then
-        recreateSharedDataVolume=1
-      fi
-    fi
-  fi
-fi
-
-volumeIds=$(docker volume ls -f name=openmpf -q)
+# Don't remove openmpf_shared_data.
+volumeIds=$(docker volume ls -f name=openmpf -q | sed "s/openmpf_shared_data//g")
 
 if [ ! -z "$volumeIds" ]; then
   echo "Removing openmpf volumes:"
@@ -122,17 +101,6 @@ else
   echo "No openmpf volumes found."
 fi
 echo
-
-if [ $recreateSharedDataVolume = 0 ]; then
-  echo "Missing openmpf_shared_data volume. Cannot recreate."
-elif [ $recreateSharedDataVolume = -1  ]; then
-  echo "Unrecognized or invalid openmpf_shared_data volume. Removed, but cannot recreate:"
-  echo "$sharedDataVolumeInfo"
-else
-  echo "Recreating volume:"
-  docker volume create --driver "$sharedDataVolumeDriver" --opt type="$sharedDataVolumeType" \
-    --opt o="$sharedDataVolumeOtherOptions" --opt device="$sharedDataVolumeDevice" openmpf_shared_data
-fi
 
 exit
 EOF

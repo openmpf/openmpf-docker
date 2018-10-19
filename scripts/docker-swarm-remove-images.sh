@@ -28,22 +28,40 @@
 
 printUsage() {
   echo "Usages:"
-  echo "docker-remove-images.sh [--dry-run] -t <partial-image-tag>"
-  echo "docker-remove-images.sh [--dry-run] -n <partial-image-name>"
+  echo "docker-swarm-remove-images.sh [--ask-pass] [--dry-run] -t <partial-image-tag>"
+  echo "docker-swarm-remove-images.sh [--ask-pass] [--dry-run] -n <partial-image-name>"
   exit -1
 }
 
+askPass=0
+dryRun=0
+
 if [ $# = 2 ]; then
-  dryRun=0
   mode="$1"
   searchStr="$2"
 elif [ $# = 3 ]; then
-  if [ "$1" != "--dry-run" ]; then
+  if [ "$1" = "--ask-pass" ]; then
+    askPass=1
+  elif [ "$1" = "--dry-run" ]; then
+    dryRun=1
+  else
     printUsage
   fi
-  dryRun=1
   mode="$2"
   searchStr="$3"
+elif [ $# = 4 ]; then
+  if [ "$1" = "--ask-pass" ]; then
+    askPass=1
+  else
+    printUsage
+  fi
+  if [ "$2" = "--dry-run" ]; then
+    dryRun=1
+  else
+    printUsage
+  fi
+  mode="$3"
+  searchStr="$4"
 else
   printUsage
 fi
@@ -64,36 +82,54 @@ else
   printUsage
 fi
 
-listing=$(docker image ls)
+nodeIds=$(docker node ls | sed -n '1!p' | cut -d ' ' -f 1)
 
-# Remove column names
-content=$(echo "$listing" | sed -n '1!p')
+while read -r nodeId; do
+  nodeAddr=$(docker node inspect "$nodeId" --format '{{ .Status.Addr }}')
+  echo
+  echo "Connecting to $nodeAddr ..."
 
-# Parse out elements to search
-allElements=$(echo "$content" | tr -s ' ' | cut -d ' ' -f $colIndex)
+  if [ $askPass = 0 ]; then
+    listing=$(ssh -oStrictHostKeyChecking=no "$nodeAddr" docker image ls)
+  else
+    listing=$(sshpass -p "$sshPass" ssh -oStrictHostKeyChecking=no "$sshUser"@"$nodeAddr" docker image ls)
+  fi
 
-# Search elements
-foundElements=$(echo "$allElements" | grep "$searchStr")
+  # Remove column names
+  content=$(echo "$listing" | sed -n '1!p')
 
-if [ -z "$foundElements" ]; then
-  echo "No images found."
-  exit 0
-fi
+  # Parse out elements to search
+  allElements=$(echo "$content" | tr -s ' ' | cut -d ' ' -f $colIndex)
 
-foundRowIndices=$(echo "$allElements" | grep "$searchStr" -n | cut -d ':' -f 1)
+  # Search elements
+  foundElements=$(echo "$allElements" | grep "$searchStr")
 
-while read -r line; do
-  rowId=$(($line + 1))
-  row=$(echo "$listing" | sed -n -e "$rowId"p)
-  rowsToRemove+=$row"\n"
-  imageId=$(echo "$row" | tr -s ' ' | cut -d ' ' -f $imageIdColIndex)
-  imageIdsToRemove+=$imageId" "
-done <<< "$foundRowIndices"
+  if [ -z "$foundElements" ]; then
+    echo "No images found."
+    exit 0
+  fi
 
-echo "Images to remove:"
-echo -e "$rowsToRemove"
+  foundRowIndices=$(echo "$allElements" | grep "$searchStr" -n | cut -d ':' -f 1)
 
-if [ $dryRun = 0 ]; then
-  echo "Removing images ..."
-  docker image rm -f $imageIdsToRemove
-fi
+  while read -r line; do
+    rowId=$(($line + 1))
+    row=$(echo "$listing" | sed -n -e "$rowId"p)
+    rowsToRemove+=$row"\n"
+    imageId=$(echo "$row" | tr -s ' ' | cut -d ' ' -f $imageIdColIndex)
+    imageIdsToRemove+=$imageId" "
+  done <<< "$foundRowIndices"
+
+  echo "Images to remove:"
+  echo -e "$rowsToRemove"
+
+  if [ $dryRun = 0 ]; then
+    echo "Removing images ..."
+
+    if [ $askPass = 0 ]; then
+      listing=$(ssh -oStrictHostKeyChecking=no "$nodeAddr" docker image rm -f $imageIdsToRemove)
+    else
+      listing=$(sshpass -p "$sshPass" ssh -oStrictHostKeyChecking=no "$sshUser"@"$nodeAddr" docker image rm -f $imageIdsToRemove)
+    fi
+  fi
+
+done <<< "$nodeIds"
