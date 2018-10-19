@@ -82,6 +82,15 @@ else
   printUsage
 fi
 
+if [ $askPass = 1 ]; then
+  read -s -p "Enter SSH user: " sshUser
+  echo
+
+  read -s -p "Enter SSH password: " sshPass
+  echo
+  echo
+fi
+
 nodeIds=$(docker node ls | sed -n '1!p' | cut -d ' ' -f 1)
 
 while read -r nodeId; do
@@ -90,9 +99,9 @@ while read -r nodeId; do
   echo "Connecting to $nodeAddr ..."
 
   if [ $askPass = 0 ]; then
-    listing=$(ssh -oStrictHostKeyChecking=no "$nodeAddr" docker image ls)
+    listing=$(ssh -oStrictHostKeyChecking=no "$nodeAddr" docker image ls < /dev/null)
   else
-    listing=$(sshpass -p "$sshPass" ssh -oStrictHostKeyChecking=no "$sshUser"@"$nodeAddr" docker image ls)
+    listing=$(sshpass -p "$sshPass" ssh -oStrictHostKeyChecking=no "$sshUser"@"$nodeAddr" docker image ls < /dev/null)
   fi
 
   # Remove column names
@@ -106,7 +115,7 @@ while read -r nodeId; do
 
   if [ -z "$foundElements" ]; then
     echo "No images found."
-    exit 0
+    continue
   fi
 
   foundRowIndices=$(echo "$allElements" | grep "$searchStr" -n | cut -d ':' -f 1)
@@ -126,10 +135,12 @@ while read -r nodeId; do
     echo "Removing images ..."
 
     if [ $askPass = 0 ]; then
-      listing=$(ssh -oStrictHostKeyChecking=no "$nodeAddr" docker image rm -f $imageIdsToRemove)
+      ssh "$nodeAddr" docker image rm -f $imageIdsToRemove < /dev/null
     else
-      listing=$(sshpass -p "$sshPass" ssh -oStrictHostKeyChecking=no "$sshUser"@"$nodeAddr" docker image rm -f $imageIdsToRemove)
+      sshpass -p "$sshPass" ssh "$sshUser"@"$nodeAddr" docker image rm -f $imageIdsToRemove < /dev/null
     fi
-  fi
 
+    echo
+  fi
+  
 done <<< "$nodeIds"
