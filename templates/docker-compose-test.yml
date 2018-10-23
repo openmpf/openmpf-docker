@@ -60,7 +60,7 @@ services:
     container_name: workflow_manager
     build:
       context: ./openmpf_runtime
-      dockerfile: workflow_manager/Dockerfile-test
+      dockerfile: workflow_manager/test.Dockerfile
     # The following entrypoint and image sections are for manual debugging:
     # entrypoint:
     #  - sleep
