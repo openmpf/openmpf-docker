@@ -160,7 +160,7 @@ Perform the build using the following command:
 docker run \
   --mount type=bind,source=<path-to-.m2-dir>,target=/root/.m2 \
   --mount type=bind,source=<path-to-openmpf-projects>,target=/mnt/openmpf-projects \
-  --mount type=bind,source="$(pwd)"/mpf_runtime/build_artifacts,target=/mnt/build_artifacts \
+  --mount type=bind,source="$(pwd)"/openmpf_runtime/build_artifacts,target=/mnt/build_artifacts \
   openmpf_build
 ```
 

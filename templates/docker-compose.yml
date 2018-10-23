@@ -57,7 +57,7 @@ services:
     image: <registry_host>:<registry_port>/<repository>/openmpf_workflow_manager:<image_tag>
     container_name: workflow_manager
     build:
-      context: ./mpf_runtime
+      context: ./openmpf_runtime
       dockerfile: workflow_manager/Dockerfile
     depends_on:
       - mysql
@@ -70,7 +70,7 @@ services:
   node_manager:
     image: <registry_host>:<registry_port>/<repository>/openmpf_node_manager:<image_tag>
     build:
-      context: ./mpf_runtime
+      context: ./openmpf_runtime
       dockerfile: node_manager/Dockerfile
     # Uncomment the following line once you have the NVIDIA docker runtime
     #   installed if you want to make use of NVIDIA GPUs:
