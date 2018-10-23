@@ -244,7 +244,7 @@ if not dryRun:
         for tag in tagsToRemove[repo]:
             digest = tagsToRemove[repo][tag]
             print tag + " (" + digest + ")"
-            # do_rest_call("DELETE", repo + "/manifests/" + digest, False)
+            do_rest_call("DELETE", repo + "/manifests/" + digest, False)
         print
 
 print
