@@ -26,6 +26,10 @@
 # limitations under the License.                                            #
 #############################################################################
 
+# NOTE: This script prioritizes convenience over security.
+# 1. StrictHostKeyChecking is turned off when using SSH.
+# 2. Optionally, sshpass is used to provide a password to the ssh command.
+
 printUsage() {
   echo "Usages:"
   echo "docker-swarm-remove-images.sh [--ask-pass] [--dry-run] -t <partial-image-tag>"
