@@ -3,14 +3,14 @@
 *.iml
 
 # files that must be downloaded separately
-mpf_build/jdk*.rpm
+openmpf_build/jdk*.rpm
 
 # docker image archives
 *.tar.gz
 
 # build artifacts
-mpf_runtime/build_artifacts/*
-!mpf_runtime/build_artifacts/.gitkeep
+openmpf_runtime/build_artifacts/*
+!openmpf_runtime/build_artifacts/.gitkeep
 
 # backup
 *.bak

@@ -24,20 +24,12 @@
 # limitations under the License.                                            #
 #############################################################################
 
-ARG BUILD_IMAGE_NAME=mpf_build:latest
+ARG BUILD_IMAGE_NAME=openmpf_build:latest
 
-FROM $BUILD_IMAGE_NAME as mpf_build
+FROM $BUILD_IMAGE_NAME as openmpf_build
 
-# TODO: A new container can be made to include only a JRE and executables needed.
+# TODO: A new container can be made to include only the WAR file and a JRE.
 FROM centos:7.4.1708
-
-# Child node needs:
-#  - node-manager JAR
-#  - component libraries
-#  - plugins directory from tar.gz
-#  - update data and config
-
-#  NOTE: Components are automatically registered when Tomcat starts the workflow manager container.
 
 ################################################################################
 # Initial Setup                                                                #
@@ -47,7 +39,7 @@ ENV MPF_HOME=/opt/mpf
 VOLUME $MPF_HOME/share
 
 # Do this right away so that we fail fast if the user doesn't provide the JDK:
-COPY --from=mpf_build /apps/bin/jdk-*-linux-x64.rpm /apps/bin/
+COPY --from=openmpf_build /apps/bin/jdk-*-linux-x64.rpm /apps/bin/
 
 # Create the "mpf" user:
 RUN useradd -u 376 -U -d /home/mpf -ms /bin/bash -G wheel -p mpf mpf
@@ -73,33 +65,39 @@ RUN yum -y localinstall --nogpgcheck /apps/bin/jdk-*-linux-x64.rpm && \
     alternatives --set javac /usr/java/jdk*/bin/javac && \
     alternatives --set jar /usr/java/jdk*/bin/jar; \
     alternatives --install /usr/bin/jar jar /usr/java/jdk*/bin/jar 20000 && \
-    alternatives --set jar /usr/java/jdk*/bin/jar
+    alternatives --set jar /usr/java/jdk*/bin/jar; \
+    rm /apps/bin/jdk-*-linux-x64.rpm
 
 ################################################################################
 # Install yum Dependencies                                                     #
 ################################################################################
 
-RUN yum install -y log4cxx libdc1394 unzip libjpeg-turbo libpng \
-    libtiff jasper-libs gtk2 atk pango gdk-pixbuf2 cairo fontconfig gstreamer \
-    gstreamer-plugins-base libv4l mesa-libGLU libSM libICE qt-x11 python-pip \
-    python-virtualenv initscripts sudo dos2unix && \
+RUN yum install -y git asciidoc rpm-build \
+    python2-devel PyYAML python-httplib2 python-jinja2 libtomcrypt \
+    python-paramiko python-six sshpass which dos2unix && \
     yum clean all && rm -rf /var/cache/yum/*
 
+# TODO: For some reason this needs to be a separate step. I think it's because the
+#   mirror it choses for the other yum install does not have python-keyczar.
+#   This happens even if python-keyczar is the first thing in the list.
+RUN yum install -y python-keyczar && yum clean all
+
 ################################################################################
-# NVIDIA CUDA runtime setup                                                    #
+# Install Ansible                                                              #
 ################################################################################
 
-ENV CUDA_VERSION 9.1.85
-
-# nvidia-docker 1.0
-LABEL com.nvidia.volumes.needed="nvidia_driver"
-LABEL com.nvidia.cuda.version="${CUDA_VERSION}"
-
-RUN echo "/usr/local/nvidia/lib" >> /etc/ld.so.conf.d/nvidia.conf && \
-    echo "/usr/local/nvidia/lib64" >> /etc/ld.so.conf.d/nvidia.conf
-
-ENV PATH /usr/local/nvidia/bin:/usr/local/cuda/bin:${PATH}
-ENV LD_LIBRARY_PATH /usr/local/nvidia/lib:/usr/local/nvidia/lib64
+# Ansible:
+RUN mkdir -p /apps/source/ansible_sources && cd /apps/source/ansible_sources && \
+    git clone https://github.com/ansible/ansible.git --recursive && \
+    cd ansible && git checkout e71cce777685f96223856d5e6cf506a9ea2ef3ff && \
+    git submodule update --init --recursive && \
+    cd /apps/source/ansible_sources/ansible/lib/ansible/modules/core && \
+    git checkout 36f512abc1a75b01ae7207c74cdfbcb54a84be54 && \
+    cd /apps/source/ansible_sources/ansible/lib/ansible/modules/extras && \
+    git checkout 32338612b38d1ddfd0d42b1245c597010da02970 && \
+    cd /apps/source/ansible_sources/ansible && make rpm && \
+    cd /apps/source/ansible_sources/ansible && \
+    rpm -Uvh ./rpm-build/ansible-*.noarch.rpm && rm -rf /apps/source
 
 ################################################################################
 # Copy Files                                                                   #
@@ -108,22 +106,20 @@ ENV LD_LIBRARY_PATH /usr/local/nvidia/lib:/usr/local/nvidia/lib64
 # NOTE: This will change the most often so it should  be as far down in the Dockerfile as possible.
 
 # TODO: The more steps that can be kept the same (and in the same order) as the
-#   workflow_manager Dockerfile, the more docker can share the build steps
+#   node_manager Dockerfile, the more docker can share the build steps
 #   between the containers. All shared steps (installing java, copying files
-#   from mpf_build) should be moved to the top of both Dockerfiles.
+#   from openmpf_build) should be moved to the top of both Dockerfiles.
 
 # TODO: Trim the fat from the copies.
 
 # Copy files from the build image:
-COPY --from=mpf_build /apps/install/bin/ffmpeg /apps/install/bin/ffprobe \
+COPY --from=openmpf_build /apps/install/bin/ffmpeg /apps/install/bin/ffprobe \
      /apps/install/bin/ffserver $MPF_HOME/bin/
-COPY --from=mpf_build /etc/ld.so.conf.d/ /etc/ld.so.conf.d/
-COPY --from=mpf_build /etc/profile.d/mpf.sh /etc/profile.d/mpf.sh
+COPY --from=openmpf_build /etc/ld.so.conf.d/ /etc/ld.so.conf.d/
+COPY --from=openmpf_build /opt/apache-tomcat/ /opt/apache-tomcat/
 
 COPY build_artifacts/install.tar /home/mpf/
 RUN cd /home/mpf && tar -xzf install.tar -C $MPF_HOME && rm install.tar
-
-RUN cp $MPF_HOME/libexec/node-manager /etc/init.d/
 
 # COPY seems to be the only way to move files to the share volume:
 COPY build_artifacts/plugin-packages $MPF_HOME/share/components
@@ -132,21 +128,14 @@ COPY build_artifacts/plugin-packages $MPF_HOME/share/components
 RUN mkdir $MPF_HOME/plugins && cd $MPF_HOME/plugins && \
     for file in $MPF_HOME/share/components/*.tar.gz; do tar xzf "$file"; done
 
-COPY node_manager/setup-python-component-venv.py /home/mpf
-RUN dos2unix -q /home/mpf/setup-python-component-venv.py
+COPY build_artifacts/workflow-manager.war /opt/apache-tomcat/webapps/workflow-manager.war
 
-# Setup venv for Python components:
-RUN for dir in $MPF_HOME/plugins/*; do /home/mpf/setup-python-component-venv.py "$dir"; done
-
-# Link FFmpeg:
-RUN ln -s $MPF_HOME/bin/ffmpeg /usr/bin/ffmpeg && \
-    ln -s $MPF_HOME/bin/ffserver /usr/bin/ffserver && \
-    ln -s $MPF_HOME/bin/ffprobe /usr/bin/ffprobe
+COPY build_artifacts/ansible.tar /home/mpf/
+RUN cd /home/mpf && mkdir -p /home/mpf/openmpf-projects/openmpf/trunk && \
+    tar -xzf ansible.tar -C /home/mpf/openmpf-projects/openmpf/trunk && \
+    rm ansible.tar
 
 RUN ldconfig
-
-# Create log path
-RUN mkdir -p $MPF_HOME/share/logs/node_manager/ && chown mpf $MPF_HOME/share/logs/node_manager
 
 ################################################################################
 # Configure Environment Variables                                              #
@@ -155,35 +144,31 @@ RUN mkdir -p $MPF_HOME/share/logs/node_manager/ && chown mpf $MPF_HOME/share/log
 ENV ACTIVE_MQ_HOST=activemq
 ENV ACTIVE_MQ_BROKER_URI=failover://(tcp://$ACTIVE_MQ_HOST:61616)?jms.prefetchPolicy.all=1&startupMaxReconnectAttempts=1
 ENV MYSQL_HOST=mysql_database
-ENV THIS_MPF_NODE=node_manager
+ENV THIS_MPF_NODE=workflow_manager
 ENV JGROUPS_TCP_ADDRESS=match-interface:eth1
 ENV JGROUPS_TCP_PORT=7800
 ENV JGROUPS_FILE_PING_LOCATION=$MPF_HOME/share/nodes
-ENV no_proxy=localhost,$THIS_MPF_NODE
-ENV MPF_USER=root
+ENV no_proxy=localhost
+ENV MPF_USER=mpf
 ENV MPF_LOG_PATH=$MPF_HOME/share/logs
-ENV MASTER_MPF_NODE=workflow_manager
-ENV MAIL=/var/spool/mail/mpf
-ENV PATH=$PATH:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin:$MPF_HOME/bin:/usr/bin/
-ENV JAVA_HOME=/usr/bin/java
-ENV HOME=/home/mpf
-ENV LOGNAME=mpf
+ENV CORE_MPF_NODES=
+ENV LD_LIBRARY_PATH=/usr/lib64:$MPF_HOME/lib
+ENV PATH=$PATH:$MPF_HOME/bin
+ENV CATALINA_OPTS="-server -Xms256m -XX:PermSize=512m -XX:MaxPermSize=512m -Duser.country=US -Djava.library.path=$MPF_HOME/lib -Dtransport.guarantee='NONE' -Dweb.rest.protocol='http'"
 
-# TODO: This shouldn't be needed, but for some reason the node-manager script is
-#   not able to see the ENV variables:
-RUN echo "export JAVA_HOME=/usr" >> /etc/profile.d/mpf.sh; \
-    echo "export MPF_HOME=$MPF_HOME" >> /etc/profile.d/mpf.sh; \
-    echo "export USER=root" >> /etc/profile.d/mpf.sh; \
-    echo "export THIS_MPF_NODE=$THIS_MPF_NODE" >> /etc/profile.d/mpf.sh; \
-    echo "export MASTER_MPF_NODE=$MASTER_MPF_NODE" >> /etc/profile.d/mpf.sh; \
-    echo "export MPF_LOG_PATH=$MPF_LOG_PATH" >> /etc/profile.d/mpf.sh; \
-    echo "export JGROUPS_TCP_ADDRESS=$JGROUPS_TCP_ADDRESS" >> /etc/profile.d/mpf.sh; \
-    echo "export JGROUPS_FILE_PING_LOCATION=$JGROUPS_FILE_PING_LOCATION" >> /etc/profile.d/mpf.sh
+# The workflow manager must be added as an mpf-child so that plugin packages are
+# extracted at startup, which is necessary for component auto-registration.
+RUN echo '[mpf-child]' >> /etc/ansible/hosts; \
+    echo $THIS_MPF_NODE >> /etc/ansible/hosts;
 
 ################################################################################
 # Prepare Entrypoint                                                           #
 ################################################################################
 
-COPY node_manager/docker-entrypoint.sh /home/mpf
+EXPOSE 8080
+
+# TODO implement wait for mysql script
+
+COPY workflow_manager/docker-entrypoint.sh /home/mpf
 RUN dos2unix -q /home/mpf/docker-entrypoint.sh
 ENTRYPOINT ["/home/mpf/docker-entrypoint.sh"]

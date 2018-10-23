@@ -43,7 +43,7 @@ echo 'node.auto.unconfig.enabled=true' >> $MPF_HOME/config/mpf-custom.properties
 
 # echo "THIS IS A WFM TEST!"
 
-# TODO: Move to mpf_build Dockerfile
+# TODO: Move to openmpf_build Dockerfile
 export PKG_CONFIG_PATH=/apps/install/lib/pkgconfig
 export CXXFLAGS=-isystem\ /apps/install/include
 export PATH=$PATH:/apps/install/bin:/opt/apache-maven/bin:/apps/install/lib/pkgconfig:/usr/bin

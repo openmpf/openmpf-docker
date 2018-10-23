@@ -72,8 +72,8 @@ fi
 
 # Example output of "docker image ls":
 # REPOSITORY                        TAG                 IMAGE ID            CREATED             SIZE
-# openmpf-docker_workflow_manager   latest              0bb20302dd48        44 hours ago        3.31GB
-# mpf_build                         latest              aa1729292884        44 hours ago        12.8GB
+# openmpf_workflow_manager          latest              0bb20302dd48        44 hours ago        3.31GB
+# openmpf_build                     latest              aa1729292884        44 hours ago        12.8GB
 nameColIndex=1
 tagColIndex=2
 imageIdColIndex=3
@@ -146,5 +146,5 @@ while read -r nodeId; do
 
     echo
   fi
-  
+
 done <<< "$nodeIds"

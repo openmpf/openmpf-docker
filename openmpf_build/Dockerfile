@@ -24,7 +24,7 @@
 # limitations under the License.                                            #
 #############################################################################
 
-FROM centos:7.4.1708 as mpf_build
+FROM centos:7.4.1708 as openmpf_build
 WORKDIR /home/mpf
 
 # TODO: "&&" remove source code after building libs.
@@ -70,7 +70,8 @@ RUN yum install -y git python-pip python-devel python-setuptools file \
     yum clean all && rm -rf /var/cache/yum/*
 
 # Install Python dependencies:
-RUN pip install --upgrade pip && pip install wheel virtualenv
+RUN pip install --upgrade pip && pip install --upgrade setuptools && \
+    pip install wheel virtualenv
 
 # Install C Foreign Function Interface (CFFI):
 RUN cd /home/mpf && easy_install -U cffi
@@ -212,7 +213,7 @@ RUN wget -nv -O /apps/source/ffmpeg_sources/v1.6.1.tar.gz \
 
 # libx264:
 RUN wget -nv -O /apps/source/ffmpeg_sources/x264-snapshot-20170226-2245-stable.tar.bz2 \
-    "ftp://ftp.videolan.org/pub/videolan/x264/snapshots/x264-snapshot-20170226-2245-stable.tar.bz2" && \
+    "http://download.videolan.org/pub/videolan/x264/snapshots/x264-snapshot-20170226-2245-stable.tar.bz2" && \
     cd /apps/source/ffmpeg_sources && tar xvjf x264-snapshot-20170226-2245-stable.tar.bz2 && \
     cd x264-snapshot-20170226-2245-stable && PKG_CONFIG_PATH="/apps/install/lib/pkgconfig" \
     ./configure --prefix="/apps/install" --bindir="/apps/install" --enable-shared --disable-cli && \

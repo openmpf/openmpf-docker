@@ -134,14 +134,14 @@ Download the most recent Oracle Java SE JDK 8 64-bit Linux RPM from
 [here](http://www.oracle.com/technetwork/java/javase/downloads/index.html). If
 it's not listed there, check
 [here](http://www.oracle.com/technetwork/java/javase/downloads/java-archive-javase8-2177648.html).
-Place the file in the `mpf_build` directory. The file should be named
+Place the file in the `openmpf_build` directory. The file should be named
 `jdk-8u144-linux-x64.rpm`, or something similar where "8u144" is a different
 version number. Do not download Java SE 9 or 10.
 
 Run following command from within the `openmpf-docker` directory to create the
 OpenMPF build image:
 
-- `docker build mpf_build/ -t mpf_build:latest`
+- `docker build openmpf_build/ -t openmpf_build:latest`
 
 This image has not yet built OpenMPF, rather, it is an environment in which
 OpenMPF will be built in the next step.
@@ -161,7 +161,7 @@ docker run \
   --mount type=bind,source=<path-to-.m2-dir>,target=/root/.m2 \
   --mount type=bind,source=<path-to-openmpf-projects>,target=/mnt/openmpf-projects \
   --mount type=bind,source="$(pwd)"/mpf_runtime/build_artifacts,target=/mnt/build_artifacts \
-  mpf_build
+  openmpf_build
 ```
 
 If that command does output `BUILD SUCCESS` then you may try to run it again.
