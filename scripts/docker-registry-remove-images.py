@@ -97,8 +97,8 @@ tagsToRemove = {}
 print "Images to remove:"
 print
 
-removeTag = False
 for repo in catalog["repositories"]:
+    removeTag = False
     print repo
 
     if mode == "-n":
@@ -116,6 +116,7 @@ for repo in catalog["repositories"]:
             if searchStr in tag:
                 removeTag = True
             else:
+                removeTag = False
                 print "+ [KEEP] " + tag
 
         if removeTag:
@@ -125,12 +126,13 @@ for repo in catalog["repositories"]:
             print "- [REMOVE] " + tag
     print
 
-print
 if not tagsToRemove:
+    print
     print "No images found."
     exit(0)
 
 if not dryRun:
+    print
     print "Removing images:"
     print
 
