@@ -34,6 +34,12 @@ import json
 import subprocess
 import sys
 
+# Enable this to show non-matching repos. All tags in these repos will be kept.
+PRINT_REPOS_TO_KEEP = True
+
+# Enable this to show tags that will be kept within matching repos.
+PRINT_TAGS_TO_KEEP = True
+
 global registryUrl
 global user
 global password
@@ -41,21 +47,23 @@ global password
 
 def print_usage():
     print "Usages:"
-    print "docker-registry-remove-images.py [--dry-run] <registry-url-with-port> -t <partial-image-tag>"
-    print "docker-registry-remove-images.py [--dry-run] <registry-url-with-port> -n <partial-image-name>"
+    print "docker-registry-remove-images.py [--dry-run] <registry-url-with-port> <--partial|--exact> -n <image-name>"
+    print "docker-registry-remove-images.py [--dry-run] <registry-url-with-port> <--partial|--exact> -t <image-tag>"
+    print "docker-registry-remove-images.py [--dry-run] <registry-url-with-port> <--partial|--exact> -n <image-name> -t <image-tag>"
     exit(1)
 
 
-def do_rest_call(httpMethod, path):
+def do_rest_call(httpMethod, path, parseJson=True):
     process = subprocess.Popen(["curl", "-s", "-S", "--insecure", "-X", httpMethod, "-u", user + ":" + password,
                                 registryUrl + "/v2/" + path], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     out, err = process.communicate()
     if err:
         raise Exception(err)
-    data = json.loads(out)
-    if "errors" in data:
-        raise Exception(data["errors"][0]["code"] + ": " + data["errors"][0]["message"])
-    return data
+    if parseJson:
+        data = json.loads(out)
+        if "errors" in data:
+            raise Exception(data["errors"][0]["code"] + ": " + data["errors"][0]["message"])
+        return data
 
 
 def get_digest(repo, tag):
@@ -73,18 +81,97 @@ def get_digest(repo, tag):
 
 
 dryRun = False
+exact = False
+nameSearchStr = ""
+tagSearchStr = ""
 
-if len(sys.argv) == 5:
+if len(sys.argv) == 8:
     if sys.argv[1] == "--dry-run":
         dryRun = True
     else:
         print_usage()
-elif len(sys.argv) != 4:
+
+    registryUrl = sys.argv[2]
+
+    if sys.argv[3] == "--partial":
+        exact = False
+    elif sys.argv[3] == "--exact":
+        exact = True
+    else:
+        print_usage()
+
+    if sys.argv[4] == "-n":
+        nameSearchStr = sys.argv[5]
+    else:
+        print_usage()
+
+    if sys.argv[6] == "-t":
+        tagSearchStr = sys.argv[7]
+    else:
+        print_usage()
+
+elif len(sys.argv) == 7:
+    registryUrl = sys.argv[1]
+
+    if sys.argv[2] == "--partial":
+        exact = False
+    elif sys.argv[2] == "--exact":
+        exact = True
+    else:
+        print_usage()
+
+    if sys.argv[3] == "-n":
+        nameSearchStr = sys.argv[4]
+    else:
+        print_usage()
+
+    if sys.argv[5] == "-t":
+        tagSearchStr = sys.argv[6]
+    else:
+        print_usage()
+
+elif len(sys.argv) == 6:
+    if sys.argv[1] == "--dry-run":
+        dryRun = True
+    else:
+        print_usage()
+
+    registryUrl = sys.argv[2]
+
+    if sys.argv[3] == "--partial":
+        exact = False
+    elif sys.argv[3] == "--exact":
+        exact = True
+    else:
+        print_usage()
+
+    if sys.argv[4] == "-n":
+        nameSearchStr = sys.argv[5]
+    elif sys.argv[4] == "-t":
+        tagSearchStr = sys.argv[5]
+    else:
+        print_usage()
+
+elif len(sys.argv) == 5:
+    registryUrl = sys.argv[1]
+
+    if sys.argv[2] == "--partial":
+        exact = False
+    elif sys.argv[2] == "--exact":
+        exact = True
+    else:
+        print_usage()
+
+    if sys.argv[3] == "-n":
+        nameSearchStr = sys.argv[4]
+    elif sys.argv[3] == "-t":
+        tagSearchStr = sys.argv[4]
+    else:
+        print_usage()
+
+else:
     print_usage()
 
-registryUrl = sys.argv[len(sys.argv)-3]
-mode = sys.argv[len(sys.argv)-2]
-searchStr = sys.argv[len(sys.argv)-1]
 
 user = raw_input("Enter registry user: ")
 password = getpass.getpass("Entry registry password: ")
@@ -94,30 +181,46 @@ catalog = do_rest_call("GET", "_catalog")
 
 tagsToRemove = {}
 
-print "Images to remove:"
+print
+print "Image search:"
 print
 
 for repo in catalog["repositories"]:
     removeTag = False
-    print repo
 
-    if mode == "-n":
-        if searchStr in repo:
+    if nameSearchStr:
+        if exact and nameSearchStr == repo:
+            removeTag = True
+        elif not exact and nameSearchStr in repo:
             removeTag = True
         else:
-            print "+ [KEEP ALL]"
-            print
-            continue
+            if not PRINT_REPOS_TO_KEEP:
+                continue
+
+    print repo
 
     tagList = do_rest_call("GET", repo + "/tags/list")
+    if not tagList["tags"]:
+        print "* [EMPTY]"
+        print
+        continue
+
+    if not removeTag:
+        print "+ [KEEP ALL]"
+        print
+        continue
+
     for tag in tagList["tags"]:
 
-        if mode == "-t":
-            if searchStr in tag:
+        if tagSearchStr:
+            if exact and tagSearchStr == tag:
+                removeTag = True
+            elif not exact and tagSearchStr in tag:
                 removeTag = True
             else:
                 removeTag = False
-                print "+ [KEEP] " + tag
+                if PRINT_TAGS_TO_KEEP:
+                    print "+ [KEEP] " + tag
 
         if removeTag:
             if repo not in tagsToRemove:
@@ -140,5 +243,10 @@ if not dryRun:
         print repo
         for tag in tagsToRemove[repo]:
             digest = tagsToRemove[repo][tag]
-            print "Removing " + digest
+            print tag + " (" + digest + ")"
+            # do_rest_call("DELETE", repo + "/manifests/" + digest, False)
         print
+
+print
+print "To force garbage collection, run the following command on the registry host:"
+print "docker exec -it <registry-container-id> /bin/registry garbage-collect /etc/docker/registry/config.yml"

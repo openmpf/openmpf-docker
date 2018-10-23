@@ -28,8 +28,8 @@
 
 printUsage() {
   echo "Usages:"
-  echo "docker-remove-images.sh [--dry-run] -t <partial-image-tag>"
   echo "docker-remove-images.sh [--dry-run] -n <partial-image-name>"
+  echo "docker-remove-images.sh [--dry-run] -t <partial-image-tag>"
   exit -1
 }
 
