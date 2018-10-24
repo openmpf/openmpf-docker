@@ -77,7 +77,7 @@ def get_digest(repo, tag):
     for line in out.splitlines():
         if line.find("Docker-Content-Digest") > -1:
             return line.split()[1]
-    raise Exception("Cannot get digest for " + repo + ":" + tag + ".")
+    raise Exception("Cannot get digest")
 
 
 dryRun = False
@@ -205,7 +205,7 @@ for repo in catalog["repositories"]:
         print
         continue
 
-    if not removeTag:
+    if nameSearchStr and not removeTag:
         print "+ [KEEP ALL]"
         print
         continue
@@ -223,10 +223,14 @@ for repo in catalog["repositories"]:
                     print "+ [KEEP] " + tag
 
         if removeTag:
-            if repo not in tagsToRemove:
-                tagsToRemove[repo] = {}
-            tagsToRemove[repo][tag] = get_digest(repo, tag)
-            print "- [REMOVE] " + tag
+            try:
+                digest = get_digest(repo, tag)
+                if repo not in tagsToRemove:
+                    tagsToRemove[repo] = {}
+                tagsToRemove[repo][tag] = digest
+                print "- [REMOVE] " + tag
+            except Exception as e:
+                print "* [ERROR] " + tag + " (" + str(e) + ")"
     print
 
 if not tagsToRemove:
@@ -250,3 +254,4 @@ if not dryRun:
 print
 print "To force garbage collection, run the following command on the registry host:"
 print "docker exec -it <registry-container-id> /bin/registry garbage-collect /etc/docker/registry/config.yml"
+
