@@ -67,8 +67,9 @@ services:
     volumes:
       - shared_data:/opt/mpf/share
     deploy:
-      mode: replicated
-      replicas: 2
+      mode: global
+  #   mode: replicated
+  #   replicas: 2
     networks:
       - swarm_overlay
   #   placement:
