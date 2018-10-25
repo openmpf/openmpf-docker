@@ -55,6 +55,9 @@ services:
 
   workflow_manager:
     image: <registry_host>:<registry_port>/<repository>/openmpf_workflow_manager:<image_tag>
+    # The following lines are needed to wait until the mySQL service is available.
+    environment:
+      - MYSQL_ROOT_PASSWORD=password
     ports:
       - "8080:8080"
     volumes:
@@ -64,9 +67,6 @@ services:
 
   node_manager:
     image: <registry_host>:<registry_port>/<repository>/openmpf_node_manager:<image_tag>
-    # The following lines are needed to wait until the mySQL service is available.
-    environment:
-      - MYSQL_ROOT_PASSWORD=password
     volumes:
       - shared_data:/opt/mpf/share
     deploy:

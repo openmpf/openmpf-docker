@@ -68,6 +68,9 @@ services:
     depends_on:
       - mysql
     restart: always
+    # The following lines are needed to wait until the mySQL service is available.
+    environment:
+      - MYSQL_ROOT_PASSWORD=password
     ports:
       - "8080:8080"
     volumes:
@@ -85,9 +88,6 @@ services:
     #   installed if you want to make use of NVIDIA GPUs:
     # runtime: nvidia
     restart: always
-    # The following lines are needed to wait until the mySQL service is available.
-    environment:
-      - MYSQL_ROOT_PASSWORD=password
     # Uncomment the following lines to enable use of the node-manager status
     #   page. You will also need to set mpf.node.status.page.enabled in the
     #   node-manager properties file.
