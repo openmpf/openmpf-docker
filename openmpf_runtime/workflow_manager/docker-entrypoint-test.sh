@@ -42,11 +42,13 @@ echo 'node.auto.config.enabled=true' >> $MPF_HOME/config/mpf-custom.properties
 echo 'node.auto.unconfig.enabled=true' >> $MPF_HOME/config/mpf-custom.properties
 
 # Wait for mySQL service.
+set +o xtrace
 echo "Waiting for MySQL to become available ..."
 until mysql -h "$MYSQL_HOST" -u root -p"$MYSQL_ROOT_PASSWORD" -e "quit" >> /dev/null 2>&1; do
   echo "MySQL is unavailable. Sleeping."
   sleep 1
 done
+set -o xtrace
 
 # TODO: Move to openmpf_build Dockerfile
 export PKG_CONFIG_PATH=/apps/install/lib/pkgconfig
