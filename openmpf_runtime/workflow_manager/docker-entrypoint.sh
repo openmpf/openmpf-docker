@@ -39,5 +39,12 @@ echo "export JGROUPS_TCP_ADDRESS=${HOSTNAME}" >> /etc/profile.d/mpf.sh
 echo 'node.auto.config.enabled=true' >> $MPF_HOME/config/mpf-custom.properties
 echo 'node.auto.unconfig.enabled=true' >> $MPF_HOME/config/mpf-custom.properties
 
+# Wait for mySQL service.
+echo "Waiting for MySQL to become available ..."
+until mysql -h "$MYSQL_HOST" -u root -p"$MYSQL_ROOT_PASSWORD" -e "quit" >> /dev/null 2>&1; do
+  echo "MySQL is unavailable. Sleeping."
+  sleep 1
+done
+
 # Run Tomcat (as root user)
 /opt/apache-tomcat/bin/catalina.sh run
