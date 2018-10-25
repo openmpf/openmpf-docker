@@ -24,45 +24,29 @@
 # limitations under the License.                                            #
 #############################################################################
 
-FROM mpf_build
+ARG POST_BUILD_IMAGE_NAME=mpf_post_build:latest
 
-# TODO: A new container can be made to include only the WAR file and a JRE.
-FROM centos:7.4.1708
+FROM $POST_BUILD_IMAGE_NAME as mpf_post_build
 
 ################################################################################
 # Initial Setup                                                                #
 ################################################################################
 
-ENV MPF_HOME=/opt/mpf
+# ENV MPF_HOME=/opt/mpf
+ENV MPF_HOME=/home/mpf/openmpf-projects/openmpf/trunk/install
+
 VOLUME $MPF_HOME/share
 
-################################################################################
-# Install Oracle JDK                                                           #
-################################################################################
-
-COPY --from=mpf_build /apps/bin/jdk-*-linux-x64.rpm /apps/bin/
-
-# Install Oracle JDK:
-RUN yum -y localinstall --nogpgcheck /apps/bin/jdk-*-linux-x64.rpm && \
-    alternatives --install /usr/bin/java java /usr/java/jdk*/jre/bin/java 20000 && \
-    alternatives --install /usr/bin/jar jar /usr/java/jdk*/bin/jar 20000 && \
-    alternatives --install /usr/bin/javac javac /usr/java/jdk*/bin/javac 20000 && \
-    alternatives --install /usr/bin/javaws javaws /usr/java/jdk*/jre/bin/javaws 20000 && \
-    alternatives --set java /usr/java/jdk*/jre/bin/java && \
-    alternatives --set javaws /usr/java/jdk*/jre/bin/javaws && \
-    alternatives --set javac /usr/java/jdk*/bin/javac && \
-    alternatives --set jar /usr/java/jdk*/bin/jar; \
-    alternatives --install /usr/bin/jar jar /usr/java/jdk*/bin/jar 20000 && \
-    alternatives --set jar /usr/java/jdk*/bin/jar; \
-    rm /apps/bin/jdk-*-linux-x64.rpm
+RUN chown -R mpf:mpf $MPF_HOME/share
 
 ################################################################################
 # Install yum Dependencies                                                     #
 ################################################################################
 
-RUN yum update -y && yum install -y epel-release git asciidoc rpm-build \
+RUN yum install -y git asciidoc rpm-build \
     python2-devel PyYAML python-httplib2 python-jinja2 libtomcrypt \
-    python-paramiko python-six sshpass which mysql && yum clean all
+    python-paramiko python-six sshpass which dos2unix && \
+    yum clean all && rm -rf /var/cache/yum/*
 
 # TODO: For some reason this needs to be a separate step. I think it's because the
 #   mirror it choses for the other yum install does not have python-keyczar.
@@ -72,6 +56,8 @@ RUN yum install -y python-keyczar && yum clean all
 ################################################################################
 # Install Ansible                                                              #
 ################################################################################
+
+# TODO: Build the Ansible RPM on openmpf_build; install on workflow_manager
 
 # Ansible:
 RUN mkdir -p /apps/source/ansible_sources && cd /apps/source/ansible_sources && \
@@ -84,40 +70,7 @@ RUN mkdir -p /apps/source/ansible_sources && cd /apps/source/ansible_sources && 
     git checkout 32338612b38d1ddfd0d42b1245c597010da02970 && \
     cd /apps/source/ansible_sources/ansible && make rpm && \
     cd /apps/source/ansible_sources/ansible && \
-    rpm -Uvh ./rpm-build/ansible-*.noarch.rpm && rm -rf /apps/source
-
-################################################################################
-# Copy Files                                                                   #
-################################################################################
-
-# NOTE: This will change the most often so it should  be as far down in the Dockerfile as possible.
-
-# TODO: The more steps that can be kept the same (and in the same order) as the
-#   node_manager Dockerfile, the more docker can share the build steps
-#   between the containers. All shared steps (installing java, copying files
-#   from mpf_build) should be moved to the top of both Dockerfiles.
-
-# TODO: Trim the fat from the copies.
-
-# Copy files from the build image:
-COPY --from=mpf_build /apps/install/bin/ffmpeg /apps/install/bin/ffprobe \
-     /apps/install/bin/ffserver $MPF_HOME/bin/
-COPY --from=mpf_build /etc/ld.so.conf.d/ /etc/ld.so.conf.d/
-COPY --from=mpf_build /opt/apache-tomcat/ /opt/apache-tomcat/
-COPY --from=mpf_build /home/mpf/openmpf-projects/openmpf/trunk/ansible/ \
-    /home/mpf/openmpf-projects/openmpf/trunk/ansible/
-
-# TODO: Copy files from a shared "artifacts" build context:
-COPY --from=mpf_build /home/mpf/openmpf-projects/openmpf/trunk/install/ \
-    $MPF_HOME
-COPY --from=mpf_build /home/mpf/openmpf-projects/openmpf/mpf-component-build/plugin-packages \
-    $MPF_HOME/share/components
-
-# Extract tar.gz (using tar xzf) components to $MPF_HOME/plugins:
-RUN mkdir $MPF_HOME/plugins && cd $MPF_HOME/plugins && \
-    for file in $MPF_HOME/share/components/*.tar.gz; do tar xzf "$file"; done
-
-RUN ldconfig
+    rpm -Uvh ./rpm-build/ansible-*.noarch.rpm
 
 ################################################################################
 # Configure Environment Variables                                              #
@@ -126,26 +79,31 @@ RUN ldconfig
 ENV ACTIVE_MQ_HOST=activemq
 ENV ACTIVE_MQ_BROKER_URI=failover://(tcp://$ACTIVE_MQ_HOST:61616)?jms.prefetchPolicy.all=1&startupMaxReconnectAttempts=1
 ENV MYSQL_HOST=mysql_database
-ENV THIS_MPF_NODE=mpf_workflow_manager
-ENV JGROUPS_TCP_ADDRESS=match-interface:eth1
+ENV THIS_MPF_NODE=workflow_manager
+# JGROUPS_TCP_ADDRESS set in docker-entrypoint-test.sh
 ENV JGROUPS_TCP_PORT=7800
 ENV JGROUPS_FILE_PING_LOCATION=$MPF_HOME/share/nodes
 ENV no_proxy=localhost
 ENV MPF_USER=mpf
 ENV MPF_LOG_PATH=$MPF_HOME/share/logs
-# TODO there should be no core nodes. Nodes only no their unique names once the
-#   containers have come up.
-ENV CORE_MPF_NODES=(node)
+ENV CORE_MPF_NODES=
 ENV LD_LIBRARY_PATH=/usr/lib64:$MPF_HOME/lib
 ENV PATH=$PATH:$MPF_HOME/bin
 ENV CATALINA_OPTS="-server -Xms256m -XX:PermSize=512m -XX:MaxPermSize=512m -Duser.country=US -Djava.library.path=$MPF_HOME/lib -Dtransport.guarantee='NONE' -Dweb.rest.protocol='http'"
 
-RUN echo '[mpf-master]' >> /etc/ansible/hosts; \
-    echo $THIS_MPF_NODE >> /etc/ansible/hosts; \
-    echo '' >> /etc/ansible/hosts; echo '[mpf-child]' >> /etc/ansible/hosts
+# The workflow manager must be added as an mpf-child so that plugin packages are
+# extracted at startup, which is necessary for component auto-registration.
+RUN echo '[mpf-child]' >> /etc/ansible/hosts; \
+    echo $THIS_MPF_NODE >> /etc/ansible/hosts;
+
+################################################################################
+# Prepare Entrypoint                                                           #
+################################################################################
 
 EXPOSE 8080
-COPY wait-for-mysql.sh /home/
-RUN chmod +x /home/wait-for-mysql.sh
-RUN echo "rm -f $MPF_HOME/share/nodes/MPF_Channel/*workflow_manager*.list && /home/wait-for-mysql.sh $MYSQL_HOST && /opt/apache-tomcat/bin/catalina.sh run" > /home/run.sh
-ENTRYPOINT ["sh", "/home/run.sh"]
+
+# TODO implement wait for mysql script
+
+COPY workflow_manager/docker-entrypoint-test.sh /home/mpf
+RUN dos2unix -q /home/mpf/docker-entrypoint-test.sh
+ENTRYPOINT ["/home/mpf/docker-entrypoint-test.sh"]

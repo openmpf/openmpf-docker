@@ -1,3 +1,5 @@
+#!/usr/bin/bash
+
 #############################################################################
 # NOTICE                                                                    #
 #                                                                           #
@@ -24,70 +26,74 @@
 # limitations under the License.                                            #
 #############################################################################
 
-version: '2.3'
-services:
-  mysql:
-    container_name: mysql_database
-    image: mariadb:latest
-    restart: always
-    environment:
-      - MYSQL_ROOT_PASSWORD=password
-      - MYSQL_DATABASE=mpf
-      - MYSQL_USER=mpf
-      - MYSQL_PASSWORD=mpf
-    # https://github.com/docker-library/mariadb/issues/113
-    command: [
-      '--wait_timeout=28800',
-    ]
-    volumes:
-      - mysql_data:/var/lib/mysql
-    ports:
-      - "3306:3306"
+printUsage() {
+  echo "Usages:"
+  echo "docker-remove-images.sh [--dry-run] -n <partial-image-name>"
+  echo "docker-remove-images.sh [--dry-run] -t <partial-image-tag>"
+  exit -1
+}
 
-  active_mq:
-    container_name: activemq
-    build: ./active_mq
-    restart: always
-    ports:
-      - "61616:61616"
-      - "1099:1099"
-    restart: always
+if [ $# = 2 ]; then
+  dryRun=0
+  mode="$1"
+  searchStr="$2"
+elif [ $# = 3 ]; then
+  if [ "$1" != "--dry-run" ]; then
+    printUsage
+  fi
+  dryRun=1
+  mode="$2"
+  searchStr="$3"
+else
+  printUsage
+fi
 
-  redis:
-    container_name: redis
-    image: redis
-    ports:
-      - "6379:6379"
-    restart: always
+# Example output of "docker image ls":
+# REPOSITORY                        TAG                 IMAGE ID            CREATED             SIZE
+# openmpf_workflow_manager          latest              0bb20302dd48        44 hours ago        3.31GB
+# openmpf_build                     latest              aa1729292884        44 hours ago        12.8GB
+nameColIndex=1
+tagColIndex=2
+imageIdColIndex=3
 
-  workflow_manager:
-    container_name: workflow_manager
-    build: ./workflow_manager
-    depends_on:
-      - mysql
-    restart: always
-    ports:
-      - "8080:8080"
-      - "7801:7801"
-    volumes:
-      - mpf_data:/opt/mpf/share
+if [ "$mode" = "-t" ]; then
+  colIndex=$tagColIndex
+elif [ "$mode" = "-n" ]; then
+  colIndex=$nameColIndex
+else
+  printUsage
+fi
 
-  node_manager:
-    container_name: node_manager
-    build: ./node_manager
-    # Uncomment this once you have the NVIDIA docker runtime installed if you
-    #   want to make use of NVIDIA GPUs.
-    # runtime: nvidia
-    restart: always
-    ports:
-    # Uncomment the following line to enable use of the node-manager status
-    #   page. You will also need to set mpf.node.status.page.enabled in the
-    #   node-manager properties file.
-    #  - "8008:8008"
-      - "7800:7800"
-    volumes:
-      - mpf_data:/opt/mpf/share
+listing=$(docker image ls)
 
-volumes:
-  mpf_data:
-  mysql_data:
+# Remove column names
+content=$(echo "$listing" | sed -n '1!p')
+
+# Parse out elements to search
+allElements=$(echo "$content" | tr -s ' ' | cut -d ' ' -f $colIndex)
+
+# Search elements
+foundElements=$(echo "$allElements" | grep "$searchStr")
+
+if [ -z "$foundElements" ]; then
+  echo "No images found."
+  exit 0
+fi
+
+foundRowIndices=$(echo "$allElements" | grep "$searchStr" -n | cut -d ':' -f 1)
+
+while read -r line; do
+  rowId=$(($line + 1))
+  row=$(echo "$listing" | sed -n -e "$rowId"p)
+  rowsToRemove+=$row"\n"
+  imageId=$(echo "$row" | tr -s ' ' | cut -d ' ' -f $imageIdColIndex)
+  imageIdsToRemove+=$imageId" "
+done <<< "$foundRowIndices"
+
+echo "Images to remove:"
+echo -e "$rowsToRemove"
+
+if [ $dryRun = 0 ]; then
+  echo "Removing images ..."
+  docker image rm -f $imageIdsToRemove
+fi

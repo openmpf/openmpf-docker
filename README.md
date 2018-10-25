@@ -154,16 +154,19 @@ follow the instructions found [here](https://docs.docker.com/compose/install/).
 Please make sure you have at least `version 1.22.0` installed before continuing.
 To check this, run:
 
--  `docker-compose --version`.
+-  `docker-compose --version`
 
 ### Build the OpenMPF Docker Images
+
+Note that this process can take 1.5 - 2 hours if you're starting from scratch.
 
 Clone the [openmpf-docker repository](https://github.com/openmpf/openmpf-docker):
 
 - `git clone https://github.com/openmpf/openmpf-docker.git`
 
-Clone the [openmpf-projects repository](https://github.com/openmpf/openmpf-projects) into the `mpf_build` directory:
-- `cd openmpf-docker/mpf_build/`
+Clone the [openmpf-projects
+repository](https://github.com/openmpf/openmpf-projects) somewhere on your host
+system:
 - `git clone https://github.com/openmpf/openmpf-projects.git --recursive`
 - (Optional) checkout a branch or commit
   - `cd openmpf-projects`
@@ -174,23 +177,64 @@ Download the most recent Oracle Java SE JDK 8 64-bit Linux RPM from
 [here](http://www.oracle.com/technetwork/java/javase/downloads/index.html). If
 it's not listed there, check
 [here](http://www.oracle.com/technetwork/java/javase/downloads/java-archive-javase8-2177648.html).
-Place the file in the `mpf_build` directory. The file should be named
+Place the file in the `openmpf_build` directory. The file should be named
 `jdk-8u144-linux-x64.rpm`, or something similar where "8u144" is a different
 version number. Do not download Java SE 9 or 10.
 
-Once cloned, you can run the following command, from the openmpf-docker directory, to build the OpenMPF project
-inside a Docker container tagged as `mpf_build:latest`:
+Run following command from within the `openmpf-docker` directory to create the
+OpenMPF build image:
 
-- `docker build mpf_build/ -t mpf_build:latest`
+- `docker build openmpf_build/ -t openmpf_build:latest`
 
-Note that it can take 1.5 - 2 hours for this command to complete if you're
-starting from scratch.
+This image has not yet built OpenMPF, rather, it is an environment in which
+OpenMPF will be built in the next step.
+
+Next, decide where you would like to store the Maven dependencies on your host
+system. On Linux systems, they are usually stored in `/home/<user>/.m2`. Create
+a new `.m2` directory if necessary.
+
+The first time OpenMPF is built it will download 300+ MB of Maven dependencies.
+It is most efficient to store them all on the host system so that they do not
+need to be downloaded again if and when you rebuild OpenMPF.
+
+Perform the build using the following command:
+
+```
+docker run \
+  --mount type=bind,source=<path-to-.m2-dir>,target=/root/.m2 \
+  --mount type=bind,source=<path-to-openmpf-projects>,target=/mnt/openmpf-projects \
+  --mount type=bind,source="$(pwd)"/openmpf_runtime/build_artifacts,target=/mnt/build_artifacts \
+  openmpf_build
+```
+
+If that command does output `BUILD SUCCESS` then you may try to run it again.
+Sometimes Maven will time out while trying to download dependencies within a
+Docker container.
+
+Next, generate the `docker-compose.yml` file. If you don't have access to a
+private Docker registry, then run:
+
+- `./scripts/docker-generate-compose-files.sh`
+
+Otherwise, if you do have access to a private Docker registry, then run:
+
+- `./scripts/docker-generate-compose-files.sh <registry_host> <registry_port>`
+
+Note that this will also generate `swarm-compose.yml`, which you will use if you
+choose to follow the [Swarm deployment guide](SWARM.md).
+
+If you built the runtime images before, then run the following script to
+remove the old containers and volumes:
+
+- `./scripts/docker-compose-cleanup.sh`
+
+Create the new runtime images:
 
 - `docker-compose build`
 
 ### Run OpenMPF using Docker Compose
 
-Once the images are built, you can run OpenMPF using:
+Once the runtime images are built, you can run OpenMPF using:
 
 - `docker-compose up`
 

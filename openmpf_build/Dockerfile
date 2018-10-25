@@ -24,22 +24,24 @@
 # limitations under the License.                                            #
 #############################################################################
 
-FROM centos:7.4.1708 as mpf_build
+FROM centos:7.4.1708 as openmpf_build
 WORKDIR /home/mpf
+
+# TODO: "&&" remove source code after building libs.
 
 ################################################################################
 # Initial Setup                                                                #
 ################################################################################
 
-# Copy the Oracle jdk from build context
+# Do this right away so that we fail fast if the user doesn't provide the JDK:
 COPY jdk-*-linux-x64.rpm /apps/bin/
+
+# Create the "mpf" user:
+RUN useradd -u 376 -U -d /home/mpf -ms /bin/bash -G wheel -p mpf mpf
 
 # Set up yum repo:
 RUN yum install -y epel-release deltarpm && yum clean all
 RUN yum update -y && yum clean all
-
-# Create the "mpf" user:
-RUN useradd -d /home/mpf -ms /bin/bash -g wheel -p mpf mpf
 
 ENV MPF_HOME=/home/mpf/openmpf-projects/openmpf/trunk/install
 
@@ -65,10 +67,11 @@ RUN yum install -y git python-pip python-devel python-setuptools file \
     libtool yasm nasm bzip2 cmake3 numpy perl-File-Find-Rule which \
     libffi-devel openssl-devel apr apr-util apr-util-ldap log4cxx \
     log4cxx-devel qt qt-devel qt-x11 boost boost-devel wget dos2unix && \
-    yum clean all
+    yum clean all && rm -rf /var/cache/yum/*
 
 # Install Python dependencies:
-RUN pip install --upgrade pip && pip install wheel virtualenv
+RUN pip install --upgrade pip && pip install --upgrade setuptools && \
+    pip install wheel virtualenv
 
 # Install C Foreign Function Interface (CFFI):
 RUN cd /home/mpf && easy_install -U cffi
@@ -210,7 +213,7 @@ RUN wget -nv -O /apps/source/ffmpeg_sources/v1.6.1.tar.gz \
 
 # libx264:
 RUN wget -nv -O /apps/source/ffmpeg_sources/x264-snapshot-20170226-2245-stable.tar.bz2 \
-    "ftp://ftp.videolan.org/pub/videolan/x264/snapshots/x264-snapshot-20170226-2245-stable.tar.bz2" && \
+    "http://download.videolan.org/pub/videolan/x264/snapshots/x264-snapshot-20170226-2245-stable.tar.bz2" && \
     cd /apps/source/ffmpeg_sources && tar xvjf x264-snapshot-20170226-2245-stable.tar.bz2 && \
     cd x264-snapshot-20170226-2245-stable && PKG_CONFIG_PATH="/apps/install/lib/pkgconfig" \
     ./configure --prefix="/apps/install" --bindir="/apps/install" --enable-shared --disable-cli && \
@@ -372,6 +375,7 @@ RUN wget -nv -O /apps/source/apache_sources/activemq-cpp-library-3.9.0-src.tar.g
 ################################################################################
 # NVIDIA CUDA toolkit setup                                                    #
 ################################################################################
+
 RUN mkdir -p /apps/source/cuda && cd /apps/source/cuda && \
     wget -nv -O cuda_9.0.176_384.81_linux.run \
     "https://developer.nvidia.com/compute/cuda/9.0/Prod/local_installers/cuda_9.0.176_384.81_linux-run" && \
@@ -383,71 +387,20 @@ RUN mkdir -p /apps/source/cuda && cd /apps/source/cuda && \
     /etc/ld.so.conf.d/mpf-x86_64.conf
 
 ################################################################################
-# Copy the OpenMPF Repository                                                  #
+# Build Google Test Framework                                                  #
 ################################################################################
 
-# NOTE: This will change the most often so it should  be as far down in the Dockerfile as possible.
-COPY openmpf-projects /home/mpf/openmpf-projects
-
-# Make sure the source code line endings are correct if copying the source from a Windows host.
-RUN cd /home/mpf/openmpf-projects && find . -type f -exec dos2unix {} \;
-
-# Install OpenMPF command line tools:
-RUN pip install /home/mpf/openmpf-projects/openmpf/trunk/bin/mpf-scripts
-
-# Add Maven dependencies (CMU Sphinx, etc.):
-RUN cd /home/mpf && mkdir -p .m2/repository && tar xzf \
-    /home/mpf/openmpf-projects/openmpf-build-tools/mpf-maven-deps.tar.gz \
-    -C /home/mpf/.m2/repository/ && cp -a /home/mpf/.m2/ ~/.m2/
-
-RUN mkdir -p /mpfdata/ansible/install/repo/rpms/management && \
-    mkdir /mpfdata/ansible/install/repo/rpms/mpf && \
-    mkdir /mpfdata/ansible/install/repo/rpms/mpf-deps && \
-    mkdir /mpfdata/ansible/install/repo/files && \
-    mkdir /mpfdata/ansible/install/repo/pip && \
-    mkdir /mpfdata/ansible/install/repo/tars && \
-    mkdir /mpfdata/releases && \
-    chown -R mpf /mpfdata
+# Google Test 1.8.1:
+RUN mkdir /apps/source/gtest_sources
+RUN cd /apps/source/gtest_sources && git clone https://github.com/google/googletest.git googletest && \
+    cd googletest && git checkout release-1.8.1 && mkdir release && cd release && \
+    PKG_CONFIG_PATH="/apps/install/lib/pkgconfig" cmake3 .. && \
+    make && make install && ldconfig
 
 ################################################################################
-# Prepare to Build OpenMPF                                                     #
+# Prepare Entrypoint                                                           #
 ################################################################################
 
-# Copy the development properties file to run the OpenMPF on the OpenMPF Build Machine:
-RUN cp /home/mpf/openmpf-projects/openmpf/trunk/workflow-manager/src/main/resources/properties/mpf-private-example.properties \
-    /home/mpf/openmpf-projects/openmpf/trunk/workflow-manager/src/main/resources/properties/mpf-private.properties
-
-# Update startup.num.services.per.component=0 so that services are not added to the master node during
-# component auto registration when the workflow manager starts:
-RUN sed -i 's/startup.num.services.per.component.*/startup.num.services.per.component=0/' \
-    /home/mpf/openmpf-projects/openmpf/trunk/workflow-manager/src/main/resources/properties/mpf-private.properties
-
-# Set env variables from /etc/profile.d/mpf.sh:
-ARG PKG_CONFIG_PATH=/apps/install/lib/pkgconfig
-ARG CXXFLAGS=-isystem\ /apps/install/include
-ENV PATH=$PATH:/apps/install/bin:/opt/apache-maven/bin:/apps/install/lib/pkgconfig:/usr/bin/
-
-# TODO: See if this can be converted to use ARG variable, this strategy is
-#    very brittle because it's based on line number:
-RUN sed -i '37s/.*/              p:hostName="redis"/' \
-    /home/mpf/openmpf-projects/openmpf/trunk/workflow-manager/src/main/resources/applicationContext-redis.xml
-
-# TODO: Get the server set up with HTTPS.
-
-################################################################################
-# Build OpenMPF                                                                #
-################################################################################
-
-RUN cd /home/mpf/openmpf-projects/openmpf && \
-    mvn clean install -DskipTests -Dmaven.test.skip=true -DskipITs \
-    -Dmaven.tomcat.skip=true  \
-    -Dcomponents.build.package.json=/home/mpf/openmpf-projects/openmpf/trunk/jenkins/scripts/config_files/openmpf-open-source-package.json \
-    -Dstartup.auto.registration.skip=false \
-    -Dcomponents.build.dir=/home/mpf/openmpf-projects/openmpf/mpf-component-build \
-    -DgitBranch=`cd .. && git rev-parse --abbrev-ref HEAD` \
-    -DgitShortId=`cd .. && git rev-parse --short HEAD` \
-    -DjenkinsBuildNumber=1
-
-RUN cd /home/mpf/openmpf-projects/openmpf/trunk/workflow-manager && \
-    cp target/workflow-manager.war /opt/apache-tomcat/webapps/workflow-manager.war && \
-    cd ../.. && cp trunk/install/libexec/node-manager /etc/init.d/
+COPY docker-entrypoint.sh /home/mpf
+RUN dos2unix -q /home/mpf/docker-entrypoint.sh
+ENTRYPOINT ["/home/mpf/docker-entrypoint.sh"]

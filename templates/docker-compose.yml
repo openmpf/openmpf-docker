@@ -24,77 +24,66 @@
 # limitations under the License.                                            #
 #############################################################################
 
-version: '3.3'
+version: '2.3'
 services:
-  mysql_database:
+  mysql:
+    container_name: mysql_database
     image: mariadb:latest
+    restart: always
     environment:
       - MYSQL_ROOT_PASSWORD=password
       - MYSQL_DATABASE=mpf
       - MYSQL_USER=mpf
       - MYSQL_PASSWORD=mpf
+    # https://github.com/docker-library/mariadb/issues/113
     command: [
       '--wait_timeout=28800',
     ]
     volumes:
       - mysql_data:/var/lib/mysql
-    ports:
-      - "3306:3306"
-    networks:
-      - openmpf_default
 
-
-  activemq:
-    # image: openmpf_docker_active_mq:latest # use for local testing
-    image: <registry_host>:<registry_port>/<user>/openmpf_docker_active_mq:latest
-    ports:
-      - "61616:61616"
-      - "1099:1099"
-    networks:
-      - openmpf_default
+  active_mq:
+    image: <registry_host>:<registry_port>/<repository>/openmpf_active_mq:<image_tag>
+    container_name: activemq
+    build: ./active_mq
+    restart: always
 
   redis:
-    image: redis:latest
-    ports:
-      - "6379:6379"
-    networks:
-      - openmpf_default
+    container_name: redis
+    image: redis
+    restart: always
 
   workflow_manager:
-    # image: openmpf_docker_workflow_manager:latest # use for local testing
-    image: <registry_host>:<registry_port>/<user>/openmpf_docker_workflow_manager:latest
-    environment:
-      - MYSQL_HOST=openmpf_mysql_database
+    image: <registry_host>:<registry_port>/<repository>/openmpf_workflow_manager:<image_tag>
+    container_name: workflow_manager
+    build:
+      context: ./openmpf_runtime
+      dockerfile: workflow_manager/Dockerfile
+    depends_on:
+      - mysql
+    restart: always
     ports:
       - "8080:8080"
-      - "7801:7801"
     volumes:
       - shared_data:/opt/mpf/share
-    networks:
-      - openmpf_default
 
   node_manager:
-    # image: openmpf_docker_node_manager:latest # use for local testing
-    image: <registry_host>:<registry_port>/<user>/openmpf_docker_node_manager:latest
-    ports:
-      - "80:80"
-      - "7800:7800"
+    image: <registry_host>:<registry_port>/<repository>/openmpf_node_manager:<image_tag>
+    build:
+      context: ./openmpf_runtime
+      dockerfile: node_manager/Dockerfile
+    # Uncomment the following line once you have the NVIDIA docker runtime
+    #   installed if you want to make use of NVIDIA GPUs:
+    # runtime: nvidia
+    restart: always
+    # Uncomment the following lines to enable use of the node-manager status
+    #   page. You will also need to set mpf.node.status.page.enabled in the
+    #   node-manager properties file.
+    # ports:
+    #  - "8008:8008"
     volumes:
       - shared_data:/opt/mpf/share
-    deploy:
-      mode: replicated
-      replicas: 2
-    networks:
-      - openmpf_default
-  #   placement:
-  #     constraints:
-  #       - engine.labels.gpu == 1
-  #     preferences:
-  #       - spread: node.labels.zone
 
 volumes:
   shared_data:
   mysql_data:
-
-networks:
-  openmpf_default:
