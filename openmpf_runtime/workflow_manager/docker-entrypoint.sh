@@ -46,7 +46,10 @@ until mysql -h "$MYSQL_HOST" -u root -p"$MYSQL_ROOT_PASSWORD" -e "quit" >> /dev/
   echo "MySQL is unavailable. Sleeping."
   sleep 1
 done
+echo "MySQL is up"
 set -o xtrace
+
+# TODO: Wait for ActiveMQ and Redis.
 
 # Run Tomcat (as root user)
 /opt/apache-tomcat/bin/catalina.sh run

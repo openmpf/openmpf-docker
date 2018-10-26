@@ -48,6 +48,7 @@ until mysql -h "$MYSQL_HOST" -u root -p"$MYSQL_ROOT_PASSWORD" -e "quit" >> /dev/
   echo "MySQL is unavailable. Sleeping."
   sleep 1
 done
+echo "MySQL is up"
 set -o xtrace
 
 # TODO: Move to openmpf_build Dockerfile
