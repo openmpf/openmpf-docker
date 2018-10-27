@@ -103,6 +103,15 @@ if [ $RUN_TESTS -le 0 ]; then
     -DgitBranch=`cd .. && git rev-parse --abbrev-ref HEAD` \
     -DgitShortId=`cd .. && git rev-parse --short HEAD` \
     -DjenkinsBuildNumber=1
+  mavenRetVal=$?
+
+  set +o xtrace
+  # Exit now if build failed
+  if [ $mavenRetVal -ne 0 ]]; then
+      echo 'DETECTED BUILD FAILURE'
+      exit 1
+  fi
+  set -o xtrace
 else
   # Perform build with unit tests
   # TODO: Use JSON package with examples
