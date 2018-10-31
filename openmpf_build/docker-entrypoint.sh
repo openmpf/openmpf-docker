@@ -88,6 +88,15 @@ tar xzf /home/mpf/openmpf-projects/openmpf-build-tools/mpf-maven-deps.tar.gz \
   -C /root/.m2/repository/
 
 ################################################################################
+# Custom Steps                                                                 #
+################################################################################
+
+# If this is a custom build, run the custom entrypoint steps.
+if [ -f /home/mpf/docker-custom-entrypoint.sh ]; then
+  ./home/mpf/docker-custom-entrypoint.sh
+fi
+
+################################################################################
 # Build OpenMPF                                                                #
 ################################################################################
 
