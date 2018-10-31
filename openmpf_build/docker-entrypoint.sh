@@ -93,7 +93,7 @@ tar xzf /home/mpf/openmpf-projects/openmpf-build-tools/mpf-maven-deps.tar.gz \
 
 # If this is a custom build, run the custom entrypoint steps.
 if [ -f /home/mpf/docker-custom-entrypoint.sh ]; then
-  ./home/mpf/docker-custom-entrypoint.sh
+  /home/mpf/docker-custom-entrypoint.sh
 fi
 
 ################################################################################
