@@ -33,7 +33,7 @@ rm -f $MPF_HOME/share/nodes/MPF_Channel/*workflow_manager*.list
 
 # Setup
 # NOTE: $HOSTNAME is not known until runtime.
-echo "export JGROUPS_TCP_ADDRESS=${HOSTNAME}" >> /etc/profile.d/mpf.sh
+export JGROUPS_TCP_ADDRESS="$HOSTNAME"
 
 # Configure
 echo 'node.auto.config.enabled=true' >> $MPF_HOME/config/mpf-custom.properties
