@@ -102,7 +102,6 @@ RUN echo '[mpf-child]' >> /etc/ansible/hosts; \
 
 EXPOSE 8080
 
-# TODO implement wait for mysql script
 RUN mv /home/mpf/openmpf-projects/openmpf/trunk/mpf-system-tests/src/test/resources/samples $MPF_HOME/share/
 
 COPY workflow_manager/docker-entrypoint-test.sh /home/mpf
