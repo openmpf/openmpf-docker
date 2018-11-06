@@ -1,0 +1,101 @@
+#############################################################################
+# NOTICE                                                                    #
+#                                                                           #
+# This software (or technical data) was produced for the U.S. Government    #
+# under contract, and is subject to the Rights in Data-General Clause       #
+# 52.227-14, Alt. IV (DEC 2007).                                            #
+#                                                                           #
+# Copyright 2018 The MITRE Corporation. All Rights Reserved.                #
+#############################################################################
+
+#############################################################################
+# Copyright 2018 The MITRE Corporation                                      #
+#                                                                           #
+# Licensed under the Apache License, Version 2.0 (the "License");           #
+# you may not use this file except in compliance with the License.          #
+# You may obtain a copy of the License at                                   #
+#                                                                           #
+#    http://www.apache.org/licenses/LICENSE-2.0                             #
+#                                                                           #
+# Unless required by applicable law or agreed to in writing, software       #
+# distributed under the License is distributed on an "AS IS" BASIS,         #
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  #
+# See the License for the specific language governing permissions and       #
+# limitations under the License.                                            #
+#############################################################################
+
+version: '2.3'
+services:
+  mysql:
+    container_name: mysql_database
+    image: mariadb:latest
+    restart: always
+    environment:
+      - MYSQL_ROOT_PASSWORD=password
+      - MYSQL_DATABASE=mpf
+      - MYSQL_USER=mpf
+      - MYSQL_PASSWORD=mpf
+    # https://github.com/docker-library/mariadb/issues/113
+    command: [
+      '--wait_timeout=28800',
+    ]
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+  active_mq:
+    image: <registry_host>:<registry_port>/<repository>/openmpf_active_mq:<image_tag>
+    container_name: activemq
+    build: ./active_mq
+    restart: always
+    ports:
+      - "8161:8161"
+
+  redis:
+    container_name: redis
+    image: redis
+    restart: always
+
+  workflow_manager_test:
+    image: <registry_host>:<registry_port>/<repository>/openmpf_workflow_manager_test:<image_tag>
+    container_name: workflow_manager
+    build:
+      context: ./openmpf_runtime
+      dockerfile: workflow_manager/Dockerfile-test
+    # The following entrypoint and image sections are for manual debugging:
+    # entrypoint:
+    #  - sleep
+    #  - infinity
+    depends_on:
+      - mysql
+    restart: always
+    # The following lines are needed to wait until the mySQL service is available.
+    environment:
+      - MYSQL_ROOT_PASSWORD=password
+    ports:
+      - "8080:8080"
+    volumes:
+      - shared_data:/home/mpf/openmpf-projects/openmpf/trunk/install/share
+      # The following line is updated during a Jenkins build:
+      - ~/.m2:/root/.m2
+      - ./openmpf_runtime/build_artifacts:/mnt/build_artifacts
+
+  node_manager:
+    image: <registry_host>:<registry_port>/<repository>/openmpf_node_manager:<image_tag>
+    build:
+      context: ./openmpf_runtime
+      dockerfile: node_manager/Dockerfile
+    # Uncomment the following line once you have the NVIDIA docker runtime
+    #   installed if you want to make use of NVIDIA GPUs:
+    # runtime: nvidia
+    restart: always
+    # Uncomment the following lines to enable use of the node-manager status
+    #   page. You will also need to set mpf.node.status.page.enabled in the
+    #   node-manager properties file.
+    # ports:
+    #  - "8008:8008"
+    volumes:
+      - shared_data:/opt/mpf/share
+
+volumes:
+  shared_data:
+  mysql_data:

@@ -1,5 +1,21 @@
-# ignore files that will not be kept in the repository and must be downloaded.
-mpf_build/jdk*.rpm
-mpf_build/openmpf-projects
+# IDE
+*.idea*
+*.iml
+
+# files that must be downloaded separately
+openmpf_build/jdk*.rpm
+
 # docker image archives
 *.tar.gz
+
+# build artifacts
+openmpf_runtime/build_artifacts/*
+!openmpf_runtime/build_artifacts/.gitkeep
+
+# backup
+*.bak
+
+# generated files
+/docker-compose.yml
+/docker-compose-test.yml
+/swarm-compose.yml

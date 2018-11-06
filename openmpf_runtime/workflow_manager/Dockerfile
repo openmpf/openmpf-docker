@@ -24,7 +24,9 @@
 # limitations under the License.                                            #
 #############################################################################
 
-FROM mpf_build
+ARG BUILD_IMAGE_NAME=openmpf_build:latest
+
+FROM $BUILD_IMAGE_NAME as openmpf_build
 
 # TODO: A new container can be made to include only the WAR file and a JRE.
 FROM centos:7.4.1708
@@ -36,11 +38,21 @@ FROM centos:7.4.1708
 ENV MPF_HOME=/opt/mpf
 VOLUME $MPF_HOME/share
 
+# Do this right away so that we fail fast if the user doesn't provide the JDK:
+COPY --from=openmpf_build /apps/bin/jdk-*-linux-x64.rpm /apps/bin/
+
+# Create the "mpf" user:
+RUN useradd -u 376 -U -d /home/mpf -ms /bin/bash -G wheel -p mpf mpf
+
+RUN chown -R mpf:mpf $MPF_HOME/share
+
+# Set up yum repo:
+RUN yum install -y epel-release deltarpm && yum clean all
+RUN yum update -y && yum clean all
+
 ################################################################################
 # Install Oracle JDK                                                           #
 ################################################################################
-
-COPY --from=mpf_build /apps/bin/jdk-*-linux-x64.rpm /apps/bin/
 
 # Install Oracle JDK:
 RUN yum -y localinstall --nogpgcheck /apps/bin/jdk-*-linux-x64.rpm && \
@@ -60,9 +72,10 @@ RUN yum -y localinstall --nogpgcheck /apps/bin/jdk-*-linux-x64.rpm && \
 # Install yum Dependencies                                                     #
 ################################################################################
 
-RUN yum update -y && yum install -y epel-release git asciidoc rpm-build \
+RUN yum install -y git asciidoc rpm-build \
     python2-devel PyYAML python-httplib2 python-jinja2 libtomcrypt \
-    python-paramiko python-six sshpass which && yum clean all
+    python-paramiko python-six sshpass which mysql dos2unix && \
+    yum clean all && rm -rf /var/cache/yum/*
 
 # TODO: For some reason this needs to be a separate step. I think it's because the
 #   mirror it choses for the other yum install does not have python-keyczar.
@@ -95,27 +108,32 @@ RUN mkdir -p /apps/source/ansible_sources && cd /apps/source/ansible_sources && 
 # TODO: The more steps that can be kept the same (and in the same order) as the
 #   node_manager Dockerfile, the more docker can share the build steps
 #   between the containers. All shared steps (installing java, copying files
-#   from mpf_build) should be moved to the top of both Dockerfiles.
+#   from openmpf_build) should be moved to the top of both Dockerfiles.
 
 # TODO: Trim the fat from the copies.
 
 # Copy files from the build image:
-COPY --from=mpf_build /apps/install/bin/ffmpeg /apps/install/bin/ffprobe \
+COPY --from=openmpf_build /apps/install/bin/ffmpeg /apps/install/bin/ffprobe \
      /apps/install/bin/ffserver $MPF_HOME/bin/
-COPY --from=mpf_build /etc/ld.so.conf.d/ /etc/ld.so.conf.d/
-COPY --from=mpf_build /opt/apache-tomcat/ /opt/apache-tomcat/
-COPY --from=mpf_build /home/mpf/openmpf-projects/openmpf/trunk/ansible/ \
-    /home/mpf/openmpf-projects/openmpf/trunk/ansible/
+COPY --from=openmpf_build /etc/ld.so.conf.d/ /etc/ld.so.conf.d/
+COPY --from=openmpf_build /opt/apache-tomcat/ /opt/apache-tomcat/
 
-# TODO: Copy files from a shared "artifacts" build context:
-COPY --from=mpf_build /home/mpf/openmpf-projects/openmpf/trunk/install/ \
-    $MPF_HOME
-COPY --from=mpf_build /home/mpf/openmpf-projects/openmpf/mpf-component-build/plugin-packages \
-    $MPF_HOME/share/components
+COPY build_artifacts/install.tar /home/mpf/
+RUN cd /home/mpf && tar -xzf install.tar -C $MPF_HOME && rm install.tar
 
-# Extract tar.gz (using tar xzf) components to $MPF_HOME/plugins:
+# COPY seems to be the only way to move files to the share volume:
+COPY build_artifacts/plugin-packages $MPF_HOME/share/components
+
+# Extract components:
 RUN mkdir $MPF_HOME/plugins && cd $MPF_HOME/plugins && \
     for file in $MPF_HOME/share/components/*.tar.gz; do tar xzf "$file"; done
+
+COPY build_artifacts/workflow-manager.war /opt/apache-tomcat/webapps/workflow-manager.war
+
+COPY build_artifacts/ansible.tar /home/mpf/
+RUN cd /home/mpf && mkdir -p /home/mpf/openmpf-projects/openmpf/trunk && \
+    tar -xzf ansible.tar -C /home/mpf/openmpf-projects/openmpf/trunk && \
+    rm ansible.tar
 
 RUN ldconfig
 
@@ -126,24 +144,30 @@ RUN ldconfig
 ENV ACTIVE_MQ_HOST=activemq
 ENV ACTIVE_MQ_BROKER_URI=failover://(tcp://$ACTIVE_MQ_HOST:61616)?jms.prefetchPolicy.all=1&startupMaxReconnectAttempts=1
 ENV MYSQL_HOST=mysql_database
-ENV JGROUPS_TCP_ADDRESS=workflow_manager
+ENV THIS_MPF_NODE=workflow_manager
+# JGROUPS_TCP_ADDRESS set in docker-entrypoint.sh
 ENV JGROUPS_TCP_PORT=7800
 ENV JGROUPS_FILE_PING_LOCATION=$MPF_HOME/share/nodes
 ENV no_proxy=localhost
 ENV MPF_USER=mpf
 ENV MPF_LOG_PATH=$MPF_HOME/share/logs
-ENV THIS_MPF_NODE=workflow_manager
-ENV CORE_MPF_NODES=node_manager
+# Every child node-manager container is treated as a spare node.
+ENV CORE_MPF_NODES=
 ENV LD_LIBRARY_PATH=/usr/lib64:$MPF_HOME/lib
 ENV PATH=$PATH:$MPF_HOME/bin
 ENV CATALINA_OPTS="-server -Xms256m -XX:PermSize=512m -XX:MaxPermSize=512m -Duser.country=US -Djava.library.path=$MPF_HOME/lib -Dtransport.guarantee='NONE' -Dweb.rest.protocol='http'"
 
-RUN echo '[mpf-master]' >> /etc/ansible/hosts && \
-    echo $THIS_MPF_NODE >> /etc/ansible/hosts && \
-    echo '' >> /etc/ansible/hosts && \
-    echo '[mpf-child]' >> /etc/ansible/hosts && \
-    echo "node_manager" >> /etc/ansible/hosts
+# The workflow manager must be added as an mpf-child so that plugin packages are
+# extracted at startup, which is necessary for component auto-registration.
+RUN echo '[mpf-child]' >> /etc/ansible/hosts; \
+    echo $THIS_MPF_NODE >> /etc/ansible/hosts;
+
+################################################################################
+# Prepare Entrypoint                                                           #
+################################################################################
 
 EXPOSE 8080
-RUN echo "rm -f $MPF_HOME/share/nodes/MPF_Channel/*workflow_manager*.list && /opt/apache-tomcat/bin/catalina.sh run" > /home/run.sh
-ENTRYPOINT ["sh", "/home/run.sh"]
+
+COPY workflow_manager/docker-entrypoint.sh /home/mpf
+RUN dos2unix -q /home/mpf/docker-entrypoint.sh
+ENTRYPOINT ["/home/mpf/docker-entrypoint.sh"]
