@@ -29,7 +29,7 @@
 set -Ee -o pipefail -o xtrace
 
 # Cleanup
-rm -f $MPF_HOME/share/nodes/MPF_Channel/*workflow_manager*.list
+rm -f $MPF_HOME/share/nodes/MPF_Channel/*-MPF-MasterNode.list
 
 # Setup
 # NOTE: $HOSTNAME is not known until runtime.
