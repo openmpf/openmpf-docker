@@ -39,6 +39,57 @@ export JGROUPS_TCP_ADDRESS="$HOSTNAME"
 echo 'node.auto.config.enabled=true' >> $MPF_HOME/config/mpf-custom.properties
 echo 'node.auto.unconfig.enabled=true' >> $MPF_HOME/config/mpf-custom.properties
 
+export CATALINA_OPTS="-server -Xms256m -Duser.country=US -Djava.library.path=$MPF_HOME/lib"
+
+if [ "$KEYSTORE_PASSWORD" ]
+then
+    export CATALINA_OPTS="$CATALINA_OPTS -Dtransport.guarantee='CONFIDENTIAL' -Dweb.rest.protocol='https'"
+    python << EndOfPythonScript
+import xml.etree.ElementTree as ET
+import os
+
+class CommentPreservingTreeBuilder(ET.XMLTreeBuilder):
+    def __init__(self, *args, **kwargs):
+        super(CommentPreservingTreeBuilder, self).__init__(*args, **kwargs)
+        self._parser.CommentHandler = self.handle_comment
+
+    def handle_comment(self, data):
+        self._target.start(ET.Comment, {})
+        self._target.data(data)
+        self._target.end(ET.Comment)
+
+
+keystore_password = os.getenv('KEYSTORE_PASSWORD')
+server_xml_path = '/opt/apache-tomcat/conf/server.xml'
+tree = ET.parse(server_xml_path, CommentPreservingTreeBuilder())
+https_connector = tree.find('./Service/Connector[@sslProtocol="TLS"][@scheme="https"]')
+
+if https_connector is None:
+    print 'Enabling HTTPS'
+    ssl_connector_attrs = dict(
+        SSLEnabled='true',
+        acceptCount='100',
+        clientAuth='false',
+        disableUploadTimeout='true',
+        enableLookups='false',
+        keystoreFile='/opt/mpf/keystore',
+        keystorePass=keystore_password,
+        maxThreads='25',
+        port='8443',
+        protocol='org.apache.coyote.http11.Http11NioProtocol',
+        scheme='https',
+        secure='true',
+        sslProtocol='TLS')
+    ET.SubElement(tree.find('Service'), 'Connector', ssl_connector_attrs)
+    tree.write(server_xml_path)
+else:
+    print 'HTTPS already enabled'
+EndOfPythonScript
+else
+    echo 'HTTPS is not enabled'
+    export CATALINA_OPTS="$CATALINA_OPTS -Dtransport.guarantee='NONE' -Dweb.rest.protocol='http'"
+fi
+
 # Wait for mySQL service.
 set +o xtrace
 echo "Waiting for MySQL to become available ..."

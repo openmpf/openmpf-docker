@@ -218,7 +218,7 @@ private Docker registry, then run:
 
 Otherwise, if you do have access to a private Docker registry, then run:
 
-- `./scripts/docker-generate-compose-files.sh <registry_host> <registry_port>`
+- `./scripts/docker-generate-compose-files.sh <registry_host>:<registry_port>`
 
 Note that this will also generate `swarm-compose.yml`, which you will use if you
 choose to follow the [Swarm deployment guide](SWARM.md).
