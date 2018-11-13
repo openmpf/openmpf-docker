@@ -75,6 +75,10 @@ cp /home/mpf/openmpf-projects/openmpf/trunk/workflow-manager/src/main/resources/
 sed -i 's/startup.num.services.per.component.*/startup.num.services.per.component=0/' \
     /home/mpf/openmpf-projects/openmpf/trunk/workflow-manager/src/main/resources/properties/mpf-private.properties
 
+# Update WFM segment size
+sed -i 's/detection.segment.target.length.*/detection.segment.target.length=1000/' \
+    /home/mpf/openmpf-projects/openmpf/trunk/workflow-manager/src/main/resources/properties/mpf.properties
+
 # TODO: See if this can be converted to use ARG variable, this strategy is
 #    very brittle because it's based on line number:
 sed -i '37s/.*/              p:hostName="redis"/' \
