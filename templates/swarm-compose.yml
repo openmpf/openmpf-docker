@@ -58,10 +58,13 @@ services:
     # The following lines are needed to wait until the mySQL service is available.
     environment:
       - MYSQL_ROOT_PASSWORD=password
+      - KEYSTORE_PASSWORD=<keystore_password>
     ports:
       - "8080:8080"
+      - "8443:8443"
     volumes:
       - shared_data:/opt/mpf/share
+      - <keystore_path>:/opt/mpf/keystore:ro
     networks:
       - swarm_overlay
 

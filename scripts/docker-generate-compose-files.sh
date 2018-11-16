@@ -67,6 +67,9 @@ configureHttps() {
     fi
 }
 
+if [ "$1" = help ] || [ "$1" = --help ]; then
+    printUsage
+fi
 
 if [ "$1" = -nr ]; then
     if [ $# -gt 4 ]; then
