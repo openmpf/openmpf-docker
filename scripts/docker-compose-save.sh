@@ -111,6 +111,8 @@ generateWithoutRegistry() {
 # removeBuildFields(fileName)
 removeBuildFields() {
   sed -i "/^.*build:.*/d" "$1"
+  sed -i "/^.*context:.*/d" "$1"
+  sed -i "/^.*dockerfile:.*/d" "$1"
 }
 
 echo "This will take some time. Please be patient."
