@@ -157,7 +157,7 @@ touch $readmeFile
 
 
 echo "Load images:
-\`./scripts/docker-compose-load\`
+\`./scripts/docker-compose-load.sh\`
 
 Run images:
 \`docker-compose up\`
