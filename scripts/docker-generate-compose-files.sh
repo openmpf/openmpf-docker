@@ -64,6 +64,7 @@ configureHttps() {
         sed -i '/<keystore_path>/d' "$1"
         sed -i '/<keystore_password>/d' "$1"
         sed -i '/- "8443:8443"/d' "$1"
+        sed -i '/secrets: \[https_keystore\]/d' "$1"
     fi
 }
 

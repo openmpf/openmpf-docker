@@ -72,7 +72,7 @@ if https_connector is None:
         clientAuth='false',
         disableUploadTimeout='true',
         enableLookups='false',
-        keystoreFile='/opt/mpf/keystore',
+        keystoreFile='/run/secrets/https_keystore',
         keystorePass=keystore_password,
         maxThreads='25',
         port='8443',

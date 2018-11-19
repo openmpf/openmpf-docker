@@ -64,9 +64,9 @@ services:
       - "8443:8443"
     volumes:
       - shared_data:/opt/mpf/share
-      - <keystore_path>:/opt/mpf/keystore:ro
     networks:
       - swarm_overlay
+    secrets: [https_keystore]
 
   node_manager:
     image: <registry_host>/<repository>/openmpf_node_manager:<image_tag>
@@ -90,3 +90,6 @@ volumes:
 
 networks:
   swarm_overlay:
+
+# One line to make easier for script to remove
+secrets: {https_keystore: { file: <keystore_path> }}
