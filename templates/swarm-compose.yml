@@ -91,5 +91,4 @@ volumes:
 networks:
   swarm_overlay:
 
-# One line to make easier for script to remove
-secrets: {https_keystore: { file: <keystore_path> }}
+secrets: { https_keystore: { file: <keystore_path> } } # One line to make easier for script to remove

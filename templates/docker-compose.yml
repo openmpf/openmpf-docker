@@ -24,7 +24,7 @@
 # limitations under the License.                                            #
 #############################################################################
 
-version: '3.3'
+version: '2.3'
 services:
   mysql:
     container_name: mysql_database
@@ -73,7 +73,7 @@ services:
       - "8443:8443"
     volumes:
       - shared_data:/opt/mpf/share
-    secrets: [https_keystore]
+      - <keystore_path>:/run/secrets/https_keystore:ro
 
   node_manager:
     image: <registry_host>/<repository>/openmpf_node_manager:<image_tag>
@@ -95,6 +95,3 @@ services:
 volumes:
   shared_data:
   mysql_data:
-
-# One line to make easier for script to remove
-secrets: {https_keystore: { file: <keystore_path> }}
