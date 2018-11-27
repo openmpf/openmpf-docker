@@ -1,4 +1,4 @@
-#!/usr/bin/bash
+#!/usr/bin/env bash
 
 #############################################################################
 # NOTICE                                                                    #
@@ -37,14 +37,23 @@ printUsage() {
 
 # generateWithoutRegistry(fileName, imageTag)
 generateWithoutRegistry() {
-  sed "s/<registry_host>:<registry_port>\\/<repository>\\///g" templates/"$1" > "$1"
-  sed -i "s/<image_tag>/$2/g" "$1"
+  # sed --version fails on BSD distro of sed. We use the exit code to determine
+  #    the required format for sed
+  # TODO find a way to test the sed distro without erroring out
+  sed --version || true;
+  if [ $? -eq 0 ]; then
+    sed -i "s/<registry_host>:<registry_port>\\/<repository>\\///g" templates/"$1" > "$1"
+    sed -i "s/<image_tag>/$2/g" "$1"
+  else
+    sed -i "" "s/<registry_host>:<registry_port>\\/<repository>\\///g" templates/"$1" > "$1"
+    sed -i "" "s/<image_tag>/$2/g" "$1"
+  fi
 }
 
 # generateWithoutRegistry(fileName, registryHost, registryPort, repository, imageTag)
 generateWithRegistry() {
-  sed "s/<registry_host>:<registry_port>\\/<repository>/$2:$3\\/$4/g" templates/"$1" > "$1"
-  sed -i "s/<image_tag>/$5/g" "$1"
+  sed -i "" "s/<registry_host>:<registry_port>\\/<repository>/$2:$3\\/$4/g" templates/"$1" > "$1"
+  sed -i "" "s/<image_tag>/$5/g" "$1"
 }
 
 if [ $# -gt 4 ]; then
