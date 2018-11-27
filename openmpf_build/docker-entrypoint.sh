@@ -70,15 +70,6 @@ pip install /home/mpf/openmpf-projects/openmpf/trunk/bin/mpf-scripts
 cp /home/mpf/openmpf-projects/openmpf/trunk/workflow-manager/src/main/resources/properties/mpf-private-example.properties \
     /home/mpf/openmpf-projects/openmpf/trunk/workflow-manager/src/main/resources/properties/mpf-private.properties
 
-# Update startup.num.services.per.component=0 so that services are not added to the master node during
-# component auto registration when the workflow manager starts:
-sed -i 's/startup.num.services.per.component.*/startup.num.services.per.component=0/' \
-    /home/mpf/openmpf-projects/openmpf/trunk/workflow-manager/src/main/resources/properties/mpf-private.properties
-
-# Update WFM segment size
-sed -i 's/detection.segment.target.length.*/detection.segment.target.length=1000/' \
-    /home/mpf/openmpf-projects/openmpf/trunk/workflow-manager/src/main/resources/properties/mpf.properties
-
 # TODO: See if this can be converted to use ARG variable, this strategy is
 #    very brittle because it's based on line number:
 sed -i '37s/.*/              p:hostName="redis"/' \
