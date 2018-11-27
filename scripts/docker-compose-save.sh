@@ -30,7 +30,7 @@ set -Ee
 
 printUsage() {
   echo "Usages:"
-  echo "docker-compose-save.sh [--clean-image-names] [--include-compose-files]"
+  echo "docker-compose-save.sh [--clean-image-names] [--omit-compose-files]"
   exit -1
 }
 
@@ -54,24 +54,24 @@ spinner() {
   local delay=0.75
   local spinstr='|/-\'
 
-  header=$1
-  pids=$2
+  header="$1"
+  pids="$2"
   cont=1
 
   echo -n "$header ..."
 
-  while [ $cont = 1 ]; do
+  while [ "$cont" = 1 ]; do
     cont=0
-    for pid in ${pids[@]}; do
+    for pid in "${pids[@]}"; do
       if ps a | awk '{print $1}' | grep -q "${pid}"; then
         cont=1
         break
       fi
     done
-    local temp=${spinstr#?}
+    local temp="${spinstr#?}"
     printf " [%c]  " "$spinstr"
-    local spinstr=$temp${spinstr%"$temp"}
-    sleep $delay
+    local spinstr="$temp${spinstr%$temp}"
+    sleep "$delay"
     printf "\b\b\b\b\b\b"
   done
 
@@ -82,23 +82,23 @@ spinner() {
 
 # cleanName(imageName, retval, replaceColon)
 cleanName() {
-  oldName=$1
-  newName=${oldName/*\//} # only keep image name and tag, remove registry and repo
-  if [ $3 = 1 ]; then
-    newName=${newName/:/.} # replace colon with period
+  oldName="$1"
+  newName="${oldName/*\//}" # only keep image name and tag, remove registry and repo
+  if [ "$3" = 1 ]; then
+    newName="${newName/:/.}" # replace colon with period
   fi
   eval "$2='$newName'"
 }
 
 # getCleanImageName(imageName, retval)
 getCleanImageName() {
-  cleanName $1 cleanImageName 0
+  cleanName "$1" cleanImageName 0
   eval "$2='$cleanImageName'"
 }
 
 # getFileName(imageName, retval)
 getFileName() {
-  cleanName $1 cleanFileName 1
+  cleanName "$1" cleanFileName 1
   eval "$2='$cleanFileName'"
 }
 
@@ -119,13 +119,13 @@ echo "This will take some time. Please be patient."
 echo
 
 cleanImageNames=0
-includeComposeFiles=0
+omitComposeFiles=0
 
 if [ $# = 1 ]; then
   if [ "$1" == "--clean-image-names" ]; then
     cleanImageNames=1
-  elif [ "$1" == "--include-compose-files" ]; then
-    includeComposeFiles=1
+  elif [ "$1" == "--omit-compose-files" ]; then
+    omitComposeFiles=1
   else
     printUsage
   fi
@@ -135,8 +135,8 @@ elif [ $# = 2 ]; then
   else
     printUsage
   fi
-  if [ "$2" == "--include-compose-files" ]; then
-    includeComposeFiles=1
+  if [ "$2" == "--omit-compose-files" ]; then
+    omitComposeFiles=1
   else
     printUsage
   fi
@@ -148,12 +148,12 @@ imageNames=$(docker-compose config | awk '{if ($1 == "image:") print $2;}')
 
 outDir=openmpf-docker-images
 
-mkdir -p $outDir
-cp -R scripts $outDir
+mkdir -p "$outDir"
+cp -R scripts "$outDir"
 
-readmeFile=$outDir/README.md
-rm -f $readmeFile
-touch $readmeFile
+readmeFile="$outDir/README.md"
+rm -f "$readmeFile"
+touch "$readmeFile"
 
 
 echo "Load images:
@@ -165,71 +165,81 @@ Run images:
 For more information, refer to https://github.com/openmpf/openmpf-docker/blob/develop/README.md." >> $readmeFile
 
 
-if [ $includeComposeFiles = 1 ]; then
+if [ "$omitComposeFiles" = 0 ]; then
   echo "Including docker-compose.yml and swarm-compose.yml."
   echo
-  if [ $cleanImageNames = 1 ]; then
-    generateWithoutRegistry docker-compose.yml $outDir/docker-compose.yml
-    generateWithoutRegistry swarm-compose.yml $outDir/swarm-compose.yml
+  if [ "$cleanImageNames" = 1 ]; then
+    generateWithoutRegistry docker-compose.yml "$outDir/docker-compose.yml"
+    generateWithoutRegistry swarm-compose.yml "$outDir/swarm-compose.yml"
   else
-    cp docker-compose.yml $outDir; removeBuildFields $outDir/docker-compose.yml
-    cp swarm-compose.yml $outDir; removeBuildFields $outDir/swarm-compose.yml
+    cp docker-compose.yml "$outDir"; removeBuildFields "$outDir/docker-compose.yml"
+    cp swarm-compose.yml "$outDir"; removeBuildFields "$outDir/swarm-compose.yml"
   fi
 fi
 
-if [ $cleanImageNames = 1 ]; then
+if [ "$cleanImageNames" = 1 ]; then
   echo "Retagging images:"
-  for imageName in $imageNames; do
-    getCleanImageName $imageName cleanImageName
+  for imageName in $imageNames; do # word-splitting
+    getCleanImageName "$imageName" cleanImageName
     echo "  $imageName -> $cleanImageName "
-    docker tag $imageName $cleanImageName 
+    docker tag "$imageName" "$cleanImageName"
   done
   echo
 fi
 
 echo "Images to save:"
-pids=
-for imageName in $imageNames; do
-  if [ $cleanImageNames = 1 ]; then
-    getCleanImageName $imageName newImageName
+pids=()
+for imageName in $imageNames; do # word-splitting
+  if [ "$cleanImageNames" = 1 ]; then
+    getCleanImageName "$imageName" newImageName
   else
-    newImageName=$imageName
+    newImageName="$imageName"
   fi
-  getFileName $imageName fileName
+  getFileName "$imageName" fileName
   echo "  $newImageName -> $fileName.tar"
-  docker save $newImageName -o $outDir/$fileName.tar & # currently, there's no way to show progress
+  docker save "$newImageName" -o "$outDir/$fileName.tar" & # currently, there's no way to show progress
   pids+=($!)
 done
 echo
 
-spinner "Saving images" $pids
+spinner "Saving images" "$pids"
 
 echo "Images to gzip:"
-cd $outDir
-pids=
-for imageName in $imageNames; do
-  getFileName $imageName fileName
+cd "$outDir"
+pids=()
+for imageName in $imageNames; do # word-splitting
+  getFileName "$imageName" fileName
   echo "  $fileName.tar -> $fileName.tar.gz"
-  (tar -czf $fileName.tar.gz $fileName.tar; rm -rf $fileName.tar) &
+  (tar -czf "$fileName.tar.gz" "$fileName.tar"; rm -rf "$fileName.tar") &
   pids+=($!)
 done
 cd ..
 echo
 
-spinner "Gzipping images" $pids
+spinner "Gzipping images" "$pids"
 
-cd $outDir
+cd "$outDir"
 ls -lah *.tar.gz
 cd ..
 echo
 
-pids=
-(tar -czf $outDir.tar.gz $outDir; rm -rf $outDir) &
+pids=()
+(tar -cf "$outDir.tar" "$outDir"; rm -rf "$outDir") &
 pids+=($!)
 
-spinner "Gzipping $outDir.tar.gz" $pids
+spinner "Generating $outDir.tar" "$pids"
 
-ls -lah $outDir.tar.gz
+ls -lah "$outDir.tar"
 echo
 
-echo "Generated $(pwd)/$outDir.tar.gz"
+echo "Generated $(pwd)/$outDir.tar"
+
+if [ "$omitComposeFiles" = 0 ] || [ "$cleanImageNames" = 0 ]; then
+  echo "WARNING: Please practice caution when sharing this package with others:"
+  if [ "$omitComposeFiles" = 0 ]; then
+    echo "- This package contains docker-compose.yml and swarm-compose.yml files that may contain password and private registry information."
+  fi
+  if [ "$cleanImageNames" = 0 ]; then
+    echo "- This package contains docker images with names that may contain private registry information."
+  fi
+fi

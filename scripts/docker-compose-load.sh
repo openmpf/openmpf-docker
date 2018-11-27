@@ -48,24 +48,24 @@ spinner() {
   local delay=0.75
   local spinstr='|/-\'
 
-  header=$1
-  pids=$2
+  header="$1"
+  pids="$2"
   cont=1
 
   echo -n "$header ..."
 
-  while [ $cont = 1 ]; do
+  while [ "$cont" = 1 ]; do
     cont=0
-    for pid in ${pids[@]}; do
+    for pid in "${pids[@]}"; do
       if ps a | awk '{print $1}' | grep -q "${pid}"; then
         cont=1
         break
       fi
     done
-    local temp=${spinstr#?}
+    local temp="${spinstr#?}"
     printf " [%c]  " "$spinstr"
-    local spinstr=$temp${spinstr%"$temp"}
-    sleep $delay
+    local spinstr="$temp${spinstr%$temp}"
+    sleep "$delay"
     printf "\b\b\b\b\b\b"
   done
 
@@ -77,27 +77,13 @@ spinner() {
 echo "This will take some time. Please be patient."
 echo
 
-echo "Gzipped files to extract:"
-tgzs=$(find *.tar.gz)
-pids=
-for tgz in $tgzs; do
-  echo "  $tgz -> ${tgz%.*}"
-  tar xzf $tgz &
-  pids+=($!)
-done
-echo
-
-spinner "Extracting gzipped files" $pids
-
 echo "Images to load:"
-tars=$(find *.tar)
-pids=
-for tar in $tars; do
-  echo "  $tar"
-  docker load -q -i $tar >> /dev/null &
+pids=()
+for tgz in *.tar.gz; do
+  echo "  $tgz"
+  docker load -q -i "$tgz" >> /dev/null &
   pids+=($!)
 done
 echo
 
-spinner "Loading images" $pids
-
+spinner "Loading images" "$pids"
