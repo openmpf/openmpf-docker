@@ -39,16 +39,25 @@ printUsage() {
 
 # generateWithoutRegistry(1: fileName, 2: imageTag, 3: keystorePath, 4: keystorePassword)
 generateWithoutRegistry() {
-    sed "s/<registry_host>\\/<repository>\\///g" templates/"$1" > "$1"
+  # sed --version fails on BSD distro of sed. We use the exit code to determine
+  #    the required format for sed
+  # TODO find a way to test the sed distro without erroring out
+  sed --version || true;
+  if [ $? -eq 0 ]; then
+    sed -i "s/<registry_host>:<registry_port>\\/<repository>\\///g" templates/"$1" > "$1"
     sed -i "s/<image_tag>/$2/g" "$1"
+  else
+    sed -i "" "s/<registry_host>:<registry_port>\\/<repository>\\///g" templates/"$1" > "$1"
+    sed -i "" "s/<image_tag>/$2/g" "$1"
+  fi
 
-    configureHttps "$1" "$3" "$4"
+  configureHttps "$1" "$3" "$4"
 }
 
 # generateWithoutRegistry(1: fileName, 2: registryHost, 3: repository, 4: imageTag, 5: keystorePath, 6: keystorePassword)
 generateWithRegistry() {
-    sed "s/<registry_host>\\/<repository>/$2\\/$3/g" templates/"$1" > "$1"
-    sed -i "s/<image_tag>/$4/g" "$1"
+  sed -i "" "s/<registry_host>:<registry_port>\\/<repository>/$2:$3\\/$4/g" templates/"$1" > "$1"
+  sed -i "" "s/<image_tag>/$5/g" "$1"
 
     configureHttps "$1" "$5" "$6"
 }

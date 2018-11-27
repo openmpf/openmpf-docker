@@ -40,7 +40,7 @@ if [ $# -eq 1 ]; then
   askPass=0
   command="$1"
 elif [ $# -eq 2 ]; then
-  if [ "$1" != "--ask-pass" ]; then 
+  if [ "$1" != "--ask-pass" ]; then
     printUsage
   fi
   askPass=1
@@ -63,13 +63,12 @@ nodeIds=$(docker node ls | sed -n '1!p' | cut -d ' ' -f 1)
 while read -r nodeId; do
   nodeAddr=$(docker node inspect "$nodeId" --format '{{ .Status.Addr }}')
   echo "Connecting to $nodeAddr ..."
-  
+
   if [ $askPass = 1  ]; then
     sshpass -p "$sshPass" ssh -oStrictHostKeyChecking=no "$sshUser"@"$nodeAddr" "$command" < /dev/null
   else
     ssh -oStrictHostKeyChecking=no "$nodeAddr" "$command" < /dev/null
-  fi    
+  fi
 
   echo
 done <<< "$nodeIds"
-
