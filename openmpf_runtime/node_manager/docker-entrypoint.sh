@@ -28,6 +28,9 @@
 
 set -Ee -o pipefail -o xtrace
 
+# Cleanup
+rm -f $MPF_HOME/share/nodes/MPF_Channel/*${HOSTNAME}-NodeManager.list
+
 # Setup
 # NOTE: $HOSTNAME is not known until runtime.
 echo "export THIS_MPF_NODE=${THIS_MPF_NODE}_id_${HOSTNAME}" >> /etc/profile.d/mpf.sh
