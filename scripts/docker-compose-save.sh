@@ -210,7 +210,10 @@ pids=()
 for imageName in $imageNames; do # word-splitting
   getFileName "$imageName" fileName
   echo "  $fileName.tar -> $fileName.tar.gz"
-  (tar -czf "$fileName.tar.gz" "$fileName.tar"; rm -rf "$fileName.tar") &
+  # NOTE: "docker load" will complain with "no such file or directory" if
+  # "tar -czf" is used to create the package. Use "gzip" instead.
+  # See https://github.com/moby/moby/issues/19566.
+  (gzip -c "$fileName.tar" > "$fileName.tar.gz"; rm -rf "$fileName.tar") &
   pids+=($!)
 done
 cd ..
@@ -233,6 +236,7 @@ ls -lah "$outDir.tar"
 echo
 
 echo "Generated $(pwd)/$outDir.tar"
+echo
 
 if [ "$omitComposeFiles" = 0 ] || [ "$cleanImageNames" = 0 ]; then
   echo "WARNING: Please practice caution when sharing this package with others:"
@@ -242,4 +246,5 @@ if [ "$omitComposeFiles" = 0 ] || [ "$cleanImageNames" = 0 ]; then
   if [ "$cleanImageNames" = 0 ]; then
     echo "- This package contains docker images with names that may contain private registry information."
   fi
+  echo
 fi
