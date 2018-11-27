@@ -39,25 +39,16 @@ printUsage() {
 
 # generateWithoutRegistry(1: fileName, 2: imageTag, 3: keystorePath, 4: keystorePassword)
 generateWithoutRegistry() {
-  # sed --version fails on BSD distro of sed. We use the exit code to determine
-  #    the required format for sed
-  # TODO find a way to test the sed distro without erroring out
-  sed --version || true;
-  if [ $? -eq 0 ]; then
-    sed -i "s/<registry_host>:<registry_port>\\/<repository>\\///g" templates/"$1" > "$1"
-    sed -i "s/<image_tag>/$2/g" "$1"
-  else
-    sed -i "" "s/<registry_host>:<registry_port>\\/<repository>\\///g" templates/"$1" > "$1"
-    sed -i "" "s/<image_tag>/$2/g" "$1"
-  fi
+  sedi "s/<registry_host>:<registry_port>\\/<repository>\\///g" templates/"$1"
+  sedi "s/<image_tag>/$2/g" templates/"$1"
 
   configureHttps "$1" "$3" "$4"
 }
 
 # generateWithoutRegistry(1: fileName, 2: registryHost, 3: repository, 4: imageTag, 5: keystorePath, 6: keystorePassword)
 generateWithRegistry() {
-  sed -i "" "s/<registry_host>:<registry_port>\\/<repository>/$2:$3\\/$4/g" templates/"$1" > "$1"
-  sed -i "" "s/<image_tag>/$5/g" "$1"
+  sedi "s/<registry_host>:<registry_port>\\/<repository>/$2:$3\\/$4/g" templates/"$1"
+  sedi "s/<image_tag>/$5/g" templates/"$1"
 
     configureHttps "$1" "$5" "$6"
 }
@@ -75,6 +66,20 @@ configureHttps() {
         sed -i '/- "8443:8443"/d' "$1"
         sed -i '/secrets: \[https_keystore\]/d' "$1"
     fi
+}
+
+# platform agnostic sed -i
+sedi() {
+  # sed --version fails on BSD distro of sed. We use the exit code to determine
+  #    the required format for sed
+  if [ $# -gt 2 ]; then
+    sed --version >/dev/null 2>&1 && sed -i "$1" "$2" > "$3" || \
+      sed -i "" "$1" "$2" > "$3"
+  else
+    echo "COMMAND: sed -i '$1' '$2'"
+    sed --version >/dev/null 2>&1 && sed -i "$1" "$2" || \
+      sed -i "" "$1" "$2"
+  fi
 }
 
 if [ "$1" = help ] || [ "$1" = --help ]; then
