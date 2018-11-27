@@ -50,6 +50,7 @@ generateWithRegistry() {
 }
 
 # platform agnostic sed -i
+# sedi(sedReplaceString, filepath,[outputFile])
 sedi() {
   # sed --version fails on BSD distro of sed. We use the exit code to determine
   #    the required format for sed
