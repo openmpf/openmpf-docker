@@ -39,18 +39,20 @@ printUsage() {
 
 # generateWithoutRegistry(1: fileName, 2: imageTag, 3: keystorePath, 4: keystorePassword)
 generateWithoutRegistry() {
-  sedi "s/<registry_host>:<registry_port>\\/<repository>\\///g" templates/"$1"
-  sedi "s/<image_tag>/$2/g" templates/"$1"
+  cp templates/"$1" "$1"
+  sedi "s/<registry_host>:<registry_port>\\/<repository>\\///g" "$1"
+  sedi "s/<image_tag>/$2/g" "$1"
 
   configureHttps "$1" "$3" "$4"
 }
 
 # generateWithoutRegistry(1: fileName, 2: registryHost, 3: repository, 4: imageTag, 5: keystorePath, 6: keystorePassword)
 generateWithRegistry() {
-  sedi "s/<registry_host>:<registry_port>\\/<repository>/$2:$3\\/$4/g" templates/"$1"
-  sedi "s/<image_tag>/$5/g" templates/"$1"
+  cp templates/"$1" "$1"
+  sedi "s/<registry_host>:<registry_port>\\/<repository>/$2:$3\\/$4/g" "$1"
+  sedi "s/<image_tag>/$5/g" "$1"
 
-    configureHttps "$1" "$5" "$6"
+  configureHttps "$1" "$5" "$6"
 }
 
 
@@ -76,7 +78,6 @@ sedi() {
     sed --version >/dev/null 2>&1 && sed -i "$1" "$2" > "$3" || \
       sed -i "" "$1" "$2" > "$3"
   else
-    echo "COMMAND: sed -i '$1' '$2'"
     sed --version >/dev/null 2>&1 && sed -i "$1" "$2" || \
       sed -i "" "$1" "$2"
   fi
