@@ -45,8 +45,7 @@ trap intExit INT
 
 # spinner(header, pids)
 spinner() {
-  local delay=0.75
-  local spinstr='|/-\'
+  local delay=5.0
 
   header="$1"
   pids="$2"
@@ -62,14 +61,10 @@ spinner() {
         break
       fi
     done
-    local temp="${spinstr#?}"
-    printf " [%c]  " "$spinstr"
-    local spinstr="$temp${spinstr%$temp}"
+    echo -n "."
     sleep "$delay"
-    printf "\b\b\b\b\b\b"
   done
 
-  printf "    \b\b\b\b"
   echo " done"
   echo
 }
