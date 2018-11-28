@@ -191,30 +191,17 @@ for imageName in $imageNames; do # word-splitting
     newImageName="$imageName"
   fi
   getFileName "$imageName" fileName
-  echo "  $newImageName -> $fileName.tar"
-  docker save "$newImageName" -o "$outDir/$fileName.tar" & # currently, there's no way to show progress
+  echo "  $newImageName -> $fileName.tar.gz"
+  # NOTE: Currently, there's no way to show progress using "docker save".
+  # NOTE: "docker load" will complain with "no such file or directory" if
+  # "tar -czf" is used to create the package. Use "gzip" instead.
+  # See https://github.com/moby/moby/issues/19566.
+  docker save "$newImageName" | gzip > "$outDir/$fileName.tar.gz" &
   pids+=($!)
 done
 echo
 
 spinner "Saving images" "$pids"
-
-echo "Images to gzip:"
-cd "$outDir"
-pids=()
-for imageName in $imageNames; do # word-splitting
-  getFileName "$imageName" fileName
-  echo "  $fileName.tar -> $fileName.tar.gz"
-  # NOTE: "docker load" will complain with "no such file or directory" if
-  # "tar -czf" is used to create the package. Use "gzip" instead.
-  # See https://github.com/moby/moby/issues/19566.
-  (gzip -c "$fileName.tar" > "$fileName.tar.gz"; rm -rf "$fileName.tar") &
-  pids+=($!)
-done
-cd ..
-echo
-
-spinner "Gzipping images" "$pids"
 
 cd "$outDir"
 ls -lah *.tar.gz
