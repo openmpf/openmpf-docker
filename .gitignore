@@ -19,3 +19,4 @@ openmpf_runtime/build_artifacts/*
 /docker-compose.yml
 /docker-compose-test.yml
 /swarm-compose.yml
+/openmpf-docker-images*
