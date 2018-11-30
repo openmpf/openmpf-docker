@@ -155,7 +155,6 @@ ENV MPF_LOG_PATH=$MPF_HOME/share/logs
 ENV CORE_MPF_NODES=
 ENV LD_LIBRARY_PATH=/usr/lib64:$MPF_HOME/lib
 ENV PATH=$PATH:$MPF_HOME/bin
-ENV CATALINA_OPTS="-server -Xms256m -XX:PermSize=512m -XX:MaxPermSize=512m -Duser.country=US -Djava.library.path=$MPF_HOME/lib -Dtransport.guarantee='NONE' -Dweb.rest.protocol='http'"
 
 # The workflow manager must be added as an mpf-child so that plugin packages are
 # extracted at startup, which is necessary for component auto-registration.
@@ -166,7 +165,7 @@ RUN echo '[mpf-child]' >> /etc/ansible/hosts; \
 # Prepare Entrypoint                                                           #
 ################################################################################
 
-EXPOSE 8080
+EXPOSE 8080 8443
 
 COPY workflow_manager/docker-entrypoint.sh /home/mpf
 RUN dos2unix -q /home/mpf/docker-entrypoint.sh

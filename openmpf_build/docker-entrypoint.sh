@@ -94,6 +94,8 @@ fi
 ################################################################################
 # Build OpenMPF                                                                #
 ################################################################################
+parallelism=$(($(nproc) / 2))
+(( parallelism < 2 )) && parallelism=2
 
 if [ $RUN_TESTS -le 0 ]; then
   # Perform build
@@ -104,6 +106,8 @@ if [ $RUN_TESTS -le 0 ]; then
     -Dcomponents.build.package.json=/home/mpf/openmpf-projects/openmpf/trunk/jenkins/scripts/config_files/$BUILD_PACKAGE_JSON \
     -Dstartup.auto.registration.skip=false \
     -Dcomponents.build.dir=/home/mpf/openmpf-projects/openmpf/mpf-component-build \
+    -Dcomponents.build.parallel.builds="$parallelism" \
+    -Dcomponents.build.make.jobs="$parallelism" \
     -DgitBranch=`cd .. && git rev-parse --abbrev-ref HEAD` \
     -DgitShortId=`cd .. && git rev-parse --short HEAD` \
     -DjenkinsBuildNumber=1
@@ -122,6 +126,8 @@ else
     -Dcomponents.build.package.json=/home/mpf/openmpf-projects/openmpf/trunk/jenkins/scripts/config_files/$BUILD_PACKAGE_JSON \
     -Dstartup.auto.registration.skip=false \
     -Dcomponents.build.dir=/home/mpf/openmpf-projects/openmpf/mpf-component-build \
+    -Dcomponents.build.parallel.builds="$parallelism" \
+    -Dcomponents.build.make.jobs="$parallelism" \
     -DgitBranch=`cd .. && git rev-parse --abbrev-ref HEAD` \
     -DgitShortId=`cd .. && git rev-parse --short HEAD` \
     -DjenkinsBuildNumber=1
