@@ -251,6 +251,6 @@ following content:
 }
 ```
 
-This setting will affect every container running on the node, which in general,
+This setting will affect every container running on the node, which, in general,
 should not cause any problems for containers that don't require a special
 runtime.
