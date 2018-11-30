@@ -42,7 +42,6 @@ echo 'node.auto.unconfig.enabled=true' >> $MPF_HOME/config/mpf-custom.properties
 # Update WFM segment size
 echo 'detection.segment.target.length=1000' >> $MPF_HOME/config/mpf-custom.properties
 
-# Wait for mySQL service.
 export CATALINA_OPTS="-server -Xms256m -Duser.country=US -Djava.library.path=$MPF_HOME/lib"
 
 if [ "$KEYSTORE_PASSWORD" ]

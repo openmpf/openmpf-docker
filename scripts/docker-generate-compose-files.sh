@@ -33,7 +33,7 @@ printUsage() {
     echo "Usages:"
     echo "docker-generate-compose-files.sh"
     echo "docker-generate-compose-files.sh -nr [<image-tag>=latest] [<keystore-path>] [<keystore-password>]"
-    echo "docker-generate-compose-files.sh <registry-host> [<repository>=openmpf] [<image-tag>=latest] [<keystore-path>] [<keystore-password>]"
+    echo "docker-generate-compose-files.sh <registry> [<repository>=openmpf] [<image-tag>=latest] [<keystore-path>] [<keystore-password>]"
     exit -1
 }
 
