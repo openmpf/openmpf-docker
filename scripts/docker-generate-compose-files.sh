@@ -28,64 +28,93 @@
 
 set -Ee -o pipefail
 
+
 printUsage() {
-  echo "Usages:"
-  echo "docker-generate-compose-files.sh [<image-tag>]"
-  echo "docker-generate-compose-files.sh <registry-host> <registry-port> [<repository>] [<image-tag>]"
-  exit -1
+    echo "Usages:"
+    echo "docker-generate-compose-files.sh"
+    echo "docker-generate-compose-files.sh -nr [<image-tag>=latest] [<keystore-path>] [<keystore-password>]"
+    echo "docker-generate-compose-files.sh <registry> [<repository>=openmpf] [<image-tag>=latest] [<keystore-path>] [<keystore-password>]"
+    exit -1
 }
 
-# generateWithoutRegistry(fileName, imageTag)
+# generateWithoutRegistry(1: fileName, 2: imageTag, 3: keystorePath, 4: keystorePassword)
 generateWithoutRegistry() {
-  sed "s/<registry_host>:<registry_port>\\/<repository>\\///g" templates/"$1" > "$1"
-  sed -i "s/<image_tag>/$2/g" "$1"
+    sed "s/<registry_host>\\/<repository>\\///g" templates/"$1" > "$1"
+    sed -i "s/<image_tag>/$2/g" "$1"
+
+    configureHttps "$1" "$3" "$4"
 }
 
-# generateWithoutRegistry(fileName, registryHost, registryPort, repository, imageTag)
+# generateWithoutRegistry(1: fileName, 2: registryHost, 3: repository, 4: imageTag, 5: keystorePath, 6: keystorePassword)
 generateWithRegistry() {
-  sed "s/<registry_host>:<registry_port>\\/<repository>/$2:$3\\/$4/g" templates/"$1" > "$1"
-  sed -i "s/<image_tag>/$5/g" "$1"
+    sed "s/<registry_host>\\/<repository>/$2\\/$3/g" templates/"$1" > "$1"
+    sed -i "s/<image_tag>/$4/g" "$1"
+
+    configureHttps "$1" "$5" "$6"
 }
 
-if [ $# -gt 4 ]; then
-  printUsage
+
+# configureHttps(1: fileName, 2: keystorePath, 3: keystorePassword)
+configureHttps() {
+    if [ "$2" ]; then
+        escaped_path="${2//\//\\/}"
+        sed -i "s/<keystore_path>/$escaped_path/g" "$1"
+        sed -i "s/<keystore_password>/$3/g" "$1"
+    else
+        sed -i '/<keystore_path>/d' "$1"
+        sed -i '/<keystore_password>/d' "$1"
+        sed -i '/- "8443:8443"/d' "$1"
+        sed -i '/secrets: \[https_keystore\]/d' "$1"
+    fi
+}
+
+if [ "$1" = help ] || [ "$1" = --help ]; then
+    printUsage
 fi
+
+if [ "$1" = -nr ]; then
+    if [ $# -gt 4 ]; then
+        printUsage
+    fi
+    if [ $# -eq 3 ]; then
+        echo 'If <keystore-path> is provided, <keystore-password> must also be provided.'
+        printUsage
+    fi
+else
+    if [ $# -gt 5 ]; then
+        printUsage
+    fi
+    if [ $# -eq 4 ]; then
+        echo 'If <keystore-path> is provided, <keystore-password> must also be provided.'
+        printUsage
+    fi
+fi
+
+
+templateFiles=('docker-compose.yml' 'docker-compose-test.yml' 'swarm-compose.yml')
 
 ################################################################################
 # Without registry                                                             #
 ################################################################################
 
-if [ $# -lt 2 ]; then
-  if [ $# -eq 0 ]; then
-    imageTag="latest"
-  else
-    imageTag="$1"
-  fi
-  generateWithoutRegistry "docker-compose.yml" "$imageTag"
-  generateWithoutRegistry "docker-compose-test.yml" "$imageTag"
-  generateWithoutRegistry "swarm-compose.yml" "$imageTag"
-  exit
+if [ $# -eq 0 ] || [ "$1" = -nr ]; then
+    imageTag="${2:-latest}"
+    for template in "${templateFiles[@]}"; do
+        generateWithoutRegistry "$template" "$imageTag" "$3" "$4"
+    done
+
+    exit
 fi
+
 
 ################################################################################
 # With registry                                                                #
 ################################################################################
 
 host="$1"
-port="$2"
+repository="${2:-openmpf}"
+imageTag="${3:-latest}"
 
-if [ $# -lt 3 ]; then
-  repository="openmpf"
-else
-  repository="$3"
-fi
-
-if [ $# -lt 4 ]; then
-  imageTag="latest"
-else
-  imageTag="$4"
-fi
-
-generateWithRegistry "docker-compose.yml" "$host" "$port" "$repository" "$imageTag"
-generateWithRegistry "docker-compose-test.yml" "$host" "$port" "$repository" "$imageTag"
-generateWithRegistry "swarm-compose.yml" "$host" "$port" "$repository" "$imageTag"
+for template in "${templateFiles[@]}"; do
+    generateWithRegistry "$template" "$host" "$repository" "$imageTag" "$4" "$5"
+done

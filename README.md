@@ -228,7 +228,9 @@ private Docker registry, then run:
 
 Otherwise, if you do have access to a private Docker registry, then run:
 
-- `./scripts/docker-generate-compose-files.sh <registry_host> <registry_port>`
+- `./scripts/docker-generate-compose-files.sh <registry_host>:<registry_port>`
+
+See [below](#optional-configure-https) for instructions to enable HTTPS on the OpenMPF Workflow Manager.
 
 Note that this will also generate `swarm-compose.yml`, which you will use if you
 choose to follow the [Swarm Deployment Guide](SWARM.md).
@@ -310,6 +312,24 @@ advantage of running the project, and scheduling jobs, across multiple physical
 or virtual machines. The simplest way to do this is to set up a Docker Swarm
 deployment. If you would like a walkthrough on how to do that, please see the
 [Swarm Deployment Guide](SWARM.md).
+
+### (Optional) Configure HTTPS
+
+The OpenMPF Workflow Manager web application can be configured to use HTTPS. To enable HTTPS you must run 
+`docker-generate-compose-files.sh` with additional arguments.
+If you don't have access to a private Docker registry, then run:
+
+- `/scripts/docker-generate-compose-files.sh -nr <image-tag> <keystore-path> <keystore-password>`
+
+Otherwise, if you do have access to a private Docker registry, then run:
+
+- `./scripts/docker-generate-compose-files.sh <registry_host>:<registry_port> <image-tag> <keystore-path> <keystore-password>`
+
+When using a Docker Compose deployment, `<keystore-path>` is the path to the keystore on the host's file system. 
+When using a Docker Swarm deployment, `<keystore-path>` is the path to the keystore on the swarm manager host's 
+file system. The keystore only needs present on the swarm manager. The Java JKS and PKCS#12 keystore formats are 
+supported.
+
 
 ## Project Website
 

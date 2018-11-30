@@ -149,42 +149,42 @@ RUN wget -nv -O /apps/source/ffmpeg_sources/opencore-amr-0.1.4.tar.gz \
     cd /apps/source/ffmpeg_sources && tar xzf opencore-amr-0.1.4.tar.gz && \
     cd opencore-amr-0.1.4 && autoreconf -fiv && \
     ./configure --prefix="/apps/install" --enable-shared && \
-    make && make install && make distclean && ldconfig
+    make -j$(nproc) && make install && make distclean && ldconfig
 
 # libfdk_aac:
 RUN wget -nv -O /apps/source/ffmpeg_sources/fdk-aac-0.1.5.tar.gz \
     "https://github.com/mstorsjo/fdk-aac/archive/v0.1.5.tar.gz" && \
     cd /apps/source/ffmpeg_sources && tar xzf fdk-aac-0.1.5.tar.gz && \
     cd fdk-aac-0.1.5 && autoreconf -fiv && ./configure --prefix="/apps/install" --enable-shared && \
-    make && make install && make distclean && ldconfig
+    make -j$(nproc) && make install && make distclean && ldconfig
 
 # libmp3lame:
 RUN wget -nv -O /apps/source/ffmpeg_sources/lame-3.99.5.tar.gz \
     "http://downloads.sourceforge.net/project/lame/lame/3.99/lame-3.99.5.tar.gz" && \
     cd /apps/source/ffmpeg_sources && tar xzf lame-3.99.5.tar.gz && cd lame-3.99.5 && \
     ./configure --prefix="/apps/install" --bindir="/apps/install/bin" --enable-shared --enable-nasm && \
-    make && make install && make distclean && ldconfig
+    make -j$(nproc) && make install && make distclean && ldconfig
 
 # libogg:
 RUN wget -nv -O /apps/source/ffmpeg_sources/libogg-1.3.2.tar.gz \
     "http://downloads.xiph.org/releases/ogg/libogg-1.3.2.tar.gz" && \
     cd /apps/source/ffmpeg_sources && tar xzf libogg-1.3.2.tar.gz && \
     cd libogg-1.3.2 && ./configure --prefix="/apps/install" --enable-shared && \
-    make && make install && make distclean && ldconfig
+    make -j$(nproc) && make install && make distclean && ldconfig
 
 # libopus:
 RUN wget -nv -O /apps/source/ffmpeg_sources/libopus-1.2.tar.gz \
     "https://archive.mozilla.org/pub/opus/opus-1.2.tar.gz" && \
     cd /apps/source/ffmpeg_sources && tar xzf libopus-1.2.tar.gz && \
     cd opus-1.2 && autoreconf -fiv && ./configure --prefix="/apps/install" --enable-shared && \
-    make && make install && make distclean && ldconfig
+    make -j$(nproc) && make install && make distclean && ldconfig
 
 # libspeex:
 RUN wget -nv -O /apps/source/ffmpeg_sources/speex-1.2rc2.tar.gz \
     "http://downloads.xiph.org/releases/speex/speex-1.2rc2.tar.gz" && \
     cd /apps/source/ffmpeg_sources && tar xzf speex-1.2rc2.tar.gz && \
     cd speex-1.2rc2 && LDFLAGS="-L/apps/install/lib" CPPFLAGS="-I/apps/install/include" \
-    ./configure --prefix="/apps/install" --enable-shared && make && make install && \
+    ./configure --prefix="/apps/install" --enable-shared && make -j$(nproc) && make install && \
     make distclean && ldconfig
 
 # libvorbis:
@@ -193,15 +193,15 @@ RUN wget -nv -O /apps/source/ffmpeg_sources/libvorbis-1.3.5.tar.gz \
     cd /apps/source/ffmpeg_sources && tar xzf libvorbis-1.3.5.tar.gz && \
     cd libvorbis-1.3.5 && LDFLAGS="-L/apps/install/lib" CPPFLAGS="-I/apps/install/include" \
     ./configure --prefix="/apps/install" --with-ogg="/apps/install" --enable-shared && \
-    make && make install && make distclean && ldconfig
+    make -j$(nproc) && make install && make distclean && ldconfig
 
 # libtheora:
 RUN wget -nv -O /apps/source/ffmpeg_sources/libtheora-1.1.1.tar.gz \
     "http://downloads.xiph.org/releases/theora/libtheora-1.1.1.tar.gz" && \
     cd /apps/source/ffmpeg_sources && tar xzf libtheora-1.1.1.tar.gz && \
     cd libtheora-1.1.1 && ./configure --prefix="/apps/install" \
-    --with-ogg="/apps/install" --enable-shared && make && make install && \
-    make distclean && ldconfig
+    --with-ogg="/apps/install" --enable-shared && make -j$(nproc) && make install && \
+    make  distclean && ldconfig
 
 # libvpx:
 RUN wget -nv -O /apps/source/ffmpeg_sources/v1.6.1.tar.gz \
@@ -209,7 +209,7 @@ RUN wget -nv -O /apps/source/ffmpeg_sources/v1.6.1.tar.gz \
     cd /apps/source/ffmpeg_sources && tar xzf v1.6.1.tar.gz && cd libvpx-1.6.1 && \
     ./configure --prefix="/apps/install" --enable-shared --enable-vp8 \
     --enable-vp9 --enable-pic --disable-debug --disable-examples --disable-docs \
-    --as=yasm && make && make install && make distclean && ldconfig
+    --as=yasm && make -j$(nproc) && make install && make distclean && ldconfig
 
 # libx264:
 RUN wget -nv -O /apps/source/ffmpeg_sources/x264-snapshot-20170226-2245-stable.tar.bz2 \
@@ -217,7 +217,7 @@ RUN wget -nv -O /apps/source/ffmpeg_sources/x264-snapshot-20170226-2245-stable.t
     cd /apps/source/ffmpeg_sources && tar xvjf x264-snapshot-20170226-2245-stable.tar.bz2 && \
     cd x264-snapshot-20170226-2245-stable && PKG_CONFIG_PATH="/apps/install/lib/pkgconfig" \
     ./configure --prefix="/apps/install" --bindir="/apps/install" --enable-shared --disable-cli && \
-    make && make install && make distclean && ldconfig
+    make -j$(nproc) && make install && make distclean && ldconfig
 
 # libx265:
 RUN wget -nv -O /apps/source/ffmpeg_sources/x265_2.3.tar.gz \
@@ -232,7 +232,7 @@ RUN wget -nv -O /apps/source/ffmpeg_sources/xvidcore-1.3.4.tar.gz \
     "http://downloads.xvid.org/downloads/xvidcore-1.3.4.tar.gz" && \
     cd /apps/source/ffmpeg_sources && tar zxf xvidcore-1.3.4.tar.gz && \
     cd xvidcore/build/generic && ./configure --prefix="/apps/install" && \
-    make && make install && make distclean && ldconfig
+    make -j$(nproc) && make install && make distclean && ldconfig
 
 # FFmpeg 3.3.3:
 RUN cd /apps/source/ffmpeg_sources && git clone https://git.ffmpeg.org/ffmpeg.git ffmpeg && \
@@ -244,7 +244,7 @@ RUN cd /apps/source/ffmpeg_sources && git clone https://git.ffmpeg.org/ffmpeg.gi
     --enable-libx265 --enable-libxvid --enable-nonfree --enable-openssl \
     --enable-shared --enable-version3 --extra-cflags="-I/apps/install/include" \
     --extra-ldflags="-L/apps/install/lib" --extra-libs=-ldl --prefix="/apps/install" && \
-    make && make install && make distclean && ln -s /apps/install/bin/ffmpeg /usr/bin/ffmpeg && \
+    make -j$(nproc) && make install && make distclean && ln -s /apps/install/bin/ffmpeg /usr/bin/ffmpeg && \
     ldconfig
 
 ################################################################################
@@ -280,7 +280,7 @@ RUN cd /apps/source/opencv_sources && git clone https://github.com/opencv/opencv
     -DWITH_1394:BOOL="0" -DWITH_EIGEN:BOOL="0" -DWITH_LIBV4L:BOOL="0" \
     -DBUILD_opencv_ts:BOOL="0" -DWITH_MATLAB:BOOL="0" -DWITH_OPENCL:BOOL="0" \
     -DWITH_PVAPI:BOOL="0" -DENABLE_CXX11:BOOL=“1” .. && \
-    make -j4 && make install && \
+    make -j$(nproc) && make install && \
     sh -c 'echo "/apps/install/opencv3.3.0/lib" >> /etc/ld.so.conf.d/mpf-x86_64.conf' && \
     ln -sf /apps/install/opencv3.3.0 /opt/opencv-3.3.0 && \
     ln -sf /apps/install/opencv3.3.0/include/opencv2 /usr/local/include/opencv2 && \
@@ -395,7 +395,7 @@ RUN mkdir /apps/source/gtest_sources
 RUN cd /apps/source/gtest_sources && git clone https://github.com/google/googletest.git googletest && \
     cd googletest && git checkout release-1.8.1 && mkdir release && cd release && \
     PKG_CONFIG_PATH="/apps/install/lib/pkgconfig" cmake3 .. && \
-    make && make install && ldconfig
+    make -j$(nproc) && make install && ldconfig
 
 ################################################################################
 # Prepare Entrypoint                                                           #
