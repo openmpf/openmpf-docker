@@ -1,4 +1,4 @@
-# Deploying OpenMPF with Docker Swarm
+# Deploy OpenMPF with Docker Swarm
 
 ## Do I need Swarm Deployment?
 

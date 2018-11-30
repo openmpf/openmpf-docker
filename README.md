@@ -156,6 +156,13 @@ To check this, run:
 
 -  `docker-compose --version`
 
+#### Other Programs
+
+If you installed Docker for Windows, then please install a program that allows
+you to run bash scripts in a Unix-like terminal environment. We recommend Git
+Bash, which is part of [Git for Windows](https://gitforwindows.org/), or
+[Cygwin](https://cygwin.com/install.html).
+
 ### Build the OpenMPF Docker Images
 
 Note that this process can take 1.5 - 2 hours if you're starting from scratch.
@@ -180,6 +187,8 @@ it's not listed there, check
 Place the file in the `openmpf_build` directory. The file should be named
 `jdk-8u144-linux-x64.rpm`, or something similar where "8u144" is a different
 version number. Do not download Java SE 9 or 10.
+
+If you plan to develop and integrate your own component into OpenMPF, then please refer to the [Contribution Guide](CONTRIBUTING.md).
 
 Run following command from within the `openmpf-docker` directory to create the
 OpenMPF build image:
@@ -221,7 +230,7 @@ Otherwise, if you do have access to a private Docker registry, then run:
 - `./scripts/docker-generate-compose-files.sh <registry_host> <registry_port>`
 
 Note that this will also generate `swarm-compose.yml`, which you will use if you
-choose to follow the [Swarm deployment guide](SWARM.md).
+choose to follow the [Swarm Deployment Guide](SWARM.md).
 
 If you built the runtime images before, then run the following script to
 remove the old containers and volumes:
@@ -299,11 +308,11 @@ OpenMPF can be deployed in a distributed environment if you would like to take
 advantage of running the project, and scheduling jobs, across multiple physical
 or virtual machines. The simplest way to do this is to set up a Docker Swarm
 deployment. If you would like a walkthrough on how to do that, please see the
-[Swarm deployment guide](SWARM.md).
+[Swarm Deployment Guide](SWARM.md).
 
 ## Project Website
 
-For more information about OpenMPF, including documentation, guides, and other material, visit our  [website](https://openmpf.github.io/).
+For more information about OpenMPF, including documentation, guides, and other material, visit our [website](https://openmpf.github.io/).
 
 ## Project Workboard
 
