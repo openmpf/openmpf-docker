@@ -191,6 +191,7 @@ version number. Do not download Java SE 9 or 10.
 If you plan to develop and integrate your own component into OpenMPF, then
 please refer to the [Contribution Guide](CONTRIBUTING.md).
 
+<span id="docker-build-command"></span>
 Run following command from within the `openmpf-docker` directory to create the
 OpenMPF build image:
 
@@ -207,6 +208,7 @@ The first time OpenMPF is built it will download 300+ MB of Maven dependencies.
 It is most efficient to store them all on the host system so that they do not
 need to be downloaded again if and when you rebuild OpenMPF.
 
+<span id="docker-run-command"></span>
 Perform the build using the following command:
 
 ```
@@ -315,7 +317,7 @@ deployment. If you would like a walkthrough on how to do that, please see the
 
 ### (Optional) Configure HTTPS
 
-The OpenMPF Workflow Manager web application can be configured to use HTTPS. To enable HTTPS you must run 
+The OpenMPF Workflow Manager web application can be configured to use HTTPS. To enable HTTPS you must run
 `docker-generate-compose-files.sh` with additional arguments.
 If you don't have access to a private Docker registry, then run:
 
@@ -325,9 +327,9 @@ Otherwise, if you do have access to a private Docker registry, then run:
 
 - `./scripts/docker-generate-compose-files.sh <registry_host>:<registry_port> <image-tag> <keystore-path> <keystore-password>`
 
-When using a Docker Compose deployment, `<keystore-path>` is the path to the keystore on the host's file system. 
-When using a Docker Swarm deployment, `<keystore-path>` is the path to the keystore on the swarm manager host's 
-file system. The keystore only needs present on the swarm manager. The Java JKS and PKCS#12 keystore formats are 
+When using a Docker Compose deployment, `<keystore-path>` is the path to the keystore on the host's file system.
+When using a Docker Swarm deployment, `<keystore-path>` is the path to the keystore on the swarm manager host's
+file system. The keystore only needs present on the swarm manager. The Java JKS and PKCS#12 keystore formats are
 supported.
 
 
