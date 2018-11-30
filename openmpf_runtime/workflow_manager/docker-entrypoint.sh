@@ -69,7 +69,7 @@ https_connector = tree.find('./Service/Connector[@sslProtocol="TLS"][@scheme="ht
 
 if https_connector is None:
     print 'Enabling HTTPS'
-    ssl_connector_attrs = dict(
+    ssl_connector_element = ET.Element('Connector',
         SSLEnabled='true',
         acceptCount='100',
         clientAuth='false',
@@ -83,7 +83,8 @@ if https_connector is None:
         scheme='https',
         secure='true',
         sslProtocol='TLS')
-    ET.SubElement(tree.find('Service'), 'Connector', ssl_connector_attrs)
+    ssl_connector_element.tail = '\n\n    '
+    tree.find('Service').insert(8, ssl_connector_element)
     tree.write(server_xml_path)
 else:
     print 'HTTPS already enabled'
