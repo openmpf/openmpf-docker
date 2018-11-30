@@ -30,8 +30,8 @@ environment, then you will need to make modifications to the
 not, then don't run that command.
 
 Execute the command that begins with `docker run` to build OpenMPF with your
-code. Skip the step to run `docker-generate-compose-files.sh`. That should be
-not be necessary unless you want to use a new registry or image tag. Then follow
+code. Skip the step to run `docker-generate-compose-files.sh`. That should not
+be necessary unless you want to use a new registry or image tag. Then follow
 the rest of the steps in that section to build the Docker images. Then run the
 steps in the [Run OpenMPF using Docker
 Compose](README.md#run-openmpf-using-docker-compose) section to deploy them.
