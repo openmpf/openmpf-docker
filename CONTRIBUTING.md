@@ -3,7 +3,7 @@
 
 Please refer to the [OpenMPF Component Documentation](https://openmpf.github.io/docs/site/Component-API-Overview/index.html) for information on how to implement your component, and the [OpenMPF Contributor Guide](https://openmpf.github.io/docs/site/Contributor-Guide/index.html) for information on contributing your work to the open source repositories. In this section we will explain the process of integrating your component code into a Docker build and how to run it as part of a Docker deployment.
 
-Follow the steps in the [README](README.md) to build and run a single-host Docker deployment before attempting to integrate your component. That way, if the deployment is not successful, you can be sure it's not an issue related to your code.
+Follow the steps in the [README](README.md#getting-started) to build and run a single-host Docker deployment before attempting to integrate your component. That way, if the deployment is not successful, you can be sure it's not an issue related to your code.
 
 Your component code should be contained within a single directory that shares your component name. If not already there, place this directory within the appropriate language-specific directory (e.g. `cpp`, `java`, `python`) that exists within the `openmpf-projects/openmpf-components` or `openmpf-projects/openmpf-contrib-components` directories. Next, add an entry to `openmpf-projects/openmpf/trunk/jenkins/scripts/config_files/openmpf-open-source-package.json` for your component.
 
