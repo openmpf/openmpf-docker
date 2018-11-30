@@ -5,8 +5,8 @@ Documentation](https://openmpf.github.io/docs/site/Component-API-Overview/index.
 for information on how to implement your component, and the [OpenMPF Contributor
 Guide](https://openmpf.github.io/docs/site/Contributor-Guide/index.html) for
 information on contributing your work to the open source repositories. In this
-section we wistarll explain the process of integrating your component code into
-a Docker build and how to run it as part of a Docker deployment.
+guide we will explain the process of integrating your component code into a
+Docker build and how to run it as part of a Docker deployment.
 
 Follow the steps in the [README](README.md#getting-started) to build and run a
 single-host Docker deployment before attempting to integrate your component.
