@@ -223,3 +223,34 @@ When you are ready to tear down the stack and remove the containers, run:
 
 To redeploy the stack, run the command that begins with `docker stack deploy`
 again.
+
+### (Optional) Add GPU support with NVIDIA CUDA
+
+Refer to the steps listed in the [(Optional) Add GPU support with NVIDIA
+CUDA](README.md#optional-add-gpu-support-with-nvidia-cuda) section in the
+README. Those instructions are for a single-host Docker Compose deployment. All
+of the same steps apply to a Docker SWARM deployment with the exception of the
+steps involving the `runtime: nvidia` flag. This is because `swarm-compose.yml`
+supports a different Docker Compose file version than `docker-compose.yml`. That
+version does not support that flag.
+
+To address this, and to get the nodes in your swarm cluster to use the NVIDIA
+Docker runtime, you will need to update the `/etc/docker/daemon.json` file on
+each node. If that file does not already exist, then create it. Add the
+following content:
+
+```
+{   
+    "default-runtime": "nvidia",
+    "runtimes": {
+        "nvidia": {
+            "path": "/usr/bin/nvidia-container-runtime",
+            "runtimeArgs": []
+        }
+    }
+}
+```
+
+This setting will affect every container running on the node, which, in general,
+should not cause any problems for containers that don't require a special
+runtime.
