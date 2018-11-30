@@ -1,4 +1,3 @@
-
 # Build your own OpenMPF Component with Docker
 
 Please refer to the [OpenMPF Component
