@@ -73,7 +73,6 @@ node(jenkinsNodes) {
         def remoteImageTagPrefix = dockerRegistryHostAndPort + '/openmpf/'
 
         def buildImageName = remoteImageTagPrefix + 'openmpf_build:' + imageTag
-        def customBuildImageName = remoteImageTagPrefix + 'openmpf_custom_build:' + imageTag
         def postBuildImageName = 'openmpf_post_build:' + imageTag
         def buildContainerId
         def postBuildImageId
@@ -163,11 +162,10 @@ node(jenkinsNodes) {
                 sh 'docker build openmpf_build/ -t ' + buildImageName
 
                 if (buildCustomComponents) {
+                    // Build the new build image for custom components using the original build image for open source
+                    // components. This overwrites the original build image tag.
                     sh 'docker build openmpf_custom_build/ --build-arg BUILD_IMAGE_NAME=' + buildImageName +
-                            ' -t ' + customBuildImageName
-
-                    // Use the custom build from now on.
-                    buildImageName = customBuildImageName
+                            ' -t ' + buildImageName
                 }
             }
 
