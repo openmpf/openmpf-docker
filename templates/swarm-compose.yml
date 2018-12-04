@@ -42,7 +42,7 @@ services:
       - swarm_overlay
 
   activemq:
-    image: <registry_host>/<repository>/openmpf_active_mq:<image_tag>
+    image: <registry>/<repository>/openmpf_active_mq:<image_tag>
     ports:
       - "8161:8161"
     networks:
@@ -54,7 +54,7 @@ services:
       - swarm_overlay
 
   workflow_manager:
-    image: <registry_host>/<repository>/openmpf_workflow_manager:<image_tag>
+    image: <registry>/<repository>/openmpf_workflow_manager:<image_tag>
     # The following lines are needed to wait until the mySQL service is available.
     environment:
       - MYSQL_ROOT_PASSWORD=password
@@ -69,7 +69,7 @@ services:
     secrets: [https_keystore]
 
   node_manager:
-    image: <registry_host>/<repository>/openmpf_node_manager:<image_tag>
+    image: <registry>/<repository>/openmpf_node_manager:<image_tag>
     volumes:
       - shared_data:/opt/mpf/share
     deploy:
