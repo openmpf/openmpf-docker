@@ -41,7 +41,8 @@ def buildPackageJson = env.getProperty("build_package_json")
 def buildOpenmpf = env.getProperty("build_openmpf").toBoolean()
 def runUnitTests = env.getProperty("run_unit_tests").toBoolean()
 def runIntegrationTests = env.getProperty("run_integration_tests").toBoolean()
-def buildProductionImages = env.getProperty("build_production_images").toBoolean()
+def buildRuntimeImages = env.getProperty("build_runtime_images").toBoolean()
+def pushRuntimeImages = env.getProperty("push_runtime_images").toBoolean()
 def dockerRegistryHost = env.getProperty("docker_registry_host")
 def dockerRegistryPort = env.getProperty("docker_registry_port")
 def dockerRegistryCredId = env.getProperty("docker_registry_cred_id")
@@ -284,21 +285,21 @@ node(jenkinsNodes) {
                 }
             }
 
-            stage('Build production images') {
-                if (!buildProductionImages) {
-                    sh 'echo "SKIPPING BUILD OF PRODUCTION IMAGES"'
+            stage('Build runtime images') {
+                if (!buildRuntimeImages) {
+                    sh 'echo "SKIPPING BUILD OF RUNTIME IMAGES"'
                 }
-                when (buildProductionImages) { // if false, don't show this step in the Stage View UI
+                when (buildRuntimeImages) { // if false, don't show this step in the Stage View UI
                     sh 'cp docker-compose.yml.bak docker-compose.yml'
                     sh 'docker-compose build --build-arg BUILD_IMAGE_NAME=' + buildImageName
                 }
             }
 
-            stage('Push production images') {
-                if (!buildProductionImages) {
-                    sh 'echo "SKIPPING PUSH OF PRODUCTION IMAGES"'
+            stage('Push runtime images') {
+                if (!pushRuntimeImages) {
+                    sh 'echo "SKIPPING PUSH OF RUNTIME IMAGES"'
                 }
-                when (buildProductionImages) { // if false, don't show this step in the Stage View UI
+                when (pushRuntimeImages) { // if false, don't show this step in the Stage View UI
                     // Pushing multiple tags is cheap, as all the layers are reused.
                     sh 'docker push ' + buildImageName
                     sh 'docker-compose push'
