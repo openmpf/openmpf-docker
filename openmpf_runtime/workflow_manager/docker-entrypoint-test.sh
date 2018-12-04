@@ -28,6 +28,10 @@
 
 set -Ee -o pipefail -o xtrace
 
+################################################################################
+# Initial Setup                                                                #
+################################################################################
+
 BUILD_ARTIFACTS_PATH=/mnt/build_artifacts
 
 # Cleanup
@@ -40,6 +44,10 @@ echo "export JGROUPS_TCP_ADDRESS=${HOSTNAME}" >> /etc/profile.d/mpf.sh
 # Configure
 echo 'node.auto.config.enabled=true' >> $MPF_HOME/config/mpf-custom.properties
 echo 'node.auto.unconfig.enabled=true' >> $MPF_HOME/config/mpf-custom.properties
+
+################################################################################
+# Run Integration Tests                                                        #
+################################################################################
 
 # Wait for mySQL service.
 set +o xtrace

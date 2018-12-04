@@ -49,30 +49,36 @@ def jenkinsNodes = env.getProperty("jenkins_nodes")
 // def buildNum = env.getProperty("BUILD_NUMBER")
 // def workspacePath = env.getProperty("WORKSPACE")
 
+// These properties are for building with custom components
 def buildCustomComponents = env.getProperty("build_custom_components").toBoolean()
 def openmpfCustomRepoCredId = env.getProperty('openmpf_custom_repo_cred_id')
 def openmpfCustomDockerRepo = env.getProperty("openmpf_custom_docker_repo")
-def openmpfCustomDockerSlug = env.getProperty("openmpf_custom_docker_slug")
 def openmpfCustomDockerBranch = env.getProperty("openmpf_custom_docker_branch")
 def openmpfCustomComponentsRepo = env.getProperty("openmpf_custom_components_repo")
-def openmpfCustomComponentsRepoCredId = env.getProperty('openmpf_custom_components_repo_cred_id')
 def openmpfCustomComponentsSlug = env.getProperty("openmpf_custom_components_slug")
 def openmpfCustomComponentsBranch = env.getProperty("openmpf_custom_components_branch")
 def openmpfCustomSystemTestsRepo = env.getProperty("openmpf_custom_system_tests_repo")
-def openmpfCustomSystemTestsRepoCredId = env.getProperty('openmpf_custom_system_tests_repo_cred_id')
 def openmpfCustomSystemTestsSlug = env.getProperty("openmpf_custom_system_tests_slug")
 def openmpfCustomSystemTestsBranch = env.getProperty("openmpf_custom_system_tests_branch")
+
+// These properties are for applying custom configurations to images
+def applyCustomConfig = env.getProperty("apply_custom_config").toBoolean()
+def openmpfConfigRepoCredId = env.getProperty('openmpf_config_repo_cred_id')
+def openmpfConfigDockerRepo = env.getProperty("openmpf_config_docker_repo")
+def openmpfConfigDockerBranch = env.getProperty("openmpf_config_docker_branch")
 
 node(jenkinsNodes) {
     try {
         def dockerRegistryHostAndPort = dockerRegistryHost + ':' + dockerRegistryPort
         def remoteImageTagPrefix = dockerRegistryHostAndPort + '/openmpf/'
-        def remoteImageTagPrefixEscaped = dockerRegistryHostAndPort + '\\/openmpf\\/'
+
         def buildImageName = remoteImageTagPrefix + 'openmpf_build:' + imageTag
         def customBuildImageName = remoteImageTagPrefix + 'openmpf_custom_build:' + imageTag
         def postBuildImageName = 'openmpf_post_build:' + imageTag
         def buildContainerId
         def postBuildImageId
+
+        def workflowManagerImageName = remoteImageTagPrefix + 'openmpf_workflow_manager:' + imageTag
 
         /*
         stage('TEST') {
@@ -126,6 +132,12 @@ node(jenkinsNodes) {
                         openmpfCustomSystemTestsPath, openmpfCustomSystemTestsBranch)
             }
 
+            if (applyCustomConfig) {
+                def openmpfConfigDockerPath = 'openmpf_custom_config'
+                gitCheckoutAndPullWithCredId(openmpfConfigDockerRepo, openmpfConfigRepoCredId,
+                        openmpfConfigDockerPath, openmpfConfigDockerBranch)
+            }
+
             // Copy JDK into place
             sh 'cp -u /data/openmpf/jdk-*-linux-x64.rpm openmpf_build'
 
@@ -143,8 +155,6 @@ node(jenkinsNodes) {
 
             // TODO: Attempt to pull images in separate stage so that they are not
             // built from scratch on a clean Jenkins node.
-
-            // sh 'exit -1' // DEBUG
         }
 
         docker.withRegistry('http://' + dockerRegistryHostAndPort, dockerRegistryCredId) {
@@ -159,8 +169,6 @@ node(jenkinsNodes) {
                     // Use the custom build from now on.
                     buildImageName = customBuildImageName
                 }
-
-                // sh 'exit -1' // DEBUG
             }
 
             stage('Build OpenMPF') {
@@ -214,6 +222,14 @@ node(jenkinsNodes) {
                             sh(script: 'docker container rm -f ' + buildContainerId, returnStatus:true)
                         }
                     }
+                }
+
+                if (applyCustomConfig) {
+                    // Build and tag the new Workflow Manager image with the image tag used in the compose files.
+                    // That way, we do not have to modify the compose files. This overwrites the tag that referred to
+                    // the original Workflow Manager image without the custom config.
+                    sh 'docker build openmpf_custom_config/ --build-arg BUILD_IMAGE_NAME=' + workflowManagerImageName +
+                            ' -t ' + workflowManagerImageName
                 }
             }
 
