@@ -40,7 +40,7 @@ printUsage() {
 # generateWithoutRegistry(1: fileName, 2: imageTag, 3: keystorePath, 4: keystorePassword)
 generateWithoutRegistry() {
   cp templates/"$1" "$1"
-  sedi "s/<registry_host>:<registry_port>\\/<repository>\\///g" "$1"
+  sedi "s/<registry_host>\\/<repository>\\///g" "$1"
   sedi "s/<image_tag>/$2/g" "$1"
 
   configureHttps "$1" "$3" "$4"
@@ -49,7 +49,7 @@ generateWithoutRegistry() {
 # generateWithoutRegistry(1: fileName, 2: registryHost, 3: repository, 4: imageTag, 5: keystorePath, 6: keystorePassword)
 generateWithRegistry() {
   cp templates/"$1" "$1"
-  sedi "s/<registry_host>:<registry_port>\\/<repository>/$2:$3\\/$4/g" "$1"
+  sedi "s/<registry_host>\\/<repository>/$2:$3\\/$4/g" "$1"
   sedi "s/<image_tag>/$5/g" "$1"
 
   configureHttps "$1" "$5" "$6"
@@ -60,28 +60,22 @@ generateWithRegistry() {
 configureHttps() {
     if [ "$2" ]; then
         escaped_path="${2//\//\\/}"
-        sed -i "s/<keystore_path>/$escaped_path/g" "$1"
-        sed -i "s/<keystore_password>/$3/g" "$1"
+        sedi "s/<keystore_path>/$escaped_path/g" "$1"
+        sedi "s/<keystore_password>/$3/g" "$1"
     else
-        sed -i '/<keystore_path>/d' "$1"
-        sed -i '/<keystore_password>/d' "$1"
-        sed -i '/- "8443:8443"/d' "$1"
-        sed -i '/secrets: \[https_keystore\]/d' "$1"
+        sedi '/<keystore_path>/d' "$1"
+        sedi '/<keystore_password>/d' "$1"
+        sedi '/- "8443:8443"/d' "$1"
+        sedi '/secrets: \[https_keystore\]/d' "$1"
     fi
 }
 
 # platform agnostic sed -i
-# sedi(sedReplaceString, filepath,[outputFile])
+# sedi(1: sedReplaceString, 2: filepath)
 sedi() {
   # sed --version fails on BSD distro of sed. We use the exit code to determine
   #    the required format for sed
-  if [ $# -gt 2 ]; then
-    sed --version >/dev/null 2>&1 && sed -i "$1" "$2" > "$3" || \
-      sed -i "" "$1" "$2" > "$3"
-  else
-    sed --version >/dev/null 2>&1 && sed -i "$1" "$2" || \
-      sed -i "" "$1" "$2"
-  fi
+  sed --version >/dev/null 2>&1 && sed -i -- "$@" || sed -i "" "$@"
 }
 
 if [ "$1" = help ] || [ "$1" = --help ]; then
