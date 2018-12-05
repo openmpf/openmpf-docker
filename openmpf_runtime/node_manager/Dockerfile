@@ -51,7 +51,7 @@ COPY --from=openmpf_build /apps/bin/jdk-*-linux-x64.rpm /apps/bin/
 # Create the "mpf" user:
 RUN useradd -u 376 -U -d /home/mpf -ms /bin/bash -G wheel -p mpf mpf
 
-RUN chown -R mpf:mpf $MPF_HOME/share
+RUN mkdir $MPF_HOME/share; chown -R mpf:mpf $MPF_HOME/share
 
 # Set up yum repo:
 RUN yum install -y epel-release deltarpm && yum clean all
