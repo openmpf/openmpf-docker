@@ -44,7 +44,6 @@ FROM centos:7.4.1708
 ################################################################################
 
 ENV MPF_HOME=/opt/mpf
-VOLUME $MPF_HOME/share
 
 # Do this right away so that we fail fast if the user doesn't provide the JDK:
 COPY --from=openmpf_build /apps/bin/jdk-*-linux-x64.rpm /apps/bin/
@@ -182,6 +181,9 @@ RUN echo "export JAVA_HOME=/usr" >> /etc/profile.d/mpf.sh; \
 ################################################################################
 # Prepare Entrypoint                                                           #
 ################################################################################
+
+# If any build steps change the data within the volume after it has been declared, those changes will be discarded.
+VOLUME $MPF_HOME/share
 
 COPY node_manager/docker-entrypoint.sh /home/mpf
 RUN dos2unix -q /home/mpf/docker-entrypoint.sh

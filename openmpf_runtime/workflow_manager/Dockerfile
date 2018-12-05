@@ -36,7 +36,6 @@ FROM centos:7.4.1708
 ################################################################################
 
 ENV MPF_HOME=/opt/mpf
-VOLUME $MPF_HOME/share
 
 # Do this right away so that we fail fast if the user doesn't provide the JDK:
 COPY --from=openmpf_build /apps/bin/jdk-*-linux-x64.rpm /apps/bin/
@@ -164,6 +163,9 @@ RUN echo '[mpf-child]' >> /etc/ansible/hosts; \
 ################################################################################
 # Prepare Entrypoint                                                           #
 ################################################################################
+
+# If any build steps change the data within the volume after it has been declared, those changes will be discarded.
+VOLUME $MPF_HOME/share
 
 EXPOSE 8080 8443
 
