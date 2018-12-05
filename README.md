@@ -219,7 +219,7 @@ docker run \
   openmpf_build
 ```
 
-If that command does output `BUILD SUCCESS` then you may try to run it again.
+If that command does not output `BUILD SUCCESS` then you may try to run it again.
 Sometimes Maven will time out while trying to download dependencies within a
 Docker container.
 
