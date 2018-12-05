@@ -32,10 +32,9 @@ FROM $POST_BUILD_IMAGE_NAME as mpf_post_build
 # Initial Setup                                                                #
 ################################################################################
 
-# ENV MPF_HOME=/opt/mpf
 ENV MPF_HOME=/home/mpf/openmpf-projects/openmpf/trunk/install
 
-RUN mkdir $MPF_HOME/share; chown -R mpf:mpf $MPF_HOME/share
+RUN mkdir -p $MPF_HOME/share; chown -R mpf:mpf $MPF_HOME/share
 
 ################################################################################
 # Install yum Dependencies                                                     #
