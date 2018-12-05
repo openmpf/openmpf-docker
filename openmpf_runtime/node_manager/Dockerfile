@@ -144,9 +144,6 @@ RUN ln -s $MPF_HOME/bin/ffmpeg /usr/bin/ffmpeg && \
 
 RUN ldconfig
 
-# Create log path
-RUN mkdir -p $MPF_HOME/share/logs/node_manager/ && chown mpf $MPF_HOME/share/logs/node_manager
-
 ################################################################################
 # Configure Environment Variables                                              #
 ################################################################################
