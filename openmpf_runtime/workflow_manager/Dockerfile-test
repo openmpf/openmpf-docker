@@ -70,6 +70,13 @@ RUN mkdir -p /apps/source/ansible_sources && cd /apps/source/ansible_sources && 
     rpm -Uvh ./rpm-build/ansible-*.noarch.rpm
 
 ################################################################################
+# Configure Properties                                                         #
+################################################################################
+
+RUN echo 'node.auto.config.enabled=true' >> $MPF_HOME/config/mpf-custom.properties
+RUN echo 'node.auto.unconfig.enabled=true' >> $MPF_HOME/config/mpf-custom.properties
+
+################################################################################
 # Configure Environment Variables                                              #
 ################################################################################
 
