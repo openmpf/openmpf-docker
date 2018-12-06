@@ -120,7 +120,6 @@ COPY --from=openmpf_build /opt/apache-tomcat/ /opt/apache-tomcat/
 COPY build_artifacts/install.tar /home/mpf/
 RUN cd /home/mpf && tar -xzf install.tar -C $MPF_HOME && rm install.tar
 
-# COPY seems to be the only way to move files to the share volume:
 COPY build_artifacts/plugin-packages $MPF_HOME/share/components
 
 # Extract components:

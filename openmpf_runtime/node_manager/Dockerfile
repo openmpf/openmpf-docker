@@ -124,7 +124,6 @@ RUN cd /home/mpf && tar -xzf install.tar -C $MPF_HOME && rm install.tar
 
 RUN cp $MPF_HOME/libexec/node-manager /etc/init.d/
 
-# COPY seems to be the only way to move files to the share volume:
 COPY build_artifacts/plugin-packages $MPF_HOME/share/components
 
 # Extract components:
