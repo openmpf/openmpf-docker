@@ -92,8 +92,9 @@ if [ -f /home/mpf/docker-custom-entrypoint.sh ]; then
 fi
 
 ################################################################################
-# Build OpenMPF                                                                #
+# Build OpenMPF and Run Tests                                                  #
 ################################################################################
+
 parallelism=$(($(nproc) / 2))
 (( parallelism < 2 )) && parallelism=2
 

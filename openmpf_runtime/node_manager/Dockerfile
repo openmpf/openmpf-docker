@@ -44,7 +44,6 @@ FROM centos:7.4.1708
 ################################################################################
 
 ENV MPF_HOME=/opt/mpf
-VOLUME $MPF_HOME/share
 
 # Do this right away so that we fail fast if the user doesn't provide the JDK:
 COPY --from=openmpf_build /apps/bin/jdk-*-linux-x64.rpm /apps/bin/
@@ -52,7 +51,7 @@ COPY --from=openmpf_build /apps/bin/jdk-*-linux-x64.rpm /apps/bin/
 # Create the "mpf" user:
 RUN useradd -u 376 -U -d /home/mpf -ms /bin/bash -G wheel -p mpf mpf
 
-RUN chown -R mpf:mpf $MPF_HOME/share
+RUN mkdir -p $MPF_HOME/share; chown -R mpf:mpf $MPF_HOME/share
 
 # Set up yum repo:
 RUN yum install -y epel-release deltarpm && yum clean all
@@ -125,7 +124,6 @@ RUN cd /home/mpf && tar -xzf install.tar -C $MPF_HOME && rm install.tar
 
 RUN cp $MPF_HOME/libexec/node-manager /etc/init.d/
 
-# COPY seems to be the only way to move files to the share volume:
 COPY build_artifacts/plugin-packages $MPF_HOME/share/components
 
 # Extract components:
@@ -144,9 +142,6 @@ RUN ln -s $MPF_HOME/bin/ffmpeg /usr/bin/ffmpeg && \
     ln -s $MPF_HOME/bin/ffprobe /usr/bin/ffprobe
 
 RUN ldconfig
-
-# Create log path
-RUN mkdir -p $MPF_HOME/share/logs/node_manager/ && chown mpf $MPF_HOME/share/logs/node_manager
 
 ################################################################################
 # Configure Environment Variables                                              #
@@ -182,6 +177,9 @@ RUN echo "export JAVA_HOME=/usr" >> /etc/profile.d/mpf.sh; \
 ################################################################################
 # Prepare Entrypoint                                                           #
 ################################################################################
+
+# If any build steps change the data within the volume after it has been declared, those changes will be discarded.
+VOLUME $MPF_HOME/share
 
 COPY node_manager/docker-entrypoint.sh /home/mpf
 RUN dos2unix -q /home/mpf/docker-entrypoint.sh
