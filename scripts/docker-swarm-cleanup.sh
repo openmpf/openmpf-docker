@@ -71,9 +71,9 @@ if [ $askPass = 1 ]; then
   echo
 fi
 
-# The following command does not always remove the stopped containers;
-# however, it should remove networks.
+# The following command does not always remove the stopped containers.
 # Refer to https://github.com/moby/moby/issues/32620.
+# According to the official docs: "Services, networks, and secrets associated with the stack will be removed."
 docker stack rm openmpf
 echo
 
