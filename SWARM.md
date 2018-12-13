@@ -177,6 +177,13 @@ time. This will be much faster later once the images are downloaded on the
 nodes. If the images are updated, only the changes are downloaded from the
 Docker registry.
 
+Note that by default both the Workflow Manager and mySQL containers have a
+`placement` constraint so that they are always deployed to the swarm manager
+node. The mySQL container must always run on the same node so that the same
+openmpf_mysql_data volume is used when the swarm is redeployed. The Workflow
+Manager container is run on the same node for efficiency. If you wish to change
+the node, then modify the `placement` constraints in `swarm-compose.yml`.
+
 #### Monitor the Swarm Services
 
 It may be helpful to run:
@@ -217,18 +224,29 @@ come up is determined by the `replicas:` field for each service listed in the
 
 #### Tearing Down the Stack
 
-When you are ready to tear down the stack and remove the containers and volumes,
-run the following command from within the `openmpf-docker` directory:
+When you are ready to stop the OpenMPF stack, you have two options:
+
+**Persist State**
+
+If you would like to persist the state of OpenMPF so that the next time you run
+the command that begins with `docker stack deploy` the same job information, log
+files, custom property settings, service configuration, custom pipelines, etc.,
+are used, then run the following command from within the `openmpf-docker`
+directory:
 
 - `./scripts/docker-swarm-cleanup.sh`
 
-Custom property settings, service configuration, and pipelines will be discarded
-along with the Workflow Manager container. You will need to manually delete the
-contents of the NFS share if you're using a shared volume backed by NFS.
+**Clean Slate**
 
-To redeploy the stack with a clean slate, run the command that begins with
-`docker stack deploy` again. Currently, we do not support persisting state
-when restarting the Docker swarm stack.
+Alternatively, if you would like to start from a clean slate the next time you
+run the command that begins with `docker stack deploy`, as though you had never
+run OpenMPF before, then run the following command from within the
+`openmpf-docker` directory:
+
+- `./scripts/docker-swarm-cleanup.sh --volumes`
+
+You will need to manually delete the contents of the NFS share if you're using a
+shared volume backed by NFS.
 
 ### (Optional) Add GPU support with NVIDIA CUDA
 

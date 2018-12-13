@@ -32,18 +32,33 @@
 
 printUsage() {
   echo "Usages:"
-  echo "docker-swarm-cleanup.sh [--ask-pass]"
+  echo "docker-swarm-cleanup.sh [--ask-pass] [--volumes]"
   exit -1
 }
 
-if [ $# -eq 0 ]; then
-  askPass=0
-elif [ $# -eq 1 ]; then
-  if [ "$1" != "--ask-pass" ]; then
+askPass=0
+removeVolumes=0
+
+if [ $# -eq 1 ]; then
+  if [ "$1" == "--ask-pass" ]; then
+    askPass=1
+  elif [ "$1" == "--volumes" ]; then
+    removeVolumes=1
+  else
     printUsage
   fi
-  askPass=1
-else
+elif [ $# -eq 2 ]; then
+  if [ "$1" == "--ask-pass" ]; then
+    askPass=1
+  else
+    printUsage
+  fi
+  if [ "$2" == "--volumes" ]; then
+    removeVolumes=1
+  else
+    printUsage
+  fi
+elif [ $# -gt 2 ]; then
   printUsage
 fi
 
@@ -80,9 +95,7 @@ while read -r nodeId; do
 
 "${sshCmd[@]}" << "EOF"
 # set -o xtrace
-
 containerIds=$(docker ps -a -f name=openmpf_ -q)
-
 if [ ! -z "$containerIds" ]; then
   echo "Removing openmpf containers:"
   docker container rm -f $containerIds;
@@ -90,10 +103,13 @@ else \
   echo "No openmpf containers running."
 fi
 echo
+exit
+EOF
 
-# Don't remove openmpf_shared_data.
-volumeIds=$(docker volume ls -f name=openmpf -q | sed "s/openmpf_shared_data//g")
-
+  if [ "$removeVolumes" == 1 ]; then
+"${sshCmd[@]}" << "EOF"
+# set -o xtrace
+volumeIds=$(docker volume ls -f name=openmpf -q")
 if [ ! -z "$volumeIds" ]; then
   echo "Removing openmpf volumes:"
   docker volume rm -f $volumeIds;
@@ -101,13 +117,15 @@ else
   echo "No openmpf volumes found."
 fi
 echo
-
 exit
 EOF
+  fi
 
   echo
 done <<< "$nodeIds"
 
-# TODO: Automate this, if possible.
-echo
-echo "IMPORTANT: Please manually remove the contents of the shared (NFS) volume."
+if [ "$removeVolumes" == 1 ]; then
+    # TODO: Automate this, if possible.
+    echo
+    echo "IMPORTANT: Please manually remove the contents of the shared (NFS) volume."
+fi

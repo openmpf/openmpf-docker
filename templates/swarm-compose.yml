@@ -40,6 +40,10 @@ services:
       - mysql_data:/var/lib/mysql
     networks:
       - swarm_overlay
+    deploy:
+      placement:
+        constraints:
+          - node.role == manager
 
   activemq:
     image: <registry_host>/<repository>/openmpf_active_mq:<image_tag>
@@ -67,22 +71,19 @@ services:
     networks:
       - swarm_overlay
     secrets: [https_keystore]
+    deploy:
+      placement:
+        constraints:
+          - node.role == manager
 
   node_manager:
     image: <registry_host>/<repository>/openmpf_node_manager:<image_tag>
     volumes:
       - shared_data:/opt/mpf/share
-    deploy:
-      mode: global
-  #   mode: replicated
-  #   replicas: 2
     networks:
       - swarm_overlay
-  #   placement:
-  #     constraints:
-  #       - engine.labels.gpu == 1
-  #     preferences:
-  #       - spread: node.labels.zone
+    deploy:
+      mode: global
 
 volumes:
   shared_data:
