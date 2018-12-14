@@ -35,6 +35,30 @@ set -Ee -o pipefail -o xtrace
 # Cleanup
 rm -f $MPF_HOME/share/nodes/MPF_Channel/*-MPF-MasterNode.list
 
+# NOTE: In a swarm deployment, Node Manager containers are assigned hostnames of
+# the form "node_manager_id_XXXXXXXXXXXX", where "XXXXXXXXXXXX" is a random hash.
+
+# Remove nodeManagerConfig.xml so that it can be regenerated.
+if grep -q "node_manager_id_*" "$MPF_HOME/share/data/nodeManagerConfig.xml"; then
+  rm "$MPF_HOME/share/data/nodeManagerConfig.xml"
+fi
+
+# Archive old Node Manager logs.
+dirs=()
+while IFS=  read -r -d $'\0'; do
+    dirs+=("$REPLY")
+done < <(find "$MPF_HOME/share/logs" -type d -name "node_manager_id_*" -print0)
+
+if [ "${#dirs[@]}" -gt 0 ]; then
+  parentDir="$MPF_HOME/share/logs.bak/node-managers.pre-$(date --iso-8601)"
+  mkdir -p "$parentDir"
+  for dir in "${dirs[@]}"; do
+    mv "$dir" "$parentDir"
+  done
+  tar -czf "$parentDir.tar.gz" -C "$parentDir/.." "$(basename $parentDir)"
+  rm -rf "$parentDir"
+fi
+
 # NOTE: $HOSTNAME is not known until runtime.
 export JGROUPS_TCP_ADDRESS="$HOSTNAME"
 

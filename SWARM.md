@@ -224,29 +224,53 @@ come up is determined by the `replicas:` field for each service listed in the
 
 #### Tearing Down the Stack
 
-When you are ready to stop the OpenMPF stack, you have two options:
+When you are ready to stop the OpenMPF stack, you have the following options:
 
 **Persist State**
 
 If you would like to persist the state of OpenMPF so that the next time you run
 the command that begins with `docker stack deploy` the same job information, log
-files, custom property settings, service configuration, custom pipelines, etc.,
-are used, then run the following command from within the `openmpf-docker`
-directory:
+files, custom property settings, custom pipelines, etc., are used, then run the
+following command from within the `openmpf-docker` directory:
 
 - `./scripts/docker-swarm-cleanup.sh`
 
+This preserves all of the Docker volumes.
+
+Note that any changes made through the Nodes web UI to configure services will
+not be preserved. This is because the next time Docker deploys the Node Manager
+containers they will each have a randomly-generated hostname that does not
+correlate with the Node Manager containers in the previous deployment.
+
+All of the logs for the previous Node Manager containers will be archived in
+`$MPF_HOME/share/logs.bak` in the shared volume.
+
 **Clean Slate**
 
-Alternatively, if you would like to start from a clean slate the next time you
-run the command that begins with `docker stack deploy`, as though you had never
-run OpenMPF before, then run the following command from within the
-`openmpf-docker` directory:
+If you would like to start from a clean slate the next time you run the command
+that begins with `docker stack deploy`, as though you had never deployed the
+stack before, then run the following command from within the `openmpf-docker`
+directory:
 
-- `./scripts/docker-swarm-cleanup.sh --volumes`
+- `./scripts/docker-swarm-cleanup.sh --mysql-volume`
 
-You will need to manually delete the contents of the NFS share if you're using a
-shared volume backed by NFS.
+As a convenience, this does not remove the shared volume so that you don't have
+to recreate it on all of the nodes the next time you deploy the stack.
+
+You will need to manually delete the contents the shared volume. If it's backed
+by an NFS share, then delete the contents of the shared space.
+
+**Remove All Volumes**
+
+To remove all of the OpenMPF Docker containers, volumes, and networks, then run
+the following command from within the `openmpf-docker` directory:
+
+- `./scripts/docker-swarm-cleanup.sh --all-volumes`
+
+This does not remove the Docker images.
+
+You will need to manually delete the contents the shared volume. If it's backed
+by an NFS share, then delete the contents of the shared space.
 
 ### (Optional) Add GPU support with NVIDIA CUDA
 

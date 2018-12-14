@@ -32,18 +32,70 @@
 
 printUsage() {
   echo "Usages:"
-  echo "docker-swarm-cleanup.sh [--ask-pass] [--volumes]"
+  echo "docker-swarm-cleanup.sh [--ask-pass] [--mysql-volume|--all-volumes]"
   exit -1
 }
 
+# cleanupContainers(1: sshCmd)
+cleanupContainers() {
+sshCmd="$1"
+"${sshCmd[@]}" << "EOF"
+containerIds=$(docker ps -a -f name=openmpf_ -q)
+if [ ! -z "$containerIds" ]; then
+  echo "Removing openmpf containers:"
+  docker container rm -f $containerIds;
+else \
+  echo "No openmpf containers running."
+fi
+echo
+exit
+EOF
+}
+
+# cleanupMysqlVolume(1: sshCmd)
+cleanupMysqlVolume() {
+sshCmd="$1"
+"${sshCmd[@]}" << "EOF"
+# Don't remove openmpf_shared_data.
+volumeIds=$(docker volume ls -f name=openmpf_mysql_data -q)
+if [ ! -z "$volumeIds" ]; then
+  echo "Removing openmpf volumes:"
+  docker volume rm -f $volumeIds;
+else
+  echo "No openmpf volumes found."
+fi
+echo
+exit
+EOF
+}
+
+# cleanupAllVolumes(1: sshCmd)
+cleanupAllVolumes() {
+sshCmd="$1"
+"${sshCmd[@]}" << "EOF"
+volumeIds=$(docker volume ls -f name=openmpf -q)
+if [ ! -z "$volumeIds" ]; then
+  echo "Removing openmpf volumes:"
+  docker volume rm -f $volumeIds;
+else
+  echo "No openmpf volumes found."
+fi
+echo
+exit
+EOF
+}
+
 askPass=0
-removeVolumes=0
+removeMysqlVolume=0
+removeAllVolumes=0
 
 if [ $# -eq 1 ]; then
   if [ "$1" == "--ask-pass" ]; then
     askPass=1
-  elif [ "$1" == "--volumes" ]; then
-    removeVolumes=1
+  elif [ "$1" == "--mysql-volume" ]; then
+    removeMysqlVolume=1
+  elif [ "$1" == "--all-volumes" ]; then
+    removeAllVolumes=1
   else
     printUsage
   fi
@@ -53,8 +105,10 @@ elif [ $# -eq 2 ]; then
   else
     printUsage
   fi
-  if [ "$2" == "--volumes" ]; then
-    removeVolumes=1
+  if [ "$2" == "--mysql-volume" ]; then
+    removeMysqlVolume=1
+  elif [ "$2" == "--all-volumes" ]; then
+    removeAllVolumes=1
   else
     printUsage
   fi
@@ -93,39 +147,21 @@ while read -r nodeId; do
     sshCmd=(sshpass -p "$sshPass" ssh -oStrictHostKeyChecking=no "$sshUser"@"$nodeAddr" /bin/bash)
   fi
 
-"${sshCmd[@]}" << "EOF"
-# set -o xtrace
-containerIds=$(docker ps -a -f name=openmpf_ -q)
-if [ ! -z "$containerIds" ]; then
-  echo "Removing openmpf containers:"
-  docker container rm -f $containerIds;
-else \
-  echo "No openmpf containers running."
-fi
-echo
-exit
-EOF
+  cleanupContainers "$sshCmd"
 
-  if [ "$removeVolumes" == 1 ]; then
-"${sshCmd[@]}" << "EOF"
-# set -o xtrace
-volumeIds=$(docker volume ls -f name=openmpf -q")
-if [ ! -z "$volumeIds" ]; then
-  echo "Removing openmpf volumes:"
-  docker volume rm -f $volumeIds;
-else
-  echo "No openmpf volumes found."
-fi
-echo
-exit
-EOF
+  if [ "$removeAllVolumes" == 1 ]; then
+    cleanupAllVolumes "$sshCmd"
+  elif [ "$removeMysqlVolume" == 1 ]; then
+    cleanupMysqlVolume "$sshCmd"
   fi
 
   echo
 done <<< "$nodeIds"
 
-if [ "$removeVolumes" == 1 ]; then
+if [ "$removeAllVolumes" == 1 ] || [ "$removeMysqlVolume" == 1 ]; then
     # TODO: Automate this, if possible.
     echo
-    echo "IMPORTANT: Please manually remove the contents of the shared (NFS) volume."
+    echo -n "IMPORTANT: Please manually remove the contents of the shared volume. If it's backed by an NFS share,"
+    echo " then delete the contents of the shared space."
+    echo
 fi
