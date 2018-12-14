@@ -44,18 +44,31 @@ if grep -q "node_manager_id_*" "$MPF_HOME/share/data/nodeManagerConfig.xml"; the
 fi
 
 # Archive old Node Manager logs.
+
 dirs=()
 while IFS=  read -r -d $'\0'; do
     dirs+=("$REPLY")
 done < <(find "$MPF_HOME/share/logs" -type d -name "node_manager_id_*" -print0)
 
 if [ "${#dirs[@]}" -gt 0 ]; then
-  parentDir="$MPF_HOME/share/logs.bak/node-managers.pre-$(date --iso-8601=s)"
+  # Use ISO-8601 timestamp. Replace colon with period since colon may cause
+  # issues during extraction.
+  parentDir="$MPF_HOME/share/logs.bak/node-managers.pre-$(date --iso-8601=s | sed 's/:/./g')"
   mkdir -p "$parentDir"
+
+  # Only include directories that have more than the node-manager*.log files to
+  # avoid capturing Node Managers that are part of the current deployment.
   for dir in "${dirs[@]}"; do
-    mv "$dir" "$parentDir"
+    count=$(ls -1 -I "node-manager*" "$dir/log" | wc -l)
+    if [[ "$count" -ne 0 ]]; then
+      mv "$dir" "$parentDir"
+    fi
   done
-  tar -czf "$parentDir.tar.gz" -C "$parentDir/.." "$(basename $parentDir)"
+
+  count=$(ls -1 "$parentDir" | wc -l)
+  if [[ "$count" -ne 0 ]]; then
+    tar -czf "$parentDir.tar.gz" -C "$parentDir/.." "$(basename $parentDir)"
+  fi
   rm -rf "$parentDir"
 fi
 
