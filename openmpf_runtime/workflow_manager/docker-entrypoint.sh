@@ -50,7 +50,7 @@ while IFS=  read -r -d $'\0'; do
 done < <(find "$MPF_HOME/share/logs" -type d -name "node_manager_id_*" -print0)
 
 if [ "${#dirs[@]}" -gt 0 ]; then
-  parentDir="$MPF_HOME/share/logs.bak/node-managers.pre-$(date --iso-8601)"
+  parentDir="$MPF_HOME/share/logs.bak/node-managers.pre-$(date --iso-8601=s)"
   mkdir -p "$parentDir"
   for dir in "${dirs[@]}"; do
     mv "$dir" "$parentDir"
