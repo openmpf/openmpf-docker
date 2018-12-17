@@ -242,8 +242,16 @@ not be preserved. This is because the next time Docker deploys the Node Manager
 containers they will each have a randomly-generated hostname that does not
 correlate with the Node Manager containers in the previous deployment.
 
-All of the logs for the previous Node Manager containers will be archived in
-`$MPF_HOME/share/logs.bak` in the shared volume.
+The next time you deploy OpenMPF, all of the previous Node Manager logs will
+appear in the Logs web UI. To reduce clutter, consider running the following
+command to archive and remove the old Node Manager log files, where
+`<output-path>` is a directory on the swarm manager host:
+
+- `./scripts/docker-swarm-logs.sh --node-manager-logs --archive <output-path> --remove-originals`
+
+To archive and remove all of the log files run:
+
+- `./scripts/docker-swarm-logs.sh --all-logs --archive <output-path> --remove-originals`
 
 **Clean Slate**
 
