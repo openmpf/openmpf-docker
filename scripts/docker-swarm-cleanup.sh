@@ -32,8 +32,28 @@
 
 printUsage() {
   echo "Usages:"
-  echo "docker-swarm-cleanup.sh [--ask-pass] [--mysql-volume|--all-volumes]"
+  echo "docker-swarm-cleanup.sh [--ask-pass] <--mysql-volume|--all-volumes|--no-volumes> [--remove-shared-data]"
   exit -1
+}
+
+# parseVolumeType(1: volumeType)
+parseVolumeType() {
+if [ "$1" == "--mysql-volume" ]; then
+    removeMysqlVolume=1
+  elif [ "$1" == "--all-volumes" ]; then
+    removeAllVolumes=1
+  elif [ "$1" != "--no-volumes" ]; then
+    printUsage
+  fi
+}
+
+# parseRemoveSharedData(1: option)
+parseRemoveSharedData() {
+if [ "$1" == "--remove-shared-data" ]; then
+    removeSharedData=1
+  else
+    printUsage
+  fi
 }
 
 # cleanupContainers(1: sshCmd)
@@ -88,31 +108,27 @@ EOF
 askPass=0
 removeMysqlVolume=0
 removeAllVolumes=0
+removeSharedData=0
 
 if [ $# -eq 1 ]; then
-  if [ "$1" == "--ask-pass" ]; then
-    askPass=1
-  elif [ "$1" == "--mysql-volume" ]; then
-    removeMysqlVolume=1
-  elif [ "$1" == "--all-volumes" ]; then
-    removeAllVolumes=1
-  else
-    printUsage
-  fi
+  parseVolumeType "$1"
 elif [ $# -eq 2 ]; then
   if [ "$1" == "--ask-pass" ]; then
     askPass=1
+    parseVolumeType "$2"
+  else
+    parseVolumeType "$1"
+    parseRemoveSharedData "$2"
+  fi
+elif [ $# -eq 3 ]; then
+  if [ "$1" == "--ask-pass" ]; then
+    askPass=1
   else
     printUsage
   fi
-  if [ "$2" == "--mysql-volume" ]; then
-    removeMysqlVolume=1
-  elif [ "$2" == "--all-volumes" ]; then
-    removeAllVolumes=1
-  else
-    printUsage
-  fi
-elif [ $# -gt 2 ]; then
+  parseVolumeType "$2"
+  parseRemoveSharedData "$3"
+else
   printUsage
 fi
 
@@ -125,14 +141,28 @@ if [ $askPass = 1 ]; then
   echo
 fi
 
-# The following command does not always remove the stopped containers.
-# Refer to https://github.com/moby/moby/issues/32620.
-# According to the official docs: "Services, networks, and secrets associated with the stack will be removed."
-docker stack rm openmpf
-echo
+# Check if stack exists. If so, remove it.
+if docker stack ps openmpf > /dev/null 2>&1; then
+  # The following command does not always remove the stopped containers.
+  # Refer to https://github.com/moby/moby/issues/32620.
+  # According to the official docs: "Services, networks, and secrets associated with the stack will be removed."
+  docker stack rm openmpf
 
-# Give the previous command time to work.
-sleep 10
+  # Give the previous command time to work.
+  sleep 10
+fi
+
+# Remove the shared data before the shared volume is removed.
+if [ "$removeSharedData" == 1 ]; then
+  scriptPath="$(dirname $0)/docker-swarm-clean-shared-volume.sh"
+  if [ -f "$scriptPath" ]; then
+    sh "$scriptPath" || exit -1 # abort if script fails
+    echo
+  else
+    echo "Could not find \"$scriptPath\". Aborting."
+    exit -1
+  fi
+fi
 
 nodeIds=$(docker node ls | sed -n '1!p' | cut -d ' ' -f 1)
 
@@ -155,13 +185,4 @@ while read -r nodeId; do
     cleanupMysqlVolume "$sshCmd"
   fi
 
-  echo
 done <<< "$nodeIds"
-
-if [ "$removeAllVolumes" == 1 ] || [ "$removeMysqlVolume" == 1 ]; then
-    # TODO: Automate this, if possible.
-    echo
-    echo -n "IMPORTANT: Please manually remove the contents of the shared volume. If it's backed by an NFS share,"
-    echo " then delete the contents of the shared space."
-    echo
-fi

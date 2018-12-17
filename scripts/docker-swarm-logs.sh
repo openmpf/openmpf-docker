@@ -83,7 +83,7 @@ fi
 
 # Create a helper container that mounts the shared volume. Use an image that we know exists.
 # The exact image is not important.
-containerId="$(docker run -d --rm --entrypoint bash -v openmpf_shared_data:/data --name openmpf_helper redis -c 'sleep infinity')"
+docker run -d --rm --entrypoint bash -v openmpf_shared_data:/data --name openmpf_helper redis -c "sleep infinity" > /dev/null
 
 if [ "$nodeManagerLogs" = 1 ]; then
     findNameOption="-name 'node_manager_id_*'"
@@ -106,7 +106,7 @@ fi
 
 echo "Found the following log directories in the shared volume:"
 for logDir in "${logDirs[@]}"; do
-    echo "  $logDir"
+    echo "$logDir"
 done
 
 if [ ! -z  "$outputPath" ]; then

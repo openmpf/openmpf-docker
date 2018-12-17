@@ -260,25 +260,27 @@ that begins with `docker stack deploy`, as though you had never deployed the
 stack before, then run the following command from within the `openmpf-docker`
 directory:
 
-- `./scripts/docker-swarm-cleanup.sh --mysql-volume`
+- `./scripts/docker-swarm-cleanup.sh --mysql-volume --remove-shared-data`
 
 As a convenience, this does not remove the shared volume so that you don't have
 to recreate it on all of the nodes the next time you deploy the stack.
 
-You will need to manually delete the contents the shared volume. If it's backed
-by an NFS share, then delete the contents of the shared space.
+The `--remove-shared-data` option will delete the contents the shared volume,
+which may include extracted artifacts, log files, markup, remote media, etc.
+If you wish to preserve the contents of the shared volume, then omit that
+option. If you wish to remove the contents of the shared volume at a later time,
+then run:
+
+- `./scripts/docker-swarm-clean-shared-volume.sh`
 
 **Remove All Volumes**
 
 To remove all of the OpenMPF Docker containers, volumes, and networks, then run
 the following command from within the `openmpf-docker` directory:
 
-- `./scripts/docker-swarm-cleanup.sh --all-volumes`
+- `./scripts/docker-swarm-cleanup.sh --all-volumes --remove-shared-data`
 
 This does not remove the Docker images.
-
-You will need to manually delete the contents the shared volume. If it's backed
-by an NFS share, then delete the contents of the shared space.
 
 ### (Optional) Add GPU support with NVIDIA CUDA
 
