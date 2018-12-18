@@ -34,6 +34,10 @@ printUsage() {
   exit -1
 }
 
+finally() {
+    docker rm -f openmpf_helper > /dev/null
+}
+
 # parseLogType(1: logType)
 parseLogType() {
     if [ "$1" = "--all-logs" ]; then
@@ -80,6 +84,9 @@ if [ $# -eq 3 ] || [ $# -eq 4 ]; then
 else
     printUsage
 fi
+
+# Ensure that we clean up the helper container that we'll be creating next.
+trap finally EXIT
 
 # Create a helper container that mounts the shared volume. Use an image that we know exists.
 # The exact image is not important.

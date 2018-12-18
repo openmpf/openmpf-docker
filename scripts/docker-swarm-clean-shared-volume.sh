@@ -28,15 +28,20 @@
 
 set -Ee
 
+finally() {
+    docker rm -f openmpf_helper > /dev/null
+}
+
 # Check if the shared volume exists. If not, this returns a non-zero exit code.
 docker volume inspect openmpf_shared_data > /dev/null
+
+# Ensure that we clean up the helper container that we'll be creating next.
+trap finally EXIT
 
 # Create a helper container that mounts the shared volume. Use an image that we know exists.
 # The exact image is not important.
 docker run -d --rm --entrypoint bash -v openmpf_shared_data:/data --name openmpf_helper redis -c "sleep infinity" > /dev/null
 
 docker exec openmpf_helper bash -c "rm -rf /data/*"
-
-docker rm -f openmpf_helper > /dev/null
 
 echo "Cleared the contents of the shared volume."
