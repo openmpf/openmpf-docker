@@ -149,6 +149,13 @@ else
   printUsage
 fi
 
+# Abort early if the helper script doesn't exist.
+scriptPath="$(dirname $0)/docker-swarm-clean-shared-volume.sh"
+if [ ! -f "$scriptPath" ]; then
+  echo "Could not find \"$scriptPath\". Aborting."
+  exit -1
+fi
+
 if [ "$askPass" == 1 ]; then
   read -s -p "Enter SSH user: " sshUser
   echo
@@ -174,17 +181,15 @@ nodeIds=$(docker node ls | sed -n '1!p' | cut -d ' ' -f 1)
 forAllNodes "$nodeIds" cleanupContainers
 
 # Remove the shared data before the shared volume is removed.
+echo
 if [ "$removeSharedData" == 1 ]; then
-  echo
-  scriptPath="$(dirname $0)/docker-swarm-clean-shared-volume.sh"
-  if [ -f "$scriptPath" ]; then
-    sh "$scriptPath" || exit -1 # abort if script fails
-    echo
-  else
-    echo "Could not find \"$scriptPath\". Aborting."
-    exit -1
-  fi
+  # Remove everything.
+  sh "$scriptPath" || exit -1 # abort if script fails
+else
+  # Minimally, remove the "nodes" directory.
+  sh "$scriptPath" "nodes" || exit -1 # abort if script fails
 fi
+echo
 
 if [ "$removeAllVolumes" == 1 ]; then
   forAllNodes "$nodeIds" cleanupAllVolumes

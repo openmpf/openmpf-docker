@@ -58,7 +58,7 @@ trap finally EXIT
 # The exact image is not important.
 docker run -d --rm --entrypoint bash -v openmpf_shared_data:/data --name openmpf_helper redis -c "sleep infinity" > /dev/null
 
-docker exec openmpf_helper bash -c "(ls $dataDir > /dev/null) && rm -rf $dataDir"
+docker exec openmpf_helper bash -c "rm -rf $dataDir"
 
 if [ "$subDir" = "*" ]; then
     echo "Cleared the contents of the shared volume."
