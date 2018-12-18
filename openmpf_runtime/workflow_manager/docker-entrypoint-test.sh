@@ -49,7 +49,7 @@ set +o xtrace
 echo "Waiting for MySQL to become available ..."
 until mysql -h "$MYSQL_HOST" -u root -p"$MYSQL_ROOT_PASSWORD" -e "quit" >> /dev/null 2>&1; do
   echo "MySQL is unavailable. Sleeping."
-  sleep 1
+  sleep 5
 done
 echo "MySQL is up"
 
@@ -57,14 +57,20 @@ echo "MySQL is up"
 echo "Waiting for Redis to become available ..."
 # From https://stackoverflow.com/a/39214806
 until [ +PONG = "$( (exec 8<>/dev/tcp/redis/6379 && echo -e 'PING\r\n' >&8 && head -c 5 <&8; exec 8>&-) 2>/dev/null )" ]; do
-    echo "Redis is unavailable. Sleeping."
-    sleep 1
+  echo "Redis is unavailable. Sleeping."
+  sleep 5
 done
 echo "Redis is up"
 
-set -o xtrace
+# Wait for ActiveMQ service.
+echo "Waiting for ActiveMQ to become available ..."
+until curl -I "$ACTIVE_MQ_HOST:8161" >> /dev/null 2>&1; do
+  echo "ActiveMQ is unavailable. Sleeping."
+  sleep 5
+done
+echo "ActiveMQ is up"
 
-# TODO: Wait for ActiveMQ.
+set -o xtrace
 
 # TODO: Move to openmpf_build Dockerfile
 export PKG_CONFIG_PATH=/apps/install/lib/pkgconfig
