@@ -233,7 +233,7 @@ the command that begins with `docker stack deploy` the same job information, log
 files, custom property settings, custom pipelines, etc., are used, then run the
 following command from within the `openmpf-docker` directory:
 
-- `./scripts/docker-swarm-cleanup.sh`
+- `./scripts/docker-swarm-cleanup.sh --no-volumes`
 
 This preserves all of the Docker volumes.
 
@@ -245,13 +245,13 @@ correlate with the Node Manager containers in the previous deployment.
 The next time you deploy OpenMPF, all of the previous Node Manager logs will
 appear in the Logs web UI. To reduce clutter, consider running the following
 command to archive and remove the old Node Manager log files, where
-`<output-path>` is a directory on the swarm manager host:
+`<output-dir>` is a directory on the swarm manager host:
 
-- `./scripts/docker-swarm-logs.sh --node-manager-logs --archive <output-path> --remove-originals`
+- `./scripts/docker-swarm-logs.sh --node-manager-logs --archive <output-dir> --remove-originals`
 
 To archive and remove all of the log files run:
 
-- `./scripts/docker-swarm-logs.sh --all-logs --archive <output-path> --remove-originals`
+- `./scripts/docker-swarm-logs.sh --all-logs --archive <output-dir> --remove-originals`
 
 **Clean Slate**
 

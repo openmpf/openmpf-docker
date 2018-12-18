@@ -30,7 +30,7 @@ set -Ee
 
 printUsage() {
   echo "Usages:"
-  echo "docker-swarm-logs.sh <--all-logs|--node-manager-logs> <--archive <output-path>|--no-archive> [--remove-originals]"
+  echo "docker-swarm-logs.sh <--all-logs|--node-manager-logs> <--archive <output-dir>|--no-archive> [--remove-originals]"
   exit -1
 }
 
@@ -62,13 +62,13 @@ getTimestamp() {
 
 allLogs=0
 nodeManagerLogs=0
-outputPath=""
+outputDir=""
 removeOriginals=0
 
 if [ $# -eq 3 ] || [ $# -eq 4 ]; then
     parseLogType "$1"
     if [ "$2" = "--archive" ]; then
-        outputPath="$3"
+        outputDir="$3"
         if [ $# -eq 4 ]; then
             parseRemoveOriginals "$4"
         fi
@@ -109,27 +109,27 @@ for logDir in "${logDirs[@]}"; do
     echo "$logDir"
 done
 
-if [ ! -z  "$outputPath" ]; then
+if [ ! -z  "$outputDir" ]; then
     getTimestamp timestamp
     if [ "$allLogs" = 1 ]; then
-        archivePath="$outputPath/openmpf-logs.$timestamp"
+        archiveDir="$outputDir/openmpf-logs.$timestamp"
     elif [ "$nodeManagerLogs" = 1 ]; then
-        archivePath="$outputPath/openmpf-node-manager-logs.$timestamp"
+        archiveDir="$outputDir/openmpf-node-manager-logs.$timestamp"
     fi
 
-    mkdir -p "$archivePath"
+    mkdir -p "$archiveDir"
 
     echo
     echo "Copying the log directories from the shared volume."
     for logDir in "${logDirs[@]}"; do
-        docker cp openmpf_helper:"$logDir" "$archivePath"
+        docker cp openmpf_helper:"$logDir" "$archiveDir"
     done
 
-    tar -czf "$archivePath.tar.gz" -C "$(dirname $archivePath)" "$(basename $archivePath)"
-    rm -rf "$archivePath"
+    tar -czf "$archiveDir.tar.gz" -C "$(dirname $archiveDir)" "$(basename $archiveDir)"
+    rm -rf "$archiveDir"
 
     echo
-    echo "Generated $archivePath.tar.gz"
+    echo "Generated $archiveDir.tar.gz"
 fi
 
 if [ "$removeOriginals" = 1 ]; then
