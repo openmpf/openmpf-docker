@@ -107,7 +107,6 @@ if [ "${#logDirs[@]}" = 0 ]; then
     else
         echo "No log files in the shared directory match the specified criteria."
     fi
-    docker rm -f openmpf_helper > /dev/null
     exit 0
 fi
 
