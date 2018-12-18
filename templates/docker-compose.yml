@@ -77,6 +77,9 @@ services:
 
   node_manager:
     image: <registry_host>/<repository>/openmpf_node_manager:<image_tag>
+    # There should only be one Node Manager container in a docker-compose
+    # deployment. Give it a name so that the service configuration can be reused.
+    container_name: node_manager
     build:
       context: ./openmpf_runtime
       dockerfile: node_manager/Dockerfile

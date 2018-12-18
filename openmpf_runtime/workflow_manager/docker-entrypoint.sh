@@ -38,8 +38,6 @@ rm -f $MPF_HOME/share/nodes/MPF_Channel/*-MPF-MasterNode.list
 # NOTE: In a swarm deployment, Node Manager containers are assigned hostnames of
 # the form "node_manager_id_XXXXXXXXXXXX", where "XXXXXXXXXXXX" is a random hash.
 
-# TODO: Test that config is preserved on redeploy of "docker-compose up"
-
 # Remove nodeManagerConfig.xml so that it can be regenerated.
 if grep -q "node_manager_id_*" "$MPF_HOME/share/data/nodeManagerConfig.xml"; then
   rm "$MPF_HOME/share/data/nodeManagerConfig.xml"
