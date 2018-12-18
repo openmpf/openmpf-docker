@@ -35,8 +35,12 @@ set -Ee -o pipefail -o xtrace
 # Cleanup
 rm -f $MPF_HOME/share/nodes/MPF_Channel/*-MPF-MasterNode.list
 
-# NOTE: In a swarm deployment, Node Manager containers are assigned hostnames of
-# the form "node_manager_id_XXXXXXXXXXXX", where "XXXXXXXXXXXX" is a random hash.
+# NOTE: Docker assigns each Node Manager container a hostname that is a 12-digit
+# hash. For each container, we set THIS_MPF_NODE="node_manager_id_<hash>".
+
+# In a swarm deployment, containers are not persisted, so each stack deployment
+# results in new Node Manager containers with new hostnames, meaning that we
+# cannot meaningfully reuse the previous service configuration.
 
 # Remove nodeManagerConfig.xml so that it can be regenerated.
 if grep -q "node_manager_id_*" "$MPF_HOME/share/data/nodeManagerConfig.xml"; then

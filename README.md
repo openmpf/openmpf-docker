@@ -282,15 +282,18 @@ options:
 
 If you would like to persist the state of OpenMPF so that the next time you run
 `docker-compose up` the same job information, log files, custom property
-settings, custom pipelines, service configuration, etc., are used, then press
-ctrl+c in the same terminal you ran `docker-compose up`. That will stop the
-running containers.
+settings, custom pipelines, etc., are used, then press ctrl+c in the same
+terminal you ran `docker-compose up`. That will stop the running containers.
 
 Alternatively, you can run the following command in a different terminal:
 
 - `docker-compose stop`
 
 Both approaches preserve the Docker volumes.
+
+Note that any changes made through the Nodes web UI to configure services will
+not be preserved. You will need to configure services again the next time you
+deploy OpenMPF.
 
 **Clean Slate**
 
