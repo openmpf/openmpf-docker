@@ -38,7 +38,7 @@ printUsage() {
 
 # parseVolumeType(1: volumeType)
 parseVolumeType() {
-if [ "$1" == "--mysql-volume" ]; then
+  if [ "$1" == "--mysql-volume" ]; then
     removeMysqlVolume=1
   elif [ "$1" == "--all-volumes" ]; then
     removeAllVolumes=1
@@ -49,7 +49,7 @@ if [ "$1" == "--mysql-volume" ]; then
 
 # parseRemoveSharedData(1: option)
 parseRemoveSharedData() {
-if [ "$1" == "--remove-shared-data" ]; then
+  if [ "$1" == "--remove-shared-data" ]; then
     removeSharedData=1
   else
     printUsage
@@ -105,6 +105,23 @@ exit
 EOF
 }
 
+# forAllNodes(1: nodeIds, 2: function)
+forAllNodes() {
+  while read -r nodeId; do
+    nodeAddr=$(docker node inspect "$nodeId" --format '{{ .Status.Addr }}')
+    echo
+    echo "Connecting to $nodeAddr ..."
+
+    if [ "$askPass" = 0 ]; then
+      sshCmd=(ssh -oStrictHostKeyChecking=no "$nodeAddr" /bin/bash)
+    else
+      sshCmd=(sshpass -p "$sshPass" ssh -oStrictHostKeyChecking=no "$sshUser"@"$nodeAddr" /bin/bash)
+    fi
+
+    $2 "$sshCmd"
+  done <<< "$1"
+}
+
 askPass=0
 removeMysqlVolume=0
 removeAllVolumes=0
@@ -132,7 +149,7 @@ else
   printUsage
 fi
 
-if [ $askPass = 1 ]; then
+if [ "$askPass" == 1 ]; then
   read -s -p "Enter SSH user: " sshUser
   echo
 
@@ -152,8 +169,13 @@ if docker stack ps openmpf > /dev/null 2>&1; then
   sleep 10
 fi
 
+nodeIds=$(docker node ls | sed -n '1!p' | cut -d ' ' -f 1)
+
+forAllNodes "$nodeIds" cleanupContainers
+
 # Remove the shared data before the shared volume is removed.
 if [ "$removeSharedData" == 1 ]; then
+  echo
   scriptPath="$(dirname $0)/docker-swarm-clean-shared-volume.sh"
   if [ -f "$scriptPath" ]; then
     sh "$scriptPath" || exit -1 # abort if script fails
@@ -164,25 +186,8 @@ if [ "$removeSharedData" == 1 ]; then
   fi
 fi
 
-nodeIds=$(docker node ls | sed -n '1!p' | cut -d ' ' -f 1)
-
-while read -r nodeId; do
-  nodeAddr=$(docker node inspect "$nodeId" --format '{{ .Status.Addr }}')
-  echo
-  echo "Connecting to $nodeAddr ..."
-
-  if [ $askPass = 0 ]; then
-    sshCmd=(ssh -oStrictHostKeyChecking=no "$nodeAddr" /bin/bash)
-  else
-    sshCmd=(sshpass -p "$sshPass" ssh -oStrictHostKeyChecking=no "$sshUser"@"$nodeAddr" /bin/bash)
-  fi
-
-  cleanupContainers "$sshCmd"
-
-  if [ "$removeAllVolumes" == 1 ]; then
-    cleanupAllVolumes "$sshCmd"
-  elif [ "$removeMysqlVolume" == 1 ]; then
-    cleanupMysqlVolume "$sshCmd"
-  fi
-
-done <<< "$nodeIds"
+if [ "$removeAllVolumes" == 1 ]; then
+  forAllNodes "$nodeIds" cleanupAllVolumes
+elif [ "$removeMysqlVolume" == 1 ]; then
+  forAllNodes "$nodeIds" cleanupMysqlVolume
+fi

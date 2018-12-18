@@ -52,7 +52,19 @@ until mysql -h "$MYSQL_HOST" -u root -p"$MYSQL_ROOT_PASSWORD" -e "quit" >> /dev/
   sleep 1
 done
 echo "MySQL is up"
+
+# Wait for Redis service.
+echo "Waiting for Redis to become available ..."
+# From https://stackoverflow.com/a/39214806
+until [ +PONG = "$( (exec 8<>/dev/tcp/redis/6379 && echo -e 'PING\r\n' >&8 && head -c 5 <&8; exec 8>&-) 2>/dev/null )" ]; do
+    echo "Redis is unavailable. Sleeping."
+    sleep 1
+done
+echo "Redis is up"
+
 set -o xtrace
+
+# TODO: Wait for ActiveMQ.
 
 # TODO: Move to openmpf_build Dockerfile
 export PKG_CONFIG_PATH=/apps/install/lib/pkgconfig
