@@ -144,5 +144,3 @@ if [ "$removeOriginals" = 1 ]; then
     echo "Removing the original log directories from the shared volume."
     docker exec openmpf_helper bash -c "find /data/logs -type d -mindepth 1 -maxdepth 1 $findNameOption -exec rm -rf {} \;"
 fi
-
-docker rm -f openmpf_helper > /dev/null
