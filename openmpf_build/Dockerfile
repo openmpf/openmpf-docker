@@ -51,7 +51,7 @@ RUN mkdir -p /apps/install/lib && mkdir -p /apps/bin/apache && \
     mkdir /apps/source/apache_sources && mkdir /apps/source/google_sources && \
     mkdir /apps/source/opencv_sources && mkdir /apps/source/ffmpeg_sources && \
     mkdir /apps/source/dlib-sources && mkdir /apps/source/openalpr_sources && \
-    mkdir /apps/source/ansible_sources && \
+    mkdir /apps/source/ansible_sources && mkdir /apps/source/imagemagick_sources && \
     chown -R mpf /apps && chmod -R 755 /apps
 
 # Create the OpenMPF ldconfig file:
@@ -343,6 +343,12 @@ RUN cd /apps/source/openalpr_sources && git clone https://github.com/openalpr/op
     cp /usr/local/lib/libopenalpr.so.2 /usr/lib/libopenalpr.so.2 && \
     sh -c 'echo "export TESSDATA_PREFIX=/usr/local/src/openalpr/openalpr/runtime_data/ocr" >> /etc/profile.d/mpf.sh' && \
     ldconfig
+
+# ImageMagick 6.9.10:
+RUN cd /apps/source/imagemagick_sources && git clone https://github.com/ImageMagick/ImageMagick6.git && \
+    cd ImageMagick6 && git checkout 3fc50e3a4576424c798cf85fa6f706cd4a72a786 && \
+    ./configure --prefix=/apps/install && make && make install && make distclean && ldconfig
+
 
 ################################################################################
 # Build ActiveMQ                                                               #
