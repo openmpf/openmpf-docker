@@ -234,6 +234,8 @@ private Docker registry, then run:
 Otherwise, if you do have access to a private Docker registry, then run:
 
 - `./scripts/docker-generate-compose-files.sh <registry> [<repository>=openmpf] [<image-tag>=latest]`
+Note that repository and image-tag are optional parameters and have a default
+value of openmpf and latest respectively.
 
 Note that this will also generate `swarm-compose.yml`, which you will use if you
 choose to follow the [Swarm Deployment Guide](SWARM.md).
@@ -323,10 +325,13 @@ The OpenMPF Workflow Manager web application can be configured to use HTTPS. To 
 If you don't have access to a private Docker registry, then run:
 
 - `/scripts/docker-generate-compose-files.sh -nr [<image-tag>=latest] <keystore-path> <keystore-password>`
+Note that image-tag is an optional parameter and has a default value of latest.
 
 Otherwise, if you do have access to a private Docker registry, then run:
 
 - `./scripts/docker-generate-compose-files.sh <registry> [<repository>=openmpf] [<image-tag>=latest] <keystore-path> <keystore-password>`
+Note that repository and image-tag are optional parameters and have a default
+value of openmpf and latest respectively.
 
 When using a Docker Compose deployment, `<keystore-path>` is the path to the keystore on the host's file system.
 When using a Docker Swarm deployment, `<keystore-path>` is the path to the keystore on the swarm manager host's
