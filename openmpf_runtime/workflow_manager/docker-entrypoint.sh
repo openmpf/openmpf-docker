@@ -28,19 +28,28 @@
 
 set -Ee -o pipefail -o xtrace
 
+################################################################################
+# Initial Setup                                                                #
+################################################################################
+
 # Cleanup
 rm -f $MPF_HOME/share/nodes/MPF_Channel/*-MPF-MasterNode.list
 
-# Setup
 # NOTE: $HOSTNAME is not known until runtime.
 export JGROUPS_TCP_ADDRESS="$HOSTNAME"
 
-# Configure
-echo 'node.auto.config.enabled=true' >> $MPF_HOME/config/mpf-custom.properties
-echo 'node.auto.unconfig.enabled=true' >> $MPF_HOME/config/mpf-custom.properties
+################################################################################
+# Custom Steps                                                                 #
+################################################################################
 
-# Update WFM segment size
-echo 'detection.segment.target.length=1000' >> $MPF_HOME/config/mpf-custom.properties
+# If this is a custom build, run the custom entrypoint steps.
+if [ -f /home/mpf/docker-custom-entrypoint.sh ]; then
+  /home/mpf/docker-custom-entrypoint.sh
+fi
+
+################################################################################
+# Configure HTTP or HTTPS                                                      #
+################################################################################
 
 export CATALINA_OPTS="-server -Xms256m -Duser.country=US -Djava.library.path=$MPF_HOME/lib"
 
@@ -93,6 +102,10 @@ else
     echo 'HTTPS is not enabled'
     export CATALINA_OPTS="$CATALINA_OPTS -Dtransport.guarantee='NONE' -Dweb.rest.protocol='http'"
 fi
+
+################################################################################
+# Start Tomcat                                                                 #
+################################################################################
 
 set +o xtrace
 

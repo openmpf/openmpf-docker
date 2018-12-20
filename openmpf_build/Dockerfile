@@ -257,7 +257,7 @@ RUN wget -nv -O /apps/source/google_sources/protobuf-2.5.0.tar.gz \
     cd /apps/source/google_sources && tar xzf protobuf-2.5.0.tar.gz && cd protobuf-2.5.0 && \
     ./configure --prefix=/apps/install && make -j8 && make install && make distclean && \
     ldconfig && ln -s /apps/install/bin/protoc /usr/local/bin/protoc && \
-    ln -s /usr/lib64/libuuid.so.1.3.0 /usr/lib64/libuuid.so
+    ln -sf /usr/lib64/libuuid.so.1.3.0 /usr/lib64/libuuid.so
 
 ################################################################################
 # Build OpenCV                                                                 #

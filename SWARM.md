@@ -195,7 +195,7 @@ Again, the output will update every second. Watch the `REPLICAS` column. Once
 all of the replicas are up, then the stack is ready for use. If one of the
 replicas does not come up, then there is a problem. Press ctrl+c when done.
 
-To monitor the log of the workflow manager, run:
+To monitor the log of the Workflow Manager, run:
 
 - `docker service logs --follow openmpf_workflow_manager`
 
@@ -203,26 +203,32 @@ Press ctrl+c when done.
 
 #### Log into the Workflow Manager and Add Nodes
 
-You can reach the workflow manager using IP address or hostname of any of the
+You can reach the Workflow Manager using IP address or hostname of any of the
 nodes in the swarm. The request will be forwarded to the node that is hosting
-the workflow manager container.
+the Workflow Manager container.
 
 `http://<ip-address-or-hostname-of-any-node>:8080/workflow-manager`
 
 Once you have logged in, go to the Nodes page and add all of the available
 nodes. You should see that they each end in a unique ID. That number corresponds
-to the ID of the Docker container. The number of node manager containers that
+to the ID of the Docker container. The number of Node Manager containers that
 come up is determined by the `replicas:` field for each service listed in the
 `swarm-compose.yml` file. Feel free to change it if you please.
 
 #### Tearing Down the Stack
 
-When you are ready to tear down the stack and remove the containers, run:
+When you are ready to tear down the stack and remove the containers and volumes,
+run the following command from within the `openmpf-docker` directory:
 
-- `docker stack rm openmpf`
+- `./scripts/docker-swarm-cleanup.sh`
 
-To redeploy the stack, run the command that begins with `docker stack deploy`
-again.
+Custom property settings, service configuration, and pipelines will be discarded
+along with the Workflow Manager container. You will need to manually delete the
+contents of the NFS share if you're using a shared volume backed by NFS.
+
+To redeploy the stack with a clean slate, run the command that begins with
+`docker stack deploy` again. Currently, we do not support persisting state
+when restarting the Docker swarm stack.
 
 ### (Optional) Add GPU support with NVIDIA CUDA
 

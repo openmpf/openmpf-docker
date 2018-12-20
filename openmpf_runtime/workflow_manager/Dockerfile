@@ -36,7 +36,6 @@ FROM centos:7.4.1708
 ################################################################################
 
 ENV MPF_HOME=/opt/mpf
-VOLUME $MPF_HOME/share
 
 # Do this right away so that we fail fast if the user doesn't provide the JDK:
 COPY --from=openmpf_build /apps/bin/jdk-*-linux-x64.rpm /apps/bin/
@@ -44,7 +43,7 @@ COPY --from=openmpf_build /apps/bin/jdk-*-linux-x64.rpm /apps/bin/
 # Create the "mpf" user:
 RUN useradd -u 376 -U -d /home/mpf -ms /bin/bash -G wheel -p mpf mpf
 
-RUN chown -R mpf:mpf $MPF_HOME/share
+RUN mkdir -p $MPF_HOME/share; chown -R mpf:mpf $MPF_HOME/share
 
 # Set up yum repo:
 RUN yum install -y epel-release deltarpm && yum clean all
@@ -121,7 +120,6 @@ COPY --from=openmpf_build /opt/apache-tomcat/ /opt/apache-tomcat/
 COPY build_artifacts/install.tar /home/mpf/
 RUN cd /home/mpf && tar -xzf install.tar -C $MPF_HOME && rm install.tar
 
-# COPY seems to be the only way to move files to the share volume:
 COPY build_artifacts/plugin-packages $MPF_HOME/share/components
 
 # Extract components:
@@ -136,6 +134,16 @@ RUN cd /home/mpf && mkdir -p /home/mpf/openmpf-projects/openmpf/trunk && \
     rm ansible.tar
 
 RUN ldconfig
+
+################################################################################
+# Configure Properties                                                         #
+################################################################################
+
+RUN echo 'node.auto.config.enabled=true' >> $MPF_HOME/config/mpf-custom.properties
+RUN echo 'node.auto.unconfig.enabled=true' >> $MPF_HOME/config/mpf-custom.properties
+
+# Update WFM segment size
+RUN echo 'detection.segment.target.length=1000' >> $MPF_HOME/config/mpf-custom.properties
 
 ################################################################################
 # Configure Environment Variables                                              #
@@ -164,6 +172,9 @@ RUN echo '[mpf-child]' >> /etc/ansible/hosts; \
 ################################################################################
 # Prepare Entrypoint                                                           #
 ################################################################################
+
+# If any build steps change the data within the volume after it has been declared, those changes will be discarded.
+VOLUME $MPF_HOME/share
 
 EXPOSE 8080 8443
 
