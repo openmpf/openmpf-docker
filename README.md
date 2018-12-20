@@ -322,11 +322,11 @@ The OpenMPF Workflow Manager web application can be configured to use HTTPS. To 
 `docker-generate-compose-files.sh` with additional arguments.
 If you don't have access to a private Docker registry, then run:
 
-- `/scripts/docker-generate-compose-files.sh -nr <image-tag> <keystore-path> <keystore-password>`
+- `/scripts/docker-generate-compose-files.sh -nr [<image-tag>=latest] <keystore-path> <keystore-password>`
 
 Otherwise, if you do have access to a private Docker registry, then run:
 
-- `./scripts/docker-generate-compose-files.sh <registry_host>:<registry_port> <image-tag> <keystore-path> <keystore-password>`
+- `./scripts/docker-generate-compose-files.sh <registry> [<repository>=openmpf] [<image-tag>=latest] <keystore-path> <keystore-password>`
 
 When using a Docker Compose deployment, `<keystore-path>` is the path to the keystore on the host's file system.
 When using a Docker Swarm deployment, `<keystore-path>` is the path to the keystore on the swarm manager host's
