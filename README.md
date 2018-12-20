@@ -226,13 +226,14 @@ Docker container.
 Next, generate the `docker-compose.yml` file. If you don't have access to a
 private Docker registry, then run:
 
+(Optional) To enable HTTPS on the OpenMPF Workflow Manager, see
+[below](#optional-configure-https) for instructions.
+
 - `./scripts/docker-generate-compose-files.sh`
 
 Otherwise, if you do have access to a private Docker registry, then run:
 
-- `./scripts/docker-generate-compose-files.sh <registry_host>:<registry_port>`
-
-See [below](#optional-configure-https) for instructions to enable HTTPS on the OpenMPF Workflow Manager.
+- `./scripts/docker-generate-compose-files.sh <registry> [<repository>=openmpf] [<image-tag>=latest]`
 
 Note that this will also generate `swarm-compose.yml`, which you will use if you
 choose to follow the [Swarm Deployment Guide](SWARM.md).
