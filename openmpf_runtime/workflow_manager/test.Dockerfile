@@ -32,12 +32,9 @@ FROM $POST_BUILD_IMAGE_NAME as mpf_post_build
 # Initial Setup                                                                #
 ################################################################################
 
-# ENV MPF_HOME=/opt/mpf
 ENV MPF_HOME=/home/mpf/openmpf-projects/openmpf/trunk/install
 
-VOLUME $MPF_HOME/share
-
-RUN chown -R mpf:mpf $MPF_HOME/share
+RUN mkdir -p $MPF_HOME/share; chown -R mpf:mpf $MPF_HOME/share
 
 ################################################################################
 # Install yum Dependencies                                                     #
@@ -73,6 +70,13 @@ RUN mkdir -p /apps/source/ansible_sources && cd /apps/source/ansible_sources && 
     rpm -Uvh ./rpm-build/ansible-*.noarch.rpm
 
 ################################################################################
+# Configure Properties                                                         #
+################################################################################
+
+RUN echo 'node.auto.config.enabled=true' >> $MPF_HOME/config/mpf-custom.properties
+RUN echo 'node.auto.unconfig.enabled=true' >> $MPF_HOME/config/mpf-custom.properties
+
+################################################################################
 # Configure Environment Variables                                              #
 ################################################################################
 
@@ -100,9 +104,12 @@ RUN echo '[mpf-child]' >> /etc/ansible/hosts; \
 # Prepare Entrypoint                                                           #
 ################################################################################
 
-EXPOSE 8080
-
 RUN mv /home/mpf/openmpf-projects/openmpf/trunk/mpf-system-tests/src/test/resources/samples $MPF_HOME/share/
+
+# If any build steps change the data within the volume after it has been declared, those changes will be discarded.
+VOLUME $MPF_HOME/share
+
+EXPOSE 8080
 
 COPY workflow_manager/docker-entrypoint-test.sh /home/mpf
 RUN dos2unix -q /home/mpf/docker-entrypoint-test.sh

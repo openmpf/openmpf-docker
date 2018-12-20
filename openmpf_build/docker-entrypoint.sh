@@ -70,11 +70,6 @@ pip install /home/mpf/openmpf-projects/openmpf/trunk/bin/mpf-scripts
 cp /home/mpf/openmpf-projects/openmpf/trunk/workflow-manager/src/main/resources/properties/mpf-private-example.properties \
     /home/mpf/openmpf-projects/openmpf/trunk/workflow-manager/src/main/resources/properties/mpf-private.properties
 
-# Update startup.num.services.per.component=0 so that services are not added to the master node during
-# component auto registration when the workflow manager starts:
-sed -i 's/startup.num.services.per.component.*/startup.num.services.per.component=0/' \
-    /home/mpf/openmpf-projects/openmpf/trunk/workflow-manager/src/main/resources/properties/mpf-private.properties
-
 # TODO: See if this can be converted to use ARG variable, this strategy is
 #    very brittle because it's based on line number:
 sed -i '37s/.*/              p:hostName="redis"/' \
@@ -88,8 +83,20 @@ tar xzf /home/mpf/openmpf-projects/openmpf-build-tools/mpf-maven-deps.tar.gz \
   -C /root/.m2/repository/
 
 ################################################################################
-# Build OpenMPF                                                                #
+# Custom Steps                                                                 #
 ################################################################################
+
+# If this is a custom build, run the custom entrypoint steps.
+if [ -f /home/mpf/docker-custom-entrypoint.sh ]; then
+  /home/mpf/docker-custom-entrypoint.sh
+fi
+
+################################################################################
+# Build OpenMPF and Run Tests                                                  #
+################################################################################
+
+parallelism=$(($(nproc) / 2))
+(( parallelism < 2 )) && parallelism=2
 
 if [ $RUN_TESTS -le 0 ]; then
   # Perform build
@@ -100,6 +107,8 @@ if [ $RUN_TESTS -le 0 ]; then
     -Dcomponents.build.package.json=/home/mpf/openmpf-projects/openmpf/trunk/jenkins/scripts/config_files/$BUILD_PACKAGE_JSON \
     -Dstartup.auto.registration.skip=false \
     -Dcomponents.build.dir=/home/mpf/openmpf-projects/openmpf/mpf-component-build \
+    -Dcomponents.build.parallel.builds="$parallelism" \
+    -Dcomponents.build.make.jobs="$parallelism" \
     -DgitBranch=`cd .. && git rev-parse --abbrev-ref HEAD` \
     -DgitShortId=`cd .. && git rev-parse --short HEAD` \
     -DjenkinsBuildNumber=1
@@ -118,6 +127,8 @@ else
     -Dcomponents.build.package.json=/home/mpf/openmpf-projects/openmpf/trunk/jenkins/scripts/config_files/$BUILD_PACKAGE_JSON \
     -Dstartup.auto.registration.skip=false \
     -Dcomponents.build.dir=/home/mpf/openmpf-projects/openmpf/mpf-component-build \
+    -Dcomponents.build.parallel.builds="$parallelism" \
+    -Dcomponents.build.make.jobs="$parallelism" \
     -DgitBranch=`cd .. && git rev-parse --abbrev-ref HEAD` \
     -DgitShortId=`cd .. && git rev-parse --short HEAD` \
     -DjenkinsBuildNumber=1

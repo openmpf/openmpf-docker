@@ -1,4 +1,4 @@
-#!/usr/bin/bash
+#!/usr/bin/env bash
 
 #############################################################################
 # NOTICE                                                                    #
@@ -28,22 +28,36 @@
 
 printUsage() {
   echo "Usages:"
-  echo "docker-remove-images.sh [--dry-run] -n <partial-image-name>"
-  echo "docker-remove-images.sh [--dry-run] -t <partial-image-tag>"
+  echo "docker-remove-images.sh [--dry-run] <--partial|--exact> -n <image-name>"
+  echo "docker-remove-images.sh [--dry-run] <--partial|--exact> -t <image-tag>"
   exit -1
 }
 
-if [ $# = 2 ]; then
+if [ $# = 3 ]; then
   dryRun=0
-  mode="$1"
-  searchStr="$2"
-elif [ $# = 3 ]; then
+  if [ "$1" == "--partial" ]; then
+    exact=0
+  elif [[ "$1" == "--exact" ]]; then
+    exact=1
+  else
+    printUsage
+  fi
+  mode="$2"
+  searchStr="$3"
+elif [ $# = 4 ]; then
   if [ "$1" != "--dry-run" ]; then
     printUsage
   fi
   dryRun=1
-  mode="$2"
-  searchStr="$3"
+  if [ "$2" == "--partial" ]; then
+    exact=0
+  elif [[ "$2" == "--exact" ]]; then
+    exact=1
+  else
+    printUsage
+  fi
+  mode="$3"
+  searchStr="$4"
 else
   printUsage
 fi
@@ -54,7 +68,6 @@ fi
 # openmpf_build                     latest              aa1729292884        44 hours ago        12.8GB
 nameColIndex=1
 tagColIndex=2
-imageIdColIndex=3
 
 if [ "$mode" = "-t" ]; then
   colIndex=$tagColIndex
@@ -73,27 +86,31 @@ content=$(echo "$listing" | sed -n '1!p')
 allElements=$(echo "$content" | tr -s ' ' | cut -d ' ' -f $colIndex)
 
 # Search elements
-foundElements=$(echo "$allElements" | grep "$searchStr")
+if [[ $exact = 1 ]]; then
+  foundRowIndices=$(echo "$allElements" | grep ^"$searchStr"$ -n | cut -d ':' -f 1)
+else
+  foundRowIndices=$(echo "$allElements" | grep "$searchStr" -n | cut -d ':' -f 1)
+fi
 
-if [ -z "$foundElements" ]; then
+if [ -z "$foundRowIndices" ]; then
   echo "No images found."
   exit 0
 fi
 
-foundRowIndices=$(echo "$allElements" | grep "$searchStr" -n | cut -d ':' -f 1)
-
+echo "Images to remove:"
 while read -r line; do
   rowId=$(($line + 1))
   row=$(echo "$listing" | sed -n -e "$rowId"p)
   rowsToRemove+=$row"\n"
-  imageId=$(echo "$row" | tr -s ' ' | cut -d ' ' -f $imageIdColIndex)
-  imageIdsToRemove+=$imageId" "
+  imageName=$(echo "$row" | tr -s ' ' | cut -d ' ' -f $nameColIndex)
+  imageTag=$(echo "$row" | tr -s ' ' | cut -d ' ' -f $tagColIndex)
+  imageToRemove=$imageName":"$imageTag
+  imagesToRemove+=$imageToRemove" "
+  echo "$imageToRemove"
 done <<< "$foundRowIndices"
 
-echo "Images to remove:"
-echo -e "$rowsToRemove"
-
 if [ $dryRun = 0 ]; then
+  echo
   echo "Removing images ..."
-  docker image rm -f $imageIdsToRemove
+  docker image rm -f $imagesToRemove
 fi

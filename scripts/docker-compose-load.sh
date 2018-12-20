@@ -26,32 +26,59 @@
 # limitations under the License.                                            #
 #############################################################################
 
-printUsage() {
-  echo "Usages:"
-  echo "docker-compose-cleanup.sh [--remove-images]"
-  exit -1
+set -Ee
+
+intExit() {
+    # Kill all subprocesses (all processes in the current process group)
+    kill -HUP -$$
 }
 
-if [ $# -gt 1 ]; then
-  printUsage
-fi
+hupExit() {
+    # HUP'd (probably by intExit)
+    echo
+    echo "Interrupted"
+    exit
+}
 
-################################################################################
-# Remove images                                                                #
-################################################################################
+trap hupExit HUP
+trap intExit INT
 
-if [ $# -eq 1 ]; then
-  if [ "$1" != "--remove-images" ]; then
-    printUsage
-  fi
-  set -o xtrace
-  docker-compose down --rmi all
-  exit
-fi
+# spinner(header, pids)
+spinner() {
+  local delay=5.0
 
-################################################################################
-# Don't remove images                                                          #
-################################################################################
+  header="$1"
+  pids="$2"
+  cont=1
 
-set -o xtrace
-docker-compose down -v
+  echo -n "$header ..."
+
+  while [ "$cont" = 1 ]; do
+    cont=0
+    for pid in "${pids[@]}"; do
+      if ps a | awk '{print $1}' | grep -q "${pid}"; then
+        cont=1
+        break
+      fi
+    done
+    echo -n "."
+    sleep "$delay"
+  done
+
+  echo " done"
+  echo
+}
+
+echo "This will take some time. Please be patient."
+echo
+
+echo "Images to load:"
+pids=()
+for tgz in *.tar.gz; do
+  echo "  $tgz"
+  docker load -q -i "$tgz" >> /dev/null &
+  pids+=($!)
+done
+echo
+
+spinner "Loading images" "$pids"
