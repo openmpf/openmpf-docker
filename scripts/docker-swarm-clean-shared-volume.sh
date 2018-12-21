@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+
 #############################################################################
 # NOTICE                                                                    #
 #                                                                           #
@@ -24,72 +26,42 @@
 # limitations under the License.                                            #
 #############################################################################
 
-version: '3.3'
-services:
-  mysql_database:
-    image: mariadb:latest
-    environment:
-      - MYSQL_ROOT_PASSWORD=password
-      - MYSQL_DATABASE=mpf
-      - MYSQL_USER=mpf
-      - MYSQL_PASSWORD=mpf
-    command: [
-      '--wait_timeout=28800',
-    ]
-    volumes:
-      - mysql_data:/var/lib/mysql
-    networks:
-      - swarm_overlay
-    deploy:
-      placement:
-        constraints:
-          - node.role == manager
+set -Ee
 
-  activemq:
-    image: <registry_host>/<repository>/openmpf_active_mq:<image_tag>
-    ports:
-      - "8161:8161"
-    networks:
-      - swarm_overlay
+printUsage() {
+  echo "Usages:"
+  echo "docker-swarm-clean-shared-volume.sh [dir]"
+  exit -1
+}
 
-  redis:
-    image: redis:latest
-    networks:
-      - swarm_overlay
+finally() {
+    docker rm -f openmpf_helper > /dev/null
+}
 
-  workflow_manager:
-    image: <registry_host>/<repository>/openmpf_workflow_manager:<image_tag>
-    # The following lines are needed to wait until the mySQL service is available.
-    environment:
-      - MYSQL_ROOT_PASSWORD=password
-      - KEYSTORE_PASSWORD=<keystore_password>
-    ports:
-      - "8080:8080"
-      - "8443:8443"
-    volumes:
-      - shared_data:/opt/mpf/share
-    networks:
-      - swarm_overlay
-    secrets: [https_keystore]
-    deploy:
-      placement:
-        constraints:
-          - node.role == manager
+subDir="*" # by default, remove everything
 
-  node_manager:
-    image: <registry_host>/<repository>/openmpf_node_manager:<image_tag>
-    volumes:
-      - shared_data:/opt/mpf/share
-    networks:
-      - swarm_overlay
-    deploy:
-      mode: global
+if [ $# -eq 1 ]; then
+    subDir="$1"
+elif [ $# -gt 1 ]; then
+    printUsage
+fi
 
-volumes:
-  shared_data:
-  mysql_data:
+dataDir="/data/$subDir"
 
-networks:
-  swarm_overlay:
+# Check if the shared volume exists. If not, this returns a non-zero exit code.
+docker volume inspect openmpf_shared_data > /dev/null
 
-secrets: { https_keystore: { file: <keystore_path> } } # One line to make easier for script to remove
+# Ensure that we clean up the helper container that we'll be creating next.
+trap finally EXIT
+
+# Create a helper container that mounts the shared volume. Use an image that we know exists.
+# The exact image is not important.
+docker run -d --rm --entrypoint bash -v openmpf_shared_data:/data --name openmpf_helper redis -c "sleep infinity" > /dev/null
+
+docker exec openmpf_helper bash -c "rm -rf $dataDir"
+
+if [ "$subDir" = "*" ]; then
+    echo "Cleared the contents of the shared volume."
+else
+    echo "Cleared \"$subDir\" from the shared volume."
+fi
