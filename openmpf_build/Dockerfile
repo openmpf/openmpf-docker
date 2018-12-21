@@ -345,9 +345,21 @@ RUN cd /apps/source/openalpr_sources && git clone https://github.com/openalpr/op
     ldconfig
 
 # ImageMagick 6.9.10:
-RUN cd /apps/source/imagemagick_sources && git clone https://github.com/ImageMagick/ImageMagick6.git && \
-    cd ImageMagick6 && git checkout 3fc50e3a4576424c798cf85fa6f706cd4a72a786 && \
-    ./configure --prefix=/apps/install && make && make install && make distclean && ldconfig
+#RUN cd /apps/source/imagemagick_sources && \
+RUN wget -nv -O /apps/source/imagemagick_sources/ImageMagick-6.9.10-19.x86_64.rpm \
+    "https://imagemagick.org/download/linux/CentOS/x86_64/ImageMagick-6.9.10-19.x86_64.rpm" && \
+    wget -nv -O /apps/source/imagemagick_sources/ImageMagick-c++-6.9.10-19.x86_64.rpm \
+    "https://imagemagick.org/download/linux/CentOS/x86_64/ImageMagick-c++-6.9.10-19.x86_64.rpm" && \
+    wget -nv -O /apps/source/imagemagick_sources/ImageMagick-c++-devel-6.9.10-19.x86_64.rpm \
+    "https://imagemagick.org/download/linux/CentOS/x86_64/ImageMagick-c++-devel-6.9.10-19.x86_64.rpm" && \
+    wget -nv -O /apps/source/imagemagick_sources/ImageMagick-libs-6.9.10-19.x86_64.rpm \
+    "https://imagemagick.org/download/linux/CentOS/x86_64/ImageMagick-libs-6.9.10-19.x86_64.rpm" && \
+    wget -nv -O /apps/source/imagemagick_sources/ImageMagick-devel-6.9.10-19.x86_64.rpm \
+    "https://imagemagick.org/download/linux/CentOS/x86_64/ImageMagick-devel-6.9.10-19.x86_64.rpm"
+
+RUN cd /apps/source/imagemagick_sources && \
+    yum install -y ImageMagick-c++-devel-6.9.10-19.x86_64.rpm  ImageMagick-c++-6.9.10-19.x86_64.rpm \
+ImageMagick-6.9.10-19.x86_64.rpm ImageMagick-devel-6.9.10-19.x86_64.rpm ImageMagick-libs-6.9.10-19.x86_64.rpm
 
 
 ################################################################################
