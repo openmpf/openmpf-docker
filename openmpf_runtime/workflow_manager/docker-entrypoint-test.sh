@@ -41,6 +41,15 @@ rm -f $MPF_HOME/share/nodes/MPF_Channel/*workflow_manager*.list
 echo "export JGROUPS_TCP_ADDRESS=${HOSTNAME}" >> /etc/profile.d/mpf.sh
 
 ################################################################################
+# Configure Properties                                                         #
+################################################################################
+
+mkdir -p "$MPF_HOME/share/config"
+
+echo "node.auto.config.enabled=true" >> "$MPF_HOME/share/config/mpf-custom.properties"
+echo "node.auto.unconfig.enabled=true" >> "$MPF_HOME/share/config/mpf-custom.properties"
+
+################################################################################
 # Run Integration Tests                                                        #
 ################################################################################
 

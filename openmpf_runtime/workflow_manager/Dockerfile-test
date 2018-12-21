@@ -34,7 +34,7 @@ FROM $POST_BUILD_IMAGE_NAME as mpf_post_build
 
 ENV MPF_HOME=/home/mpf/openmpf-projects/openmpf/trunk/install
 
-RUN mkdir -p $MPF_HOME/share/config; chown -R mpf:mpf $MPF_HOME/share
+RUN mkdir -p $MPF_HOME/share; chown -R mpf:mpf $MPF_HOME/share
 
 ################################################################################
 # Install yum Dependencies                                                     #
@@ -68,13 +68,6 @@ RUN mkdir -p /apps/source/ansible_sources && cd /apps/source/ansible_sources && 
     cd /apps/source/ansible_sources/ansible && make rpm && \
     cd /apps/source/ansible_sources/ansible && \
     rpm -Uvh ./rpm-build/ansible-*.noarch.rpm
-
-################################################################################
-# Configure Properties                                                         #
-################################################################################
-
-RUN echo 'node.auto.config.enabled=true' >> $MPF_HOME/share/config/mpf-custom.properties
-RUN echo 'node.auto.unconfig.enabled=true' >> $MPF_HOME/share/config/mpf-custom.properties
 
 ################################################################################
 # Configure Environment Variables                                              #

@@ -56,6 +56,18 @@ fi
 export JGROUPS_TCP_ADDRESS="$HOSTNAME"
 
 ################################################################################
+# Configure Properties                                                         #
+################################################################################
+
+mkdir -p "$MPF_HOME/share/config"
+
+echo "node.auto.config.enabled=true" >> "$MPF_HOME/share/config/mpf-custom.properties"
+echo "node.auto.unconfig.enabled=true" >> "$MPF_HOME/share/config/mpf-custom.properties"
+
+# Update WFM segment size
+echo "detection.segment.target.length=1000" >> "$MPF_HOME/share/config/mpf-custom.properties"
+
+################################################################################
 # Custom Steps                                                                 #
 ################################################################################
 

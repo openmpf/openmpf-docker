@@ -43,7 +43,7 @@ COPY --from=openmpf_build /apps/bin/jdk-*-linux-x64.rpm /apps/bin/
 # Create the "mpf" user:
 RUN useradd -u 376 -U -d /home/mpf -ms /bin/bash -G wheel -p mpf mpf
 
-RUN mkdir -p $MPF_HOME/share/config; chown -R mpf:mpf $MPF_HOME/share
+RUN mkdir -p $MPF_HOME/share; chown -R mpf:mpf $MPF_HOME/share
 
 # Set up yum repo:
 RUN yum install -y epel-release deltarpm && yum clean all
@@ -134,16 +134,6 @@ RUN cd /home/mpf && mkdir -p /home/mpf/openmpf-projects/openmpf/trunk && \
     rm ansible.tar
 
 RUN ldconfig
-
-################################################################################
-# Configure Properties                                                         #
-################################################################################
-
-RUN echo 'node.auto.config.enabled=true' >> $MPF_HOME/share/config/mpf-custom.properties
-RUN echo 'node.auto.unconfig.enabled=true' >> $MPF_HOME/share/config/mpf-custom.properties
-
-# Update WFM segment size
-RUN echo 'detection.segment.target.length=1000' >> $MPF_HOME/share/config/mpf-custom.properties
 
 ################################################################################
 # Configure Environment Variables                                              #
