@@ -275,15 +275,43 @@ Show the containers running on the current node:
 
 #### Tearing Down the Containers
 
-You can stop the containers by pressing ctrl+c (sometimes, twice) in the
-terminal you ran `docker-compose up` and then running:
+When you are ready to stop the OpenMPF deployment, you have the following
+options:
+
+**Persist State**
+
+If you would like to persist the state of OpenMPF so that the next time you run
+`docker-compose up` the same job information, log files, custom property
+settings, custom pipelines, etc., are used, then press ctrl+c in the same
+terminal you ran `docker-compose up`. That will stop the running containers.
+
+Alternatively, you can run the following command in a different terminal:
 
 - `docker-compose stop`
 
-If you prefer, you can also stop and remove all of the containers and networks
-by running:
+Both approaches preserve the Docker volumes.
 
-- `docker-compose down`
+Note that any changes made through the Nodes web UI to configure services will
+not be preserved. You will need to configure services again the next time you
+deploy OpenMPF.
+
+**Clean Slate**
+
+If you would like to start from a clean slate the next time you run
+`docker-compose up`, as though you had never deployed OpenMPF before, then run
+the following command from within the `openmpf-docker` directory:
+
+- `./scripts/docker-compose-cleanup.sh`
+
+This will remove all of the OpenMPF Docker containers, volumes, and networks.
+It does not remove the Docker images.
+
+**Remove All Images**
+
+To remove all of the OpenMPF Docker containers, volumes, networks, and images,
+then run the following command from within the `openmpf-docker` directory:
+
+- `./scripts/docker-compose-cleanup.sh --remove-images`
 
 ### (Optional) Add GPU support with NVIDIA CUDA
 

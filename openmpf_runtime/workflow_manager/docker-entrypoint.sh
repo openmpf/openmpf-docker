@@ -35,8 +35,37 @@ set -Ee -o pipefail -o xtrace
 # Cleanup
 rm -f $MPF_HOME/share/nodes/MPF_Channel/*-MPF-MasterNode.list
 
+# NOTE: Docker assigns each Node Manager container a hostname that is a 12-digit
+# hash. For each container, we set THIS_MPF_NODE="node_manager_id_<hash>".
+
+# In a swarm deployment, containers are not persisted, so each stack deployment
+# results in new Node Manager containers with new hostnames, meaning that we
+# cannot meaningfully reuse the previous service configuration.
+
+# Remove nodeManagerConfig.xml so that it can be regenerated.
+if grep -q "node_manager_id_*" "$MPF_HOME/share/data/nodeManagerConfig.xml"; then
+  rm "$MPF_HOME/share/data/nodeManagerConfig.xml"
+fi
+
+# NOTE: We cannot reliably determine which Node Manager logs belong to the
+# current deployment, and which belong to the previous deployment due to the
+# order in which Docker services are started/restarted. Removing the logs is
+# best left to the user.
+
 # NOTE: $HOSTNAME is not known until runtime.
 export JGROUPS_TCP_ADDRESS="$HOSTNAME"
+
+################################################################################
+# Configure Properties                                                         #
+################################################################################
+
+mkdir -p "$MPF_HOME/share/config"
+
+echo "node.auto.config.enabled=true" >> "$MPF_HOME/share/config/mpf-custom.properties"
+echo "node.auto.unconfig.enabled=true" >> "$MPF_HOME/share/config/mpf-custom.properties"
+
+# Update WFM segment size
+echo "detection.segment.target.length=1000" >> "$MPF_HOME/share/config/mpf-custom.properties"
 
 ################################################################################
 # Custom Steps                                                                 #
@@ -113,7 +142,7 @@ set +o xtrace
 echo "Waiting for MySQL to become available ..."
 until mysql -h "$MYSQL_HOST" -u root -p"$MYSQL_ROOT_PASSWORD" -e "quit" >> /dev/null 2>&1; do
   echo "MySQL is unavailable. Sleeping."
-  sleep 1
+  sleep 5
 done
 echo "MySQL is up"
 
@@ -121,14 +150,20 @@ echo "MySQL is up"
 echo "Waiting for Redis to become available ..."
 # From https://stackoverflow.com/a/39214806
 until [ +PONG = "$( (exec 8<>/dev/tcp/redis/6379 && echo -e 'PING\r\n' >&8 && head -c 5 <&8; exec 8>&-) 2>/dev/null )" ]; do
-    echo "Redis is unavailable. Sleeping."
-    sleep 1
+  echo "Redis is unavailable. Sleeping."
+  sleep 5
 done
 echo "Redis is up"
 
-set -o xtrace
+# Wait for ActiveMQ service.
+echo "Waiting for ActiveMQ to become available ..."
+until curl -I "$ACTIVE_MQ_HOST:8161" >> /dev/null 2>&1; do
+  echo "ActiveMQ is unavailable. Sleeping."
+  sleep 5
+done
+echo "ActiveMQ is up"
 
-# TODO: Wait for ActiveMQ.
+set -o xtrace
 
 # Run Tomcat (as root user)
 /opt/apache-tomcat/bin/catalina.sh run

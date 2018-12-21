@@ -63,6 +63,8 @@ services:
       dockerfile: workflow_manager/Dockerfile
     depends_on:
       - mysql
+      - redis
+      - active_mq
     restart: always
     # The following lines are needed to wait until the mySQL service is available.
     environment:
