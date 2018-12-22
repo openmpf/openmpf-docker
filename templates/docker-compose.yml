@@ -43,7 +43,7 @@ services:
       - mysql_data:/var/lib/mysql
 
   active_mq:
-    image: <registry_host>/<repository>/openmpf_active_mq:<image_tag>
+    image: <registry>/<repository>/openmpf_active_mq:<image_tag>
     container_name: activemq
     build: ./active_mq
     restart: always
@@ -56,7 +56,7 @@ services:
     restart: always
 
   workflow_manager:
-    image: <registry_host>/<repository>/openmpf_workflow_manager:<image_tag>
+    image: <registry>/<repository>/openmpf_workflow_manager:<image_tag>
     container_name: workflow_manager
     build:
       context: ./openmpf_runtime
@@ -78,7 +78,7 @@ services:
       - <keystore_path>:/run/secrets/https_keystore:ro
 
   node_manager:
-    image: <registry_host>/<repository>/openmpf_node_manager:<image_tag>
+    image: <registry>/<repository>/openmpf_node_manager:<image_tag>
     build:
       context: ./openmpf_runtime
       dockerfile: node_manager/Dockerfile
