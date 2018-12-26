@@ -81,7 +81,7 @@ RUN yum -y localinstall --nogpgcheck /apps/bin/jdk-*-linux-x64.rpm && \
 RUN yum install -y log4cxx libdc1394 unzip libjpeg-turbo libpng \
     libtiff jasper-libs gtk2 atk pango gdk-pixbuf2 cairo fontconfig gstreamer \
     gstreamer-plugins-base libv4l mesa-libGLU libSM libICE qt-x11 python-pip \
-    python-virtualenv initscripts sudo dos2unix && \
+    python-virtualenv initscripts sudo dos2unix ghostscript && \
     yum clean all && rm -rf /var/cache/yum/*
 
 ################################################################################
@@ -119,6 +119,7 @@ COPY --from=openmpf_build /apps/install/bin/ffmpeg /apps/install/bin/ffprobe \
 COPY --from=openmpf_build /etc/ld.so.conf.d/ /etc/ld.so.conf.d/
 COPY --from=openmpf_build /etc/profile.d/mpf.sh /etc/profile.d/mpf.sh
 
+
 COPY build_artifacts/install.tar /home/mpf/
 RUN cd /home/mpf && tar -xzf install.tar -C $MPF_HOME && rm install.tar
 
@@ -140,6 +141,19 @@ RUN for dir in $MPF_HOME/plugins/*; do /home/mpf/setup-python-component-venv.py 
 RUN ln -s $MPF_HOME/bin/ffmpeg /usr/bin/ffmpeg && \
     ln -s $MPF_HOME/bin/ffserver /usr/bin/ffserver && \
     ln -s $MPF_HOME/bin/ffprobe /usr/bin/ffprobe
+
+# Setup ImageMagick
+COPY --from=openmpf_build /apps/source/imagemagick_sources/ImageMagick-6.9.10-19.x86_64.rpm /home/mpf/
+COPY --from=openmpf_build /apps/source/imagemagick_sources/ImageMagick-c++-6.9.10-19.x86_64.rpm /home/mpf/
+COPY --from=openmpf_build /apps/source/imagemagick_sources/ImageMagick-c++-devel-6.9.10-19.x86_64.rpm /home/mpf/
+COPY --from=openmpf_build /apps/source/imagemagick_sources/ImageMagick-libs-6.9.10-19.x86_64.rpm /home/mpf/
+COPY --from=openmpf_build /apps/source/imagemagick_sources/ImageMagick-devel-6.9.10-19.x86_64.rpm /home/mpf/
+
+RUN cd /home/mpf/ && \
+    yum install -y ImageMagick-c++-devel-6.9.10-19.x86_64.rpm  ImageMagick-c++-6.9.10-19.x86_64.rpm \
+    ImageMagick-6.9.10-19.x86_64.rpm ImageMagick-devel-6.9.10-19.x86_64.rpm ImageMagick-libs-6.9.10-19.x86_64.rpm && \
+    rm ImageMagick-c++-devel-6.9.10-19.x86_64.rpm  ImageMagick-c++-6.9.10-19.x86_64.rpm \
+    ImageMagick-6.9.10-19.x86_64.rpm ImageMagick-devel-6.9.10-19.x86_64.rpm ImageMagick-libs-6.9.10-19.x86_64.rpm
 
 RUN ldconfig
 

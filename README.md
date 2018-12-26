@@ -223,19 +223,23 @@ If that command does not output `BUILD SUCCESS` then you may try to run it again
 Sometimes Maven will time out while trying to download dependencies within a
 Docker container.
 
-Next, generate the `docker-compose.yml` file. If you don't have access to a
-private Docker registry, then run:
+Next you need to generate the `docker-compose.yml` file. To enable HTTPS on the
+Workflow Manager, see [below](#optional-configure-https) for instructions on how
+to run the `docker-generate-compose-files.sh` script.
+
+If you don't have access to a private Docker registry, then run:
 
 - `./scripts/docker-generate-compose-files.sh`
 
 Otherwise, if you do have access to a private Docker registry, then run:
 
-- `./scripts/docker-generate-compose-files.sh <registry_host>:<registry_port>`
+- `./scripts/docker-generate-compose-files.sh <registry> [<repository>=openmpf] [<image-tag>=latest]`
 
-See [below](#optional-configure-https) for instructions to enable HTTPS on the OpenMPF Workflow Manager.
+Note that `repository` and `image-tag` are optional parameters and have a
+default value of `openmpf` and `latest`, respectively.
 
-Note that this will also generate `swarm-compose.yml`, which you will use if you
-choose to follow the [Swarm Deployment Guide](SWARM.md).
+Note that this command will also generate `swarm-compose.yml`, which you will
+use if you choose to follow the [Swarm Deployment Guide](SWARM.md).
 
 If you built the runtime images before, then run the following script to
 remove the old containers and volumes:
@@ -275,15 +279,43 @@ Show the containers running on the current node:
 
 #### Tearing Down the Containers
 
-You can stop the containers by pressing ctrl+c (sometimes, twice) in the
-terminal you ran `docker-compose up` and then running:
+When you are ready to stop the OpenMPF deployment, you have the following
+options:
+
+**Persist State**
+
+If you would like to persist the state of OpenMPF so that the next time you run
+`docker-compose up` the same job information, log files, custom property
+settings, custom pipelines, etc., are used, then press ctrl+c in the same
+terminal you ran `docker-compose up`. That will stop the running containers.
+
+Alternatively, you can run the following command in a different terminal:
 
 - `docker-compose stop`
 
-If you prefer, you can also stop and remove all of the containers and networks
-by running:
+Both approaches preserve the Docker volumes.
 
-- `docker-compose down`
+Note that any changes made through the Nodes web UI to configure services will
+not be preserved. You will need to configure services again the next time you
+deploy OpenMPF.
+
+**Clean Slate**
+
+If you would like to start from a clean slate the next time you run
+`docker-compose up`, as though you had never deployed OpenMPF before, then run
+the following command from within the `openmpf-docker` directory:
+
+- `./scripts/docker-compose-cleanup.sh`
+
+This will remove all of the OpenMPF Docker containers, volumes, and networks.
+It does not remove the Docker images.
+
+**Remove All Images**
+
+To remove all of the OpenMPF Docker containers, volumes, networks, and images,
+then run the following command from within the `openmpf-docker` directory:
+
+- `./scripts/docker-compose-cleanup.sh --remove-images`
 
 ### (Optional) Add GPU support with NVIDIA CUDA
 
@@ -317,20 +349,28 @@ deployment. If you would like a walkthrough on how to do that, please see the
 
 ### (Optional) Configure HTTPS
 
-The OpenMPF Workflow Manager web application can be configured to use HTTPS. To enable HTTPS you must run
-`docker-generate-compose-files.sh` with additional arguments.
+The Workflow Manager web application can be configured to use HTTPS. To enable
+HTTPS you must run `docker-generate-compose-files.sh` with additional arguments.
+
 If you don't have access to a private Docker registry, then run:
 
-- `/scripts/docker-generate-compose-files.sh -nr <image-tag> <keystore-path> <keystore-password>`
+- `/scripts/docker-generate-compose-files.sh -nr [<image-tag>=latest] <keystore-path> <keystore-password>`
+
+Note that `image-tag` is an optional parameter and has a default value of
+`latest`.
 
 Otherwise, if you do have access to a private Docker registry, then run:
 
-- `./scripts/docker-generate-compose-files.sh <registry_host>:<registry_port> <image-tag> <keystore-path> <keystore-password>`
+- `./scripts/docker-generate-compose-files.sh <registry> [<repository>=openmpf] [<image-tag>=latest] <keystore-path> <keystore-password>`
 
-When using a Docker Compose deployment, `<keystore-path>` is the path to the keystore on the host's file system.
-When using a Docker Swarm deployment, `<keystore-path>` is the path to the keystore on the swarm manager host's
-file system. The keystore only needs present on the swarm manager. The Java JKS and PKCS#12 keystore formats are
-supported.
+Note that `repository` and `image-tag` are optional parameters and have a
+default value of `openmpf` and `latest`, respectively.
+
+When using a Docker Compose deployment, `<keystore-path>` is the path to the
+keystore on the host's file system. When using a Docker Swarm deployment,
+`<keystore-path>` is the path to the keystore on the swarm manager host's file
+system. The keystore only needs to be present on the swarm manager. The Java
+JKS and PKCS#12 keystore formats are supported.
 
 
 ## Project Website

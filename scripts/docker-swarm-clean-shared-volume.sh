@@ -26,49 +26,42 @@
 # limitations under the License.                                            #
 #############################################################################
 
-# NOTE: This script prioritizes convenience over security.
-# 1. StrictHostKeyChecking is turned off when using SSH.
-# 2. Optionally, sshpass is used to provide a password to the ssh command.
+set -Ee
 
 printUsage() {
   echo "Usages:"
-  echo "docker-swarm-run-on-all-nodes.sh [--ask-pass] \"<command>\""
+  echo "docker-swarm-clean-shared-volume.sh [dir]"
   exit -1
 }
 
+finally() {
+    docker rm -f openmpf_helper > /dev/null
+}
+
+subDir="*" # by default, remove everything
+
 if [ $# -eq 1 ]; then
-  askPass=0
-  command="$1"
-elif [ $# -eq 2 ]; then
-  if [ "$1" != "--ask-pass" ]; then
+    subDir="$1"
+elif [ $# -gt 1 ]; then
     printUsage
-  fi
-  askPass=1
-  command="$2"
+fi
+
+dataDir="/data/$subDir"
+
+# Check if the shared volume exists. If not, this returns a non-zero exit code.
+docker volume inspect openmpf_shared_data > /dev/null
+
+# Ensure that we clean up the helper container that we'll be creating next.
+trap finally EXIT
+
+# Create a helper container that mounts the shared volume. Use an image that we know exists.
+# The exact image is not important.
+docker run -d --rm --entrypoint bash -v openmpf_shared_data:/data --name openmpf_helper redis -c "sleep infinity" > /dev/null
+
+docker exec openmpf_helper bash -c "rm -rf $dataDir"
+
+if [ "$subDir" = "*" ]; then
+    echo "Cleared the contents of the shared volume."
 else
-  printUsage
+    echo "Cleared \"$subDir\" from the shared volume."
 fi
-
-if [ $askPass = 1 ]; then
-  read -s -p "Enter SSH user: " sshUser
-  echo
-
-  read -s -p "Enter SSH password: " sshPass
-  echo
-  echo
-fi
-
-nodeIds=$(docker node ls | sed -n '1!p' | cut -d ' ' -f 1)
-
-while read -r nodeId; do
-  nodeAddr=$(docker node inspect "$nodeId" --format '{{ .Status.Addr }}')
-  echo "Connecting to $nodeAddr ..."
-
-  if [ $askPass = 1  ]; then
-    sshpass -p "$sshPass" ssh -oStrictHostKeyChecking=no "$sshUser"@"$nodeAddr" "$command" < /dev/null
-  else
-    ssh -oStrictHostKeyChecking=no "$nodeAddr" "$command" < /dev/null
-  fi
-
-  echo
-done <<< "$nodeIds"

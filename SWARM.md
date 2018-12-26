@@ -177,6 +177,13 @@ time. This will be much faster later once the images are downloaded on the
 nodes. If the images are updated, only the changes are downloaded from the
 Docker registry.
 
+Note that by default both the Workflow Manager and mySQL containers have a
+`placement` constraint so that they are always deployed to the swarm manager
+node. The mySQL container must always run on the same node so that the same
+openmpf_mysql_data volume is used when the swarm is redeployed. The Workflow
+Manager container is run on the same node for efficiency. If you wish to change
+the node, then modify the `placement` constraints in `swarm-compose.yml`.
+
 #### Monitor the Swarm Services
 
 It may be helpful to run:
@@ -217,18 +224,63 @@ come up is determined by the `replicas:` field for each service listed in the
 
 #### Tearing Down the Stack
 
-When you are ready to tear down the stack and remove the containers and volumes,
-run the following command from within the `openmpf-docker` directory:
+When you are ready to stop the OpenMPF stack, you have the following options:
 
-- `./scripts/docker-swarm-cleanup.sh`
+**Persist State**
 
-Custom property settings, service configuration, and pipelines will be discarded
-along with the Workflow Manager container. You will need to manually delete the
-contents of the NFS share if you're using a shared volume backed by NFS.
+If you would like to persist the state of OpenMPF so that the next time you run
+the command that begins with `docker stack deploy` the same job information, log
+files, custom property settings, custom pipelines, etc., are used, then run the
+following command from within the `openmpf-docker` directory:
 
-To redeploy the stack with a clean slate, run the command that begins with
-`docker stack deploy` again. Currently, we do not support persisting state
-when restarting the Docker swarm stack.
+- `./scripts/docker-swarm-cleanup.sh --no-volumes`
+
+This preserves all of the Docker volumes.
+
+Note that any changes made through the Nodes web UI to configure services will
+not be preserved. This is because the next time Docker deploys the Node Manager
+containers they will each have a randomly-generated hostname that does not
+correlate with the Node Manager containers in the previous deployment.
+
+The next time you deploy OpenMPF, all of the previous Node Manager logs will
+appear in the Logs web UI. To reduce clutter, consider running the following
+command to archive and remove the old Node Manager log files, where
+`<output-dir>` is a directory on the swarm manager host:
+
+- `./scripts/docker-swarm-logs.sh --node-manager-logs --archive <output-dir> --remove-originals`
+
+To archive and remove all of the log files run:
+
+- `./scripts/docker-swarm-logs.sh --all-logs --archive <output-dir> --remove-originals`
+
+**Clean Slate**
+
+If you would like to start from a clean slate the next time you run the command
+that begins with `docker stack deploy`, as though you had never deployed the
+stack before, then run the following command from within the `openmpf-docker`
+directory:
+
+- `./scripts/docker-swarm-cleanup.sh --mysql-volume --remove-shared-data`
+
+As a convenience, this does not remove the shared volume so that you don't have
+to recreate it on all of the nodes the next time you deploy the stack.
+
+The `--remove-shared-data` option will delete the contents the shared volume,
+which may include extracted artifacts, log files, markup, remote media, etc.
+If you wish to preserve the contents of the shared volume, then omit that
+option. If you wish to remove the contents of the shared volume at a later time,
+then run:
+
+- `./scripts/docker-swarm-clean-shared-volume.sh`
+
+**Remove All Volumes**
+
+To remove all of the OpenMPF Docker containers, volumes, and networks, then run
+the following command from within the `openmpf-docker` directory:
+
+- `./scripts/docker-swarm-cleanup.sh --all-volumes --remove-shared-data`
+
+This does not remove the Docker images.
 
 ### (Optional) Add GPU support with NVIDIA CUDA
 

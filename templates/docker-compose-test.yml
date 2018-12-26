@@ -43,7 +43,7 @@ services:
       - mysql_data:/var/lib/mysql
 
   active_mq:
-    image: <registry_host>/<repository>/openmpf_active_mq:<image_tag>
+    image: <registry>/<repository>/openmpf_active_mq:<image_tag>
     container_name: activemq
     build: ./active_mq
     restart: always
@@ -56,7 +56,7 @@ services:
     restart: always
 
   workflow_manager_test:
-    image: <registry_host>/<repository>/openmpf_workflow_manager_test:<image_tag>
+    image: <registry>/<repository>/openmpf_workflow_manager_test:<image_tag>
     container_name: workflow_manager
     build:
       context: ./openmpf_runtime
@@ -67,6 +67,8 @@ services:
     #  - infinity
     depends_on:
       - mysql
+      - redis
+      - active_mq
     restart: always
     # The following lines are needed to wait until the mySQL service is available.
     environment:
@@ -80,7 +82,7 @@ services:
       - ./openmpf_runtime/build_artifacts:/mnt/build_artifacts
 
   node_manager:
-    image: <registry_host>/<repository>/openmpf_node_manager:<image_tag>
+    image: <registry>/<repository>/openmpf_node_manager:<image_tag>
     build:
       context: ./openmpf_runtime
       dockerfile: node_manager/Dockerfile

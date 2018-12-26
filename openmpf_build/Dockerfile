@@ -51,7 +51,7 @@ RUN mkdir -p /apps/install/lib && mkdir -p /apps/bin/apache && \
     mkdir /apps/source/apache_sources && mkdir /apps/source/google_sources && \
     mkdir /apps/source/opencv_sources && mkdir /apps/source/ffmpeg_sources && \
     mkdir /apps/source/dlib-sources && mkdir /apps/source/openalpr_sources && \
-    mkdir /apps/source/ansible_sources && \
+    mkdir /apps/source/ansible_sources && mkdir /apps/source/imagemagick_sources && \
     chown -R mpf /apps && chmod -R 755 /apps
 
 # Create the OpenMPF ldconfig file:
@@ -343,6 +343,24 @@ RUN cd /apps/source/openalpr_sources && git clone https://github.com/openalpr/op
     cp /usr/local/lib/libopenalpr.so.2 /usr/lib/libopenalpr.so.2 && \
     sh -c 'echo "export TESSDATA_PREFIX=/usr/local/src/openalpr/openalpr/runtime_data/ocr" >> /etc/profile.d/mpf.sh' && \
     ldconfig
+
+# ImageMagick 6.9.10:
+#RUN cd /apps/source/imagemagick_sources && \
+RUN wget -nv -O /apps/source/imagemagick_sources/ImageMagick-6.9.10-19.x86_64.rpm \
+    "https://imagemagick.org/download/linux/CentOS/x86_64/ImageMagick-6.9.10-19.x86_64.rpm" && \
+    wget -nv -O /apps/source/imagemagick_sources/ImageMagick-c++-6.9.10-19.x86_64.rpm \
+    "https://imagemagick.org/download/linux/CentOS/x86_64/ImageMagick-c++-6.9.10-19.x86_64.rpm" && \
+    wget -nv -O /apps/source/imagemagick_sources/ImageMagick-c++-devel-6.9.10-19.x86_64.rpm \
+    "https://imagemagick.org/download/linux/CentOS/x86_64/ImageMagick-c++-devel-6.9.10-19.x86_64.rpm" && \
+    wget -nv -O /apps/source/imagemagick_sources/ImageMagick-libs-6.9.10-19.x86_64.rpm \
+    "https://imagemagick.org/download/linux/CentOS/x86_64/ImageMagick-libs-6.9.10-19.x86_64.rpm" && \
+    wget -nv -O /apps/source/imagemagick_sources/ImageMagick-devel-6.9.10-19.x86_64.rpm \
+    "https://imagemagick.org/download/linux/CentOS/x86_64/ImageMagick-devel-6.9.10-19.x86_64.rpm"
+
+RUN cd /apps/source/imagemagick_sources && \
+    yum install -y ImageMagick-c++-devel-6.9.10-19.x86_64.rpm  ImageMagick-c++-6.9.10-19.x86_64.rpm \
+ImageMagick-6.9.10-19.x86_64.rpm ImageMagick-devel-6.9.10-19.x86_64.rpm ImageMagick-libs-6.9.10-19.x86_64.rpm
+
 
 ################################################################################
 # Build ActiveMQ                                                               #

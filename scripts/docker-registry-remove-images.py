@@ -254,4 +254,3 @@ if not dryRun:
 print
 print "To force garbage collection, run the following command on the registry host:"
 print "docker exec -it <registry-container-id> /bin/registry garbage-collect /etc/docker/registry/config.yml"
-
