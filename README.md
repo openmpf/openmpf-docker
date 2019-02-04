@@ -262,14 +262,39 @@ container:
 
 > INFO: Server startup in 26967 ms
 
-#### Log into the Workflow Manager and Add Nodes
+#### Log into the Workflow Manager and Configure Nodes
 
 You can reach the Workflow Manager at the following URL:
 
 `http://<ip-address-or-hostname-of-docker-host>:8080/workflow-manager`
 
-Once you have logged in, go to the Nodes page and add all of the available
-nodes.
+Once you have logged in, go to the Nodes web UI and check that one node is
+shown. The name of the node ends in a unique ID. That number corresponds
+to the ID of the Docker container. Optionally, modify the service configuration
+for that node if you want.
+
+By default, the following system properties are set in the Workflow Manager
+Docker image:
+
+- `node.auto.config.enabled`=true
+- `node.auto.unconfig.enabled`=true
+- `node.auto.config.num.services.per.component`=1
+
+With these settings, the Workflow Manager will automatically add the available
+node to the OpenMPF cluster and configure it with one service per type of
+component.
+
+If you set the first two properties to false, then when you restart the Docker
+Compose deployment you will need to manually add the node to the OpenMPF
+cluster using the Nodes UI and configure it. You will also need to manually
+remove the old service configuration entry for the previous node that is no
+longer available. Note that because Docker creates new containers when the
+deployment is restarted, each with a new unique ID, the service configuration
+cannot be reused between deployments.
+
+
+!!! TEST SINGLE-HOST DEPLOYMENT: Make sure this is accurate !!!
+
 
 #### Monitor the Containers
 
