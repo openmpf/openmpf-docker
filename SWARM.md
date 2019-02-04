@@ -236,11 +236,9 @@ cluster.
 
 If you set the first two properties to false, then when you restart the Docker
 Swarm deployment you will need to manually add nodes to the cluster using the
-Nodes UI and configure them. You will also need to manually remove the old
-service configuration entries for nodes that are no longer available. Note that
-because Docker creates new containers when the deployment is restarted, each
-with a new unique ID, the service configurations cannot be reused between
-deployments.
+Nodes UI and configure them. Note that because Docker creates new containers
+when the deployment is restarted, each with a new unique ID, the service
+configurations cannot be reused between deployments.
 
 #### Tearing Down the Stack
 

@@ -286,15 +286,8 @@ component.
 
 If you set the first two properties to false, then when you restart the Docker
 Compose deployment you will need to manually add the node to the OpenMPF
-cluster using the Nodes UI and configure it. You will also need to manually
-remove the old service configuration entry for the previous node that is no
-longer available. Note that because Docker creates new containers when the
-deployment is restarted, each with a new unique ID, the service configuration
-cannot be reused between deployments.
-
-
-!!! TEST SINGLE-HOST DEPLOYMENT: Make sure this is accurate !!!
-
+cluster using the Nodes UI and configure it. The service configuration is not
+persisted between deployments.
 
 #### Monitor the Containers
 
