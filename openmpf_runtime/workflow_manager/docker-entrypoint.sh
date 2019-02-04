@@ -29,6 +29,23 @@
 set -Ee -o pipefail -o xtrace
 
 ################################################################################
+# Helper Functions                                                             #
+################################################################################
+
+# updateOrAddProperty(1: file, 2: key, 3: value)
+updateOrAddProperty() {
+  file="$1"
+  key="$2"
+  value="$3"
+
+  if grep -q "^$key=" "$file"; then
+    sed -i "/$key=/s/=.*/=$value/" "$file"
+  else
+    echo "$key=$value" >> "$file"
+  fi
+}
+
+################################################################################
 # Initial Setup                                                                #
 ################################################################################
 
@@ -61,11 +78,13 @@ export JGROUPS_TCP_ADDRESS="$HOSTNAME"
 
 mkdir -p "$MPF_HOME/share/config"
 
-echo "node.auto.config.enabled=true" >> "$MPF_HOME/share/config/mpf-custom.properties"
-echo "node.auto.unconfig.enabled=true" >> "$MPF_HOME/share/config/mpf-custom.properties"
+mpfCustomPropertiesFile="$MPF_HOME/share/config/mpf-custom.properties"
+
+updateOrAddProperty "$mpfCustomPropertiesFile" "node.auto.config.enabled" "true"
+updateOrAddProperty "$mpfCustomPropertiesFile" "node.auto.unconfig.enabled" "true"
 
 # Update WFM segment size
-echo "detection.segment.target.length=1000" >> "$MPF_HOME/share/config/mpf-custom.properties"
+updateOrAddProperty "$mpfCustomPropertiesFile" "detection.segment.target.length" "1000"
 
 ################################################################################
 # Custom Steps                                                                 #
