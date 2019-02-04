@@ -72,19 +72,27 @@ fi
 # NOTE: $HOSTNAME is not known until runtime.
 export JGROUPS_TCP_ADDRESS="$HOSTNAME"
 
+markerFile="$MPF_HOME/share/config/.docker-entrypoint-init"
+
 ################################################################################
 # Configure Properties                                                         #
 ################################################################################
 
-mkdir -p "$MPF_HOME/share/config"
+# Configure properties only if this is the first time we're initializing
+# $MPF_HOME/share. This prevents overwriting user customizations made during
+# runtime or post-deployment.
 
-mpfCustomPropertiesFile="$MPF_HOME/share/config/mpf-custom.properties"
+if [ ! -f "$markerFile" ]; then
+  mkdir -p "$MPF_HOME/share/config"
 
-updateOrAddProperty "$mpfCustomPropertiesFile" "node.auto.config.enabled" "true"
-updateOrAddProperty "$mpfCustomPropertiesFile" "node.auto.unconfig.enabled" "true"
+  mpfCustomPropertiesFile="$MPF_HOME/share/config/mpf-custom.properties"
 
-# Update WFM segment size
-updateOrAddProperty "$mpfCustomPropertiesFile" "detection.segment.target.length" "1000"
+  updateOrAddProperty "$mpfCustomPropertiesFile" "node.auto.config.enabled" "true"
+  updateOrAddProperty "$mpfCustomPropertiesFile" "node.auto.unconfig.enabled" "true"
+
+  # Update WFM segment size
+  updateOrAddProperty "$mpfCustomPropertiesFile" "detection.segment.target.length" "1000"
+fi
 
 ################################################################################
 # Custom Steps                                                                 #
@@ -150,6 +158,12 @@ else
     echo 'HTTPS is not enabled'
     export CATALINA_OPTS="$CATALINA_OPTS -Dtransport.guarantee='NONE' -Dweb.rest.protocol='http'"
 fi
+
+################################################################################
+# Create Marker File                                                           #
+################################################################################
+
+echo `date` > "$markerFile"
 
 ################################################################################
 # Start Tomcat                                                                 #
