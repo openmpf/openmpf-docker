@@ -208,7 +208,7 @@ To monitor the log of the Workflow Manager, run:
 
 Press ctrl+c when done.
 
-#### Log into the Workflow Manager and Add Nodes
+#### Log into the Workflow Manager and Configure Nodes
 
 You can reach the Workflow Manager using IP address or hostname of any of the
 nodes in the swarm. The request will be forwarded to the node that is hosting
@@ -216,11 +216,29 @@ the Workflow Manager container.
 
 `http://<ip-address-or-hostname-of-any-node>:8080/workflow-manager`
 
-Once you have logged in, go to the Nodes page and add all of the available
-nodes. You should see that they each end in a unique ID. That number corresponds
-to the ID of the Docker container. The number of Node Manager containers that
-come up is determined by the `replicas:` field for each service listed in the
-`swarm-compose.yml` file. Feel free to change it if you please.
+Once you have logged in, go to the Nodes web UI and check that the number of
+nodes that are shown corresponds to the number of nodes in the swarm. You should
+see that the name of each node ends in a unique ID. That number corresponds
+to the ID of the Docker container. Optionally, modify the service configuration
+for those nodes if you want.
+
+By default, the following system properties are set in the Workflow Manager
+Docker image:
+
+- `node.auto.config.enabled`=true
+- `node.auto.unconfig.enabled`=true
+- `node.auto.config.num.services.per.component`=1
+
+With these settings, the Workflow Manager will automatically add all available
+nodes to the OpenMPF cluster and configure them with one service per type of
+component. Also, the Workflow Manager will unconfigure nodes when they leave the
+cluster.
+
+If you set the first two properties to false, then when you restart the Docker
+Swarm deployment you will need to manually add nodes to the cluster using the
+Nodes UI and configure them. Note that because Docker creates new containers
+when the deployment is restarted, each with a new unique ID, the service
+configurations are not persisted between deployments.
 
 #### Tearing Down the Stack
 
@@ -287,7 +305,7 @@ This does not remove the Docker images.
 Refer to the steps listed in the [(Optional) Add GPU support with NVIDIA
 CUDA](README.md#optional-add-gpu-support-with-nvidia-cuda) section in the
 README. Those instructions are for a single-host Docker Compose deployment. All
-of the same steps apply to a Docker SWARM deployment with the exception of the
+of the same steps apply to a Docker Swarm deployment with the exception of the
 steps involving the `runtime: nvidia` flag. This is because `swarm-compose.yml`
 supports a different Docker Compose file version than `docker-compose.yml`. That
 version does not support that flag.

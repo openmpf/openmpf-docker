@@ -29,6 +29,23 @@
 set -Ee -o pipefail -o xtrace
 
 ################################################################################
+# Helper Functions                                                             #
+################################################################################
+
+# updateOrAddProperty(1: file, 2: key, 3: value)
+updateOrAddProperty() {
+  file="$1"
+  key="$2"
+  value="$3"
+
+  if grep -q "^$key=" "$file"; then
+    sed -i "/$key=/s/=.*/=$value/" "$file"
+  else
+    echo "$key=$value" >> "$file"
+  fi
+}
+
+################################################################################
 # Initial Setup                                                                #
 ################################################################################
 
@@ -55,17 +72,27 @@ fi
 # NOTE: $HOSTNAME is not known until runtime.
 export JGROUPS_TCP_ADDRESS="$HOSTNAME"
 
+markerFile="$MPF_HOME/share/config/.docker-entrypoint-init"
+
 ################################################################################
 # Configure Properties                                                         #
 ################################################################################
 
-mkdir -p "$MPF_HOME/share/config"
+# Configure properties only if this is the first time we're initializing
+# $MPF_HOME/share. This prevents overwriting user customizations made during
+# runtime or post-deployment.
 
-echo "node.auto.config.enabled=true" >> "$MPF_HOME/share/config/mpf-custom.properties"
-echo "node.auto.unconfig.enabled=true" >> "$MPF_HOME/share/config/mpf-custom.properties"
+if [ ! -f "$markerFile" ]; then
+  mkdir -p "$MPF_HOME/share/config"
 
-# Update WFM segment size
-echo "detection.segment.target.length=1000" >> "$MPF_HOME/share/config/mpf-custom.properties"
+  mpfCustomPropertiesFile="$MPF_HOME/share/config/mpf-custom.properties"
+
+  updateOrAddProperty "$mpfCustomPropertiesFile" "node.auto.config.enabled" "true"
+  updateOrAddProperty "$mpfCustomPropertiesFile" "node.auto.unconfig.enabled" "true"
+
+  # Update WFM segment size
+  updateOrAddProperty "$mpfCustomPropertiesFile" "detection.segment.target.length" "1000"
+fi
 
 ################################################################################
 # Custom Steps                                                                 #
@@ -131,6 +158,12 @@ else
     echo 'HTTPS is not enabled'
     export CATALINA_OPTS="$CATALINA_OPTS -Dtransport.guarantee='NONE' -Dweb.rest.protocol='http'"
 fi
+
+################################################################################
+# Create Marker File                                                           #
+################################################################################
+
+echo `date` > "$markerFile"
 
 ################################################################################
 # Start Tomcat                                                                 #
