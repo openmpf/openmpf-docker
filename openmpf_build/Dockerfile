@@ -325,7 +325,7 @@ RUN wget -nv -O /apps/source/openalpr_sources/tesseract-4.0.0.tar.gz \
     cp -a /apps/source/openalpr_sources/tesseract-4.0.0/. \
     /usr/local/src/openalpr/tesseract-ocr/ && \
     chown -R mpf /usr/local/src/openalpr && chmod -R 755 /usr/local/src/openalpr && \
-    cd /usr/local/src/openalpr/tesseract-ocr && sh autogen.sh &&
+    cd /usr/local/src/openalpr/tesseract-ocr && sh autogen.sh && \
     PKG_CONFIG_PATH=/usr/local/lib/pkgconfig LIBLEPT_HEADERSDIR=/usr/local/include ./configure \
     --prefix=/usr/local --with-extra-libraries=/usr/local/lib && \
     make --directory /usr/local/src/openalpr/tesseract-ocr -j && \
