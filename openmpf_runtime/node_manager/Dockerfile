@@ -143,17 +143,7 @@ RUN ln -s $MPF_HOME/bin/ffmpeg /usr/bin/ffmpeg && \
     ln -s $MPF_HOME/bin/ffprobe /usr/bin/ffprobe
 
 # Setup ImageMagick
-COPY --from=openmpf_build /apps/source/imagemagick_sources/ImageMagick-6.9.10-19.x86_64.rpm /home/mpf/
-COPY --from=openmpf_build /apps/source/imagemagick_sources/ImageMagick-c++-6.9.10-19.x86_64.rpm /home/mpf/
-COPY --from=openmpf_build /apps/source/imagemagick_sources/ImageMagick-c++-devel-6.9.10-19.x86_64.rpm /home/mpf/
-COPY --from=openmpf_build /apps/source/imagemagick_sources/ImageMagick-libs-6.9.10-19.x86_64.rpm /home/mpf/
-COPY --from=openmpf_build /apps/source/imagemagick_sources/ImageMagick-devel-6.9.10-19.x86_64.rpm /home/mpf/
-
-RUN cd /home/mpf/ && \
-    yum install -y ImageMagick-c++-devel-6.9.10-19.x86_64.rpm  ImageMagick-c++-6.9.10-19.x86_64.rpm \
-    ImageMagick-6.9.10-19.x86_64.rpm ImageMagick-devel-6.9.10-19.x86_64.rpm ImageMagick-libs-6.9.10-19.x86_64.rpm && \
-    rm ImageMagick-c++-devel-6.9.10-19.x86_64.rpm  ImageMagick-c++-6.9.10-19.x86_64.rpm \
-    ImageMagick-6.9.10-19.x86_64.rpm ImageMagick-devel-6.9.10-19.x86_64.rpm ImageMagick-libs-6.9.10-19.x86_64.rpm
+RUN yum install ImageMagick6 ImageMagick6-c++ ImageMagick6-c++-devel ImageMagick6-devel ImageMagick6-libs
 
 RUN ldconfig
 
