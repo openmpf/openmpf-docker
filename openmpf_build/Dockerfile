@@ -300,14 +300,16 @@ RUN wget -nv -O /apps/source/config4cpp.tar.gz "http://www.config4star.org/downl
     cmake3 --build . --config Release && make install
 
 # Leptonica 1.75.0:
-wget -nv -O /apps/source/tesseract_sources/leptonica-1.75.0.tar.gz "https://github.com/DanBloomberg/leptonica/archive/1.75.0.tar.gz"
+wget -nv -O /apps/source/tesseract_sources/leptonica-1.75.0.tar.gz \
+    "https://github.com/DanBloomberg/leptonica/archive/1.75.0.tar.gz" && \
     cd /apps/source/tesseract_sources &&  tar xvzf leptonica-1.75.0.tar.gz && \
     cd /apps/source/tesseract_sources/leptonica-1.75.0 && mkdir build && cd build && \
     cmake3 -DCMAKE_INSTALL_PREFIX:PATH=/usr/local .. && make install && \
     ldconfig
 
 # Tesseract 4.0.0:
-RUN wget -nv -O /apps/source/tesseract_sources/tesseract-4.0.0.tar.gz "https://github.com/tesseract-ocr/tesseract/archive/4.0.0.tar.gz"
+RUN wget -nv -O /apps/source/tesseract_sources/tesseract-4.0.0.tar.gz \
+    "https://github.com/tesseract-ocr/tesseract/archive/4.0.0.tar.gz" && \
     cd /apps/source/tesseract_sources && tar xzf tesseract-4.0.0.tar.gz && \
     wget -nv -O /apps/source/tesseract_sources/tessdata-4.0.0.tar.gz "https://github.com/tesseract-ocr/tessdata/archive/4.0.0.tar.gz" && \
     tar xzf tessdata-4.0.0.tar.gz && \
