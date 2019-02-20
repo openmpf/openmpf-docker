@@ -300,7 +300,7 @@ RUN wget -nv -O /apps/source/config4cpp.tar.gz "http://www.config4star.org/downl
     cmake3 --build . --config Release && make install
 
 # Leptonica 1.75.0:
-wget -nv -O /apps/source/tesseract_sources/leptonica-1.75.0.tar.gz \
+RUN wget -nv -O /apps/source/tesseract_sources/leptonica-1.75.0.tar.gz \
     "https://github.com/DanBloomberg/leptonica/archive/1.75.0.tar.gz" && \
     cd /apps/source/tesseract_sources &&  tar xvzf leptonica-1.75.0.tar.gz && \
     cd /apps/source/tesseract_sources/leptonica-1.75.0 && mkdir build && cd build && \
