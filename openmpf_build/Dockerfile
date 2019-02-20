@@ -51,7 +51,7 @@ RUN mkdir -p /apps/install/lib && mkdir -p /apps/bin/apache && \
     mkdir /apps/source/apache_sources && mkdir /apps/source/google_sources && \
     mkdir /apps/source/opencv_sources && mkdir /apps/source/ffmpeg_sources && \
     mkdir /apps/source/dlib-sources && mkdir /apps/source/openalpr_sources && \
-    mkdir /apps/source/ansible_sources && \
+    mkdir /apps/source/ansible_sources && mkdir /apps/source/tesseract_sources && \
     chown -R mpf /apps && chmod -R 755 /apps
 
 # Create the OpenMPF ldconfig file:
