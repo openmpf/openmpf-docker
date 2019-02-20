@@ -300,57 +300,31 @@ RUN wget -nv -O /apps/source/config4cpp.tar.gz "http://www.config4star.org/downl
     cmake3 --build . --config Release && make install
 
 # Leptonica 1.75.0:
-RUN wget -nv -O /apps/source/openalpr_sources/leptonica-1.75.0.tar.gz\
-    "https://github.com/DanBloomberg/leptonica/releases/download/1.75.0/leptonica-1.75.0.tar.gz" && \
-    cd /apps/source/openalpr_sources && mkdir /usr/local/src/openalpr && \
-    cp leptonica-1.75.0.tar.gz /usr/local/src/openalpr && \
-    cd /usr/local/src/openalpr/ && tar xvzf leptonica-1.75.0.tar.gz && \
-    rm leptonica-1.75.0.tar.gz && \
-    chown -R mpf /usr/local/src/openalpr && chmod -R 755 /usr/local/src/openalpr && \
-    cd /usr/local/src/openalpr/leptonica-1.75.0 && ./configure --prefix=/usr/local && \
-    make --directory /usr/local/src/openalpr/leptonica-1.75.0 -j && \
-    make --directory /usr/local/src/openalpr/leptonica-1.75.0 install && \
-    make --directory /usr/local/src/openalpr/leptonica-1.75.0 distclean && \
+wget -nv -O /apps/source/tesseract_sources/leptonica-1.75.0.tar.gz "https://github.com/DanBloomberg/leptonica/archive/1.75.0.tar.gz"
+    cd /apps/source/tesseract_sources &&  tar xvzf leptonica-1.75.0.tar.gz && \
+    cd /apps/source/tesseract_sources/leptonica-1.75.0 && mkdir build && cd build && \
+    cmake3 -DCMAKE_INSTALL_PREFIX:PATH=/usr/local .. && make install && \
     ldconfig
 
 # Tesseract 4.0.0:
-RUN wget -nv -O /apps/source/openalpr_sources/tesseract-4.0.0.tar.gz \
-    "https://github.com/tesseract-ocr/tesseract/archive/4.0.0.tar.gz" && \
-    cd /apps/source/openalpr_sources && tar xzf tesseract-4.0.0.tar.gz && \
-    wget -nv -O /apps/source/openalpr_sources/tessdata-4.0.0.tar.gz \
-    "https://github.com/tesseract-ocr/tessdata/archive/4.0.0.tar.gz" && \
-    tar xzf tessdata-4.0.0.tar.gz && mkdir -p /usr/local/src/openalpr/tesseract-ocr && \
-    cp -a /apps/source/openalpr_sources/tessdata-4.0.0/. \
-    /usr/local/src/openalpr/tesseract-ocr/tessdata/ && \
-    cp -a /apps/source/openalpr_sources/tesseract-4.0.0/. \
-    /usr/local/src/openalpr/tesseract-ocr/ && \
-    chown -R mpf /usr/local/src/openalpr && chmod -R 755 /usr/local/src/openalpr && \
-    cd /usr/local/src/openalpr/tesseract-ocr && sh autogen.sh && \
-    PKG_CONFIG_PATH=/usr/local/lib/pkgconfig LIBLEPT_HEADERSDIR=/usr/local/include ./configure \
-    --prefix=/usr/local --with-extra-libraries=/usr/local/lib && \
-    make --directory /usr/local/src/openalpr/tesseract-ocr -j && \
-    make --directory /usr/local/src/openalpr/tesseract-ocr install && \
+RUN wget -nv -O /apps/source/tesseract_sources/tesseract-4.0.0.tar.gz "https://github.com/tesseract-ocr/tesseract/archive/4.0.0.tar.gz"
+    cd /apps/source/tesseract_sources && tar xzf tesseract-4.0.0.tar.gz && \
+    wget -nv -O /apps/source/tesseract_sources/tessdata-4.0.0.tar.gz "https://github.com/tesseract-ocr/tessdata/archive/4.0.0.tar.gz" && \
+    tar xzf tessdata-4.0.0.tar.gz && \
+    cp -a /apps/source/tesseract_sources/tessdata-4.0.0/. /apps/source/tesseract_sources/tesseract-4.0.0/tessdata && \
+    mkdir /apps/source/tesseract_sources/tesseract-4.0.0/build && cd /apps/source/tesseract_sources/tesseract-4.0.0/build && \
+    PKG_CONFIG_PATH=/usr/local/lib/pkgconfig cmake3 -DCMAKE_INSTALL_PREFIX:PATH=/usr/local .. && make install && \
     ldconfig
 
 # OpenALPR 2.3.0:
 RUN cd /apps/source/openalpr_sources && git clone https://github.com/openalpr/openalpr.git && \
     cd openalpr && git checkout 6ead2fb8f72ac1929a2e04912c5795af0bf37761 && \
-    cp -a /apps/source/openalpr_sources/openalpr /usr/local/src/openalpr/  && \
-    mkdir -p /usr/local/src/openalpr/openalpr/src/build && \
-    cd /usr/local/src/openalpr/openalpr/src/build && \
-    cmake3 -DCMAKE_CXX_STANDARD=11 -DCMAKE_CXX_STANDARD_REQUIRED=ON -j \
-    --DCmake3 -j_INSTALL_PREFIX:PATH=/usr -D WITH_DAEMON=OFF ../ && \
-    make --directory /usr/local/src/openalpr/openalpr/src/build -j && \
-    make --directory /usr/local/src/openalpr/openalpr/src/build install && \
-    ln -sf /usr/local/src/openalpr/openalpr /usr/share/openalpr && \
-    cp -a /usr/local/lib/libopenalpr.so /usr/lib/libopenalpr.so && \
-    cp /usr/local/lib/libopenalpr.so.2 /usr/lib/libopenalpr.so.2 && \
-    cp -a /usr/local/lib/libtesseract.so /usr/lib/libtesseract.so && \
-    cp -a /usr/local/lib/libtesseract.so.4 /usr/lib/libtesseract.so.4 && \
-    cp /usr/local/lib/libtesseract.so.4.0.0 /usr/lib/libtesseract.so.4.0.0 && \
-    cp -a /usr/local/lib/liblept.so.5 /usr/lib/liblept.so.5 && \
-    cp /usr/local/lib/liblept.so.5.0.2 /usr/lib/liblept.so.5.0.2 && \
-    sh -c 'echo "export TESSDATA_PREFIX=/usr/local/src/openalpr/openalpr/runtime_data/ocr" >> /etc/profile.d/mpf.sh' && \
+    mkdir /apps/source/openalpr_sources/openalpr/src/build && \
+    cd /apps/source/openalpr_sources/openalpr/src/build && \
+    cmake3 -DCMAKE_CXX_STANDARD=11 -DCMAKE_CXX_STANDARD_REQUIRED=ON --DCmake3 -j \
+    -D Leptonica_LIB=/usr/local/lib/libleptonica.so -D CMAKE_INSTALL_PREFIX:PATH=/usr/local -D WITH_DAEMON=OFF .. && \
+    make -j && make install && \
+    sh -c 'echo "export TESSDATA_PREFIX=/apps/source/openalpr_sources/openalpr/runtime_data/ocr" >> /etc/profile.d/mpf.sh' && \
     ldconfig
 
 # ImageMagick6 :
