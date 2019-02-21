@@ -145,6 +145,7 @@ RUN ln -s $MPF_HOME/bin/ffmpeg /usr/bin/ffmpeg && \
 # ImageMagick6 :
 RUN yum install -y http://rpms.remirepo.net/enterprise/remi-release-7.rpm
 RUN yum --enablerepo=remi install -y ImageMagick6 ImageMagick6-c++ ImageMagick6-c++-devel ImageMagick6-devel ImageMagick6-libs
+RUN yum clean all && rm -rf /var/cache/yum/*
 
 RUN ldconfig
 
