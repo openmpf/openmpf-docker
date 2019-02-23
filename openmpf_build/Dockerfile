@@ -319,8 +319,8 @@ RUN wget -nv -O /apps/source/tesseract_sources/tesseract-4.0.0.tar.gz \
 RUN cd /apps/source/openalpr_sources && git clone https://github.com/openalpr/openalpr.git && \
     cd openalpr && git checkout 6ead2fb8f72ac1929a2e04912c5795af0bf37761 && \
     mkdir src/build && cd src/build && \
-    cmake3 -D CMAKE_CXX_STANDARD=11 -D CMAKE_CXX_STANDARD_REQUIRED=ON -D \
-    Leptonica_LIB=/usr/local/lib/libleptonica.so -D CMAKE_INSTALL_PREFIX:PATH=/usr/local -D WITH_DAEMON=OFF .. && \
+    cmake3 -D CMAKE_CXX_STANDARD=11 -D CMAKE_CXX_STANDARD_REQUIRED=ON -D Leptonica_LIB=/usr/local/lib/libleptonica.so \
+    -D CMAKE_INSTALL_PREFIX:PATH=/usr/local -D WITH_DAEMON=OFF .. && \
     make install -j && \
     ldconfig
 
