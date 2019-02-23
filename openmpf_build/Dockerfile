@@ -311,9 +311,6 @@ RUN wget -nv -O /apps/source/tesseract_sources/leptonica-1.75.0.tar.gz \
 RUN wget -nv -O /apps/source/tesseract_sources/tesseract-4.0.0.tar.gz \
     "https://github.com/tesseract-ocr/tesseract/archive/4.0.0.tar.gz" && \
     cd /apps/source/tesseract_sources && tar xzf tesseract-4.0.0.tar.gz && \
-    wget -nv -O /apps/source/tesseract_sources/tessdata-4.0.0.tar.gz "https://github.com/tesseract-ocr/tessdata/archive/4.0.0.tar.gz" && \
-    tar xzf tessdata-4.0.0.tar.gz && \
-    cp -a /apps/source/tesseract_sources/tessdata-4.0.0/. /apps/source/tesseract_sources/tesseract-4.0.0/tessdata && \
     mkdir /apps/source/tesseract_sources/tesseract-4.0.0/build && cd /apps/source/tesseract_sources/tesseract-4.0.0/build && \
     PKG_CONFIG_PATH=/usr/local/lib/pkgconfig cmake3 -DCMAKE_INSTALL_PREFIX:PATH=/usr/local .. && make install && \
     ldconfig
@@ -321,18 +318,17 @@ RUN wget -nv -O /apps/source/tesseract_sources/tesseract-4.0.0.tar.gz \
 # OpenALPR 2.3.0:
 RUN cd /apps/source/openalpr_sources && git clone https://github.com/openalpr/openalpr.git && \
     cd openalpr && git checkout 6ead2fb8f72ac1929a2e04912c5795af0bf37761 && \
-    mkdir /apps/source/openalpr_sources/openalpr/src/build && \
-    cd /apps/source/openalpr_sources/openalpr/src/build && \
-    cmake3 -DCMAKE_CXX_STANDARD=11 -DCMAKE_CXX_STANDARD_REQUIRED=ON --DCmake3 -j \
-    -D Leptonica_LIB=/usr/local/lib/libleptonica.so -D CMAKE_INSTALL_PREFIX:PATH=/usr/local -D WITH_DAEMON=OFF .. && \
-    make -j && make install && \
-    sh -c 'echo "export TESSDATA_PREFIX=/apps/source/openalpr_sources/openalpr/runtime_data/ocr" >> /etc/profile.d/mpf.sh' && \
+    mkdir src/build && cd src/build && \
+    cmake3 -D CMAKE_CXX_STANDARD=11 -D CMAKE_CXX_STANDARD_REQUIRED=ON -D \
+    Leptonica_LIB=/usr/local/lib/libleptonica.so -D CMAKE_INSTALL_PREFIX:PATH=/usr/local -D WITH_DAEMON=OFF .. && \
+    make install -j && \
     ldconfig
 
 # ImageMagick6 :
-RUN yum install -y http://rpms.remirepo.net/enterprise/remi-release-7.rpm
-RUN yum --enablerepo=remi install -y ImageMagick6 ImageMagick6-c++ ImageMagick6-c++-devel ImageMagick6-devel ImageMagick6-libs
-RUN yum clean all && rm -rf /var/cache/yum/*
+RUN yum install -y http://rpms.remirepo.net/enterprise/remi-release-7.rpm && \
+    yum --enablerepo=remi install -y ImageMagick6 ImageMagick6-c++ \
+    ImageMagick6-c++-devel ImageMagick6-devel ImageMagick6-libs && \
+    yum clean all && rm -rf /var/cache/yum/*
 
 ################################################################################
 # Build ActiveMQ                                                               #
