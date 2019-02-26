@@ -51,7 +51,7 @@ RUN mkdir -p /apps/install/lib && mkdir -p /apps/bin/apache && \
     mkdir /apps/source/apache_sources && mkdir /apps/source/google_sources && \
     mkdir /apps/source/opencv_sources && mkdir /apps/source/ffmpeg_sources && \
     mkdir /apps/source/dlib-sources && mkdir /apps/source/openalpr_sources && \
-    mkdir /apps/source/ansible_sources && mkdir /apps/source/imagemagick_sources && \
+    mkdir /apps/source/ansible_sources && mkdir /apps/source/tesseract_sources && \
     chown -R mpf /apps && chmod -R 755 /apps
 
 # Create the OpenMPF ldconfig file:
@@ -299,68 +299,36 @@ RUN wget -nv -O /apps/source/config4cpp.tar.gz "http://www.config4star.org/downl
     cd dlib-18.18/dlib && mkdir build && cd build && cmake3 ../ && \
     cmake3 --build . --config Release && make install
 
-# Leptonica 1.72:
-RUN wget -nv -O /apps/source/openalpr_sources/leptonica-1.72.tar.gz \
-    "https://github.com/DanBloomberg/leptonica/archive/v1.72.tar.gz" && \
-    cd /apps/source/openalpr_sources && tar xzf leptonica-1.72.tar.gz && \
-    mkdir /usr/local/src/openalpr && \
-    cp -R /apps/source/openalpr_sources/leptonica-1.72 /usr/local/src/openalpr/ && \
-    chown -R mpf /usr/local/src/openalpr && chmod -R 755 /usr/local/src/openalpr && \
-    cd /usr/local/src/openalpr/leptonica-1.72 && ./configure --prefix=/usr/local && \
-    make --directory /usr/local/src/openalpr/leptonica-1.72 -j && \
-    make --directory /usr/local/src/openalpr/leptonica-1.72 install && \
-    make --directory /usr/local/src/openalpr/leptonica-1.72 distclean && \
+# Leptonica 1.75.0:
+RUN wget -nv -O /apps/source/tesseract_sources/leptonica-1.75.0.tar.gz \
+    "https://github.com/DanBloomberg/leptonica/archive/1.75.0.tar.gz" && \
+    cd /apps/source/tesseract_sources &&  tar xvzf leptonica-1.75.0.tar.gz && \
+    cd /apps/source/tesseract_sources/leptonica-1.75.0 && mkdir build && cd build && \
+    cmake3 -DCMAKE_INSTALL_PREFIX:PATH=/usr/local .. && make install && \
     ldconfig
 
-# Tesseract 3.04.00:
-RUN wget -nv -O /apps/source/openalpr_sources/tesseract-3.04.00.tar.gz \
-    "https://github.com/tesseract-ocr/tesseract/archive/3.04.00.tar.gz" && \
-    cd /apps/source/openalpr_sources && tar xzf tesseract-3.04.00.tar.gz && \
-    wget -nv -O /apps/source/openalpr_sources/tessdata-3.04.00.tar.gz \
-    "https://github.com/tesseract-ocr/tessdata/archive/3.04.00.tar.gz" && \
-    tar xzf tessdata-3.04.00.tar.gz && mkdir -p /usr/local/src/openalpr/tesseract-ocr && \
-    cp -a /apps/source/openalpr_sources/tessdata-3.04.00/. \
-    /usr/local/src/openalpr/tesseract-ocr/tessdata/ && \
-    cp -a /apps/source/openalpr_sources/tesseract-3.04.00/. \
-    /usr/local/src/openalpr/tesseract-ocr/ && \
-    chown -R mpf /usr/local/src/openalpr && chmod -R 755 /usr/local/src/openalpr && \
-    cd /usr/local/src/openalpr/tesseract-ocr && sh autogen.sh && ./configure && \
-    make --directory /usr/local/src/openalpr/tesseract-ocr -j && \
-    make --directory /usr/local/src/openalpr/tesseract-ocr install && \
+# Tesseract 4.0.0:
+RUN wget -nv -O /apps/source/tesseract_sources/tesseract-4.0.0.tar.gz \
+    "https://github.com/tesseract-ocr/tesseract/archive/4.0.0.tar.gz" && \
+    cd /apps/source/tesseract_sources && tar xzf tesseract-4.0.0.tar.gz && \
+    mkdir /apps/source/tesseract_sources/tesseract-4.0.0/build && cd /apps/source/tesseract_sources/tesseract-4.0.0/build && \
+    PKG_CONFIG_PATH=/usr/local/lib/pkgconfig cmake3 -DCMAKE_INSTALL_PREFIX:PATH=/usr/local .. && make install && \
     ldconfig
 
 # OpenALPR 2.3.0:
 RUN cd /apps/source/openalpr_sources && git clone https://github.com/openalpr/openalpr.git && \
-    cd openalpr && git checkout 469c4fd6d782ac63a55246d1073b0f88edd0d230 && \
-    cp -a /apps/source/openalpr_sources/openalpr /usr/local/src/openalpr/  && \
-    mkdir -p /usr/local/src/openalpr/openalpr/src/build && \
-    cd /usr/local/src/openalpr/openalpr/src/build && \
-    cmake3 -j --DCmake3 -j_INSTALL_PREFIX:PATH=/usr -D WITH_DAEMON=OFF ../ && \
-    make --directory /usr/local/src/openalpr/openalpr/src/build -j && \
-    make --directory /usr/local/src/openalpr/openalpr/src/build install && \
-    ln -sf /usr/local/src/openalpr/openalpr /usr/share/openalpr && \
-    cp -a /usr/local/lib/libopenalpr.so /usr/lib/libopenalpr.so && \
-    cp /usr/local/lib/libopenalpr.so.2 /usr/lib/libopenalpr.so.2 && \
-    sh -c 'echo "export TESSDATA_PREFIX=/usr/local/src/openalpr/openalpr/runtime_data/ocr" >> /etc/profile.d/mpf.sh' && \
+    cd openalpr && git checkout 6ead2fb8f72ac1929a2e04912c5795af0bf37761 && \
+    mkdir src/build && cd src/build && \
+    cmake3 -D CMAKE_CXX_STANDARD=11 -D CMAKE_CXX_STANDARD_REQUIRED=ON -D Leptonica_LIB=/usr/local/lib/libleptonica.so \
+    -D CMAKE_INSTALL_PREFIX:PATH=/usr/local -D WITH_DAEMON=OFF .. && \
+    make install -j && \
     ldconfig
 
-# ImageMagick 6.9.10:
-#RUN cd /apps/source/imagemagick_sources && \
-RUN wget -nv -O /apps/source/imagemagick_sources/ImageMagick-6.9.10-19.x86_64.rpm \
-    "https://imagemagick.org/download/linux/CentOS/x86_64/ImageMagick-6.9.10-19.x86_64.rpm" && \
-    wget -nv -O /apps/source/imagemagick_sources/ImageMagick-c++-6.9.10-19.x86_64.rpm \
-    "https://imagemagick.org/download/linux/CentOS/x86_64/ImageMagick-c++-6.9.10-19.x86_64.rpm" && \
-    wget -nv -O /apps/source/imagemagick_sources/ImageMagick-c++-devel-6.9.10-19.x86_64.rpm \
-    "https://imagemagick.org/download/linux/CentOS/x86_64/ImageMagick-c++-devel-6.9.10-19.x86_64.rpm" && \
-    wget -nv -O /apps/source/imagemagick_sources/ImageMagick-libs-6.9.10-19.x86_64.rpm \
-    "https://imagemagick.org/download/linux/CentOS/x86_64/ImageMagick-libs-6.9.10-19.x86_64.rpm" && \
-    wget -nv -O /apps/source/imagemagick_sources/ImageMagick-devel-6.9.10-19.x86_64.rpm \
-    "https://imagemagick.org/download/linux/CentOS/x86_64/ImageMagick-devel-6.9.10-19.x86_64.rpm"
-
-RUN cd /apps/source/imagemagick_sources && \
-    yum install -y ImageMagick-c++-devel-6.9.10-19.x86_64.rpm  ImageMagick-c++-6.9.10-19.x86_64.rpm \
-ImageMagick-6.9.10-19.x86_64.rpm ImageMagick-devel-6.9.10-19.x86_64.rpm ImageMagick-libs-6.9.10-19.x86_64.rpm
-
+# ImageMagick6 :
+RUN yum install -y http://rpms.remirepo.net/enterprise/remi-release-7.rpm && \
+    yum --enablerepo=remi install -y ImageMagick6 ImageMagick6-c++ \
+    ImageMagick6-c++-devel ImageMagick6-devel ImageMagick6-libs && \
+    yum clean all && rm -rf /var/cache/yum/*
 
 ################################################################################
 # Build ActiveMQ                                                               #
