@@ -37,18 +37,27 @@ ARG OPENMPF_BUILD_TOOLS_SHA
 FROM centos:7.4.1708 as openmpf_build
 WORKDIR /home/mpf
 
+# Clear inherited labels
+
+LABEL build-date= \
+      license= \
+      name= \
+      vendor=
+
+# Set labels
+
 LABEL org.label-schema.schema-version="1.0" \
       org.label-schema.url="https://github.com/openmpf" \
       org.label-schema.name="OpenMPF Build Environment" \
       org.label-schema.version=$BUILD_VERSION \
       org.label-schema.build-date=$BUILD_DATE \
-      openmpf-sha=$OPENMPF_SHA \
-      openmpf-components-sha=$OPENMPF_COMPONENTS_SHA \
-      openmpf-contrib-components-sha=$OPENMPF_CONTRIB_COMPONENTS_SHA \
-      openmpf-cpp-component-sdk-sha=$OPENMPF_CPP_COMPONENT_SDK_SHA \
-      openmpf-java-component-sdk-sha=$OPENMPF_JAVA_COMPONENT_SDK_SHA \
-      openmpf-python-component-sdk-sha=$OPENMPF_PYTHON_COMPONENT_SDK_SHA \
-      openmpf-build-tools-sha=$OPENMPF_BUILD_TOOLS_SHA
+      org.mitre.mpf.openmpf-sha=$OPENMPF_SHA \
+      org.mitre.mpf.openmpf-components-sha=$OPENMPF_COMPONENTS_SHA \
+      org.mitre.mpf.openmpf-contrib-components-sha=$OPENMPF_CONTRIB_COMPONENTS_SHA \
+      org.mitre.mpf.openmpf-cpp-component-sdk-sha=$OPENMPF_CPP_COMPONENT_SDK_SHA \
+      org.mitre.mpf.openmpf-java-component-sdk-sha=$OPENMPF_JAVA_COMPONENT_SDK_SHA \
+      org.mitre.mpf.openmpf-python-component-sdk-sha=$OPENMPF_PYTHON_COMPONENT_SDK_SHA \
+      org.mitre.mpf.openmpf-build-tools-sha=$OPENMPF_BUILD_TOOLS_SHA
 
 ################################################################################
 # Initial Setup                                                                #
