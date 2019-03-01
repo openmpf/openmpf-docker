@@ -34,6 +34,9 @@ ARG OPENMPF_JAVA_COMPONENT_SDK_SHA
 ARG OPENMPF_PYTHON_COMPONENT_SDK_SHA
 ARG OPENMPF_BUILD_TOOLS_SHA
 
+FROM centos:7.4.1708 as openmpf_build
+WORKDIR /home/mpf
+
 LABEL org.label-schema.schema-version="1.0" \
       org.label-schema.url="https://github.com/openmpf" \
       org.label-schema.name="OpenMPF Build Environment" \
@@ -46,9 +49,6 @@ LABEL org.label-schema.schema-version="1.0" \
       openmpf-java-component-sdk-sha=$OPENMPF_JAVA_COMPONENT_SDK_SHA \
       openmpf-python-component-sdk-sha=$OPENMPF_PYTHON_COMPONENT_SDK_SHA \
       openmpf-build-tools-sha=$OPENMPF_BUILD_TOOLS_SHA
-
-FROM centos:7.4.1708 as openmpf_build
-WORKDIR /home/mpf
 
 # TODO: "&&" remove source code after building libs.
 
