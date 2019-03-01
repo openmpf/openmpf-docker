@@ -61,6 +61,4 @@ RUN useradd -u 376 -U -d /home/mpf -ms /bin/bash -G wheel -p mpf mpf
 # Prepare Entrypoint                                                           #
 ################################################################################
 
-COPY docker-entrypoint.sh /home/mpf
-RUN dos2unix -q /home/mpf/docker-entrypoint.sh
-ENTRYPOINT ["/home/mpf/docker-entrypoint.sh"]
+ENTRYPOINT ["date"]
