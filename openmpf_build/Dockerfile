@@ -33,31 +33,10 @@ ARG OPENMPF_CPP_COMPONENT_SDK_SHA
 ARG OPENMPF_JAVA_COMPONENT_SDK_SHA
 ARG OPENMPF_PYTHON_COMPONENT_SDK_SHA
 ARG OPENMPF_BUILD_TOOLS_SHA
+ARG OPENMPF_DOCKER_SHA
 
 FROM centos:7.4.1708 as openmpf_build
 WORKDIR /home/mpf
-
-# Clear inherited labels
-
-LABEL build-date= \
-      license= \
-      name= \
-      vendor=
-
-# Set labels
-
-LABEL org.label-schema.schema-version="1.0" \
-      org.label-schema.url="https://github.com/openmpf" \
-      org.label-schema.name="OpenMPF Build Environment" \
-      org.label-schema.version=$BUILD_VERSION \
-      org.label-schema.build-date=$BUILD_DATE \
-      org.mitre.mpf.openmpf-sha=$OPENMPF_SHA \
-      org.mitre.mpf.openmpf-components-sha=$OPENMPF_COMPONENTS_SHA \
-      org.mitre.mpf.openmpf-contrib-components-sha=$OPENMPF_CONTRIB_COMPONENTS_SHA \
-      org.mitre.mpf.openmpf-cpp-component-sdk-sha=$OPENMPF_CPP_COMPONENT_SDK_SHA \
-      org.mitre.mpf.openmpf-java-component-sdk-sha=$OPENMPF_JAVA_COMPONENT_SDK_SHA \
-      org.mitre.mpf.openmpf-python-component-sdk-sha=$OPENMPF_PYTHON_COMPONENT_SDK_SHA \
-      org.mitre.mpf.openmpf-build-tools-sha=$OPENMPF_BUILD_TOOLS_SHA
 
 ################################################################################
 # Initial Setup                                                                #
@@ -71,3 +50,28 @@ RUN useradd -u 376 -U -d /home/mpf -ms /bin/bash -G wheel -p mpf mpf
 ################################################################################
 
 ENTRYPOINT ["date"]
+
+################################################################################
+# Labels                                                                       #
+################################################################################
+
+# Clear inherited labels
+LABEL build-date= \
+      license= \
+      name= \
+      vendor=
+
+# Set labels
+LABEL org.label-schema.schema-version="1.0" \
+      org.label-schema.url="https://github.com/openmpf" \
+      org.label-schema.name="OpenMPF Build Environment" \
+      org.label-schema.version=$BUILD_VERSION \
+      org.label-schema.build-date=$BUILD_DATE \
+      org.mitre.mpf.openmpf-sha=$OPENMPF_SHA \
+      org.mitre.mpf.openmpf-components-sha=$OPENMPF_COMPONENTS_SHA \
+      org.mitre.mpf.openmpf-contrib-components-sha=$OPENMPF_CONTRIB_COMPONENTS_SHA \
+      org.mitre.mpf.openmpf-cpp-component-sdk-sha=$OPENMPF_CPP_COMPONENT_SDK_SHA \
+      org.mitre.mpf.openmpf-java-component-sdk-sha=$OPENMPF_JAVA_COMPONENT_SDK_SHA \
+      org.mitre.mpf.openmpf-python-component-sdk-sha=$OPENMPF_PYTHON_COMPONENT_SDK_SHA \
+      org.mitre.mpf.openmpf-build-tools-sha=$OPENMPF_BUILD_TOOLS_SHA \
+      org.mitre.mpf.openmpf-docker-sha=$OPENMPF_DOCKER_SHA
