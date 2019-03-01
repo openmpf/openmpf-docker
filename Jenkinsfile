@@ -160,7 +160,9 @@ node(jenkinsNodes) {
         docker.withRegistry('http://' + dockerRegistryHostAndPort, dockerRegistryCredId) {
 
             stage('Build base image') {
-                sh 'docker build openmpf_build/ -t ' + buildImageName
+                sh 'docker build openmpf_build/ --build-arg' +
+                        ' BUILD_DATE=`date`' +
+                        ' -t ' + buildImageName
 
                 if (buildCustomComponents) {
                     // Build the new build image for custom components using the original build image for open source
