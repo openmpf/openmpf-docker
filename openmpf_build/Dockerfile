@@ -24,17 +24,6 @@
 # limitations under the License.                                            #
 #############################################################################
 
-ARG BUILD_VERSION
-ARG BUILD_DATE
-ARG OPENMPF_SHA
-ARG OPENMPF_COMPONENTS_SHA
-ARG OPENMPF_CONTRIB_COMPONENTS_SHA
-ARG OPENMPF_CPP_COMPONENT_SDK_SHA
-ARG OPENMPF_JAVA_COMPONENT_SDK_SHA
-ARG OPENMPF_PYTHON_COMPONENT_SDK_SHA
-ARG OPENMPF_BUILD_TOOLS_SHA
-ARG OPENMPF_DOCKER_SHA
-
 FROM centos:7.4.1708 as openmpf_build
 WORKDIR /home/mpf
 
@@ -54,6 +43,17 @@ ENTRYPOINT ["date"]
 ################################################################################
 # Labels                                                                       #
 ################################################################################
+
+ARG BUILD_VERSION
+ARG BUILD_DATE
+ARG OPENMPF_SHA
+ARG OPENMPF_COMPONENTS_SHA
+ARG OPENMPF_CONTRIB_COMPONENTS_SHA
+ARG OPENMPF_CPP_COMPONENT_SDK_SHA
+ARG OPENMPF_JAVA_COMPONENT_SDK_SHA
+ARG OPENMPF_PYTHON_COMPONENT_SDK_SHA
+ARG OPENMPF_BUILD_TOOLS_SHA
+ARG OPENMPF_DOCKER_SHA
 
 # Clear inherited labels
 LABEL build-date= \
