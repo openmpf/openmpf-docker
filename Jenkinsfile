@@ -161,7 +161,7 @@ node(jenkinsNodes) {
 
             stage('Build base image') {
                 sh 'docker build openmpf_build/ --build-arg' +
-                        ' BUILD_DATE=`date`' +
+                        ' BUILD_DATE=`date --iso-8601=seconds`' +
                         ' -t ' + buildImageName
 
                 if (buildCustomComponents) {
