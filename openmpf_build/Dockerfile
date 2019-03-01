@@ -24,6 +24,29 @@
 # limitations under the License.                                            #
 #############################################################################
 
+ARG BUILD_VERSION
+ARG BUILD_DATE
+ARG OPENMPF_SHA
+ARG OPENMPF_COMPONENTS_SHA
+ARG OPENMPF_CONTRIB_COMPONENTS_SHA
+ARG OPENMPF_CPP_COMPONENT_SDK_SHA
+ARG OPENMPF_JAVA_COMPONENT_SDK_SHA
+ARG OPENMPF_PYTHON_COMPONENT_SDK_SHA
+ARG OPENMPF_BUILD_TOOLS_SHA
+
+LABEL org.label-schema.schema-version="1.0" \
+      org.label-schema.url="https://github.com/openmpf" \
+      org.label-schema.name="OpenMPF Build Environment" \
+      org.label-schema.version=$BUILD_VERSION \
+      org.label-schema.build-date=$BUILD_DATE \
+      openmpf-sha=$OPENMPF_SHA \
+      openmpf-components-sha=$OPENMPF_COMPONENTS_SHA \
+      openmpf-contrib-components-sha=$OPENMPF_CONTRIB_COMPONENTS_SHA \
+      openmpf-cpp-component-sdk-sha=$OPENMPF_CPP_COMPONENT_SDK_SHA \
+      openmpf-java-component-sdk-sha=$OPENMPF_JAVA_COMPONENT_SDK_SHA \
+      openmpf-python-component-sdk-sha=$OPENMPF_PYTHON_COMPONENT_SDK_SHA \
+      openmpf-build-tools-sha=$OPENMPF_BUILD_TOOLS_SHA
+
 FROM centos:7.4.1708 as openmpf_build
 WORKDIR /home/mpf
 
