@@ -351,7 +351,7 @@ def gitCheckoutAndPull(String repo, String dir, String branch) {
     sh 'cd ' + dir + '; git checkout ' + branch
     sh 'cd ' + dir + '; git pull origin ' + branch
 
-    return sh('cd ' + dir + '; git rev-parse HEAD', returnStdout: true)
+    return sh(script: 'cd ' + dir + '; git rev-parse HEAD', returnStdout: true)
 }
 
 def gitCheckoutAndPullWithCredId(String repo, String credId, String dir, String branch) {
