@@ -120,8 +120,6 @@ node(jenkinsNodes) {
                 openmpfCustomDockerSha = gitCheckoutAndPullWithCredId(openmpfCustomDockerRepo, openmpfCustomRepoCredId,
                         openmpfCustomDockerPath, openmpfCustomDockerBranch)
 
-                sh 'echo "openmpfCustomDockerSha: "' +  openmpfCustomDockerSha // DEBUG
-
                 // Copy custom component build files into place (SDKs, etc.)
                 sh 'cp -u /data/openmpf/custom-build-files/* ' + openmpfCustomDockerPath
 
@@ -162,10 +160,17 @@ node(jenkinsNodes) {
         docker.withRegistry('http://' + dockerRegistryHostAndPort, dockerRegistryCredId) {
 
             stage('Build base image') {
-                sh 'docker build openmpf_build/ --build-arg' +
-                        ' BUILD_DATE=`date --iso-8601=seconds`' +
-                        ' BUILD_VERSION=' + imageTag +
-                        ' OPENMPF_DOCKER_SHA=' + openmpfDockerSha +
+                sh 'docker build openmpf_build/' +
+                        ' --build-arg BUILD_DATE=`date --iso-8601=seconds`' +
+                        ' --build-arg BUILD_VERSION=' + imageTag +
+                        ' --build-arg OPENMPF_DOCKER_SHA=' + openmpfDockerSha +
+                        ' --build-arg OPENMPF_SHA=' + openmpfSha +
+                        ' --build-arg OPENMPF_COMPONENTS_SHA=' + openmpfComponentsSha +
+                        ' --build-arg OPENMPF_CONTRIB_COMPONENTS_SHA=' + openmpfContribComponentsSha +
+                        ' --build-arg OPENMPF_CPP_COMPONENT_SDK_SHA=' + openmpfCppComponentSdkSha +
+                        ' --build-arg OPENMPF_JAVA_COMPONENT_SDK_SHA=' + openmpfJavaComponentSdkSha +
+                        ' --build-arg OPENMPF_PYTHON_COMPONENT_SDK_SHA=' + openmpfPythonComponentSdkSha +
+                        ' --build-arg OPENMPF_BUILD_TOOLS_SHA=' + openmpfBuildToolsSha +
                         ' -t ' + buildImageName
 
                 if (buildCustomComponents) {
