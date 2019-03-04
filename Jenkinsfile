@@ -172,7 +172,7 @@ node(jenkinsNodes) {
 
             stage('Build base image') {
                 sh 'docker build openmpf_build/' +
-                        ' --build-arg BUILD_DATE=' + getTimestamp()
+                        ' --build-arg BUILD_DATE=' + getTimestamp() +
                         ' --build-arg BUILD_VERSION=' + imageTag +
                         ' --build-arg OPENMPF_DOCKER_SHA=' + openmpfDockerSha +
                         ' --build-arg OPENMPF_SHA=' + openmpfSha +
@@ -189,7 +189,7 @@ node(jenkinsNodes) {
                     // components. This overwrites the original build image tag.
                     sh 'docker build openmpf_custom_build/' +
                             ' --build-arg BUILD_IMAGE_NAME=' + buildImageName +
-                            ' --build-arg BUILD_DATE=' + getTimestamp()
+                            ' --build-arg BUILD_DATE=' + getTimestamp() +
                             ' --build-arg BUILD_VERSION=' + imageTag +
                             ' --build-arg OPENMPF_CUSTOM_DOCKER_SHA=' + openmpfCustomDockerSha +
                             ' --build-arg OPENMPF_CUSTOM_COMPONENTS_SHA=' + openmpfCustomComponentsSha +
@@ -317,7 +317,7 @@ node(jenkinsNodes) {
                     // the original Workflow Manager image without the custom config.
                     sh 'docker build openmpf_custom_config/workflow_manager' +
                             ' --build-arg BUILD_IMAGE_NAME=' + workflowManagerImageName +
-                            ' --build-arg BUILD_DATE=' + getTimestamp()
+                            ' --build-arg BUILD_DATE=' + getTimestamp() +
                             ' --build-arg BUILD_VERSION=' + imageTag +
                             ' --build-arg OPENMPF_CONFIG_DOCKER_SHA=' + openmpfConfigDockerSha +
                             ' -t ' + workflowManagerImageName
