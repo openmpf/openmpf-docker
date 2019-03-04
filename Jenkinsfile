@@ -66,7 +66,7 @@ def openmpfConfigRepoCredId = env.getProperty('openmpf_config_repo_cred_id')
 def openmpfConfigDockerRepo = env.getProperty("openmpf_config_docker_repo")
 def openmpfConfigDockerBranch = env.getProperty("openmpf_config_docker_branch")
 
-// Git SHAs
+// Labels
 def openmpfDockerSha
 def openmpfSha
 def openmpfComponentsSha
@@ -172,7 +172,7 @@ node(jenkinsNodes) {
 
             stage('Build base image') {
                 sh 'docker build openmpf_build/' +
-                        ' --build-arg BUILD_DATE=`date --iso-8601=seconds`' +
+                        ' --build-arg BUILD_DATE=' + getTimestamp()
                         ' --build-arg BUILD_VERSION=' + imageTag +
                         ' --build-arg OPENMPF_DOCKER_SHA=' + openmpfDockerSha +
                         ' --build-arg OPENMPF_SHA=' + openmpfSha +
@@ -187,7 +187,13 @@ node(jenkinsNodes) {
                 if (buildCustomComponents) {
                     // Build the new build image for custom components using the original build image for open source
                     // components. This overwrites the original build image tag.
-                    sh 'docker build openmpf_custom_build/ --build-arg BUILD_IMAGE_NAME=' + buildImageName +
+                    sh 'docker build openmpf_custom_build/' +
+                            ' --build-arg BUILD_IMAGE_NAME=' + buildImageName +
+                            ' --build-arg BUILD_DATE=' + getTimestamp()
+                            ' --build-arg BUILD_VERSION=' + imageTag +
+                            ' --build-arg OPENMPF_CUSTOM_DOCKER_SHA=' + openmpfCustomDockerSha +
+                            ' --build-arg OPENMPF_CUSTOM_COMPONENTS_SHA=' + openmpfCustomComponentsSha +
+                            ' --build-arg OPENMPF_CUSTOM_SYSTEM_TESTS_SHA=' + openmpfCustomSystemTestsSha +
                             ' -t ' + buildImageName
                 }
             }
@@ -309,7 +315,11 @@ node(jenkinsNodes) {
                     // Build and tag the new Workflow Manager image with the image tag used in the compose files.
                     // That way, we do not have to modify the compose files. This overwrites the tag that referred to
                     // the original Workflow Manager image without the custom config.
-                    sh 'docker build openmpf_custom_config/workflow_manager --build-arg BUILD_IMAGE_NAME=' + workflowManagerImageName +
+                    sh 'docker build openmpf_custom_config/workflow_manager' +
+                            ' --build-arg BUILD_IMAGE_NAME=' + workflowManagerImageName +
+                            ' --build-arg BUILD_DATE=' + getTimestamp()
+                            ' --build-arg BUILD_VERSION=' + imageTag +
+                            ' --build-arg OPENMPF_CONFIG_DOCKER_SHA=' + openmpfConfigDockerSha +
                             ' -t ' + workflowManagerImageName
                 }
             }
@@ -392,4 +402,8 @@ def email(String status) {
             body: '${JELLY_SCRIPT,template="text"}',
             recipientProviders: [[$class: 'RequesterRecipientProvider']]
     )
+}
+
+def getTimestamp() {
+    return sh(script: 'date --iso-8601=seconds', returnStdout: true).trim()
 }
