@@ -171,3 +171,10 @@ EXPOSE 8080 8443
 COPY workflow_manager/docker-entrypoint.sh /home/mpf
 RUN dos2unix -q /home/mpf/docker-entrypoint.sh
 ENTRYPOINT ["/home/mpf/docker-entrypoint.sh"]
+
+################################################################################
+# Labels                                                                       #
+################################################################################
+
+# Set labels
+LABEL org.label-schema.name="OpenMPF Workflow Manager"

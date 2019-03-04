@@ -192,3 +192,10 @@ VOLUME $MPF_HOME/share
 COPY node_manager/docker-entrypoint.sh /home/mpf
 RUN dos2unix -q /home/mpf/docker-entrypoint.sh
 ENTRYPOINT ["/home/mpf/docker-entrypoint.sh"]
+
+################################################################################
+# Labels                                                                       #
+################################################################################
+
+# Set labels
+LABEL org.label-schema.name="OpenMPF Node Manager with Components"

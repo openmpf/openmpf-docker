@@ -105,3 +105,10 @@ EXPOSE 8080
 COPY workflow_manager/docker-entrypoint-test.sh /home/mpf
 RUN dos2unix -q /home/mpf/docker-entrypoint-test.sh
 ENTRYPOINT ["/home/mpf/docker-entrypoint-test.sh"]
+
+################################################################################
+# Labels                                                                       #
+################################################################################
+
+# Set labels
+LABEL org.label-schema.name="OpenMPF Workflow Manager for Tests"
