@@ -209,10 +209,7 @@ node(jenkinsNodes) {
                                 '--mount type=bind,source="$(pwd)"/openmpf_build/openmpf-projects,target=/mnt/openmpf-projects ' +
                                 '-e BUILD_PACKAGE_JSON=' + buildPackageJson + ' ' +
                                 '-e RUN_TESTS=' + (runUnitTests ? 1 : 0) + ' ' +
-                                buildImageName, returnStdout: true)
-
-                        // Remove trailing newline.
-                        buildContainerId = buildContainerId.trim()
+                                buildImageName, returnStdout: true).trim()
 
                         // Attach to container to show log output and wait until entrypoint completes
                         def dockerRunRetVal = sh(script:'docker attach ' + buildContainerId, returnStatus:true)
@@ -367,7 +364,7 @@ def gitCheckoutAndPull(String repo, String dir, String branch) {
     sh 'cd ' + dir + '; git checkout ' + branch
     sh 'cd ' + dir + '; git pull origin ' + branch
 
-    return sh(script: 'cd ' + dir + '; git rev-parse HEAD', returnStdout: true)
+    return sh(script: 'cd ' + dir + '; git rev-parse HEAD', returnStdout: true).trim()
 }
 
 def gitCheckoutAndPullWithCredId(String repo, String credId, String dir, String branch) {
