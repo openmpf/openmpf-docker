@@ -24,8 +24,6 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-
-
 // Get build parameters.
 def imageTag = env.getProperty("image_tag")
 def openmpfDockerBranch = env.getProperty("openmpf_docker_branch")
@@ -67,6 +65,19 @@ def applyCustomConfig = env.getProperty("apply_custom_config").toBoolean()
 def openmpfConfigRepoCredId = env.getProperty('openmpf_config_repo_cred_id')
 def openmpfConfigDockerRepo = env.getProperty("openmpf_config_docker_repo")
 def openmpfConfigDockerBranch = env.getProperty("openmpf_config_docker_branch")
+
+// Git SHAs
+def openmpfDockerSha
+def openmpfSha
+def openmpfComponentsSha
+def openmpfContribComponentsSha
+def openmpfCppComponentSdkSha
+def openmpfJavaComponentSdkSha
+def openmpfPythonComponentSdkSha
+def openmpfBuildToolsSha
+def openmpfCustomDockerSha
+def openmpfCustomComponentsSha
+def openmpfCustomSystemTestsSha
 
 node(jenkinsNodes) {
     try {
