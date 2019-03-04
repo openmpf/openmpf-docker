@@ -89,7 +89,7 @@ node(jenkinsNodes) {
 
         stage('Clone repos') {
 
-            gitCheckoutAndPull("https://github.com/openmpf/openmpf-docker.git",
+            openmpfDockerSha = gitCheckoutAndPull("https://github.com/openmpf/openmpf-docker.git",
                     '.', openmpfDockerBranch)
 
             // Revert changes made to files by a previous Jenkins build.
@@ -100,41 +100,43 @@ node(jenkinsNodes) {
                     openmpfProjectsPath, openmpfProjectsBranch)
             sh 'cd ' + openmpfProjectsPath + '; git submodule update --init'
 
-            gitCheckoutAndPull("https://github.com/openmpf/openmpf.git",
+            openmpfSha = gitCheckoutAndPull("https://github.com/openmpf/openmpf.git",
                     openmpfProjectsPath + '/openmpf', openmpfBranch)
-            gitCheckoutAndPull("https://github.com/openmpf/openmpf-components.git",
+            openmpfComponentsSha = gitCheckoutAndPull("https://github.com/openmpf/openmpf-components.git",
                     openmpfProjectsPath + '/openmpf-components', openmpfComponentsBranch)
-            gitCheckoutAndPull("https://github.com/openmpf/openmpf-contrib-components.git",
+            openmpfContribComponentsSha = gitCheckoutAndPull("https://github.com/openmpf/openmpf-contrib-components.git",
                     openmpfProjectsPath + '/openmpf-contrib-components', openmpfContribComponentsBranch)
-            gitCheckoutAndPull("https://github.com/openmpf/openmpf-cpp-component-sdk.git",
+            openmpfCppComponentSdkSha = gitCheckoutAndPull("https://github.com/openmpf/openmpf-cpp-component-sdk.git",
                     openmpfProjectsPath + '/openmpf-cpp-component-sdk', openmpfCppComponentSdkBranch)
-            gitCheckoutAndPull("https://github.com/openmpf/openmpf-java-component-sdk.git",
+            openmpfJavaComponentSdkSha = gitCheckoutAndPull("https://github.com/openmpf/openmpf-java-component-sdk.git",
                     openmpfProjectsPath + '/openmpf-java-component-sdk', openmpfJavaComponentSdkBranch)
-            gitCheckoutAndPull("https://github.com/openmpf/openmpf-python-component-sdk.git",
+            openmpfPythonComponentSdkSha = gitCheckoutAndPull("https://github.com/openmpf/openmpf-python-component-sdk.git",
                     openmpfProjectsPath + '/openmpf-python-component-sdk', openmpfPythonComponentSdkBranch)
-            gitCheckoutAndPull("https://github.com/openmpf/openmpf-build-tools.git",
+            openmpfBuildToolsSha = gitCheckoutAndPull("https://github.com/openmpf/openmpf-build-tools.git",
                     openmpfProjectsPath + '/openmpf-build-tools', openmpfBuildToolsBranch)
 
             if (buildCustomComponents) {
                 def openmpfCustomDockerPath = 'openmpf_custom_build'
-                gitCheckoutAndPullWithCredId(openmpfCustomDockerRepo, openmpfCustomRepoCredId,
+                openmpfCustomDockerSha = gitCheckoutAndPullWithCredId(openmpfCustomDockerRepo, openmpfCustomRepoCredId,
                         openmpfCustomDockerPath, openmpfCustomDockerBranch)
+
+                sh 'echo "openmpfCustomDockerSha: "' +  openmpfCustomDockerSha // DEBUG
 
                 // Copy custom component build files into place (SDKs, etc.)
                 sh 'cp -u /data/openmpf/custom-build-files/* ' + openmpfCustomDockerPath
 
                 def openmpfCustomComponentsPath = openmpfProjectsPath + '/' + openmpfCustomComponentsSlug
-                gitCheckoutAndPullWithCredId(openmpfCustomComponentsRepo, openmpfCustomRepoCredId,
+                openmpfCustomComponentsSha = gitCheckoutAndPullWithCredId(openmpfCustomComponentsRepo, openmpfCustomRepoCredId,
                         openmpfCustomComponentsPath, openmpfCustomComponentsBranch)
 
                 def openmpfCustomSystemTestsPath = openmpfProjectsPath + '/' + openmpfCustomSystemTestsSlug
-                gitCheckoutAndPullWithCredId(openmpfCustomSystemTestsRepo, openmpfCustomRepoCredId,
+                openmpfCustomSystemTestsSha = gitCheckoutAndPullWithCredId(openmpfCustomSystemTestsRepo, openmpfCustomRepoCredId,
                         openmpfCustomSystemTestsPath, openmpfCustomSystemTestsBranch)
             }
 
             if (applyCustomConfig) {
                 def openmpfConfigDockerPath = 'openmpf_custom_config'
-                gitCheckoutAndPullWithCredId(openmpfConfigDockerRepo, openmpfConfigRepoCredId,
+                openmpfConfigDockerSha = gitCheckoutAndPullWithCredId(openmpfConfigDockerRepo, openmpfConfigRepoCredId,
                         openmpfConfigDockerPath, openmpfConfigDockerBranch)
             }
 
@@ -162,6 +164,8 @@ node(jenkinsNodes) {
             stage('Build base image') {
                 sh 'docker build openmpf_build/ --build-arg' +
                         ' BUILD_DATE=`date --iso-8601=seconds`' +
+                        ' BUILD_VERSION=' + imageTag +
+                        ' OPENMPF_DOCKER_SHA=' + openmpfDockerSha +
                         ' -t ' + buildImageName
 
                 if (buildCustomComponents) {
@@ -346,16 +350,20 @@ def gitCheckoutAndPull(String repo, String dir, String branch) {
     sh 'cd ' + dir + '; git fetch'
     sh 'cd ' + dir + '; git checkout ' + branch
     sh 'cd ' + dir + '; git pull origin ' + branch
+
+    return sh('cd ' + dir + '; git rev-parse HEAD', returnStdout: true)
 }
 
 def gitCheckoutAndPullWithCredId(String repo, String credId, String dir, String branch) {
-    checkout([$class: 'GitSCM',
+    def scmVars = checkout([$class: 'GitSCM',
               branches: [[name: '*/' + branch]],
               extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: dir]],
               userRemoteConfigs: [[credentialsId: credId, url: repo]]])
 
     // TODO: Make sure we're not in a detached state.
     // sh 'cd ' + dir + '; git checkout ' + branch
+
+    return scmVars.GIT_COMMIT
 }
 
 def isAborted() {
