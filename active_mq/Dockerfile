@@ -38,5 +38,16 @@ RUN sed -i '52s/.*/log4j.appender.logfile.layout.ConversionPattern=%d %p [%t] %c
 # Labels                                                                       #
 ################################################################################
 
+ARG BUILD_DATE
+ARG BUILD_VERSION
+ARG BUILD_SHAS
+
 # Set labels
-LABEL org.label-schema.name="OpenMPF ActiveMQ"
+LABEL org.label-schema.schema-version="1.0" \
+      org.label-schema.name="OpenMPF ActiveMQ" \
+      org.label-schema.url="https://openmpf.github.io" \
+      org.label-schema.build-date=$BUILD_DATE \
+      org.label-schema.version=$BUILD_VERSION \
+      org.label-schema.vcs-url="https://github.com/openmpf" \
+      org.label-schema.vcs-ref=$BUILD_SHAS \
+      org.label-schema.vendor=MITRE

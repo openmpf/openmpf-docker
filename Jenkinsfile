@@ -67,7 +67,8 @@ def openmpfConfigDockerRepo = env.getProperty("openmpf_config_docker_repo")
 def openmpfConfigDockerBranch = env.getProperty("openmpf_config_docker_branch")
 
 // Labels
-def shaBuildArgs
+def buildDate
+def buildShas
 def openmpfCustomDockerSha
 def openmpfCustomComponentsSha
 def openmpfCustomSystemTestsSha
@@ -75,6 +76,8 @@ def openmpfConfigDockerSha
 
 node(jenkinsNodes) {
     try {
+        buildDate = getTimestamp()
+
         def dockerRegistryHostAndPort = dockerRegistryHost + ':' + dockerRegistryPort
         def remoteImageTagPrefix = dockerRegistryHostAndPort + '/openmpf/'
 
@@ -120,15 +123,14 @@ node(jenkinsNodes) {
             def openmpfBuildToolsSha = gitCheckoutAndPull("https://github.com/openmpf/openmpf-build-tools.git",
                     openmpfProjectsPath + '/openmpf-build-tools', openmpfBuildToolsBranch)
 
-            shaBuildArgs = ' --build-arg BUILD_VERSION=' + imageTag +
-                    ' --build-arg OPENMPF_DOCKER_SHA=' + openmpfDockerSha +
-                    ' --build-arg OPENMPF_SHA=' + openmpfSha +
-                    ' --build-arg OPENMPF_COMPONENTS_SHA=' + openmpfComponentsSha +
-                    ' --build-arg OPENMPF_CONTRIB_COMPONENTS_SHA=' + openmpfContribComponentsSha +
-                    ' --build-arg OPENMPF_CPP_COMPONENT_SDK_SHA=' + openmpfCppComponentSdkSha +
-                    ' --build-arg OPENMPF_JAVA_COMPONENT_SDK_SHA=' + openmpfJavaComponentSdkSha +
-                    ' --build-arg OPENMPF_PYTHON_COMPONENT_SDK_SHA=' + openmpfPythonComponentSdkSha +
-                    ' --build-arg OPENMPF_BUILD_TOOLS_SHA=' + openmpfBuildToolsSha
+            buildShas = 'openmpf-docker: ' + openmpfDockerSha +
+                    ', openmpf: ' + openmpfSha +
+                    ', openmpf-components: ' + openmpfComponentsSha +
+                    ', openmpf-contrib-components: ' + openmpfContribComponentsSha +
+                    ', openmpf-cpp-component-sdk: ' + openmpfCppComponentSdkSha +
+                    ', openmpf-java-component-sdk: ' + openmpfJavaComponentSdkSha +
+                    ', openmpf-python-component-sdk: ' + openmpfPythonComponentSdkSha +
+                    ', openmpf-build-tools: ' + openmpfBuildToolsSha
 
             if (buildCustomComponents) {
                 def openmpfCustomDockerPath = 'openmpf_custom_build'
@@ -176,19 +178,23 @@ node(jenkinsNodes) {
 
             stage('Build base image') {
                 sh 'docker build openmpf_build/' +
-                        ' --build-arg BUILD_DATE=' + getTimestamp() +
-                        shaBuildArgs +
+                        ' --build-arg BUILD_DATE=' + buildDate +
+                        ' --build-arg BUILD_VERSION=' + imageTag +
+                        ' --build-arg BUILD_SHAS=' + buildShas +
                         ' -t ' + buildImageName
 
                 if (buildCustomComponents) {
+                    buildShas += ', openmpf-custom-docker: ' + openmpfCustomDockerSha +
+                            ', openmpf-custom-components: ' + openmpfCustomComponentsSha +
+                            ', openmpf-custom-system-tests: ' + openmpfCustomSystemTestsSha
+
                     // Build the new build image for custom components using the original build image for open source
                     // components. This overwrites the original build image tag.
                     sh 'docker build openmpf_custom_build/' +
                             ' --build-arg BUILD_IMAGE_NAME=' + buildImageName +
-                            ' --build-arg BUILD_DATE=' + getTimestamp() +
-                            ' --build-arg OPENMPF_CUSTOM_DOCKER_SHA=' + openmpfCustomDockerSha +
-                            ' --build-arg OPENMPF_CUSTOM_COMPONENTS_SHA=' + openmpfCustomComponentsSha +
-                            ' --build-arg OPENMPF_CUSTOM_SYSTEM_TESTS_SHA=' + openmpfCustomSystemTestsSha +
+                            ' --build-arg BUILD_DATE=' + buildDate +
+                            ' --build-arg BUILD_VERSION=' + imageTag +
+                            ' --build-arg BUILD_SHAS=' + buildShas +
                             ' -t ' + buildImageName
                 }
             }
@@ -275,8 +281,9 @@ node(jenkinsNodes) {
                         sh 'docker-compose build' +
                                 ' --build-arg BUILD_IMAGE_NAME=' + buildImageName +
                                 ' --build-arg POST_BUILD_IMAGE_NAME=' + postBuildImageName +
-                                ' --build-arg BUILD_DATE=' + getTimestamp() +
-                                shaBuildArgs +
+                                ' --build-arg BUILD_DATE=' + buildDate +
+                                ' --build-arg BUILD_VERSION=' + imageTag +
+                                ' --build-arg BUILD_SHAS=' + buildShas
 
                                 sh 'docker-compose up --force-recreate' +
                                 ' --abort-on-container-exit --exit-code-from workflow_manager_test'
@@ -308,18 +315,22 @@ node(jenkinsNodes) {
                     sh 'cp docker-compose.yml.bak docker-compose.yml'
                     sh 'docker-compose build' +
                             ' --build-arg BUILD_IMAGE_NAME=' + buildImageName +
-                            ' --build-arg BUILD_DATE=' + getTimestamp() +
-                            shaBuildArgs +
+                            ' --build-arg BUILD_DATE=' + buildDate +
+                            ' --build-arg BUILD_VERSION=' + imageTag +
+                            ' --build-arg BUILD_SHAS=' + buildShas
                 }
 
                 if (applyCustomConfig) {
+                    buildShas += ', openmpf-config-docker: ' + openmpfConfigDockerSha
+
                     // Build and tag the new Workflow Manager image with the image tag used in the compose files.
                     // That way, we do not have to modify the compose files. This overwrites the tag that referred to
                     // the original Workflow Manager image without the custom config.
                     sh 'docker build openmpf_custom_config/workflow_manager' +
                             ' --build-arg BUILD_IMAGE_NAME=' + workflowManagerImageName +
-                            ' --build-arg BUILD_DATE=' + getTimestamp() +
-                            ' --build-arg OPENMPF_CONFIG_DOCKER_SHA=' + openmpfConfigDockerSha +
+                            ' --build-arg BUILD_DATE=' + buildDate +
+                            ' --build-arg BUILD_VERSION=' + imageTag +
+                            ' --build-arg BUILD_SHAS=' + buildShas
                             ' -t ' + workflowManagerImageName
                 }
             }

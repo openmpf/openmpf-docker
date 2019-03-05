@@ -176,5 +176,22 @@ ENTRYPOINT ["/home/mpf/docker-entrypoint.sh"]
 # Labels                                                                       #
 ################################################################################
 
+ARG BUILD_DATE
+ARG BUILD_VERSION
+ARG BUILD_SHAS
+
+# Clear inherited labels
+LABEL build-date= \
+      license= \
+      name= \
+      vendor=
+
 # Set labels
-LABEL org.label-schema.name="OpenMPF Workflow Manager"
+LABEL org.label-schema.schema-version="1.0" \
+      org.label-schema.name="OpenMPF Workflow Manager" \
+      org.label-schema.url="https://openmpf.github.io" \
+      org.label-schema.build-date=$BUILD_DATE \
+      org.label-schema.version=$BUILD_VERSION \
+      org.label-schema.vcs-url="https://github.com/openmpf" \
+      org.label-schema.vcs-ref=$BUILD_SHAS \
+      org.label-schema.vendor=MITRE

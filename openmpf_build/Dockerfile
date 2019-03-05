@@ -397,14 +397,7 @@ ENTRYPOINT ["/home/mpf/docker-entrypoint.sh"]
 
 ARG BUILD_DATE
 ARG BUILD_VERSION
-ARG OPENMPF_DOCKER_SHA
-ARG OPENMPF_SHA
-ARG OPENMPF_COMPONENTS_SHA
-ARG OPENMPF_CONTRIB_COMPONENTS_SHA
-ARG OPENMPF_CPP_COMPONENT_SDK_SHA
-ARG OPENMPF_JAVA_COMPONENT_SDK_SHA
-ARG OPENMPF_PYTHON_COMPONENT_SDK_SHA
-ARG OPENMPF_BUILD_TOOLS_SHA
+ARG BUILD_SHAS
 
 # Clear inherited labels
 LABEL build-date= \
@@ -414,15 +407,10 @@ LABEL build-date= \
 
 # Set labels
 LABEL org.label-schema.schema-version="1.0" \
-      org.label-schema.url="https://github.com/openmpf" \
       org.label-schema.name="OpenMPF Build Environment" \
+      org.label-schema.url="https://openmpf.github.io" \
       org.label-schema.build-date=$BUILD_DATE \
       org.label-schema.version=$BUILD_VERSION \
-      org.mitre.mpf.openmpf-docker-sha=$OPENMPF_DOCKER_SHA \
-      org.mitre.mpf.openmpf-sha=$OPENMPF_SHA \
-      org.mitre.mpf.openmpf-components-sha=$OPENMPF_COMPONENTS_SHA \
-      org.mitre.mpf.openmpf-contrib-components-sha=$OPENMPF_CONTRIB_COMPONENTS_SHA \
-      org.mitre.mpf.openmpf-cpp-component-sdk-sha=$OPENMPF_CPP_COMPONENT_SDK_SHA \
-      org.mitre.mpf.openmpf-java-component-sdk-sha=$OPENMPF_JAVA_COMPONENT_SDK_SHA \
-      org.mitre.mpf.openmpf-python-component-sdk-sha=$OPENMPF_PYTHON_COMPONENT_SDK_SHA \
-      org.mitre.mpf.openmpf-build-tools-sha=$OPENMPF_BUILD_TOOLS_SHA
+      org.label-schema.vcs-url="https://github.com/openmpf" \
+      org.label-schema.vcs-ref=$BUILD_SHAS \
+      org.label-schema.vendor=MITRE
