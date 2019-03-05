@@ -180,7 +180,7 @@ node(jenkinsNodes) {
                 sh 'docker build openmpf_build/' +
                         ' --build-arg BUILD_DATE=' + buildDate +
                         ' --build-arg BUILD_VERSION=' + imageTag +
-                        ' --build-arg BUILD_SHAS=' + buildShas +
+                        ' --build-arg BUILD_SHAS=\"' + buildShas + '\"' +
                         ' -t ' + buildImageName
 
                 if (buildCustomComponents) {
@@ -194,7 +194,7 @@ node(jenkinsNodes) {
                             ' --build-arg BUILD_IMAGE_NAME=' + buildImageName +
                             ' --build-arg BUILD_DATE=' + buildDate +
                             ' --build-arg BUILD_VERSION=' + imageTag +
-                            ' --build-arg BUILD_SHAS=' + buildShas +
+                            ' --build-arg BUILD_SHAS=\"' + buildShas + '\"' +
                             ' -t ' + buildImageName
                 }
             }
@@ -283,7 +283,7 @@ node(jenkinsNodes) {
                                 ' --build-arg POST_BUILD_IMAGE_NAME=' + postBuildImageName +
                                 ' --build-arg BUILD_DATE=' + buildDate +
                                 ' --build-arg BUILD_VERSION=' + imageTag +
-                                ' --build-arg BUILD_SHAS=' + buildShas
+                                ' --build-arg BUILD_SHAS=\"' + buildShas + '\"'
 
                                 sh 'docker-compose up --force-recreate' +
                                 ' --abort-on-container-exit --exit-code-from workflow_manager_test'
@@ -317,7 +317,7 @@ node(jenkinsNodes) {
                             ' --build-arg BUILD_IMAGE_NAME=' + buildImageName +
                             ' --build-arg BUILD_DATE=' + buildDate +
                             ' --build-arg BUILD_VERSION=' + imageTag +
-                            ' --build-arg BUILD_SHAS=' + buildShas
+                            ' --build-arg BUILD_SHAS=\"' + buildShas + '\"'
                 }
 
                 if (applyCustomConfig) {
@@ -330,7 +330,7 @@ node(jenkinsNodes) {
                             ' --build-arg BUILD_IMAGE_NAME=' + workflowManagerImageName +
                             ' --build-arg BUILD_DATE=' + buildDate +
                             ' --build-arg BUILD_VERSION=' + imageTag +
-                            ' --build-arg BUILD_SHAS=' + buildShas
+                            ' --build-arg BUILD_SHAS=\"' + buildShas + '\"' +
                             ' -t ' + workflowManagerImageName
                 }
             }
