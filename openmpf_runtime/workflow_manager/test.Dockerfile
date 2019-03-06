@@ -36,6 +36,9 @@ ENV MPF_HOME=/home/mpf/openmpf-projects/openmpf/trunk/install
 
 RUN mkdir -p $MPF_HOME/share; chown -R mpf:mpf $MPF_HOME/share
 
+# Move sample data into a location that's accessible by all of the nodes.
+RUN mv /home/mpf/openmpf-projects/openmpf/trunk/mpf-system-tests/src/test/resources/samples $MPF_HOME/share/
+
 ################################################################################
 # Install yum Dependencies                                                     #
 ################################################################################
