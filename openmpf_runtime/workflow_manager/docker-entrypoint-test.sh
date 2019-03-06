@@ -87,6 +87,10 @@ export CXXFLAGS=-isystem\ /apps/install/include
 export PATH=$PATH:/apps/install/bin:/opt/apache-maven/bin:/apps/install/lib/pkgconfig:/usr/bin
 
 cd /home/mpf/openmpf-projects/openmpf
+
+# Move sample data into a location that's accessible by all of the nodes.
+mv trunk/mpf-system-tests/src/test/resources/samples $MPF_HOME/share/
+
 # Leave "components.build.package.json" blank. The components should have
 # already been built in the mpf_post_build image.
 # TODO: -Dit.test=ITComponentLifecycle,ITWebREST,ITComponentRegistration,ITWebStreamingReports, -DskipITs

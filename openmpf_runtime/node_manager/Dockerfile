@@ -85,6 +85,16 @@ RUN yum install -y log4cxx libdc1394 unzip libjpeg-turbo libpng \
     yum clean all && rm -rf /var/cache/yum/*
 
 ################################################################################
+# Install Component-Specific Dependencies                                      #
+################################################################################
+
+# ImageMagick6 :
+RUN yum install -y http://rpms.remirepo.net/enterprise/remi-release-7.rpm && \
+    yum --enablerepo=remi install -y ImageMagick6 ImageMagick6-c++ \
+    ImageMagick6-c++-devel ImageMagick6-devel ImageMagick6-libs && \
+    yum clean all && rm -rf /var/cache/yum/*
+
+################################################################################
 # NVIDIA CUDA runtime setup                                                    #
 ################################################################################
 
@@ -119,6 +129,10 @@ COPY --from=openmpf_build /apps/install/bin/ffmpeg /apps/install/bin/ffprobe \
 COPY --from=openmpf_build /etc/ld.so.conf.d/ /etc/ld.so.conf.d/
 COPY --from=openmpf_build /etc/profile.d/mpf.sh /etc/profile.d/mpf.sh
 
+# Link FFmpeg:
+RUN ln -s $MPF_HOME/bin/ffmpeg /usr/bin/ffmpeg && \
+    ln -s $MPF_HOME/bin/ffserver /usr/bin/ffserver && \
+    ln -s $MPF_HOME/bin/ffprobe /usr/bin/ffprobe
 
 COPY build_artifacts/install.tar /home/mpf/
 RUN cd /home/mpf && tar -xzf install.tar -C $MPF_HOME && rm install.tar
@@ -136,20 +150,6 @@ RUN dos2unix -q /home/mpf/setup-python-component-venv.py
 
 # Setup venv for Python components:
 RUN for dir in $MPF_HOME/plugins/*; do /home/mpf/setup-python-component-venv.py "$dir"; done
-
-# Link FFmpeg:
-RUN ln -s $MPF_HOME/bin/ffmpeg /usr/bin/ffmpeg && \
-    ln -s $MPF_HOME/bin/ffserver /usr/bin/ffserver && \
-    ln -s $MPF_HOME/bin/ffprobe /usr/bin/ffprobe
-
-# ImageMagick6 :
-RUN yum install -y http://rpms.remirepo.net/enterprise/remi-release-7.rpm && \
-    yum --enablerepo=remi install -y ImageMagick6 ImageMagick6-c++ \
-    ImageMagick6-c++-devel ImageMagick6-devel ImageMagick6-libs && \
-    yum clean all && rm -rf /var/cache/yum/*
-
-
-RUN ldconfig
 
 ################################################################################
 # Configure Environment Variables                                              #

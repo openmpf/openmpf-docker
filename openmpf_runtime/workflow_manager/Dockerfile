@@ -119,6 +119,11 @@ COPY --from=openmpf_build /apps/install/bin/ffmpeg /apps/install/bin/ffprobe \
 COPY --from=openmpf_build /etc/ld.so.conf.d/ /etc/ld.so.conf.d/
 COPY --from=openmpf_build /opt/apache-tomcat/ /opt/apache-tomcat/
 
+# Link FFmpeg:
+RUN ln -s $MPF_HOME/bin/ffmpeg /usr/bin/ffmpeg && \
+    ln -s $MPF_HOME/bin/ffserver /usr/bin/ffserver && \
+    ln -s $MPF_HOME/bin/ffprobe /usr/bin/ffprobe
+
 COPY build_artifacts/install.tar /home/mpf/
 RUN cd /home/mpf && tar -xzf install.tar -C $MPF_HOME && rm install.tar
 
@@ -134,8 +139,6 @@ COPY build_artifacts/ansible.tar /home/mpf/
 RUN cd /home/mpf && mkdir -p /home/mpf/openmpf-projects/openmpf/trunk && \
     tar -xzf ansible.tar -C /home/mpf/openmpf-projects/openmpf/trunk && \
     rm ansible.tar
-
-RUN ldconfig
 
 ################################################################################
 # Configure Environment Variables                                              #

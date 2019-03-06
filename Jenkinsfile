@@ -269,7 +269,7 @@ node(jenkinsNodes) {
                     } finally {
                         // Stop and remove containers, networks, and volumes
                         // TODO: Make "--volumes" flag configurable.
-                        // TODO: Prefix shared volume with image tag to prevent simultaneous build conflicts.
+                        // TODO: Prefix shared volume with Jenkins build name to prevent simultaneous build conflicts.
                         sh(script: 'docker-compose down ', returnStatus:true)
                         if (postBuildImageId != null) {
                             // Discard the post build image
