@@ -32,7 +32,10 @@ FROM $POST_BUILD_IMAGE_NAME as mpf_post_build
 # Initial Setup                                                                #
 ################################################################################
 
-ENV MPF_HOME=/home/mpf/openmpf-projects/openmpf/trunk/install
+RUN ln -s /home/mpf/openmpf-projects/openmpf/trunk/install /opt/mpf
+
+# Make sure MPF_HOME matches what it's set to in the node-manager container.
+ENV MPF_HOME=/opt/mpf
 
 RUN mkdir -p $MPF_HOME/share; chown -R mpf:mpf $MPF_HOME/share
 
