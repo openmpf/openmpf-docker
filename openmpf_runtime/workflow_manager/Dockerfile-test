@@ -83,6 +83,7 @@ ENV JGROUPS_FILE_PING_LOCATION=$MPF_HOME/share/nodes
 ENV no_proxy=localhost
 ENV MPF_USER=mpf
 ENV MPF_LOG_PATH=$MPF_HOME/share/logs
+# Every child node-manager container is treated as a spare node.
 ENV CORE_MPF_NODES=
 ENV LD_LIBRARY_PATH=/usr/lib64:$MPF_HOME/lib
 ENV PATH=$PATH:$MPF_HOME/bin

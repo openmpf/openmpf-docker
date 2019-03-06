@@ -249,8 +249,8 @@ node(jenkinsNodes) {
                                 ' docker-compose-test.yml > docker-compose.yml'
 
                         sh(script:'docker-compose rm -svf', returnStatus:true)
-                        sh(script:'docker volume rm -f openmpf-docker_shared_data', returnStatus:true)
-                        sh(script:'docker volume rm -f openmpf-docker_mysql_data', returnStatus:true)
+                        sh(script:'docker volume rm -f openmpf_shared_data', returnStatus:true)
+                        sh(script:'docker volume rm -f openmpf_mysql_data', returnStatus:true)
 
                         sh 'docker-compose build --build-arg BUILD_IMAGE_NAME=' + buildImageName +
                                 ' --build-arg POST_BUILD_IMAGE_NAME=' + postBuildImageName
