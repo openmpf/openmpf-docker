@@ -122,7 +122,6 @@ else
   mvn clean verify \
     -Dspring.profiles.active=jenkins -Pjenkins \
     -DfailIfNoTests=false -DskipITs \
-    -Dtest=TestImageMediaSegmenter \
     -Dmaven.tomcat.skip=true \
     -Dcomponents.build.package.json=/home/mpf/openmpf-projects/openmpf/trunk/jenkins/scripts/config_files/$BUILD_PACKAGE_JSON \
     -Dstartup.auto.registration.skip=false \
