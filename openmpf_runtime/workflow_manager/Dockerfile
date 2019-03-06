@@ -85,6 +85,8 @@ RUN yum install -y python-keyczar && yum clean all
 # Install Ansible                                                              #
 ################################################################################
 
+# TODO: Build the Ansible RPM on openmpf_build; install on workflow_manager
+
 # Ansible:
 RUN mkdir -p /apps/source/ansible_sources && cd /apps/source/ansible_sources && \
     git clone https://github.com/ansible/ansible.git --recursive && \
