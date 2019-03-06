@@ -249,7 +249,7 @@ node(jenkinsNodes) {
                                 ' docker-compose-test.yml > docker-compose.yml'
 
                         sh(script:'docker-compose rm -svf', returnStatus:true)
-                        sh(script:'docker volume rm -f openmpf-docker_mpf_data', returnStatus:true)
+                        sh(script:'docker volume rm -f openmpf-docker_shared_data', returnStatus:true)
                         sh(script:'docker volume rm -f openmpf-docker_mysql_data', returnStatus:true)
 
                         sh 'docker-compose build --build-arg BUILD_IMAGE_NAME=' + buildImageName +
@@ -268,7 +268,9 @@ node(jenkinsNodes) {
                         junit 'openmpf_runtime/build_artifacts/failsafe-reports/*.xml'
                     } finally {
                         // Stop and remove containers, networks, and volumes
-                        sh(script: 'docker-compose down --volumes', returnStatus:true)
+                        // TODO: Make "--volumes" flag configurable.
+                        // TODO: Prefix shared volume with image tag to prevent simultaneous build conflicts.
+                        sh(script: 'docker-compose down ', returnStatus:true)
                         if (postBuildImageId != null) {
                             // Discard the post build image
                             // sh(script: 'docker image rm -f ' + postBuildImageId, returnStatus:true) // DEBUG
