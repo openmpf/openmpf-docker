@@ -66,8 +66,8 @@ services:
       - redis
       - active_mq
     restart: always
-    # The following lines are needed to wait until the mySQL service is available.
     environment:
+      # The following line is needed to wait until the mySQL service is available:
       - MYSQL_ROOT_PASSWORD=password
       - KEYSTORE_PASSWORD=<keystore_password>
     ports:

@@ -61,7 +61,7 @@ services:
     build:
       context: ./openmpf_runtime
       dockerfile: workflow_manager/Dockerfile-test
-    # The following entrypoint and image sections are for manual debugging:
+    # The following entrypoint is for manual debugging:
     # entrypoint:
     #  - sleep
     #  - infinity
@@ -70,8 +70,8 @@ services:
       - redis
       - active_mq
     restart: always
-    # The following lines are needed to wait until the mySQL service is available.
     environment:
+      # The following line is needed to wait until the mySQL service is available:
       - MYSQL_ROOT_PASSWORD=password
     ports:
       - "8080:8080"
