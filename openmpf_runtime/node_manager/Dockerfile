@@ -25,7 +25,6 @@
 #############################################################################
 
 ARG BUILD_IMAGE_NAME=openmpf_build:latest
-
 FROM $BUILD_IMAGE_NAME as openmpf_build
 
 # TODO: A new container can be made to include only a JRE and executables needed.

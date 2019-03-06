@@ -25,7 +25,6 @@
 #############################################################################
 
 ARG POST_BUILD_IMAGE_NAME=mpf_post_build:latest
-
 FROM $POST_BUILD_IMAGE_NAME as mpf_post_build
 
 ################################################################################
@@ -90,7 +89,7 @@ ENV MPF_LOG_PATH=$MPF_HOME/share/logs
 ENV CORE_MPF_NODES=
 ENV LD_LIBRARY_PATH=/usr/lib64:$MPF_HOME/lib
 ENV PATH=$PATH:$MPF_HOME/bin
-TOMCAT_BASE_URL=http://$THIS_MPF_NODE:8080
+ENV TOMCAT_BASE_URL=http://$THIS_MPF_NODE:8080
 
 # The workflow manager must be added as an mpf-child so that plugin packages are
 # extracted at startup, which is necessary for component auto-registration.
