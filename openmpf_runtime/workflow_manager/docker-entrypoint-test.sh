@@ -94,7 +94,7 @@ mv  "$systemTestSamplesPath" "$MPF_HOME/share/"
 ln -s "$MPF_HOME/share/samples" "$systemTestSamplesPath"
 
 wfmTestSamplesPath="trunk/workflow-manager/src/test/resources/samples"
-mv "$wfmTestSamplesPath/*" "$MPF_HOME/share/samples"
+mv "$wfmTestSamplesPath"/* "$MPF_HOME/share/samples"
 rmdir "$wfmTestSamplesPath"
 ln -s "$MPF_HOME/share/samples" "$wfmTestSamplesPath"
 
