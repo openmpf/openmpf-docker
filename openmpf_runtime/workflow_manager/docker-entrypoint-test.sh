@@ -91,12 +91,12 @@ cd /home/mpf/openmpf-projects/openmpf
 # Move test sample data into a location that's accessible by all of the nodes.
 systemTestSamplesPath="trunk/mpf-system-tests/src/test/resources/samples"
 mv  "$systemTestSamplesPath" "$MPF_HOME/share/"
-ln -s "$systemTestSamplesPath" "$MPF_HOME/share/samples"
+ln -s "$MPF_HOME/share/samples" "$systemTestSamplesPath"
 
 wfmTestSamplesPath="trunk/workflow-manager/src/test/resources/samples"
 mv "$wfmTestSamplesPath/*" "$MPF_HOME/share/samples"
 rmdir "$wfmTestSamplesPath"
-ln -s "$wfmTestSamplesPath" "$MPF_HOME/share/samples"
+ln -s "$MPF_HOME/share/samples" "$wfmTestSamplesPath"
 
 # Leave "components.build.package.json" blank. The components should have
 # already been built in the mpf_post_build image.
