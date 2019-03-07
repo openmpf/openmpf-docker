@@ -355,6 +355,9 @@ node(jenkinsNodes) {
             email("ABORTED")
         } else {
             sh 'echo "DETECTED BUILD FAILURE"'
+            sh 'echo "Exception type: "' + e.getClass()
+            sh 'echo "Exception message: "' + e.getMessage()
+            sh 'echo "Exception stacktrace: "' + e.getStackTrace() as String[]
             email("FAILURE")
         }
         throw e; // rethrow so Jenkins knows of failure
