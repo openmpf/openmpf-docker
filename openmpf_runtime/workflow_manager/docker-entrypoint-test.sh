@@ -90,6 +90,7 @@ cd /home/mpf/openmpf-projects/openmpf
 
 # Move sample data into a location that's accessible by all of the nodes.
 mv trunk/mpf-system-tests/src/test/resources/samples $MPF_HOME/share/
+mv trunk/workflow-manager/src/test/resources/samples $MPF_HOME/share/
 
 # Leave "components.build.package.json" blank. The components should have
 # already been built in the mpf_post_build image.

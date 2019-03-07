@@ -75,8 +75,6 @@ cp /home/mpf/openmpf-projects/openmpf/trunk/workflow-manager/src/main/resources/
 sed -i '37s/.*/              p:hostName="redis"/' \
     /home/mpf/openmpf-projects/openmpf/trunk/workflow-manager/src/main/resources/applicationContext-redis.xml
 
-# TODO: Get the server set up with HTTPS.
-
 # Add Maven dependencies (CMU Sphinx, etc.)
 mkdir -p /root/.m2/repository
 tar xzf /home/mpf/openmpf-projects/openmpf-build-tools/mpf-maven-deps.tar.gz \
