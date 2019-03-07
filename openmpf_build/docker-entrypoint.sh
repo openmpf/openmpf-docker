@@ -113,7 +113,6 @@ if [ $RUN_TESTS -le 0 ]; then
 else
   # Perform build with unit tests
   # TODO: Use JSON package with examples
-  # TODO: Remove -Dtest
   # TODO: Create different application context?
   cd /home/mpf/openmpf-projects/openmpf
   set +e # Turn off exit on error
