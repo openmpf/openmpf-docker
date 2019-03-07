@@ -128,4 +128,5 @@ if [ $mavenRetVal -ne 0 ]; then
     echo 'DETECTED INTEGRATION TEST FAILURE(S)'
     exit 1
 fi
-set -o xtrace
+echo 'DETECTED INTEGRATION TESTS PASSED'
+exit 0

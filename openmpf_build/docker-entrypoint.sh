@@ -159,6 +159,7 @@ else
       echo 'DETECTED TEST FAILURE(S)'
       exit 1
   fi
+  echo 'DETECTED TESTS PASSED'
   set -o xtrace
 fi
 
