@@ -192,3 +192,29 @@ VOLUME $MPF_HOME/share
 COPY node_manager/docker-entrypoint.sh /home/mpf
 RUN dos2unix -q /home/mpf/docker-entrypoint.sh
 ENTRYPOINT ["/home/mpf/docker-entrypoint.sh"]
+
+################################################################################
+# Labels                                                                       #
+################################################################################
+
+ARG BUILD_DATE
+ARG BUILD_VERSION
+ARG BUILD_SHAS
+
+# Clear inherited labels from CentOS 7.4.1708 base image.
+# TODO: Remove these when we start using a newer CentOS base image.
+LABEL build-date= \
+      license= \
+      name= \
+      vendor=
+
+# Set labels
+LABEL org.label-schema.build-date=$BUILD_DATE \
+      org.label-schema.license="Mixed" \
+      org.label-schema.name="OpenMPF Node Manager with Components" \
+      org.label-schema.schema-version="1.0" \
+      org.label-schema.url="https://openmpf.github.io" \
+      org.label-schema.vcs-ref=$BUILD_SHAS \
+      org.label-schema.vcs-url="https://github.com/openmpf" \
+      org.label-schema.vendor=MITRE \
+      org.label-schema.version=$BUILD_VERSION

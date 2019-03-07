@@ -24,8 +24,6 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-
-
 // Get build parameters.
 def imageTag = env.getProperty("image_tag")
 def openmpfDockerBranch = env.getProperty("openmpf_docker_branch")
@@ -68,8 +66,18 @@ def openmpfConfigRepoCredId = env.getProperty('openmpf_config_repo_cred_id')
 def openmpfConfigDockerRepo = env.getProperty("openmpf_config_docker_repo")
 def openmpfConfigDockerBranch = env.getProperty("openmpf_config_docker_branch")
 
+// Labels
+def buildDate
+def buildShas
+def openmpfCustomDockerSha
+def openmpfCustomComponentsSha
+def openmpfCustomSystemTestsSha
+def openmpfConfigDockerSha
+
 node(jenkinsNodes) {
     try {
+        buildDate = getTimestamp()
+
         def dockerRegistryHostAndPort = dockerRegistryHost + ':' + dockerRegistryPort
         def remoteImageTagPrefix = dockerRegistryHostAndPort + '/openmpf/'
 
@@ -89,7 +97,7 @@ node(jenkinsNodes) {
 
         stage('Clone repos') {
 
-            gitCheckoutAndPull("https://github.com/openmpf/openmpf-docker.git",
+            def openmpfDockerSha = gitCheckoutAndPull("https://github.com/openmpf/openmpf-docker.git",
                     '.', openmpfDockerBranch)
 
             // Revert changes made to files by a previous Jenkins build.
@@ -100,41 +108,50 @@ node(jenkinsNodes) {
                     openmpfProjectsPath, openmpfProjectsBranch)
             sh 'cd ' + openmpfProjectsPath + '; git submodule update --init'
 
-            gitCheckoutAndPull("https://github.com/openmpf/openmpf.git",
+            def openmpfSha = gitCheckoutAndPull("https://github.com/openmpf/openmpf.git",
                     openmpfProjectsPath + '/openmpf', openmpfBranch)
-            gitCheckoutAndPull("https://github.com/openmpf/openmpf-components.git",
+            def openmpfComponentsSha = gitCheckoutAndPull("https://github.com/openmpf/openmpf-components.git",
                     openmpfProjectsPath + '/openmpf-components', openmpfComponentsBranch)
-            gitCheckoutAndPull("https://github.com/openmpf/openmpf-contrib-components.git",
+            def openmpfContribComponentsSha = gitCheckoutAndPull("https://github.com/openmpf/openmpf-contrib-components.git",
                     openmpfProjectsPath + '/openmpf-contrib-components', openmpfContribComponentsBranch)
-            gitCheckoutAndPull("https://github.com/openmpf/openmpf-cpp-component-sdk.git",
+            def openmpfCppComponentSdkSha = gitCheckoutAndPull("https://github.com/openmpf/openmpf-cpp-component-sdk.git",
                     openmpfProjectsPath + '/openmpf-cpp-component-sdk', openmpfCppComponentSdkBranch)
-            gitCheckoutAndPull("https://github.com/openmpf/openmpf-java-component-sdk.git",
+            def openmpfJavaComponentSdkSha = gitCheckoutAndPull("https://github.com/openmpf/openmpf-java-component-sdk.git",
                     openmpfProjectsPath + '/openmpf-java-component-sdk', openmpfJavaComponentSdkBranch)
-            gitCheckoutAndPull("https://github.com/openmpf/openmpf-python-component-sdk.git",
+            def openmpfPythonComponentSdkSha = gitCheckoutAndPull("https://github.com/openmpf/openmpf-python-component-sdk.git",
                     openmpfProjectsPath + '/openmpf-python-component-sdk', openmpfPythonComponentSdkBranch)
-            gitCheckoutAndPull("https://github.com/openmpf/openmpf-build-tools.git",
+            def openmpfBuildToolsSha = gitCheckoutAndPull("https://github.com/openmpf/openmpf-build-tools.git",
                     openmpfProjectsPath + '/openmpf-build-tools', openmpfBuildToolsBranch)
+
+            buildShas = 'openmpf-docker: ' + openmpfDockerSha +
+                    ', openmpf: ' + openmpfSha +
+                    ', openmpf-components: ' + openmpfComponentsSha +
+                    ', openmpf-contrib-components: ' + openmpfContribComponentsSha +
+                    ', openmpf-cpp-component-sdk: ' + openmpfCppComponentSdkSha +
+                    ', openmpf-java-component-sdk: ' + openmpfJavaComponentSdkSha +
+                    ', openmpf-python-component-sdk: ' + openmpfPythonComponentSdkSha +
+                    ', openmpf-build-tools: ' + openmpfBuildToolsSha
 
             if (buildCustomComponents) {
                 def openmpfCustomDockerPath = 'openmpf_custom_build'
-                gitCheckoutAndPullWithCredId(openmpfCustomDockerRepo, openmpfCustomRepoCredId,
+                openmpfCustomDockerSha = gitCheckoutAndPullWithCredId(openmpfCustomDockerRepo, openmpfCustomRepoCredId,
                         openmpfCustomDockerPath, openmpfCustomDockerBranch)
 
                 // Copy custom component build files into place (SDKs, etc.)
                 sh 'cp -u /data/openmpf/custom-build-files/* ' + openmpfCustomDockerPath
 
                 def openmpfCustomComponentsPath = openmpfProjectsPath + '/' + openmpfCustomComponentsSlug
-                gitCheckoutAndPullWithCredId(openmpfCustomComponentsRepo, openmpfCustomRepoCredId,
+                openmpfCustomComponentsSha = gitCheckoutAndPullWithCredId(openmpfCustomComponentsRepo, openmpfCustomRepoCredId,
                         openmpfCustomComponentsPath, openmpfCustomComponentsBranch)
 
                 def openmpfCustomSystemTestsPath = openmpfProjectsPath + '/' + openmpfCustomSystemTestsSlug
-                gitCheckoutAndPullWithCredId(openmpfCustomSystemTestsRepo, openmpfCustomRepoCredId,
+                openmpfCustomSystemTestsSha = gitCheckoutAndPullWithCredId(openmpfCustomSystemTestsRepo, openmpfCustomRepoCredId,
                         openmpfCustomSystemTestsPath, openmpfCustomSystemTestsBranch)
             }
 
             if (applyCustomConfig) {
                 def openmpfConfigDockerPath = 'openmpf_custom_config'
-                gitCheckoutAndPullWithCredId(openmpfConfigDockerRepo, openmpfConfigRepoCredId,
+                openmpfConfigDockerSha = gitCheckoutAndPullWithCredId(openmpfConfigDockerRepo, openmpfConfigRepoCredId,
                         openmpfConfigDockerPath, openmpfConfigDockerBranch)
             }
 
@@ -160,12 +177,24 @@ node(jenkinsNodes) {
         docker.withRegistry('http://' + dockerRegistryHostAndPort, dockerRegistryCredId) {
 
             stage('Build base image') {
-                sh 'docker build openmpf_build/ -t ' + buildImageName
+                sh 'docker build openmpf_build/' +
+                        ' --build-arg BUILD_DATE=' + buildDate +
+                        ' --build-arg BUILD_VERSION=' + imageTag +
+                        ' --build-arg BUILD_SHAS=\"' + buildShas + '\"' +
+                        ' -t ' + buildImageName
 
                 if (buildCustomComponents) {
+                    buildShas += ', openmpf-custom-docker: ' + openmpfCustomDockerSha +
+                            ', openmpf-custom-components: ' + openmpfCustomComponentsSha +
+                            ', openmpf-custom-system-tests: ' + openmpfCustomSystemTestsSha
+
                     // Build the new build image for custom components using the original build image for open source
                     // components. This overwrites the original build image tag.
-                    sh 'docker build openmpf_custom_build/ --build-arg BUILD_IMAGE_NAME=' + buildImageName +
+                    sh 'docker build openmpf_custom_build/' +
+                            ' --build-arg BUILD_IMAGE_NAME=' + buildImageName +
+                            ' --build-arg BUILD_DATE=' + buildDate +
+                            ' --build-arg BUILD_VERSION=' + imageTag +
+                            ' --build-arg BUILD_SHAS=\"' + buildShas + '\"' +
                             ' -t ' + buildImageName
                 }
             }
@@ -187,10 +216,7 @@ node(jenkinsNodes) {
                                 '--mount type=bind,source="$(pwd)"/openmpf_build/openmpf-projects,target=/mnt/openmpf-projects ' +
                                 '-e BUILD_PACKAGE_JSON=' + buildPackageJson + ' ' +
                                 '-e RUN_TESTS=' + (runUnitTests ? 1 : 0) + ' ' +
-                                buildImageName, returnStdout: true)
-
-                        // Remove trailing newline.
-                        buildContainerId = buildContainerId.trim()
+                                buildImageName, returnStdout: true).trim()
 
                         // Attach to container to show log output and wait until entrypoint completes
                         def dockerRunRetVal = sh(script:'docker attach ' + buildContainerId, returnStatus:true)
@@ -252,8 +278,12 @@ node(jenkinsNodes) {
                         sh(script:'docker volume rm -f openmpf-docker_mpf_data', returnStatus:true)
                         sh(script:'docker volume rm -f openmpf-docker_mysql_data', returnStatus:true)
 
-                        sh 'docker-compose build --build-arg BUILD_IMAGE_NAME=' + buildImageName +
-                                ' --build-arg POST_BUILD_IMAGE_NAME=' + postBuildImageName
+                        sh 'docker-compose build' +
+                                ' --build-arg BUILD_IMAGE_NAME=' + buildImageName +
+                                ' --build-arg POST_BUILD_IMAGE_NAME=' + postBuildImageName +
+                                ' --build-arg BUILD_DATE=' + buildDate +
+                                ' --build-arg BUILD_VERSION=' + imageTag +
+                                ' --build-arg BUILD_SHAS=\"' + buildShas + '\"'
 
                         sh 'docker-compose up --force-recreate' +
                                 ' --abort-on-container-exit --exit-code-from workflow_manager_test'
@@ -283,14 +313,24 @@ node(jenkinsNodes) {
                 }
                 when (buildRuntimeImages) { // if false, don't show this step in the Stage View UI
                     sh 'cp docker-compose.yml.bak docker-compose.yml'
-                    sh 'docker-compose build --build-arg BUILD_IMAGE_NAME=' + buildImageName
+                    sh 'docker-compose build' +
+                            ' --build-arg BUILD_IMAGE_NAME=' + buildImageName +
+                            ' --build-arg BUILD_DATE=' + buildDate +
+                            ' --build-arg BUILD_VERSION=' + imageTag +
+                            ' --build-arg BUILD_SHAS=\"' + buildShas + '\"'
                 }
 
                 if (applyCustomConfig) {
+                    buildShas += ', openmpf-config-docker: ' + openmpfConfigDockerSha
+
                     // Build and tag the new Workflow Manager image with the image tag used in the compose files.
                     // That way, we do not have to modify the compose files. This overwrites the tag that referred to
                     // the original Workflow Manager image without the custom config.
-                    sh 'docker build openmpf_custom_config/workflow_manager --build-arg BUILD_IMAGE_NAME=' + workflowManagerImageName +
+                    sh 'docker build openmpf_custom_config/workflow_manager' +
+                            ' --build-arg BUILD_IMAGE_NAME=' + workflowManagerImageName +
+                            ' --build-arg BUILD_DATE=' + buildDate +
+                            ' --build-arg BUILD_VERSION=' + imageTag +
+                            ' --build-arg BUILD_SHAS=\"' + buildShas + '\"' +
                             ' -t ' + workflowManagerImageName
                 }
             }
@@ -344,16 +384,20 @@ def gitCheckoutAndPull(String repo, String dir, String branch) {
     sh 'cd ' + dir + '; git fetch'
     sh 'cd ' + dir + '; git checkout ' + branch
     sh 'cd ' + dir + '; git pull origin ' + branch
+
+    return sh(script: 'cd ' + dir + '; git rev-parse HEAD', returnStdout: true).trim()
 }
 
 def gitCheckoutAndPullWithCredId(String repo, String credId, String dir, String branch) {
-    checkout([$class: 'GitSCM',
+    def scmVars = checkout([$class: 'GitSCM',
               branches: [[name: '*/' + branch]],
               extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: dir]],
               userRemoteConfigs: [[credentialsId: credId, url: repo]]])
 
     // TODO: Make sure we're not in a detached state.
     // sh 'cd ' + dir + '; git checkout ' + branch
+
+    return scmVars.GIT_COMMIT
 }
 
 def isAborted() {
@@ -369,4 +413,8 @@ def email(String status) {
             body: '${JELLY_SCRIPT,template="text"}',
             recipientProviders: [[$class: 'RequesterRecipientProvider']]
     )
+}
+
+def getTimestamp() {
+    return sh(script: 'date --iso-8601=seconds', returnStdout: true).trim()
 }

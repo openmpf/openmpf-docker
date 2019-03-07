@@ -33,3 +33,22 @@ COPY activemq.xml /opt/activemq/conf/
 
 # TODO: This approach to using sed is brittle:
 RUN sed -i '52s/.*/log4j.appender.logfile.layout.ConversionPattern=%d %p [%t] %c - %m%n/' /opt/activemq/conf/log4j.properties
+
+################################################################################
+# Labels                                                                       #
+################################################################################
+
+ARG BUILD_DATE
+ARG BUILD_VERSION
+ARG BUILD_SHAS
+
+# Set labels
+LABEL org.label-schema.build-date=$BUILD_DATE \
+      org.label-schema.license="GPLv2" \
+      org.label-schema.name="OpenMPF ActiveMQ" \
+      org.label-schema.schema-version="1.0" \
+      org.label-schema.url="https://openmpf.github.io" \
+      org.label-schema.vcs-ref=$BUILD_SHAS \
+      org.label-schema.vcs-url="https://github.com/openmpf" \
+      org.label-schema.vendor=MITRE \
+      org.label-schema.version=$BUILD_VERSION
