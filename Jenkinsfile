@@ -80,7 +80,7 @@ def openmpfConfigDockerSha
 
 node(jenkinsNodes) {
     try {
-        throw new Exceotion("THIS IS A TEST!") // DEBUG
+        throw new Exception("THIS IS A TEST!") // DEBUG
 
         buildDate = getTimestamp()
 
