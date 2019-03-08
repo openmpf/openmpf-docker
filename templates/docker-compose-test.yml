@@ -69,7 +69,8 @@ services:
       - mysql
       - redis
       - active_mq
-    restart: always
+    # The following line will cause "docker-compose up ... --exit-code-from ..." to always return 1.
+    # restart: always
     environment:
       # The following line is needed to wait until the mySQL service is available:
       - MYSQL_ROOT_PASSWORD=password
