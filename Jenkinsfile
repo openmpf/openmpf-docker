@@ -367,7 +367,6 @@ node(jenkinsNodes) {
             sh 'echo "DETECTED BUILD FAILURE"'
             sh 'echo "Exception type: "' + e.getClass()
             sh 'echo "Exception message: "' + e.getMessage()
-            e.printStackTrace()
             email("FAILURE")
         }
         throw e; // rethrow so Jenkins knows of failure
