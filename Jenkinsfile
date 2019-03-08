@@ -285,8 +285,10 @@ node(jenkinsNodes) {
                                 ' --build-arg BUILD_VERSION=' + imageTag +
                                 ' --build-arg BUILD_SHAS=\"' + buildShas + '\"'
 
-                        sh 'docker-compose up --force-recreate' +
-                                ' --abort-on-container-exit --exit-code-from workflow_manager_test'
+                        wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) {
+                            sh 'docker-compose up --force-recreate' +
+                                    ' --abort-on-container-exit --exit-code-from workflow_manager_test'
+                        }
 
                         // Touch files to avoid the following error if the test reports are more than 3 seconds old:
                         // "Test reports were found but none of them are new"
