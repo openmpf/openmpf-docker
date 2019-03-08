@@ -112,13 +112,14 @@ if [ $RUN_TESTS -le 0 ]; then
     -DjenkinsBuildNumber=1
 else
   # Perform build with unit tests
+  # $MVN_OPTIONS will override other options that appear earlier in the following command.
   # TODO: Use JSON package with examples
-  # TODO: Create different application context?
   cd /home/mpf/openmpf-projects/openmpf
   set +e # Turn off exit on error
   mvn clean verify \
     -Dspring.profiles.active=jenkins -Pjenkins \
-    -DfailIfNoTests=false -DskipITs \
+    -DskipITs \
+    -DfailIfNoTests=false \
     -Dmaven.tomcat.skip=true \
     -Dcomponents.build.package.json=/home/mpf/openmpf-projects/openmpf/trunk/jenkins/scripts/config_files/$BUILD_PACKAGE_JSON \
     -Dstartup.auto.registration.skip=false \
@@ -127,7 +128,8 @@ else
     -Dcomponents.build.make.jobs="$parallelism" \
     -DgitBranch=`cd .. && git rev-parse --abbrev-ref HEAD` \
     -DgitShortId=`cd .. && git rev-parse --short HEAD` \
-    -DjenkinsBuildNumber=1
+    -DjenkinsBuildNumber=1 \
+    "$MVN_OPTIONS"
   mavenRetVal=$?
 
   # Run Gtests

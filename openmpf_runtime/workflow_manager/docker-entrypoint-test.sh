@@ -98,20 +98,25 @@ mv "$wfmTestSamplesPath"/* "$MPF_HOME/share/samples"
 rmdir "$wfmTestSamplesPath"
 ln -s "$MPF_HOME/share/samples" "$wfmTestSamplesPath"
 
-# Leave "components.build.package.json" blank. The components should have
-# already been built in the mpf_post_build image.
-# TODO: -Dit.test=ITComponentLifecycle,ITWebREST,ITComponentRegistration,ITWebStreamingReports, -DskipITs
+# Leave "components.build.package.json" blank. The components have already been built in the mpf_post_build image.
+# Only run integration tests. Unit tests can be run in the openmpf_build container.
+# $MVN_OPTIONS will override other options that appear earlier in the following command.
+# TODO: -Dit.test=ITComponentLifecycle,ITWebREST,ITComponentRegistration,ITWebStreamingReports,
+# TODO: -Dtest=TestSystemNightly
+# TODO: -Dtest=TestSystemStress
 mvn verify \
   -Dspring.profiles.active=jenkins -Pjenkins \
+  -Dtest=TestSystemOnDiff \
+  -Dit.test=ITComponentLifecycle,ITWebREST,ITComponentRegistration,ITWebStreamingReports \
   -DfailIfNoTests=false \
-  -Dit.test=ITComponentRegistration,ITWebStreamingReports \
   -Dtransport.guarantee="NONE" -Dweb.rest.protocol="http" \
   -Dcomponents.build.package.json= \
   -Dstartup.auto.registration.skip=false \
   -Dcomponents.build.dir=/home/mpf/openmpf-projects/openmpf/mpf-component-build \
   -DgitBranch=`cd .. && git rev-parse --abbrev-ref HEAD` \
   -DgitShortId=`cd .. && git rev-parse --short HEAD` \
-  -DjenkinsBuildNumber=1
+  -DjenkinsBuildNumber=1 \
+  "$MVN_OPTIONS"
 mavenRetVal=$?
 
 # Copy Maven test reports to host

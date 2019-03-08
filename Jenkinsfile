@@ -35,12 +35,16 @@ def openmpfCppComponentSdkBranch = env.getProperty("openmpf_cpp_component_sdk_br
 def openmpfJavaComponentSdkBranch = env.getProperty("openmpf_java_component_sdk_branch")
 def openmpfPythonComponentSdkBranch = env.getProperty("openmpf_python_component_sdk_branch")
 def openmpfBuildToolsBranch = env.getProperty("openmpf_build_tools_branch")
+
 def buildPackageJson = env.getProperty("build_package_json")
 def buildOpenmpf = env.getProperty("build_openmpf").toBoolean()
 def runUnitTests = env.getProperty("run_unit_tests").toBoolean()
+def mvnUnitTestOptions = env.getProperty("mvn_unit_test_options")
 def runIntegrationTests = env.getProperty("run_integration_tests").toBoolean()
+def mvnIntegrationTestOptions = env.getProperty("mvn_integration_test_options")
 def buildRuntimeImages = env.getProperty("build_runtime_images").toBoolean()
 def pushRuntimeImages = env.getProperty("push_runtime_images").toBoolean()
+
 def dockerRegistryHost = env.getProperty("docker_registry_host")
 def dockerRegistryPort = env.getProperty("docker_registry_port")
 def dockerRegistryCredId = env.getProperty("docker_registry_cred_id")
@@ -76,6 +80,8 @@ def openmpfConfigDockerSha
 
 node(jenkinsNodes) {
     try {
+        throw new Exceotion("THIS IS A TEST!") // DEBUG
+
         buildDate = getTimestamp()
 
         def dockerRegistryHostAndPort = dockerRegistryHost + ':' + dockerRegistryPort
@@ -216,6 +222,7 @@ node(jenkinsNodes) {
                                 '--mount type=bind,source="$(pwd)"/openmpf_build/openmpf-projects,target=/mnt/openmpf-projects ' +
                                 '-e BUILD_PACKAGE_JSON=' + buildPackageJson + ' ' +
                                 '-e RUN_TESTS=' + (runUnitTests ? 1 : 0) + ' ' +
+                                '-e MVN_OPTIONS=\"' + mvnUnitTestOptions + '\" ' +
                                 buildImageName, returnStdout: true).trim()
 
                         // Attach to container to show log output and wait until entrypoint completes
@@ -283,7 +290,8 @@ node(jenkinsNodes) {
                                 ' --build-arg POST_BUILD_IMAGE_NAME=' + postBuildImageName +
                                 ' --build-arg BUILD_DATE=' + buildDate +
                                 ' --build-arg BUILD_VERSION=' + imageTag +
-                                ' --build-arg BUILD_SHAS=\"' + buildShas + '\"'
+                                ' --build-arg BUILD_SHAS=\"' + buildShas + '\"' +
+                                ' --build-arg MVN_OPTIONS=\"' + mvnIntegrationTestOptions + '\"'
 
                         wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) {
                             sh 'docker-compose up --force-recreate' +
@@ -359,7 +367,7 @@ node(jenkinsNodes) {
             sh 'echo "DETECTED BUILD FAILURE"'
             sh 'echo "Exception type: "' + e.getClass()
             sh 'echo "Exception message: "' + e.getMessage()
-            sh 'echo "Exception stacktrace: "' + e.getStackTrace() as String[]
+            e.printStackTrace()
             email("FAILURE")
         }
         throw e; // rethrow so Jenkins knows of failure
