@@ -288,12 +288,12 @@ node(jenkinsNodes) {
                                 ' --build-arg POST_BUILD_IMAGE_NAME=' + postBuildImageName +
                                 ' --build-arg BUILD_DATE=' + buildDate +
                                 ' --build-arg BUILD_VERSION=' + imageTag +
-                                ' --build-arg BUILD_SHAS=\"' + buildShas + '\"' +
-                                ' --build-arg MVN_OPTIONS=\"' + mvnIntegrationTestOptions + '\"'
+                                ' --build-arg BUILD_SHAS=\"' + buildShas + '\"'
 
                         wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) {
                             sh 'docker-compose up --force-recreate' +
-                                    ' --abort-on-container-exit --exit-code-from workflow_manager_test'
+                                    ' --abort-on-container-exit --exit-code-from workflow_manager_test' +
+                                    ' -e MVN_OPTIONS=\"' + mvnIntegrationTestOptions + '\"'
                         }
 
                         // Touch files to avoid the following error if the test reports are more than 3 seconds old:

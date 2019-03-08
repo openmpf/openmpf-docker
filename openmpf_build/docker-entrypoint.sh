@@ -129,7 +129,7 @@ else
     -DgitBranch=`cd .. && git rev-parse --abbrev-ref HEAD` \
     -DgitShortId=`cd .. && git rev-parse --short HEAD` \
     -DjenkinsBuildNumber=1 \
-    "$MVN_OPTIONS"
+    $MVN_OPTIONS
   mavenRetVal=$?
 
   # Run Gtests
