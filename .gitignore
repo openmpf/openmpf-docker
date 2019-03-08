@@ -11,6 +11,7 @@ openmpf_build/jdk*.rpm
 # build artifacts
 openmpf_runtime/build_artifacts/*
 !openmpf_runtime/build_artifacts/.gitkeep
+install.tar
 
 # backup
 *.bak

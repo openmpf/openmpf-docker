@@ -1,0 +1,70 @@
+# Extract tar in separate container since we only need some of the files. Saves about 190mb on image size
+FROM centos:7 as extract_tar
+
+ENV MPF_HOME=/opt/mpf
+
+RUN yum install -y epel-release \
+    # libSM and libXrender packages are required for opencv-python
+    && yum install -y python-pip libSM libXrender \
+    && yum clean all \
+    && rm -rf /var/cache/yum/* \
+    && pip install --no-cache-dir --upgrade pip virtualenv \
+    && virtualenv "$MPF_HOME/plugins/plugin/venv"
+
+WORKDIR /root/install_files
+COPY install.tar .
+
+RUN tar -xf install.tar \
+        # Python component SDK wheels
+        ./python/wheelhouse \
+        # Component executor binary
+        ./bin/amq_detection_component \
+        # Component executor log config
+        ./config/Log4cxxConfig.xml \
+        # Libraries required for component executor
+        './lib/liblog4cxx*' './lib/libactivemq-cpp*' './lib/libQtCore*' './lib/libapr*' './lib/libXext*' \
+    && rm install.tar \
+    # Install MPF .whl files here so that only the expanded contents of the whl file are present in final image.
+    && "$MPF_HOME/plugins/plugin/venv/bin/pip" --no-cache-dir install python/wheelhouse/* \
+    && rm -rf python
+
+
+
+FROM centos:7
+
+# Copy in opencv-python dependencies
+COPY --from=extract_tar /usr/lib64/libSM.so* /usr/lib64/libICE.so* /usr/lib64/libXrender.so* /usr/lib64/libX11* \
+                        /usr/lib64/libxcb.so* /usr/lib64/libXau.so* /usr/lib64/
+
+ENV MPF_HOME=/opt/mpf
+WORKDIR $MPF_HOME
+COPY --from=extract_tar /root/install_files/ $MPF_HOME
+COPY --from=extract_tar $MPF_HOME/plugins/plugin/venv $MPF_HOME/plugins/plugin/venv
+
+
+
+ENV MPF_LOG_PATH=$MPF_HOME/share/logs
+ENV THIS_MPF_NODE=python_executor
+ENV ACTIVE_MQ_HOST=activemq
+ENV ACTIVE_MQ_BROKER_URI="failover://(tcp://$ACTIVE_MQ_HOST:61616)?jms.prefetchPolicy.all=1&startupMaxReconnectAttempts=1"
+
+
+COPY docker-entrypoint.sh /home/mpf/
+
+# Start by just installing dependencies of component. This way the dependencies will only need to be re-installed if
+# setup.py is modified.
+ONBUILD COPY setup.py /home/mpf/component_src/
+# Don't know of a better way to get the list of dependencies
+ONBUILD RUN "$MPF_HOME/plugins/plugin/venv/bin/python" /home/mpf/component_src/setup.py egg_info -e /tmp/ \
+        && "$MPF_HOME/plugins/plugin/venv/bin/pip" install --no-cache-dir -r /tmp/*.egg-info/requires.txt \
+        && rm -r /tmp/*.egg-info
+
+ONBUILD COPY . /home/mpf/component_src/
+ONBUILD COPY plugin-files $MPF_HOME/plugins/plugin/
+# Now, actually install the component. The dependencies have already been installed so it should print
+# "Requirement already satisfied:" for the dependencies.
+ONBUILD RUN "$MPF_HOME/plugins/plugin/venv/bin/pip" install --no-cache-dir /home/mpf/component_src
+
+ENTRYPOINT ["bash", "/home/mpf/docker-entrypoint.sh"]
+#ENTRYPOINT ["bash"]
+
