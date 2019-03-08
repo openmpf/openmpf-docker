@@ -80,8 +80,6 @@ def openmpfConfigDockerSha
 
 node(jenkinsNodes) {
     try {
-        throw new Exception("THIS IS A TEST!") // DEBUG
-
         buildDate = getTimestamp()
 
         def dockerRegistryHostAndPort = dockerRegistryHost + ':' + dockerRegistryPort
