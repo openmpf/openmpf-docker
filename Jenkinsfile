@@ -224,17 +224,19 @@ node(jenkinsNodes) {
                     }
                 }
 
-                /*
                 stage('Build runtime images') {
                     if (!buildRuntimeImages) {
                         sh 'echo "SKIPPING BUILD OF RUNTIME IMAGES"'
                     }
                     when (buildRuntimeImages) { // if false, don't show this step in the Stage View UI
-                        sh 'docker-compose build' +
-                                ' --build-arg BUILD_IMAGE_NAME=' + buildImageName +
-                                ' --build-arg BUILD_DATE=' + buildDate +
-                                ' --build-arg BUILD_VERSION=' + imageTag +
-                                ' --build-arg BUILD_SHAS=\"' + buildShas + '\"'
+                        wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color in Jenkins console
+
+                            sh 'docker-compose build' +
+                                    ' --build-arg BUILD_IMAGE_NAME=' + buildImageName +
+                                    ' --build-arg BUILD_DATE=' + buildDate +
+                                    ' --build-arg BUILD_VERSION=' + imageTag +
+                                    ' --build-arg BUILD_SHAS=\"' + buildShas + '\"'
+                        }
                     }
 
                     if (applyCustomConfig) {
@@ -254,18 +256,17 @@ node(jenkinsNodes) {
                         }
                     }
                 }
-                */
 
                 stage('Run system tests') {
                     if (!buildOpenmpf || !runIntegrationTests) {
                         sh 'echo "SKIPPING INTEGRATION TESTS"'
                     }
                     when (buildOpenmpf && runIntegrationTests) { // if false, don't show this step in the Stage View UI
+                        // sh 'cp docker-compose-test.yml docker-compose.yml'
+
                         wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color in Jenkins console
 
                             /*
-                            sh 'cp docker-compose-test.yml docker-compose.yml'
-
                             sh 'docker-compose build' +
                                     ' --build-arg BUILD_IMAGE_NAME=' + buildImageName +
                                     ' --build-arg POST_BUILD_IMAGE_NAME=' + postBuildImageName +
@@ -274,21 +275,14 @@ node(jenkinsNodes) {
                                     ' --build-arg BUILD_SHAS=\"' + buildShas + '\"'
                             */
 
-                            /*
                             sh 'docker exec ' +
                                     '-e MVN_OPTIONS=\"' + mvnIntegrationTestOptions + '\" ' +
                                     buildContainerId + ' /home/mpf/run-tests.sh'
-                            */
-
-                            sh 'docker exec ' +
-                                    '-e MVN_OPTIONS=\"' + mvnIntegrationTestOptions + '\" ' +
-                                    buildContainerId + ' printenv'
                         }
 
                         // Touch files to avoid the following error if the test reports are more than 3 seconds old:
                         // "Test reports were found but none of them are new"
 
-                        /*
                         sh 'sudo touch openmpf_runtime/build_artifacts/surefire-reports/*.xml'
                         junit 'openmpf_runtime/build_artifacts/surefire-reports/*.xml'
 
@@ -297,7 +291,6 @@ node(jenkinsNodes) {
 
                         sh 'sudo touch openmpf_runtime/build_artifacts/failsafe-reports/*.xml'
                         junit 'openmpf_runtime/build_artifacts/failsafe-reports/*.xml'
-                        */
                     }
                 }
 
