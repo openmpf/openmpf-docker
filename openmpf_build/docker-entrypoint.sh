@@ -50,8 +50,6 @@ rm -rf $BUILD_ARTIFACTS_PATH/*
 # Copy the OpenMPF Repository                                                  #
 ################################################################################
 
-ls $SOURCE_CODE_PATH # DEBUG
-
 cp -R $SOURCE_CODE_PATH /home/mpf/openmpf-projects
 
 # Make sure the source code line endings are correct if copying the source from a Windows host.

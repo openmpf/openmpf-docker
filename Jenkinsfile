@@ -258,7 +258,7 @@ node(jenkinsNodes) {
                     throw e // rethrow so Jenkins knows of failure
                 } finally {
                     if (buildContainerId != null) {
-                        sh(script: 'docker container rm -f ' + buildContainerId, returnStatus: true)
+                        // sh(script: 'docker container rm -f ' + buildContainerId, returnStatus: true) # DEBUG
                     }
                 }
             }
