@@ -78,8 +78,8 @@ def openmpfCustomComponentsSha
 def openmpfCustomSystemTestsSha
 def openmpfConfigDockerSha
 
-wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color in Jenkins console
 node(jenkinsNodes) {
+wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color in Jenkins console
     try {
         buildDate = getTimestamp()
 
@@ -263,6 +263,8 @@ node(jenkinsNodes) {
                                 ' --build-arg BUILD_VERSION=' + imageTag +
                                 ' --build-arg BUILD_SHAS=\"' + buildShas + '\"'
 
+                        sh 'docker-compose up'
+
                         sh 'docker exec ' +
                                 '-e MVN_OPTIONS=\"' + mvnIntegrationTestOptions + '\" ' +
                                 buildContainerId + ' /home/mpf/run-tests.sh'
@@ -283,8 +285,8 @@ node(jenkinsNodes) {
 
             } finally {
                 if (buildContainerId != null) {
-                    sh 'docker container rm -f ' + buildContainerId
                     sh 'docker-compose rm -vf'
+                    sh 'docker container rm -f ' + buildContainerId
                     sh 'docker volume rm -f openmpf_shared_data openmpf_mysql_data'
                 }
             }
