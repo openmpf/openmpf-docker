@@ -239,6 +239,7 @@ node(jenkinsNodes) {
                         sh(script: 'docker container rm -f ' + buildContainerId, returnStatus: true)
                     }
                 }
+            }
 
 
 
@@ -266,7 +267,6 @@ node(jenkinsNodes) {
                                             '-e MVN_OPTIONS=\"' + mvnUnitTestOptions + '\" ' +
                                             buildImageName, returnStdout: true).trim()
                                     */
-                                }
                         //}
 
                         /*
