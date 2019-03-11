@@ -287,7 +287,7 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
 
             } finally {
                 if (buildContainerId != null) {
-                    sh 'docker-compose rm -vf'
+                    sh 'docker-compose rm -svf'
                     sh 'docker container rm -f ' + buildContainerId
                     sh 'docker volume rm -f openmpf_shared_data openmpf_mysql_data'
                     sh 'docker network rm openmpf_default'
