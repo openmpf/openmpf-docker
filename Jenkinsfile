@@ -220,7 +220,7 @@ node(jenkinsNodes) {
                             }
 
                             stage('Second Run') {
-                                sh 'ls'
+                                sh 'docker exec ' + buildContainerId + ' ls'
                             }
 
 
