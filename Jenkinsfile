@@ -273,21 +273,17 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
 
                         // Touch files to avoid the following error if the test reports are more than 3 seconds old:
                         // "Test reports were found but none of them are new"
+                        sh 'sudo touch openmpf_runtime/build_artifacts/*-reports/*.xml'
 
-                        sh 'sudo touch openmpf_runtime/build_artifacts/surefire-reports/*.xml'
-                        junit 'openmpf_runtime/build_artifacts/surefire-reports/*.xml'
-
-                        sh 'sudo touch openmpf_runtime/build_artifacts/gtest-reports/*.xml'
-                        junit 'openmpf_runtime/build_artifacts/gtest-reports/*.xml'
-
-                        sh 'sudo touch openmpf_runtime/build_artifacts/failsafe-reports/*.xml'
-                        junit 'openmpf_runtime/build_artifacts/failsafe-reports/*.xml'
+                        // This will fail if no files are found.
+                        junit 'openmpf_runtime/build_artifacts/*-reports/*.xml'
                     }
                 }
 
             } finally {
                 if (buildContainerId != null) {
                     sh 'docker-compose rm -svf'
+                    sh 'sleep 10' // give previous command some time
                     sh 'docker container rm -f ' + buildContainerId
                     sh 'docker volume rm -f openmpf_shared_data openmpf_mysql_data'
                     sh 'docker network rm openmpf_default'

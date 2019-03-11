@@ -121,10 +121,10 @@ mvn verify \
   -DfailIfNoTests=false \
   -Dtransport.guarantee="NONE" -Dweb.rest.protocol="http" \
   -Dcomponents.build.components=\
-    openmpf-cpp-component-sdk/detection/examples:\
-    openmpf-java-component-sdk/detection/examples:\
-    openmpf-python-component-sdk/detection/examples/PythonTestComponent:\
-    openmpf-python-component-sdk/detection/examples/PythonOcvComponent \
+openmpf-cpp-component-sdk/detection/examples:\
+openmpf-java-component-sdk/detection/examples:\
+openmpf-python-component-sdk/detection/examples/PythonTestComponent:\
+openmpf-python-component-sdk/detection/examples/PythonOcvComponent \
   -Dstartup.auto.registration.skip=false \
   -Dcomponents.build.dir=/home/mpf/openmpf-projects/openmpf/mpf-component-build \
   -DgitBranch=`cd .. && git rev-parse --abbrev-ref HEAD` \
