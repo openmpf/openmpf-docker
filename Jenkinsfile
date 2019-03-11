@@ -220,15 +220,12 @@ node(jenkinsNodes) {
 
                             sh(script: 'docker exec ' + buildContainerId + ' touch first-run.txt', returnStatus: true)
                             // sh(script: 'docker exec ' + buildContainerId + ' /home/mpf/docker-entrypoint.sh', returnStatus:true)
-
-                            sh(script: 'docker container rm -f ' + buildContainerId, returnStatus: true) // DEBUG
-
                         }
 
-                        if (!runIntegrationTestsTests) {
+                        if (!runIntegrationTests) {
                             sh 'echo "SKIPPING INTEGRATION TESTS"'
                         }
-                        when(runIntegrationTestsTests) { // if false, don't show this step in the Stage View UI
+                        when(runIntegrationTests) { // if false, don't show this step in the Stage View UI
                             stage('Run system tests') {
                                 sh(script: 'docker exec ' + buildContainerId + ' ls', returnStatus: true)
                                 // sh(script: 'docker exec ' + buildContainerId + ' /home/mpf/run-tests.sh', returnStatus:true)
@@ -238,11 +235,9 @@ node(jenkinsNodes) {
                 } catch (Exception e) {
                     throw e // rethrow so Jenkins knows of failure
                 } finally {
-                    /*
                     if (buildContainerId != null) {
                         sh(script: 'docker container rm -f ' + buildContainerId, returnStatus: true)
                     }
-                    */
                 }
             }
 
