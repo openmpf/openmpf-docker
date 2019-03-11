@@ -217,34 +217,78 @@ node(jenkinsNodes) {
                                     (runIntegrationTests ? '--mount type=volume,source=openmpf_shared_data,target=/home/mpf/openmpf-projects/openmpf/trunk/install/share ' : '') +
                                     buildImageName + ' infinity', returnStdout: true).trim()
 
-                            sh(script: 'docker exec ' +
+                            sh 'docker exec ' +
                                     '-e BUILD_PACKAGE_JSON=' + buildPackageJson + ' ' +
-                                    buildContainerId + ' /home/mpf/docker-entrypoint.sh', returnStatus: true)
+                                    buildContainerId + ' /home/mpf/docker-entrypoint.sh'
                         }
                     }
                 }
+
+                /*
+                stage('Build runtime images') {
+                    if (!buildRuntimeImages) {
+                        sh 'echo "SKIPPING BUILD OF RUNTIME IMAGES"'
+                    }
+                    when (buildRuntimeImages) { // if false, don't show this step in the Stage View UI
+                        sh 'docker-compose build' +
+                                ' --build-arg BUILD_IMAGE_NAME=' + buildImageName +
+                                ' --build-arg BUILD_DATE=' + buildDate +
+                                ' --build-arg BUILD_VERSION=' + imageTag +
+                                ' --build-arg BUILD_SHAS=\"' + buildShas + '\"'
+                    }
+
+                    if (applyCustomConfig) {
+                        buildShas += ', openmpf-config-docker: ' + openmpfConfigDockerSha
+
+                        wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color in Jenkins console
+
+                            // Build and tag the new Workflow Manager image with the image tag used in the compose files.
+                            // That way, we do not have to modify the compose files. This overwrites the tag that referred to
+                            // the original Workflow Manager image without the custom config.
+                            sh 'docker build openmpf_custom_config/workflow_manager' +
+                                    ' --build-arg BUILD_IMAGE_NAME=' + workflowManagerImageName +
+                                    ' --build-arg BUILD_DATE=' + buildDate +
+                                    ' --build-arg BUILD_VERSION=' + imageTag +
+                                    ' --build-arg BUILD_SHAS=\"' + buildShas + '\"' +
+                                    ' -t ' + workflowManagerImageName
+                        }
+                    }
+                }
+                */
 
                 stage('Run system tests') {
                     if (!buildOpenmpf || !runIntegrationTests) {
                         sh 'echo "SKIPPING INTEGRATION TESTS"'
                     }
                     when (buildOpenmpf && runIntegrationTests) { // if false, don't show this step in the Stage View UI
-                        sh(script: 'docker-compose rm -svf', returnStatus: true)
-                        sh(script: 'docker volume rm -f openmpf_shared_data openmpf_mysql_data', returnStatus: true)
-
                         wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color in Jenkins console
-                            // sh(script: 'docker exec ' +
-                            //        '-e MVN_OPTIONS=\"' + mvnIntegrationTestOptions + '\" ' +
-                            //        buildContainerId + ' /home/mpf/run-tests.sh', returnStatus:true)
 
-                            sh(script: 'docker exec ' +
+                            /*
+                            sh 'cp docker-compose-test.yml docker-compose.yml'
+
+                            sh 'docker-compose build' +
+                                    ' --build-arg BUILD_IMAGE_NAME=' + buildImageName +
+                                    ' --build-arg POST_BUILD_IMAGE_NAME=' + postBuildImageName +
+                                    ' --build-arg BUILD_DATE=' + buildDate +
+                                    ' --build-arg BUILD_VERSION=' + imageTag +
+                                    ' --build-arg BUILD_SHAS=\"' + buildShas + '\"'
+                            */
+
+                            /*
+                            sh 'docker exec ' +
                                     '-e MVN_OPTIONS=\"' + mvnIntegrationTestOptions + '\" ' +
-                                    buildContainerId + ' printenv', returnStatus: true)
+                                    buildContainerId + ' /home/mpf/run-tests.sh'
+                            */
+
+                            sh 'docker exec ' +
+                                    '-e MVN_OPTIONS=\"' + mvnIntegrationTestOptions + '\" ' +
+                                    buildContainerId + ' printenv'
                         }
 
                         // Touch files to avoid the following error if the test reports are more than 3 seconds old:
                         // "Test reports were found but none of them are new"
 
+                        /*
                         sh 'sudo touch openmpf_runtime/build_artifacts/surefire-reports/*.xml'
                         junit 'openmpf_runtime/build_artifacts/surefire-reports/*.xml'
 
@@ -253,14 +297,28 @@ node(jenkinsNodes) {
 
                         sh 'sudo touch openmpf_runtime/build_artifacts/failsafe-reports/*.xml'
                         junit 'openmpf_runtime/build_artifacts/failsafe-reports/*.xml'
+                        */
                     }
                 }
 
-            } catch (Exception e) {
-                throw e // rethrow so Jenkins knows of failure
             } finally {
                 if (buildContainerId != null) {
-                    sh(script: 'docker container rm -f ' + buildContainerId, returnStatus: true)
+                    sh 'docker container rm -f ' + buildContainerId
+                    sh 'docker-compose rm -vf'
+                    sh 'docker volume rm -f openmpf_shared_data openmpf_mysql_data'
+                }
+            }
+
+            stage('Push runtime images') {
+                if (!pushRuntimeImages) {
+                    sh 'echo "SKIPPING PUSH OF RUNTIME IMAGES"'
+                }
+                when (pushRuntimeImages) { // if false, don't show this step in the Stage View UI
+                    sh 'cp docker-compose.yml.bak docker-compose.yml'
+
+                    // Pushing multiple tags is cheap, as all the layers are reused.
+                    sh 'docker push ' + buildImageName
+                    sh 'docker-compose push'
                 }
             }
 
@@ -353,45 +411,6 @@ node(jenkinsNodes) {
                         sh(script: 'docker-compose down ', returnStatus:true)
                         sh(script: 'docker container rm -f ' + buildContainerId, returnStatus:true)
                     }
-                }
-            }
-
-            stage('Build runtime images') {
-                if (!buildRuntimeImages) {
-                    sh 'echo "SKIPPING BUILD OF RUNTIME IMAGES"'
-                }
-                when (buildRuntimeImages) { // if false, don't show this step in the Stage View UI
-                    sh 'cp docker-compose.yml.bak docker-compose.yml'
-                    sh 'docker-compose build' +
-                            ' --build-arg BUILD_IMAGE_NAME=' + buildImageName +
-                            ' --build-arg BUILD_DATE=' + buildDate +
-                            ' --build-arg BUILD_VERSION=' + imageTag +
-                            ' --build-arg BUILD_SHAS=\"' + buildShas + '\"'
-                }
-
-                if (applyCustomConfig) {
-                    buildShas += ', openmpf-config-docker: ' + openmpfConfigDockerSha
-
-                    // Build and tag the new Workflow Manager image with the image tag used in the compose files.
-                    // That way, we do not have to modify the compose files. This overwrites the tag that referred to
-                    // the original Workflow Manager image without the custom config.
-                    sh 'docker build openmpf_custom_config/workflow_manager' +
-                            ' --build-arg BUILD_IMAGE_NAME=' + workflowManagerImageName +
-                            ' --build-arg BUILD_DATE=' + buildDate +
-                            ' --build-arg BUILD_VERSION=' + imageTag +
-                            ' --build-arg BUILD_SHAS=\"' + buildShas + '\"' +
-                            ' -t ' + workflowManagerImageName
-                }
-            }
-
-            stage('Push runtime images') {
-                if (!pushRuntimeImages) {
-                    sh 'echo "SKIPPING PUSH OF RUNTIME IMAGES"'
-                }
-                when (pushRuntimeImages) { // if false, don't show this step in the Stage View UI
-                    // Pushing multiple tags is cheap, as all the layers are reused.
-                    sh 'docker push ' + buildImageName
-                    sh 'docker-compose push'
                 }
             }
             */
