@@ -209,7 +209,7 @@ node(jenkinsNodes) {
                     when (buildOpenmpf) { // if false, don't show this step in the Stage View UI
                         wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color in Jenkins console
 
-                            // Run container as daemon in background to capture container id.
+                            // Run container as daemon in background.
                             buildContainerId = sh(script: 'docker run --entrypoint sleep -t -d ' +
                                     '--mount type=bind,source=/home/jenkins/.m2,target=/root/.m2 ' +
                                     '--mount type=bind,source="$(pwd)"/openmpf_runtime/build_artifacts,target=/mnt/build_artifacts ' +
@@ -228,13 +228,11 @@ node(jenkinsNodes) {
                     if (!buildOpenmpf || !runIntegrationTests) {
                         sh 'echo "SKIPPING INTEGRATION TESTS"'
                     }
-                    when(buildOpenmpf && runIntegrationTests) { // if false, don't show this step in the Stage View UI
+                    when (buildOpenmpf && runIntegrationTests) { // if false, don't show this step in the Stage View UI
                         sh(script: 'docker-compose rm -svf', returnStatus: true)
-                        sh(script: 'docker volume rm -f openmpf_shared_data', returnStatus: true)
-                        sh(script: 'docker volume rm -f openmpf_mysql_data', returnStatus: true)
+                        sh(script: 'docker volume rm -f openmpf_shared_data openmpf_mysql_data', returnStatus: true)
 
-                        wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) {
-                            // show color in Jenkins console
+                        wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color in Jenkins console
                             // sh(script: 'docker exec ' +
                             //        '-e MVN_OPTIONS=\"' + mvnIntegrationTestOptions + '\" ' +
                             //        buildContainerId + ' /home/mpf/run-tests.sh', returnStatus:true)
