@@ -218,9 +218,9 @@ node(jenkinsNodes) {
                                     (runIntegrationTests ? '--mount type=volume,source=openmpf_shared_data,target=/home/mpf/openmpf-projects/openmpf/trunk/install/share ' : '') +
                                     buildImageName, returnStdout: true).trim()
 
-                            sh(script: 'docker exec ' + buildContainerId +
+                            sh(script: 'docker exec ' +
                                     ' -e BUILD_PACKAGE_JSON=' + buildPackageJson +
-                                    ' /home/mpf/docker-entrypoint.sh', returnStatus:true)
+                                    buildContainerId + ' /home/mpf/docker-entrypoint.sh', returnStatus:true)
                         }
 
                         if (!runIntegrationTests) {
@@ -232,13 +232,13 @@ node(jenkinsNodes) {
                                 sh(script:'docker volume rm -f openmpf_shared_data', returnStatus:true)
                                 sh(script:'docker volume rm -f openmpf_mysql_data', returnStatus:true)
 
-                                //sh(script: 'docker exec ' + buildContainerId +
+                                // sh(script: 'docker exec ' +
                                 //        ' -e MVN_OPTIONS=\"' + mvnIntegrationTestOptions + '\" ' +
-                                //        ' /home/mpf/run-tests.sh', returnStatus:true)
+                                //        buildContainerId + ' /home/mpf/run-tests.sh', returnStatus:true)
 
-                                sh(script: 'docker exec ' + buildContainerId +
+                                sh(script: 'docker exec ' +
                                         ' -e MVN_OPTIONS=\"' + mvnIntegrationTestOptions + '\" ' +
-                                        ' printenv', returnStatus:true)
+                                        buildContainerId +' printenv', returnStatus:true)
 
                                 // Touch files to avoid the following error if the test reports are more than 3 seconds old:
                                 // "Test reports were found but none of them are new"
