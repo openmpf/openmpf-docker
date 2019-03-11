@@ -86,9 +86,7 @@ node(jenkinsNodes) {
         def remoteImageTagPrefix = dockerRegistryHostAndPort + '/openmpf/'
 
         def buildImageName = remoteImageTagPrefix + 'openmpf_build:' + imageTag
-        def postBuildImageName = 'openmpf_post_build:' + imageTag
         def buildContainerId
-        def postBuildImageId
 
         def workflowManagerImageName = remoteImageTagPrefix + 'openmpf_workflow_manager:' + imageTag
 
@@ -213,15 +211,18 @@ node(jenkinsNodes) {
                             sh 'echo "SKIPPING UNIT TESTS"'
                         }
 
-                        // Run container as daemon in background to capture container id
-                        buildContainerId = sh(script: 'docker run -d ' +
-                                '--mount type=bind,source=/home/jenkins/.m2,target=/root/.m2 ' +
-                                '--mount type=bind,source="$(pwd)"/openmpf_runtime/build_artifacts,target=/mnt/build_artifacts ' +
-                                '--mount type=bind,source="$(pwd)"/openmpf_build/openmpf-projects,target=/mnt/openmpf-projects ' +
-                                '-e BUILD_PACKAGE_JSON=' + buildPackageJson + ' ' +
-                                '-e RUN_TESTS=' + (runUnitTests ? 1 : 0) + ' ' +
-                                '-e MVN_OPTIONS=\"' + mvnUnitTestOptions + '\" ' +
-                                buildImageName, returnStdout: true).trim()
+                        wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) {
+                            // Run container as daemon in background to capture container id
+                            buildContainerId = sh(script: 'docker run -d ' +
+                                    '--mount type=bind,source=/home/jenkins/.m2,target=/root/.m2 ' +
+                                    '--mount type=bind,source="$(pwd)"/openmpf_runtime/build_artifacts,target=/mnt/build_artifacts ' +
+                                    '--mount type=bind,source="$(pwd)"/openmpf_build/openmpf-projects,target=/mnt/openmpf-projects ' +
+                                    '--mount type=volume,source=openmpf_shared_data,target=/home/mpf/openmpf-projects/openmpf/trunk/install/share ' +
+                                    '-e BUILD_PACKAGE_JSON=' + buildPackageJson + ' ' +
+                                    '-e RUN_TESTS=' + (runUnitTests ? 1 : 0) + ' ' +
+                                    '-e MVN_OPTIONS=\"' + mvnUnitTestOptions + '\" ' +
+                                    buildImageName, returnStdout: true).trim()
+                        }
 
                         // Attach to container to show log output and wait until entrypoint completes
                         def dockerRunRetVal = sh(script:'docker attach ' + buildContainerId, returnStatus:true)
@@ -255,45 +256,25 @@ node(jenkinsNodes) {
                 }
             }
 
-            stage('Commit post-build image') {
-                // Save the post-build image to run system tests.
-                if (!buildOpenmpf || !runIntegrationTests) {
-                    sh 'echo "SKIPPING COMMIT OF POST-BUILD IMAGE"'
-                }
-                when (buildOpenmpf && runIntegrationTests) { // if false, don't show this step in the Stage View UI
-                    try {
-                        postBuildImageId = sh(script: 'docker commit ' + buildContainerId +
-                                ' ' + postBuildImageName, returnStdout: true)
-                    } finally {
-                        sh(script: 'docker container rm -f ' + buildContainerId, returnStatus:true)
-                    }
-                }
-            }
-
             stage('Run system tests') {
                 if (!runIntegrationTests) {
                     sh 'echo "SKIPPING INTEGRATION TESTS"'
                 }
                 when (runIntegrationTests) { // if false, don't show this step in the Stage View UI
                     try {
-                        sh 'sed "s/~\\/\\.m2/\\/home\\/jenkins\\/\\.m2/g"' +
-                                ' docker-compose-test.yml > docker-compose.yml'
-
                         sh(script:'docker-compose rm -svf', returnStatus:true)
                         sh(script:'docker volume rm -f openmpf_shared_data', returnStatus:true)
                         sh(script:'docker volume rm -f openmpf_mysql_data', returnStatus:true)
 
-                        sh 'docker-compose build' +
-                                ' --build-arg BUILD_IMAGE_NAME=' + buildImageName +
-                                ' --build-arg POST_BUILD_IMAGE_NAME=' + postBuildImageName +
-                                ' --build-arg BUILD_DATE=' + buildDate +
-                                ' --build-arg BUILD_VERSION=' + imageTag +
-                                ' --build-arg BUILD_SHAS=\"' + buildShas + '\"'
-
                         wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) {
-                            sh 'docker-compose up --force-recreate' +
-                                    ' --abort-on-container-exit --exit-code-from workflow_manager_test' +
-                                    ' -e MVN_OPTIONS=\"' + mvnIntegrationTestOptions + '\"'
+                            sh 'docker-compose build' +
+                                    ' --build-arg BUILD_IMAGE_NAME=' + buildImageName +
+                                    ' --build-arg POST_BUILD_IMAGE_NAME=' + postBuildImageName +
+                                    ' --build-arg BUILD_DATE=' + buildDate +
+                                    ' --build-arg BUILD_VERSION=' + imageTag +
+                                    ' --build-arg BUILD_SHAS=\"' + buildShas + '\"'
+
+                            sh 'docker exec --entrypoint /opt/mpf/run-tests.sh'
                         }
 
                         // Touch files to avoid the following error if the test reports are more than 3 seconds old:
@@ -309,10 +290,7 @@ node(jenkinsNodes) {
                         // TODO: Make "--volumes" flag configurable.
                         // TODO: Prefix shared volume with Jenkins build name to prevent simultaneous build conflicts.
                         sh(script: 'docker-compose down ', returnStatus:true)
-                        if (postBuildImageId != null) {
-                            // Discard the post build image
-                            // sh(script: 'docker image rm -f ' + postBuildImageId, returnStatus:true) // DEBUG
-                        }
+                        sh(script: 'docker container rm -f ' + buildContainerId, returnStatus:true)
                     }
                 }
             }

@@ -55,33 +55,6 @@ services:
     image: redis
     restart: always
 
-  workflow_manager_test:
-    image: <registry>/<repository>/openmpf_workflow_manager_test:<image_tag>
-    container_name: workflow_manager
-    build:
-      context: ./openmpf_runtime
-      dockerfile: workflow_manager/test.Dockerfile
-    # The following entrypoint is for manual debugging:
-    # entrypoint:
-    #  - sleep
-    #  - infinity
-    depends_on:
-      - mysql
-      - redis
-      - active_mq
-    # The following line will cause "docker-compose up ... --exit-code-from ..." to always return 1.
-    # restart: always
-    environment:
-      # The following line is needed to wait until the mySQL service is available:
-      - MYSQL_ROOT_PASSWORD=password
-    ports:
-      - "8080:8080"
-    volumes:
-      - shared_data:/home/mpf/openmpf-projects/openmpf/trunk/install/share
-      # The following line is updated during a Jenkins build:
-      - ~/.m2:/root/.m2
-      - ./openmpf_runtime/build_artifacts:/mnt/build_artifacts
-
   node_manager:
     image: <registry>/<repository>/openmpf_node_manager:<image_tag>
     build:
