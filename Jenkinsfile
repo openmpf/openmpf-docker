@@ -215,11 +215,12 @@ node(jenkinsNodes) {
                                     '--mount type=bind,source=/home/jenkins/.m2,target=/root/.m2 ' +
                                     '--mount type=bind,source="$(pwd)"/openmpf_runtime/build_artifacts,target=/mnt/build_artifacts ' +
                                     '--mount type=bind,source="$(pwd)"/openmpf_build/openmpf-projects,target=/mnt/openmpf-projects ' +
-                                    '--mount type=volume,source=openmpf_shared_data,target=/home/mpf/openmpf-projects/openmpf/trunk/install/share ' +
+                                    (runIntegrationTests ? '--mount type=volume,source=openmpf_shared_data,target=/home/mpf/openmpf-projects/openmpf/trunk/install/share ' : '') +
                                     buildImageName, returnStdout: true).trim()
 
-                            sh(script: 'docker exec ' + buildContainerId + ' touch first-run.txt', returnStatus: true)
-                            // sh(script: 'docker exec ' + buildContainerId + ' /home/mpf/docker-entrypoint.sh', returnStatus:true)
+                            sh(script: 'docker exec ' + buildContainerId +
+                                    ' -e BUILD_PACKAGE_JSON=' + buildPackageJson +
+                                    ' /home/mpf/docker-entrypoint.sh', returnStatus:true)
                         }
 
                         if (!runIntegrationTests) {
@@ -227,8 +228,29 @@ node(jenkinsNodes) {
                         }
                         when(runIntegrationTests) { // if false, don't show this step in the Stage View UI
                             stage('Run system tests') {
-                                sh(script: 'docker exec ' + buildContainerId + ' ls', returnStatus: true)
-                                // sh(script: 'docker exec ' + buildContainerId + ' /home/mpf/run-tests.sh', returnStatus:true)
+                                sh(script:'docker-compose rm -svf', returnStatus:true)
+                                sh(script:'docker volume rm -f openmpf_shared_data', returnStatus:true)
+                                sh(script:'docker volume rm -f openmpf_mysql_data', returnStatus:true)
+
+                                //sh(script: 'docker exec ' + buildContainerId +
+                                //        ' -e MVN_OPTIONS=\"' + mvnIntegrationTestOptions + '\" ' +
+                                //        ' /home/mpf/run-tests.sh', returnStatus:true)
+
+                                sh(script: 'docker exec ' + buildContainerId +
+                                        ' -e MVN_OPTIONS=\"' + mvnIntegrationTestOptions + '\" ' +
+                                        ' printenv', returnStatus:true)
+
+                                // Touch files to avoid the following error if the test reports are more than 3 seconds old:
+                                // "Test reports were found but none of them are new"
+
+                                sh 'sudo touch openmpf_runtime/build_artifacts/surefire-reports/*.xml'
+                                junit 'openmpf_runtime/build_artifacts/surefire-reports/*.xml'
+
+                                sh 'sudo touch openmpf_runtime/build_artifacts/gtest-reports/*.xml'
+                                junit 'openmpf_runtime/build_artifacts/gtest-reports/*.xml'
+
+                                sh 'sudo touch openmpf_runtime/build_artifacts/failsafe-reports/*.xml'
+                                junit 'openmpf_runtime/build_artifacts/failsafe-reports/*.xml'
                             }
                         }
                     }
