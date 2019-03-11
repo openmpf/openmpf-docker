@@ -78,6 +78,7 @@ def openmpfCustomComponentsSha
 def openmpfCustomSystemTestsSha
 def openmpfConfigDockerSha
 
+wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color in Jenkins console
 node(jenkinsNodes) {
     try {
         buildDate = getTimestamp()
@@ -207,20 +208,17 @@ node(jenkinsNodes) {
                         sh 'echo "SKIPPING OPENMPF BUILD"'
                     }
                     when (buildOpenmpf) { // if false, don't show this step in the Stage View UI
-                        wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color in Jenkins console
+                        // Run container as daemon in background.
+                        buildContainerId = sh(script: 'docker run --entrypoint sleep -t -d ' +
+                                '--mount type=bind,source=/home/jenkins/.m2,target=/root/.m2 ' +
+                                '--mount type=bind,source="$(pwd)"/openmpf_runtime/build_artifacts,target=/mnt/build_artifacts ' +
+                                '--mount type=bind,source="$(pwd)"/openmpf_build/openmpf-projects,target=/mnt/openmpf-projects ' +
+                                (runIntegrationTests ? '--mount type=volume,source=openmpf_shared_data,target=/home/mpf/openmpf-projects/openmpf/trunk/install/share ' : '') +
+                                buildImageName + ' infinity', returnStdout: true).trim()
 
-                            // Run container as daemon in background.
-                            buildContainerId = sh(script: 'docker run --entrypoint sleep -t -d ' +
-                                    '--mount type=bind,source=/home/jenkins/.m2,target=/root/.m2 ' +
-                                    '--mount type=bind,source="$(pwd)"/openmpf_runtime/build_artifacts,target=/mnt/build_artifacts ' +
-                                    '--mount type=bind,source="$(pwd)"/openmpf_build/openmpf-projects,target=/mnt/openmpf-projects ' +
-                                    (runIntegrationTests ? '--mount type=volume,source=openmpf_shared_data,target=/home/mpf/openmpf-projects/openmpf/trunk/install/share ' : '') +
-                                    buildImageName + ' infinity', returnStdout: true).trim()
-
-                            sh 'docker exec ' +
-                                    '-e BUILD_PACKAGE_JSON=' + buildPackageJson + ' ' +
-                                    buildContainerId + ' /home/mpf/docker-entrypoint.sh'
-                        }
+                        sh 'docker exec ' +
+                                '-e BUILD_PACKAGE_JSON=' + buildPackageJson + ' ' +
+                                buildContainerId + ' /home/mpf/docker-entrypoint.sh'
                     }
                 }
 
@@ -229,31 +227,25 @@ node(jenkinsNodes) {
                         sh 'echo "SKIPPING BUILD OF RUNTIME IMAGES"'
                     }
                     when (buildRuntimeImages) { // if false, don't show this step in the Stage View UI
-                        wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color in Jenkins console
-
-                            sh 'docker-compose build' +
-                                    ' --build-arg BUILD_IMAGE_NAME=' + buildImageName +
-                                    ' --build-arg BUILD_DATE=' + buildDate +
-                                    ' --build-arg BUILD_VERSION=' + imageTag +
-                                    ' --build-arg BUILD_SHAS=\"' + buildShas + '\"'
-                        }
+                        sh 'docker-compose build' +
+                                ' --build-arg BUILD_IMAGE_NAME=' + buildImageName +
+                                ' --build-arg BUILD_DATE=' + buildDate +
+                                ' --build-arg BUILD_VERSION=' + imageTag +
+                                ' --build-arg BUILD_SHAS=\"' + buildShas + '\"'
                     }
 
                     if (applyCustomConfig) {
                         buildShas += ', openmpf-config-docker: ' + openmpfConfigDockerSha
 
-                        wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color in Jenkins console
-
-                            // Build and tag the new Workflow Manager image with the image tag used in the compose files.
-                            // That way, we do not have to modify the compose files. This overwrites the tag that referred to
-                            // the original Workflow Manager image without the custom config.
-                            sh 'docker build openmpf_custom_config/workflow_manager' +
-                                    ' --build-arg BUILD_IMAGE_NAME=' + workflowManagerImageName +
-                                    ' --build-arg BUILD_DATE=' + buildDate +
-                                    ' --build-arg BUILD_VERSION=' + imageTag +
-                                    ' --build-arg BUILD_SHAS=\"' + buildShas + '\"' +
-                                    ' -t ' + workflowManagerImageName
-                        }
+                        // Build and tag the new Workflow Manager image with the image tag used in the compose files.
+                        // That way, we do not have to modify the compose files. This overwrites the tag that referred to
+                        // the original Workflow Manager image without the custom config.
+                        sh 'docker build openmpf_custom_config/workflow_manager' +
+                                ' --build-arg BUILD_IMAGE_NAME=' + workflowManagerImageName +
+                                ' --build-arg BUILD_DATE=' + buildDate +
+                                ' --build-arg BUILD_VERSION=' + imageTag +
+                                ' --build-arg BUILD_SHAS=\"' + buildShas + '\"' +
+                                ' -t ' + workflowManagerImageName
                     }
                 }
 
@@ -262,23 +254,18 @@ node(jenkinsNodes) {
                         sh 'echo "SKIPPING INTEGRATION TESTS"'
                     }
                     when (buildOpenmpf && runIntegrationTests) { // if false, don't show this step in the Stage View UI
-                        // sh 'cp docker-compose-test.yml docker-compose.yml'
+                        sh 'cp docker-compose-test.yml docker-compose.yml'
 
-                        wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color in Jenkins console
+                        sh 'docker-compose build' +
+                                ' --build-arg BUILD_IMAGE_NAME=' + buildImageName +
+                                ' --build-arg POST_BUILD_IMAGE_NAME=' + postBuildImageName +
+                                ' --build-arg BUILD_DATE=' + buildDate +
+                                ' --build-arg BUILD_VERSION=' + imageTag +
+                                ' --build-arg BUILD_SHAS=\"' + buildShas + '\"'
 
-                            /*
-                            sh 'docker-compose build' +
-                                    ' --build-arg BUILD_IMAGE_NAME=' + buildImageName +
-                                    ' --build-arg POST_BUILD_IMAGE_NAME=' + postBuildImageName +
-                                    ' --build-arg BUILD_DATE=' + buildDate +
-                                    ' --build-arg BUILD_VERSION=' + imageTag +
-                                    ' --build-arg BUILD_SHAS=\"' + buildShas + '\"'
-                            */
-
-                            sh 'docker exec ' +
-                                    '-e MVN_OPTIONS=\"' + mvnIntegrationTestOptions + '\" ' +
-                                    buildContainerId + ' /home/mpf/run-tests.sh'
-                        }
+                        sh 'docker exec ' +
+                                '-e MVN_OPTIONS=\"' + mvnIntegrationTestOptions + '\" ' +
+                                buildContainerId + ' /home/mpf/run-tests.sh'
 
                         // Touch files to avoid the following error if the test reports are more than 3 seconds old:
                         // "Test reports were found but none of them are new"
@@ -431,7 +418,7 @@ node(jenkinsNodes) {
         sh "echo 'CURRENT BUILD RESULT: ${currentBuild.currentResult}'"
         email(currentBuild.currentResult)
     }
-}
+}}
 
 def gitCheckoutAndPull(String repo, String dir, String branch) {
     // This is the official procedure, but we don't want all of the "Git Build Data"
