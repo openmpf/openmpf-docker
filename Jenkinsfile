@@ -201,15 +201,14 @@ node(jenkinsNodes) {
                 }
             }
 
-            if (!buildOpenmpf) {
-                sh 'echo "SKIPPING OPENMPF BUILD AND TESTS"'
-            }
-            when (buildOpenmpf) { // if false, don't show this step in the Stage View UI
-                try {
-                    // Show color in Jenkins console.
-                    wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) {
+            try {
+                stage('Build OpenMPF') {
+                    if (!buildOpenmpf) {
+                        sh 'echo "SKIPPING OPENMPF BUILD"'
+                    }
+                    when (buildOpenmpf) { // if false, don't show this step in the Stage View UI
+                        wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color in Jenkins console
 
-                        stage('Build OpenMPF') {
                             // Run container as daemon in background to capture container id.
                             buildContainerId = sh(script: 'docker run --entrypoint sleep -t -d ' +
                                     '--mount type=bind,source=/home/jenkins/.m2,target=/root/.m2 ' +
@@ -220,46 +219,50 @@ node(jenkinsNodes) {
 
                             sh(script: 'docker exec ' +
                                     '-e BUILD_PACKAGE_JSON=' + buildPackageJson + ' ' +
-                                    buildContainerId + ' /home/mpf/docker-entrypoint.sh', returnStatus:true)
-                        }
-
-                        if (!runIntegrationTests) {
-                            sh 'echo "SKIPPING INTEGRATION TESTS"'
-                        }
-                        when(runIntegrationTests) { // if false, don't show this step in the Stage View UI
-                            stage('Run system tests') {
-                                sh(script:'docker-compose rm -svf', returnStatus:true)
-                                sh(script:'docker volume rm -f openmpf_shared_data', returnStatus:true)
-                                sh(script:'docker volume rm -f openmpf_mysql_data', returnStatus:true)
-
-                                // sh(script: 'docker exec ' +
-                                //        '-e MVN_OPTIONS=\"' + mvnIntegrationTestOptions + '\" ' +
-                                //        buildContainerId + ' /home/mpf/run-tests.sh', returnStatus:true)
-
-                                sh(script: 'docker exec ' +
-                                        '-e MVN_OPTIONS=\"' + mvnIntegrationTestOptions + '\" ' +
-                                        buildContainerId +' printenv', returnStatus:true)
-
-                                // Touch files to avoid the following error if the test reports are more than 3 seconds old:
-                                // "Test reports were found but none of them are new"
-
-                                sh 'sudo touch openmpf_runtime/build_artifacts/surefire-reports/*.xml'
-                                junit 'openmpf_runtime/build_artifacts/surefire-reports/*.xml'
-
-                                sh 'sudo touch openmpf_runtime/build_artifacts/gtest-reports/*.xml'
-                                junit 'openmpf_runtime/build_artifacts/gtest-reports/*.xml'
-
-                                sh 'sudo touch openmpf_runtime/build_artifacts/failsafe-reports/*.xml'
-                                junit 'openmpf_runtime/build_artifacts/failsafe-reports/*.xml'
-                            }
+                                    buildContainerId + ' /home/mpf/docker-entrypoint.sh', returnStatus: true)
                         }
                     }
-                } catch (Exception e) {
-                    throw e // rethrow so Jenkins knows of failure
-                } finally {
-                    if (buildContainerId != null) {
-                        // sh(script: 'docker container rm -f ' + buildContainerId, returnStatus: true) # DEBUG
+                }
+
+                stage('Run system tests') {
+                    if (!buildOpenmpf || !runIntegrationTests) {
+                        sh 'echo "SKIPPING INTEGRATION TESTS"'
                     }
+                    when(buildOpenmpf && runIntegrationTests) { // if false, don't show this step in the Stage View UI
+                        sh(script: 'docker-compose rm -svf', returnStatus: true)
+                        sh(script: 'docker volume rm -f openmpf_shared_data', returnStatus: true)
+                        sh(script: 'docker volume rm -f openmpf_mysql_data', returnStatus: true)
+
+                        wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) {
+                            // show color in Jenkins console
+                            // sh(script: 'docker exec ' +
+                            //        '-e MVN_OPTIONS=\"' + mvnIntegrationTestOptions + '\" ' +
+                            //        buildContainerId + ' /home/mpf/run-tests.sh', returnStatus:true)
+
+                            sh(script: 'docker exec ' +
+                                    '-e MVN_OPTIONS=\"' + mvnIntegrationTestOptions + '\" ' +
+                                    buildContainerId + ' printenv', returnStatus: true)
+                        }
+
+                        // Touch files to avoid the following error if the test reports are more than 3 seconds old:
+                        // "Test reports were found but none of them are new"
+
+                        sh 'sudo touch openmpf_runtime/build_artifacts/surefire-reports/*.xml'
+                        junit 'openmpf_runtime/build_artifacts/surefire-reports/*.xml'
+
+                        sh 'sudo touch openmpf_runtime/build_artifacts/gtest-reports/*.xml'
+                        junit 'openmpf_runtime/build_artifacts/gtest-reports/*.xml'
+
+                        sh 'sudo touch openmpf_runtime/build_artifacts/failsafe-reports/*.xml'
+                        junit 'openmpf_runtime/build_artifacts/failsafe-reports/*.xml'
+                    }
+                }
+
+            } catch (Exception e) {
+                throw e // rethrow so Jenkins knows of failure
+            } finally {
+                if (buildContainerId != null) {
+                    // sh(script: 'docker container rm -f ' + buildContainerId, returnStatus: true) # DEBUG
                 }
             }
 
