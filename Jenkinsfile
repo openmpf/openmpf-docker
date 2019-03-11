@@ -209,15 +209,15 @@ node(jenkinsNodes) {
                     // Show color in Jenkins console.
                     wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) {
 
-                        // Run container as daemon in background to capture container id.
-                        buildContainerId = sh(script: 'docker run -t -d ' +
-                                '--mount type=bind,source=/home/jenkins/.m2,target=/root/.m2 ' +
-                                '--mount type=bind,source="$(pwd)"/openmpf_runtime/build_artifacts,target=/mnt/build_artifacts ' +
-                                '--mount type=bind,source="$(pwd)"/openmpf_build/openmpf-projects,target=/mnt/openmpf-projects ' +
-                                '--mount type=volume,source=openmpf_shared_data,target=/home/mpf/openmpf-projects/openmpf/trunk/install/share ' +
-                                buildImageName, returnStdout: true).trim()
-
                         stage('Build OpenMPF') {
+                            // Run container as daemon in background to capture container id.
+                            buildContainerId = sh(script: 'docker run -t -d ' +
+                                    '--mount type=bind,source=/home/jenkins/.m2,target=/root/.m2 ' +
+                                    '--mount type=bind,source="$(pwd)"/openmpf_runtime/build_artifacts,target=/mnt/build_artifacts ' +
+                                    '--mount type=bind,source="$(pwd)"/openmpf_build/openmpf-projects,target=/mnt/openmpf-projects ' +
+                                    '--mount type=volume,source=openmpf_shared_data,target=/home/mpf/openmpf-projects/openmpf/trunk/install/share ' +
+                                    buildImageName, returnStdout: true).trim()
+
                             sh(script: 'docker exec ' + buildContainerId + ' touch first-run.txt', returnStatus: true)
                             // sh(script: 'docker exec ' + buildContainerId + ' /home/mpf/docker-entrypoint.sh', returnStatus:true)
                         }
@@ -382,7 +382,7 @@ node(jenkinsNodes) {
             sh 'echo "Exception message: "' + e.getMessage()
             email("FAILURE")
         }
-        throw e; // rethrow so Jenkins knows of failure
+        throw e // rethrow so Jenkins knows of failure
     }
 
     if (isAborted()) {
