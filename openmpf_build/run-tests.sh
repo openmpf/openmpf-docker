@@ -33,6 +33,7 @@ set -Ee -o pipefail -o xtrace
 ################################################################################
 
 BUILD_ARTIFACTS_PATH=/mnt/build_artifacts
+MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD:=password}
 
 
 # Make sure MPF_HOME matches what it's set to in the node-manager container.
