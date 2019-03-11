@@ -260,7 +260,7 @@ node(jenkinsNodes) {
                 throw e // rethrow so Jenkins knows of failure
             } finally {
                 if (buildContainerId != null) {
-                    // sh(script: 'docker container rm -f ' + buildContainerId, returnStatus: true) # DEBUG
+                    sh(script: 'docker container rm -f ' + buildContainerId, returnStatus: true)
                 }
             }
 
@@ -321,6 +321,8 @@ node(jenkinsNodes) {
                 }
                 when (runIntegrationTests) { // if false, don't show this step in the Stage View UI
                     try {
+                        sh 'mv docker-compose-test.yml docker-compose.yml'
+
                         sh(script:'docker-compose rm -svf', returnStatus:true)
                         sh(script:'docker volume rm -f openmpf_shared_data', returnStatus:true)
                         sh(script:'docker volume rm -f openmpf_mysql_data', returnStatus:true)
