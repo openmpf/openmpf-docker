@@ -202,7 +202,7 @@ node(jenkinsNodes) {
             }
 
             if (!buildOpenmpf) {
-                sh 'echo "SKIPPING OPENMPF BUILD"'
+                sh 'echo "SKIPPING OPENMPF BUILD AND TESTS"'
             }
             when (buildOpenmpf) { // if false, don't show this step in the Stage View UI
                 try {
@@ -220,7 +220,7 @@ node(jenkinsNodes) {
 
                             sh(script: 'docker exec ' +
                                     '-e BUILD_PACKAGE_JSON=' + buildPackageJson + ' ' +
-                                    + buildContainerId + ' /home/mpf/docker-entrypoint.sh', returnStatus:true)
+                                    buildContainerId + ' /home/mpf/docker-entrypoint.sh', returnStatus:true)
                         }
 
                         if (!runIntegrationTests) {
