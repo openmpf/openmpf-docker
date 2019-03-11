@@ -211,12 +211,12 @@ node(jenkinsNodes) {
 
                         stage('Build OpenMPF') {
                             // Run container as daemon in background to capture container id.
-                            buildContainerId = sh(script: 'docker run -t -d ' +
+                            buildContainerId = sh(script: 'docker run --entrypoint sleep -t -d ' +
                                     '--mount type=bind,source=/home/jenkins/.m2,target=/root/.m2 ' +
                                     '--mount type=bind,source="$(pwd)"/openmpf_runtime/build_artifacts,target=/mnt/build_artifacts ' +
                                     '--mount type=bind,source="$(pwd)"/openmpf_build/openmpf-projects,target=/mnt/openmpf-projects ' +
                                     (runIntegrationTests ? '--mount type=volume,source=openmpf_shared_data,target=/home/mpf/openmpf-projects/openmpf/trunk/install/share ' : '') +
-                                    buildImageName, returnStdout: true).trim()
+                                    buildImageName + ' infinity', returnStdout: true).trim()
 
                             sh(script: 'docker exec ' +
                                     '-e BUILD_PACKAGE_JSON=' + buildPackageJson + ' ' +
