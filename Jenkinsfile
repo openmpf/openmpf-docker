@@ -263,7 +263,8 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                                 ' --build-arg BUILD_VERSION=' + imageTag +
                                 ' --build-arg BUILD_SHAS=\"' + buildShas + '\"'
 
-                        sh 'docker-compose up'
+                        // Run run supporting containers in background.
+                        sh 'docker-compose up -d'
 
                         sh 'docker exec ' +
                                 '-e MVN_OPTIONS=\"' + mvnIntegrationTestOptions + '\" ' +
