@@ -220,6 +220,9 @@ node(jenkinsNodes) {
 
                             sh(script: 'docker exec ' + buildContainerId + ' touch first-run.txt', returnStatus: true)
                             // sh(script: 'docker exec ' + buildContainerId + ' /home/mpf/docker-entrypoint.sh', returnStatus:true)
+
+                            sh(script: 'docker container rm -f ' + buildContainerId, returnStatus: true) // DEBUG
+
                         }
 
                         if (!runIntegrationTestsTests) {
@@ -235,9 +238,11 @@ node(jenkinsNodes) {
                 } catch (Exception e) {
                     throw e // rethrow so Jenkins knows of failure
                 } finally {
+                    /*
                     if (buildContainerId != null) {
                         sh(script: 'docker container rm -f ' + buildContainerId, returnStatus: true)
                     }
+                    */
                 }
             }
 
