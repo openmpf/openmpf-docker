@@ -81,25 +81,6 @@ RUN yum install -y git asciidoc rpm-build \
 RUN yum install -y python-keyczar && yum clean all
 
 ################################################################################
-# Install Ansible                                                              #
-################################################################################
-
-# TODO: Build the Ansible RPM on openmpf_build; install on workflow_manager
-
-# Ansible:
-RUN mkdir -p /apps/source/ansible_sources && cd /apps/source/ansible_sources && \
-    git clone https://github.com/ansible/ansible.git --recursive && \
-    cd ansible && git checkout e71cce777685f96223856d5e6cf506a9ea2ef3ff && \
-    git submodule update --init --recursive && \
-    cd /apps/source/ansible_sources/ansible/lib/ansible/modules/core && \
-    git checkout 36f512abc1a75b01ae7207c74cdfbcb54a84be54 && \
-    cd /apps/source/ansible_sources/ansible/lib/ansible/modules/extras && \
-    git checkout 32338612b38d1ddfd0d42b1245c597010da02970 && \
-    cd /apps/source/ansible_sources/ansible && make rpm && \
-    cd /apps/source/ansible_sources/ansible && \
-    rpm -Uvh ./rpm-build/ansible-*.noarch.rpm && rm -rf /apps/source
-
-################################################################################
 # Copy Files                                                                   #
 ################################################################################
 
@@ -117,11 +98,15 @@ COPY --from=openmpf_build /apps/install/bin/ffmpeg /apps/install/bin/ffprobe \
      /apps/install/bin/ffserver $MPF_HOME/bin/
 COPY --from=openmpf_build /etc/ld.so.conf.d/ /etc/ld.so.conf.d/
 COPY --from=openmpf_build /opt/apache-tomcat/ /opt/apache-tomcat/
+COPY --from=openmpf_build /apps/source/ansible_sources/ansible/rpm-build/ansible-*.noarch.rpm .
 
 # Link FFmpeg:
 RUN ln -s $MPF_HOME/bin/ffmpeg /usr/bin/ffmpeg && \
     ln -s $MPF_HOME/bin/ffserver /usr/bin/ffserver && \
     ln -s $MPF_HOME/bin/ffprobe /usr/bin/ffprobe
+
+# Install Ansible:
+RUN rpm -Uvh ansible-*.noarch.rpm && rm ansible-*.noarch.rpm
 
 COPY build_artifacts/install.tar /home/mpf/
 RUN cd /home/mpf && tar -xzf install.tar -C $MPF_HOME && rm install.tar

@@ -214,6 +214,7 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                                 '--mount type=bind,source="$(pwd)"/openmpf_runtime/build_artifacts,target=/mnt/build_artifacts ' +
                                 '--mount type=bind,source="$(pwd)"/openmpf_build/openmpf-projects,target=/mnt/openmpf-projects ' +
                                 (runIntegrationTests ? '--mount type=volume,source=openmpf_shared_data,target=/home/mpf/openmpf-projects/openmpf/trunk/install/share ' : '') +
+                                (runIntegrationTests ? '--network=openmpf_default ' : '') +
                                 buildImageName + ' infinity', returnStdout: true).trim()
 
                         sh 'docker exec ' +
@@ -263,7 +264,7 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                                 ' --build-arg BUILD_VERSION=' + imageTag +
                                 ' --build-arg BUILD_SHAS=\"' + buildShas + '\"'
 
-                        // Run run supporting containers in background.
+                        // Run supporting containers in background.
                         sh 'docker-compose up -d'
 
                         sh 'docker exec ' +
@@ -289,6 +290,7 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                     sh 'docker-compose rm -vf'
                     sh 'docker container rm -f ' + buildContainerId
                     sh 'docker volume rm -f openmpf_shared_data openmpf_mysql_data'
+                    sh 'docker network rm openmpf_default'
                 }
             }
 
