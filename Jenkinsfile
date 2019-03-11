@@ -206,13 +206,25 @@ node(jenkinsNodes) {
                     sh 'echo "SKIPPING OPENMPF BUILD"'
                 }
                 when (buildOpenmpf) { // if false, don't show this step in the Stage View UI
-                    //try {
+                    try {
                         if (!runUnitTests) {
                             sh 'echo "SKIPPING UNIT TESTS"'
                         }
 
                         wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) {
 
+                            buildContainerId = sh(script: 'docker run -t -d ' + buildImageName, returnStdout: true).trim()
+
+                            stage('First Run') {
+                                sh 'docker exec ' + buildContainerId + ' touch first-run.txt'
+                            }
+
+                            stage('Second Run') {
+                                sh 'ls'
+                            }
+
+
+                            /*
                             docker.image(buildImageName).inside {
 
                                 stage('First Run') {
@@ -222,6 +234,7 @@ node(jenkinsNodes) {
                                 stage('Second Run') {
                                     sh 'ls'
                                 }
+                                */
 
                                 /*
                                 // Run container as daemon in background to capture container id
@@ -235,8 +248,8 @@ node(jenkinsNodes) {
                                         '-e MVN_OPTIONS=\"' + mvnUnitTestOptions + '\" ' +
                                         buildImageName, returnStdout: true).trim()
                                 */
-                            }
-                        }
+                            }//
+                        //}
 
                         /*
                         // Attach to container to show log output and wait until entrypoint completes
@@ -259,18 +272,13 @@ node(jenkinsNodes) {
                             sh 'exit ' + dockerRunRetVal
                         }
                         */
-                    /*
                     } catch (Exception e) {
+                        throw e // rethrow so Jenkins knows of failure
+                    } finally {
                         if (buildContainerId != null) {
                             sh(script: 'docker container rm -f ' + buildContainerId, returnStatus:true)
                         }
-                        throw e; // rethrow so Jenkins knows of failure
-                    } finally {
-                        if (!runIntegrationTests && buildContainerId != null) {
-                            sh(script: 'docker container rm -f ' + buildContainerId, returnStatus:true)
-                        }
                     }
-                    */
                 }
             }
 
