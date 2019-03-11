@@ -206,24 +206,39 @@ node(jenkinsNodes) {
                     sh 'echo "SKIPPING OPENMPF BUILD"'
                 }
                 when (buildOpenmpf) { // if false, don't show this step in the Stage View UI
-                    try {
+                    //try {
                         if (!runUnitTests) {
                             sh 'echo "SKIPPING UNIT TESTS"'
                         }
 
                         wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) {
-                            // Run container as daemon in background to capture container id
-                            buildContainerId = sh(script: 'docker run -d ' +
-                                    '--mount type=bind,source=/home/jenkins/.m2,target=/root/.m2 ' +
-                                    '--mount type=bind,source="$(pwd)"/openmpf_runtime/build_artifacts,target=/mnt/build_artifacts ' +
-                                    '--mount type=bind,source="$(pwd)"/openmpf_build/openmpf-projects,target=/mnt/openmpf-projects ' +
-                                    '--mount type=volume,source=openmpf_shared_data,target=/home/mpf/openmpf-projects/openmpf/trunk/install/share ' +
-                                    '-e BUILD_PACKAGE_JSON=' + buildPackageJson + ' ' +
-                                    '-e RUN_TESTS=' + (runUnitTests ? 1 : 0) + ' ' +
-                                    '-e MVN_OPTIONS=\"' + mvnUnitTestOptions + '\" ' +
-                                    buildImageName, returnStdout: true).trim()
+
+                            docker.image(buildImageName).inside {
+
+                                stage('First Run') {
+                                    sh 'touch first-run.txt'
+                                }
+
+                                stage('Second Run') {
+                                    sh 'ls'
+                                }
+
+                                /*
+                                // Run container as daemon in background to capture container id
+                                buildContainerId = sh(script: 'docker run -d ' +
+                                        '--mount type=bind,source=/home/jenkins/.m2,target=/root/.m2 ' +
+                                        '--mount type=bind,source="$(pwd)"/openmpf_runtime/build_artifacts,target=/mnt/build_artifacts ' +
+                                        '--mount type=bind,source="$(pwd)"/openmpf_build/openmpf-projects,target=/mnt/openmpf-projects ' +
+                                        '--mount type=volume,source=openmpf_shared_data,target=/home/mpf/openmpf-projects/openmpf/trunk/install/share ' +
+                                        '-e BUILD_PACKAGE_JSON=' + buildPackageJson + ' ' +
+                                        '-e RUN_TESTS=' + (runUnitTests ? 1 : 0) + ' ' +
+                                        '-e MVN_OPTIONS=\"' + mvnUnitTestOptions + '\" ' +
+                                        buildImageName, returnStdout: true).trim()
+                                */
+                            }
                         }
 
+                        /*
                         // Attach to container to show log output and wait until entrypoint completes
                         def dockerRunRetVal = sh(script:'docker attach ' + buildContainerId, returnStatus:true)
 
@@ -243,6 +258,8 @@ node(jenkinsNodes) {
                         if (dockerRunRetVal != 0) {
                             sh 'exit ' + dockerRunRetVal
                         }
+                        */
+                    /*
                     } catch (Exception e) {
                         if (buildContainerId != null) {
                             sh(script: 'docker container rm -f ' + buildContainerId, returnStatus:true)
@@ -253,9 +270,11 @@ node(jenkinsNodes) {
                             sh(script: 'docker container rm -f ' + buildContainerId, returnStatus:true)
                         }
                     }
+                    */
                 }
             }
 
+            /*
             stage('Run system tests') {
                 if (!runIntegrationTests) {
                     sh 'echo "SKIPPING INTEGRATION TESTS"'
@@ -333,6 +352,7 @@ node(jenkinsNodes) {
                     sh 'docker-compose push'
                 }
             }
+            */
 
         } // end docker.withRegistry(
     } catch(Exception e) {
