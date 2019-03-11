@@ -43,15 +43,14 @@ BUILD_ARTIFACTS_PATH=/mnt/build_artifacts
 BUILD_PACKAGE_JSON=${BUILD_PACKAGE_JSON:=openmpf-open-source-package.json}
 RUN_TESTS=${RUN_TESTS:=0}
 
-# Give some time for "docker attach"
-sleep 3
-
 # Start with a clean slate
 rm -rf $BUILD_ARTIFACTS_PATH/*
 
 ################################################################################
 # Copy the OpenMPF Repository                                                  #
 ################################################################################
+
+ls $SOURCE_CODE_PATH # DEBUG
 
 cp -R $SOURCE_CODE_PATH /home/mpf/openmpf-projects
 
