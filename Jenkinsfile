@@ -201,62 +201,72 @@ node(jenkinsNodes) {
                 }
             }
 
-            stage('Build OpenMPF') {
-                if (!buildOpenmpf) {
-                    sh 'echo "SKIPPING OPENMPF BUILD"'
-                }
-                when (buildOpenmpf) { // if false, don't show this step in the Stage View UI
-                    try {
-                        if (!runUnitTests) {
-                            sh 'echo "SKIPPING UNIT TESTS"'
+            if (!buildOpenmpf) {
+                sh 'echo "SKIPPING OPENMPF BUILD"'
+            }
+            when (buildOpenmpf) { // if false, don't show this step in the Stage View UI
+                try {
+                    // Show color in Jenkins console.
+                    wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) {
+
+                        // Run container as daemon in background to capture container id.
+                        buildContainerId = sh(script: 'docker run -t -d ' +
+                                '--mount type=bind,source=/home/jenkins/.m2,target=/root/.m2 ' +
+                                '--mount type=bind,source="$(pwd)"/openmpf_runtime/build_artifacts,target=/mnt/build_artifacts ' +
+                                '--mount type=bind,source="$(pwd)"/openmpf_build/openmpf-projects,target=/mnt/openmpf-projects ' +
+                                '--mount type=volume,source=openmpf_shared_data,target=/home/mpf/openmpf-projects/openmpf/trunk/install/share ' +
+                                buildImageName, returnStdout: true).trim()
+
+                        stage('Build OpenMPF') {
+                            sh(script: 'docker exec ' + buildContainerId + ' touch first-run.txt', returnStatus: true)
+                            // sh(script: 'docker exec ' + buildContainerId + ' /home/mpf/docker-entrypoint.sh', returnStatus:true)
                         }
 
-                        wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) {
-
-                            // Run container as daemon in background to capture container id
-                            buildContainerId = sh(script: 'docker run -t -d ' +
-                                    '--mount type=bind,source=/home/jenkins/.m2,target=/root/.m2 ' +
-                                    '--mount type=bind,source="$(pwd)"/openmpf_runtime/build_artifacts,target=/mnt/build_artifacts ' +
-                                    '--mount type=bind,source="$(pwd)"/openmpf_build/openmpf-projects,target=/mnt/openmpf-projects ' +
-                                    '--mount type=volume,source=openmpf_shared_data,target=/home/mpf/openmpf-projects/openmpf/trunk/install/share ' +
-                                    buildImageName, returnStdout: true).trim()
-
-                            stage('First Run') {
-                                sh(script: 'docker exec ' + buildContainerId + ' touch first-run.txt', returnStatus:true)
-                                // sh(script: 'docker exec ' + buildContainerId + ' /home/mpf/docker-entrypoint.sh', returnStatus:true)
-                            }
-
-                            stage('Second Run') {
-                                sh(script: 'docker exec ' + buildContainerId + ' ls', returnStatus:true)
+                        if (!runIntegrationTestsTests) {
+                            sh 'echo "SKIPPING INTEGRATION TESTS"'
+                        }
+                        when(runIntegrationTestsTests) { // if false, don't show this step in the Stage View UI
+                            stage('Run system tests') {
+                                sh(script: 'docker exec ' + buildContainerId + ' ls', returnStatus: true)
                                 // sh(script: 'docker exec ' + buildContainerId + ' /home/mpf/run-tests.sh', returnStatus:true)
                             }
+                        }
+                    }
+                } catch (Exception e) {
+                    throw e // rethrow so Jenkins knows of failure
+                } finally {
+                    if (buildContainerId != null) {
+                        sh(script: 'docker container rm -f ' + buildContainerId, returnStatus: true)
+                    }
+                }
 
 
-                            /*
-                            docker.image(buildImageName).inside {
-
-                                stage('First Run') {
-                                    sh 'touch first-run.txt'
-                                }
-
-                                stage('Second Run') {
-                                    sh 'ls'
-                                }
-                                */
 
                                 /*
+                                docker.image(buildImageName).inside {
 
-                                buildContainerId = sh(script: 'docker run -d ' +
-                                        '--mount type=bind,source=/home/jenkins/.m2,target=/root/.m2 ' +
-                                        '--mount type=bind,source="$(pwd)"/openmpf_runtime/build_artifacts,target=/mnt/build_artifacts ' +
-                                        '--mount type=bind,source="$(pwd)"/openmpf_build/openmpf-projects,target=/mnt/openmpf-projects ' +
-                                        '--mount type=volume,source=openmpf_shared_data,target=/home/mpf/openmpf-projects/openmpf/trunk/install/share ' +
-                                        '-e BUILD_PACKAGE_JSON=' + buildPackageJson + ' ' +
-                                        '-e RUN_TESTS=' + (runUnitTests ? 1 : 0) + ' ' +
-                                        '-e MVN_OPTIONS=\"' + mvnUnitTestOptions + '\" ' +
-                                        buildImageName, returnStdout: true).trim()
-                                */
-                            }//
+                                    stage('First Run') {
+                                        sh 'touch first-run.txt'
+                                    }
+
+                                    stage('Second Run') {
+                                        sh 'ls'
+                                    }
+                                    */
+
+                                    /*
+
+                                    buildContainerId = sh(script: 'docker run -d ' +
+                                            '--mount type=bind,source=/home/jenkins/.m2,target=/root/.m2 ' +
+                                            '--mount type=bind,source="$(pwd)"/openmpf_runtime/build_artifacts,target=/mnt/build_artifacts ' +
+                                            '--mount type=bind,source="$(pwd)"/openmpf_build/openmpf-projects,target=/mnt/openmpf-projects ' +
+                                            '--mount type=volume,source=openmpf_shared_data,target=/home/mpf/openmpf-projects/openmpf/trunk/install/share ' +
+                                            '-e BUILD_PACKAGE_JSON=' + buildPackageJson + ' ' +
+                                            '-e RUN_TESTS=' + (runUnitTests ? 1 : 0) + ' ' +
+                                            '-e MVN_OPTIONS=\"' + mvnUnitTestOptions + '\" ' +
+                                            buildImageName, returnStdout: true).trim()
+                                    */
+                                }
                         //}
 
                         /*
@@ -280,15 +290,6 @@ node(jenkinsNodes) {
                             sh 'exit ' + dockerRunRetVal
                         }
                         */
-                    } catch (Exception e) {
-                        throw e // rethrow so Jenkins knows of failure
-                    } finally {
-                        if (buildContainerId != null) {
-                            sh(script: 'docker container rm -f ' + buildContainerId, returnStatus:true)
-                        }
-                    }
-                }
-            }
 
             /*
             stage('Run system tests') {
