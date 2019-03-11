@@ -219,8 +219,8 @@ node(jenkinsNodes) {
                                     buildImageName, returnStdout: true).trim()
 
                             sh(script: 'docker exec ' +
-                                    ' -e BUILD_PACKAGE_JSON=' + buildPackageJson +
-                                    buildContainerId + ' /home/mpf/docker-entrypoint.sh', returnStatus:true)
+                                    '-e BUILD_PACKAGE_JSON=' + buildPackageJson + ' ' +
+                                    + buildContainerId + ' /home/mpf/docker-entrypoint.sh', returnStatus:true)
                         }
 
                         if (!runIntegrationTests) {
@@ -233,11 +233,11 @@ node(jenkinsNodes) {
                                 sh(script:'docker volume rm -f openmpf_mysql_data', returnStatus:true)
 
                                 // sh(script: 'docker exec ' +
-                                //        ' -e MVN_OPTIONS=\"' + mvnIntegrationTestOptions + '\" ' +
+                                //        '-e MVN_OPTIONS=\"' + mvnIntegrationTestOptions + '\" ' +
                                 //        buildContainerId + ' /home/mpf/run-tests.sh', returnStatus:true)
 
                                 sh(script: 'docker exec ' +
-                                        ' -e MVN_OPTIONS=\"' + mvnIntegrationTestOptions + '\" ' +
+                                        '-e MVN_OPTIONS=\"' + mvnIntegrationTestOptions + '\" ' +
                                         buildContainerId +' printenv', returnStatus:true)
 
                                 // Touch files to avoid the following error if the test reports are more than 3 seconds old:
