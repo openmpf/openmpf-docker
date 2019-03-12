@@ -47,6 +47,9 @@ grep -q "GTESTS TESTS FAILED!" A-RunGTests.log
 gTestsFailed=$?
 set -o xtrace
 
+echo "$gTestsFailed" # DEBUG
+cat A-RunGTests.log # DEBUG
+
 rm A-RunGTests.log
 
 # Copy GTest reports to host
