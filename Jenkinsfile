@@ -80,8 +80,6 @@ def openmpfConfigDockerSha
 node(jenkinsNodes) {
 wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color in Jenkins console
     try {
-        processTestReports() // DEBUG
-
         buildDate = getTimestamp()
 
         def dockerRegistryHostAndPort = dockerRegistryHost + ':' + dockerRegistryPort
@@ -388,15 +386,15 @@ def getTimestamp() {
 
 // TODO: Don't use sudo.
 def processTestReports() {
-    def newReportsPath = 'openmpf_runtime/build_artifacts/*-reports/*.xml'
-    def oldReportsPath = 'openmpf_runtime/build_artifacts/processed-reports'
+    def buildArtifactsPath = 'openmpf_runtime/build_artifacts'
+    def oldReportsPath = buildArtifactsPath + '/processed-reports'
 
     // Touch files to avoid the following error if the test reports are more than 3 seconds old:
     // "Test reports were found but none of them are new"
-    sh 'sudo ' + 'touch ' + newReportsPath
+    sh 'sudo touch ' + buildArtifactsPath + '/*-reports/*.xml'
 
     junit newReportsPath
 
     sh 'sudo mkdir -p ' + oldReportsPath
-    sh 'sudo mv ' + newReportsPath + ' ' + oldReportsPath
+    sh 'sudo mv ' + buildArtifactsPath + '/*-reports' + ' ' + oldReportsPath
 }
