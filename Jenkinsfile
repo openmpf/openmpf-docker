@@ -278,8 +278,8 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
 
                         def mvnTestsRetval = sh(script: 'docker exec' +
                                 buildContainerId +
-                                ' export MVN_OPTIONS=\"$MVN_OPTIONS ' + mvnTestOptions +'\"; ' +
-                                ' /home/mpf/run-mvn-tests.sh', returnStatus:true)
+                                ' \"export MVN_OPTIONS=\$MVN_OPTIONS ' + mvnTestOptions +'; ' +
+                                ' /home/mpf/run-mvn-tests.sh\"', returnStatus:true)
 
                         processTestReports()
 
