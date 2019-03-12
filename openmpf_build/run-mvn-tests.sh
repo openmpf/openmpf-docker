@@ -129,7 +129,7 @@ openmpf-python-component-sdk/detection/examples/PythonOcvComponent \
   -DgitBranch=`cd .. && git rev-parse --abbrev-ref HEAD` \
   -DgitShortId=`cd .. && git rev-parse --short HEAD` \
   -DjenkinsBuildNumber=1 \
-  "$MVN_OPTIONS"
+  $MVN_OPTIONS # bash word splitting
 mavenRetVal=$?
 
 # Copy Maven test reports to host

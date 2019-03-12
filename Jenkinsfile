@@ -219,7 +219,7 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                                 buildContainerId + ' /home/mpf/docker-entrypoint.sh'
 
                         if (runGTests) {
-                            collectTestReports()
+                            collectTestReports("gtest")
                         }
                     }
                 }
@@ -272,7 +272,7 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                                 '-e MVN_OPTIONS=\"' + mvnTestOptions + '\" ' +
                                 buildContainerId + ' /home/mpf/run-mvn-tests.sh'
 
-                        collectTestReports()
+                        collectTestReports("surefire", "failsafe")
                     }
                 }
 
@@ -380,11 +380,12 @@ def getTimestamp() {
     return sh(script: 'date --iso-8601=seconds', returnStdout: true).trim()
 }
 
-def collectTestReports() {
+def collectTestReports(String... types) {
     // Touch files to avoid the following error if the test reports are more than 3 seconds old:
     // "Test reports were found but none of them are new"
-    sh 'sudo touch openmpf_runtime/build_artifacts/*-reports/*.xml'
+    types.each { type ->
+        sh 'sudo touch openmpf_runtime/build_artifacts/' + type + '-reports/*.xml' }
 
-    // This will fail if no files are found.
-    junit 'openmpf_runtime/build_artifacts/*-reports/*.xml'
+    types.each { type ->
+        junit(testResults: 'openmpf_runtime/build_artifacts/' + type + '-reports/*.xml', allowEmptyResults: true) }
 }
