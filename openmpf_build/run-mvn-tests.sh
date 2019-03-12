@@ -143,8 +143,8 @@ find . -path  \*\failsafe-reports\*.xml -exec cp {} "$BUILD_ARTIFACTS_PATH/fails
 set +o xtrace
 # Exit now if any tests failed
 if [ "$mavenRetVal" -ne 0 ]; then
-    echo 'DETECTED REGRESSION TEST FAILURE(S)'
+    echo 'DETECTED MAVEN TEST FAILURE(S)'
     exit 1
 fi
-echo 'DETECTED REGRESSION TESTS PASSED'
+echo 'DETECTED MAVEN TESTS PASSED'
 exit 0

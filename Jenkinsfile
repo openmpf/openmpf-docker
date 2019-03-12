@@ -209,7 +209,6 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                                 '--mount type=bind,source=/home/jenkins/.m2,target=/root/.m2 ' +
                                 '--mount type=bind,source="$(pwd)"/openmpf_runtime/build_artifacts,target=/mnt/build_artifacts ' +
                                 '--mount type=bind,source="$(pwd)"/openmpf_build/openmpf-projects,target=/mnt/openmpf-projects ' +
-                                (runGTests ? ' -e RUN_GTESTS=1 ' : '') +
                                 (runMvnTests ? '--mount type=volume,source=openmpf_shared_data,target=/home/mpf/openmpf-projects/openmpf/trunk/install/share ' : '') +
                                 (runMvnTests ? '--network=openmpf_default ' : '') +
                                 buildImageName + ' infinity', returnStdout: true).trim()
@@ -217,10 +216,18 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                         sh 'docker exec ' +
                                 '-e BUILD_PACKAGE_JSON=' + buildPackageJson + ' ' +
                                 buildContainerId + ' /home/mpf/docker-entrypoint.sh'
+                    }
+                }
 
-                        if (runGTests) {
-                            collectTestReports("gtest")
-                        }
+                stage('Run Google Tests') {
+                    if (!runGTests) {
+                        sh 'echo "SKIPPING GOOGLE TESTS"'
+                    }
+                    when (runGTests) { // if false, don't show this step in the Stage View UI
+                        sh 'docker exec ' +
+                                buildContainerId + ' /home/mpf/run-gtests.sh'
+
+                        collectTestReports()
                     }
                 }
 
@@ -240,8 +247,8 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                         buildShas += ', openmpf-config-docker: ' + openmpfConfigDockerSha
 
                         // Build and tag the new Workflow Manager image with the image tag used in the compose files.
-                        // That way, we do not have to modify the compose files. This overwrites the tag that referred to
-                        // the original Workflow Manager image without the custom config.
+                        // That way, we do not have to modify the compose files. This overwrites the tag that referred
+                        // to the original Workflow Manager image without the custom config.
                         sh 'docker build openmpf_custom_config/workflow_manager' +
                                 ' --build-arg BUILD_IMAGE_NAME=' + workflowManagerImageName +
                                 ' --build-arg BUILD_DATE=' + buildDate +
@@ -251,9 +258,9 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                     }
                 }
 
-                stage('Run regression tests') {
+                stage('Run Maven tests') {
                     if (!buildOpenmpf || !runMvnTests) {
-                        sh 'echo "SKIPPING REGRESSION TESTS"'
+                        sh 'echo "SKIPPING MAVEN TESTS"'
                     }
                     when (buildOpenmpf && runMvnTests) { // if false, don't show this step in the Stage View UI
                         sh 'cp docker-compose-test.yml docker-compose.yml'
@@ -272,7 +279,7 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                                 '-e MVN_OPTIONS=\"' + mvnTestOptions + '\" ' +
                                 buildContainerId + ' /home/mpf/run-mvn-tests.sh'
 
-                        collectTestReports("surefire", "failsafe")
+                        collectTestReports()
                     }
                 }
 
@@ -380,12 +387,17 @@ def getTimestamp() {
     return sh(script: 'date --iso-8601=seconds', returnStdout: true).trim()
 }
 
-def collectTestReports(String... types) {
+// TODO: Don't use sudo.
+def collectTestReports() {
+    newReportsPath="openmpf_runtime/build_artifacts/*-reports/*.xml"
+    oldReportsPath="openmpf_runtime/build_artifacts/processed-reports"
+
     // Touch files to avoid the following error if the test reports are more than 3 seconds old:
     // "Test reports were found but none of them are new"
-    types.each { type ->
-        sh 'sudo touch openmpf_runtime/build_artifacts/' + type + '-reports/*.xml' }
+    sh 'sudo touch ' + reportsPath
 
-    types.each { type ->
-        junit(testResults: 'openmpf_runtime/build_artifacts/' + type + '-reports/*.xml', allowEmptyResults: true) }
+    junit reportsPath
+
+    sh 'mkdir -p' + oldReportsPath
+    sh 'sudo mv ' + reportsPath + ' ' + oldReportsPath
 }

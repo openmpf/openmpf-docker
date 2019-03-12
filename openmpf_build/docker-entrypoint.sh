@@ -41,7 +41,6 @@ BUILD_ARTIFACTS_PATH=/mnt/build_artifacts
 
 # Use "docker run --env BUILD_PACKAGE_JSON=openmpf-some-other-package.json" option
 BUILD_PACKAGE_JSON=${BUILD_PACKAGE_JSON:=openmpf-open-source-package.json}
-RUN_GTESTS=${RUN_GTESTS:=0}
 
 # Start with a clean slate
 rm -rf "$BUILD_ARTIFACTS_PATH"/*
@@ -106,35 +105,6 @@ mvn clean install \
   -DgitBranch=`cd .. && git rev-parse --abbrev-ref HEAD` \
   -DgitShortId=`cd .. && git rev-parse --short HEAD` \
   -DjenkinsBuildNumber=1
-
-if [ "$RUN_GTESTS" -gt 0 ]; then
-  # Run Gtests
-  # TODO: Update A-RunGTests.pl to return a non-zero value
-  cd /home/mpf/openmpf-projects/openmpf/trunk/jenkins/scripts
-  perl A-RunGTests.pl /home/mpf/openmpf-projects/openmpf 2>&1 | tee A-RunGTests.log
-
-  set +o xtrace
-  if [ `grep -q "GTESTS TESTS FAILED!" A-RunGTests.log` ]; then
-    gTestsFailed=1
-  fi
-  set -o xtrace
-
-  rm A-RunGTests.log
-
-  # Copy GTest reports to host
-  cd /home/mpf/openmpf-projects/openmpf/mpf-component-build
-  mkdir -p "$BUILD_ARTIFACTS_PATH/gtest-reports"
-  find . -name *junit.xml -exec cp {} "$BUILD_ARTIFACTS_PATH/gtest-reports" \;
-
-  set +o xtrace
-  # Exit now if any tests failed
-  if [ -n "$gTestsFailed" ]; then
-      echo 'DETECTED GTEST FAILURE(S)'
-      exit 1
-  fi
-  echo 'DETECTED GTESTS PASSED'
-  set -o xtrace
-fi
 
 ################################################################################
 # Copy Artifacts to Host                                                       #

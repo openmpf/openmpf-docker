@@ -383,14 +383,8 @@ RUN cd /apps/source/gtest_sources && git clone https://github.com/google/googlet
     PKG_CONFIG_PATH="/apps/install/lib/pkgconfig" cmake3 .. && \
     make -j$(nproc) && make install && ldconfig
 
-
-
-
-
-
-
 ################################################################################
-# For Tests: Install yum Dependencies                                          #
+# For Maven Tests: Install yum Dependencies                                    #
 ################################################################################
 
 RUN yum install -y git asciidoc rpm-build \
@@ -404,7 +398,7 @@ RUN yum install -y git asciidoc rpm-build \
 RUN yum install -y python-keyczar && yum clean all
 
 ################################################################################
-# For Tests: Install Ansible                                                   #
+# For Maven Tests: Install Ansible                                             #
 ################################################################################
 
 # TODO: Build the Ansible RPM on openmpf_build; install on workflow_manager
@@ -423,13 +417,13 @@ RUN mkdir -p /apps/source/ansible_sources && cd /apps/source/ansible_sources && 
     rpm -Uvh ./rpm-build/ansible-*.noarch.rpm
 
 ################################################################################
-# For Tests: Configure Environment Variables                                   #
+# For Maven Tests: Configure Environment Variables                             #
 ################################################################################
 
 ENV ACTIVE_MQ_HOST=activemq
 ENV ACTIVE_MQ_BROKER_URI=failover://(tcp://$ACTIVE_MQ_HOST:61616)?jms.prefetchPolicy.all=1&startupMaxReconnectAttempts=1
 ENV MYSQL_HOST=mysql_database
-ENV THIS_MPF_NODE=workflow_manager
+ENV THIS_MPF_NODE=localhost
 # JGROUPS_TCP_ADDRESS set in docker-entrypoint-test.sh
 ENV JGROUPS_TCP_PORT=7800
 ENV JGROUPS_FILE_PING_LOCATION=$MPF_HOME/share/nodes
@@ -447,20 +441,13 @@ ENV TOMCAT_BASE_URL=http://$THIS_MPF_NODE:8181
 RUN echo '[mpf-child]' >> /etc/ansible/hosts; \
     echo $THIS_MPF_NODE >> /etc/ansible/hosts;
 
-
-
-
-
 ################################################################################
 # Prepare Entrypoint                                                           #
 ################################################################################
 
-COPY docker-entrypoint.sh /home/mpf
-RUN dos2unix -q /home/mpf/docker-entrypoint.sh
+COPY *.sh /home/mpf
+RUN dos2unix -q /home/mpf/*.sh
 ENTRYPOINT ["/home/mpf/docker-entrypoint.sh"]
-
-COPY run-mvn-tests.sh /home/mpf
-RUN dos2unix -q /home/mpf/run-mvn-tests.sh
 
 ################################################################################
 # Labels                                                                       #
