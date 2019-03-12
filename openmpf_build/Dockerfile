@@ -445,7 +445,7 @@ RUN echo '[mpf-child]' >> /etc/ansible/hosts; \
 # Prepare Entrypoint                                                           #
 ################################################################################
 
-COPY *.sh /home/mpf
+COPY *.sh /home/mpf/
 RUN dos2unix -q /home/mpf/*.sh
 ENTRYPOINT ["/home/mpf/docker-entrypoint.sh"]
 

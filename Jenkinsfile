@@ -163,7 +163,6 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
             // Generate compose files
             sh './scripts/docker-generate-compose-files.sh ' + dockerRegistryHost + ':' +
                     dockerRegistryPort + ' openmpf ' + imageTag
-            sh 'cp docker-compose.yml docker-compose.yml.bak'
 
             // TODO: Attempt to pull images in separate stage so that they are not
             // built from scratch on a clean Jenkins node.
@@ -227,7 +226,7 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                         sh 'docker exec ' +
                                 buildContainerId + ' /home/mpf/run-gtests.sh'
 
-                        collectTestReports()
+                        processTestReports()
                     }
                 }
 
@@ -263,8 +262,6 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                         sh 'echo "SKIPPING MAVEN TESTS"'
                     }
                     when (buildOpenmpf && runMvnTests) { // if false, don't show this step in the Stage View UI
-                        sh 'cp docker-compose-test.yml docker-compose.yml'
-
                         sh 'docker-compose build' +
                                 ' --build-arg BUILD_IMAGE_NAME=' + buildImageName +
                                 ' --build-arg POST_BUILD_IMAGE_NAME=' + postBuildImageName +
@@ -273,13 +270,13 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                                 ' --build-arg BUILD_SHAS=\"' + buildShas + '\"'
 
                         // Run supporting containers in background.
-                        sh 'docker-compose up -d'
+                        sh 'docker-compose up -d --scale workflow_manager=0'
 
                         sh 'docker exec ' +
                                 '-e MVN_OPTIONS=\"' + mvnTestOptions + '\" ' +
                                 buildContainerId + ' /home/mpf/run-mvn-tests.sh'
 
-                        collectTestReports()
+                        processTestReports()
                     }
                 }
 
@@ -388,7 +385,7 @@ def getTimestamp() {
 }
 
 // TODO: Don't use sudo.
-def collectTestReports() {
+def processTestReports() {
     newReportsPath="openmpf_runtime/build_artifacts/*-reports/*.xml"
     oldReportsPath="openmpf_runtime/build_artifacts/processed-reports"
 
