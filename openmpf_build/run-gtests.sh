@@ -42,13 +42,10 @@ BUILD_ARTIFACTS_PATH=/mnt/build_artifacts
 cd /home/mpf/openmpf-projects/openmpf/trunk/jenkins/scripts
 perl A-RunGTests.pl /home/mpf/openmpf-projects/openmpf 2>&1 | tee A-RunGTests.log
 
-# set +o xtrace
-grep -q ".*GTESTS TESTS FAILED.*" A-RunGTests.log
+set +o xtrace
+grep -q "GTESTS TESTS FAILED" A-RunGTests.log
 gTestsFailed=$?
-echo $gTestsFailed # DEBUG
-# set -o xtrace
-
-cp A-RunGTests.log "$BUILD_ARTIFACTS_PATH" # DEBUG
+set -o xtrace
 
 rm A-RunGTests.log
 
@@ -57,10 +54,9 @@ cd /home/mpf/openmpf-projects/openmpf/mpf-component-build
 mkdir -p "$BUILD_ARTIFACTS_PATH/reports/gtest-reports"
 find . -name *junit.xml -exec cp {} "$BUILD_ARTIFACTS_PATH/reports/gtest-reports" \;
 
-# set +o xtrace
+set +o xtrace
 # Exit now if any tests failed
-echo $gTestsFailed # DEBUG
-if [ "$gTestsFailed" -ne 0 ]; then
+if [ "$gTestsFailed" -eq 0 ]; then
   echo 'DETECTED GOOGLE TEST FAILURE(S)'
   exit 1
 fi
