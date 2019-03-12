@@ -393,7 +393,7 @@ def processTestReports() {
     // "Test reports were found but none of them are new"
     sh 'sudo touch ' + buildArtifactsPath + '/*-reports/*.xml'
 
-    junit newReportsPath
+    junit buildArtifactsPath + '/*-reports/*.xml'
 
     sh 'sudo mkdir -p ' + oldReportsPath
     sh 'sudo mv ' + buildArtifactsPath + '/*-reports' + ' ' + oldReportsPath

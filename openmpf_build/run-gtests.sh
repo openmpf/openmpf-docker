@@ -43,12 +43,9 @@ cd /home/mpf/openmpf-projects/openmpf/trunk/jenkins/scripts
 perl A-RunGTests.pl /home/mpf/openmpf-projects/openmpf 2>&1 | tee A-RunGTests.log
 
 set +o xtrace
-grep -q "GTESTS TESTS FAILED!" A-RunGTests.log
+grep -q ".*GTESTS TESTS FAILED.*" A-RunGTests.log
 gTestsFailed=$?
 set -o xtrace
-
-echo "$gTestsFailed" # DEBUG
-cat A-RunGTests.log # DEBUG
 
 rm A-RunGTests.log
 
