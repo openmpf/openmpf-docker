@@ -384,7 +384,7 @@ RUN cd /apps/source/gtest_sources && git clone https://github.com/google/googlet
     make -j$(nproc) && make install && ldconfig
 
 ################################################################################
-# For Maven Tests: Install yum Dependencies                                    #
+# For Tests: Install yum Dependencies                                          #
 ################################################################################
 
 RUN yum install -y git asciidoc rpm-build \
@@ -398,7 +398,14 @@ RUN yum install -y git asciidoc rpm-build \
 RUN yum install -y python-keyczar && yum clean all
 
 ################################################################################
-# For Maven Tests: Install Ansible                                             #
+# For Tests: Link ffserver and ffprobe                                         #
+################################################################################
+
+RUN ln -s /apps/install/bin/ffserver /usr/bin/ffserver && \
+    ln -s /apps/install/bin/ffprobe /usr/bin/ffprobe
+
+################################################################################
+# For Tests: Install Ansible                                                   #
 ################################################################################
 
 # TODO: Build the Ansible RPM on openmpf_build; install on workflow_manager
@@ -417,7 +424,7 @@ RUN mkdir -p /apps/source/ansible_sources && cd /apps/source/ansible_sources && 
     rpm -Uvh ./rpm-build/ansible-*.noarch.rpm
 
 ################################################################################
-# For Maven Tests: Configure Environment Variables                             #
+# For Tests: Configure Environment Variables                                   #
 ################################################################################
 
 ENV ACTIVE_MQ_HOST=activemq
