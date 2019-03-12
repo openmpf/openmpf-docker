@@ -393,7 +393,7 @@ def processTestReports() {
     // "Test reports were found but none of them are new"
     sh 'sudo touch $newReportsPath'
 
-    junit '$reportsPath'
+    junit '$newReportsPath'
 
     sh 'mkdir -p $oldReportsPath'
     sh 'sudo mv $newReportsPath $oldReportsPath'
