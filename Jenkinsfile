@@ -200,6 +200,10 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                         sh 'echo "SKIPPING OPENMPF BUILD"'
                     }
                     when (buildOpenmpf) { // if false, don't show this step in the Stage View UI
+                        if (runMvnTests) {
+                            sh 'docker network create openmpf_default'
+                        }
+
                         // Run container as daemon in background.
                         buildContainerId = sh(script: 'docker run --entrypoint sleep -t -d ' +
                                 '--mount type=bind,source=/home/jenkins/.m2,target=/root/.m2 ' +
