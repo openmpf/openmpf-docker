@@ -28,14 +28,23 @@
 
 set -Ee -o pipefail -o xtrace
 
+################################################################################
+# Initial Setup                                                                #
+################################################################################
+
+BUILD_ARTIFACTS_PATH=/mnt/build_artifacts
+
+################################################################################
+# Run Google Tests                                                             #
+################################################################################
+
 # TODO: Update A-RunGTests.pl to return a non-zero value
 cd /home/mpf/openmpf-projects/openmpf/trunk/jenkins/scripts
 perl A-RunGTests.pl /home/mpf/openmpf-projects/openmpf 2>&1 | tee A-RunGTests.log
 
 set +o xtrace
-if [ `grep -q "GTESTS TESTS FAILED!" A-RunGTests.log` ]; then
-  gTestsFailed=1
-fi
+grep -q "GTESTS TESTS FAILED!" A-RunGTests.log
+gTestsFailed=$?
 set -o xtrace
 
 rm A-RunGTests.log
@@ -47,7 +56,7 @@ find . -name *junit.xml -exec cp {} "$BUILD_ARTIFACTS_PATH/gtest-reports" \;
 
 set +o xtrace
 # Exit now if any tests failed
-if [ -n "$gTestsFailed" ]; then
+if [ "$gTestsFailed" -ne 0 ]; then
   echo 'DETECTED GOOGLE TEST FAILURE(S)'
   exit 1
 fi

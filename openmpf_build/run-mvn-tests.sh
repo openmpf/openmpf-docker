@@ -59,7 +59,7 @@ echo "node.auto.config.enabled=true" >> "$MPF_HOME/share/config/mpf-custom.prope
 echo "node.auto.unconfig.enabled=true" >> "$MPF_HOME/share/config/mpf-custom.properties"
 
 ################################################################################
-# Run Integration Tests                                                        #
+# Run Maven Tests                                                              #
 ################################################################################
 
 # Wait for mySQL service.
