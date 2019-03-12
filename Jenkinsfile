@@ -223,10 +223,14 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                         sh 'echo "SKIPPING GOOGLE TESTS"'
                     }
                     when (runGTests) { // if false, don't show this step in the Stage View UI
-                        sh 'docker exec ' +
-                                buildContainerId + ' /home/mpf/run-gtests.sh'
+                        def gTestRetval = sh(script: 'docker exec ' +
+                                buildContainerId + ' /home/mpf/run-gtests.sh', returnStatus:true)
 
                         processTestReports()
+
+                        if (gTestRetval != 0) {
+                            sh 'exit ' + gTestRetval
+                        }
                     }
                 }
 
@@ -272,11 +276,15 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                         // Run supporting containers in background.
                         sh 'docker-compose up -d --scale workflow_manager=0'
 
-                        sh 'docker exec ' +
-                                '-e MVN_OPTIONS=\"' + mvnTestOptions + '\" ' +
-                                buildContainerId + ' /home/mpf/run-mvn-tests.sh'
+                        def mvnTestRetval = sh(script: 'docker exec' +
+                                ' -e MVN_OPTIONS=\"' + mvnTestOptions + '\" ' +
+                                buildContainerId + ' /home/mpf/run-mvn-tests.sh', returnStatus:true)
 
                         processTestReports()
+
+                        if (mvnTestRetval != 0) {
+                            sh 'exit ' + mvnTestRetval
+                        }
                     }
                 }
 
