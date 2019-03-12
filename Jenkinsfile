@@ -276,7 +276,7 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                         // Run supporting containers in background.
                         sh 'docker-compose up -d --scale workflow_manager=0'
 
-                        def mvnTestsRetval = sh(script: 'docker exec' +
+                        def mvnTestsRetval = sh(script: 'docker exec ' +
                                 buildContainerId +
                                 ' \"export MVN_OPTIONS=\$MVN_OPTIONS ' + mvnTestOptions +'; ' +
                                 ' /home/mpf/run-mvn-tests.sh\"', returnStatus:true)
