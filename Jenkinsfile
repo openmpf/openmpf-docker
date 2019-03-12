@@ -393,7 +393,7 @@ def processTestReports() {
 
     // Touch files to avoid the following error if the test reports are more than 3 seconds old:
     // "Test reports were found but none of them are new"
-    def command = ['sudo', 'touch', newReportsPath]
+    def command = 'sudo touch openmpf_runtime/build_artifacts/*-reports/*.xml'
     sh command
 
     junit reportsPath
