@@ -80,6 +80,8 @@ def openmpfConfigDockerSha
 node(jenkinsNodes) {
 wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color in Jenkins console
     try {
+        processTestReports() // DEBUG
+
         buildDate = getTimestamp()
 
         def dockerRegistryHostAndPort = dockerRegistryHost + ':' + dockerRegistryPort
@@ -391,10 +393,11 @@ def processTestReports() {
 
     // Touch files to avoid the following error if the test reports are more than 3 seconds old:
     // "Test reports were found but none of them are new"
-    sh 'sudo touch ${newReportsPath}'
+    def command = 'sudo touch ' + newReportsPath
+    sh command
 
-    junit newReportsPath
+    junit reportsPath
 
-    sh 'mkdir -p ${oldReportsPath}'
-    sh 'sudo mv ${newReportsPath} ${oldReportsPath}'
+    sh 'mkdir -p' + oldReportsPath
+    sh 'sudo mv ' + newReportsPath + ' ' + oldReportsPath
 }
