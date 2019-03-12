@@ -386,15 +386,15 @@ def getTimestamp() {
 
 // TODO: Don't use sudo.
 def processTestReports() {
-    def buildArtifactsPath = 'openmpf_runtime/build_artifacts'
-    def oldReportsPath = buildArtifactsPath + '/processed-reports'
+    def newReportsPath = 'openmpf_runtime/build_artifacts/reports'
+    def processedReportsPath = newReportsPath + '/processed'
 
     // Touch files to avoid the following error if the test reports are more than 3 seconds old:
     // "Test reports were found but none of them are new"
-    sh 'sudo touch ' + buildArtifactsPath + '/*-reports/*.xml'
+    sh 'sudo touch ' + newReportsPath + '/*-reports/*.xml'
 
     junit buildArtifactsPath + '/*-reports/*.xml'
 
     sh 'sudo mkdir -p ' + oldReportsPath
-    sh 'sudo mv ' + buildArtifactsPath + '/*-reports' + ' ' + oldReportsPath
+    sh 'sudo mv ' + newReportsPath + '/*-reports' + ' ' + processedReportsPath
 }

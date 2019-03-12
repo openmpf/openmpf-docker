@@ -134,11 +134,11 @@ mavenRetVal=$?
 
 # Copy Maven test reports to host
 cd /home/mpf/openmpf-projects
-mkdir -p "$BUILD_ARTIFACTS_PATH/surefire-reports"
-find . -path  \*\surefire-reports\*.xml -exec cp {} "$BUILD_ARTIFACTS_PATH/surefire-reports" \;
+mkdir -p "$BUILD_ARTIFACTS_PATH/reports/surefire-reports"
+find . -path  \*\surefire-reports\*.xml -exec cp {} "$BUILD_ARTIFACTS_PATH/reports/surefire-reports" \;
 
-mkdir -p "$BUILD_ARTIFACTS_PATH/failsafe-reports"
-find . -path  \*\failsafe-reports\*.xml -exec cp {} "$BUILD_ARTIFACTS_PATH/failsafe-reports" \;
+mkdir -p "$BUILD_ARTIFACTS_PATH/reports/failsafe-reports"
+find . -path  \*\failsafe-reports\*.xml -exec cp {} "$BUILD_ARTIFACTS_PATH/reports/failsafe-reports" \;
 
 set +o xtrace
 # Exit now if any tests failed

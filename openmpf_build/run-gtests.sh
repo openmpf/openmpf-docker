@@ -47,12 +47,14 @@ grep -q ".*GTESTS TESTS FAILED.*" A-RunGTests.log
 gTestsFailed=$?
 set -o xtrace
 
+cp A-RunGTests.log "$BUILD_ARTIFACTS_PATH" # DEBUG
+
 rm A-RunGTests.log
 
 # Copy GTest reports to host
 cd /home/mpf/openmpf-projects/openmpf/mpf-component-build
-mkdir -p "$BUILD_ARTIFACTS_PATH/gtest-reports"
-find . -name *junit.xml -exec cp {} "$BUILD_ARTIFACTS_PATH/gtest-reports" \;
+mkdir -p "$BUILD_ARTIFACTS_PATH/reports/gtest-reports"
+find . -name *junit.xml -exec cp {} "$BUILD_ARTIFACTS_PATH/reports/gtest-reports" \;
 
 set +o xtrace
 # Exit now if any tests failed
