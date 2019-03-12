@@ -117,7 +117,8 @@ parallelism=$(($(nproc) / 2))
 # TODO: -Dtest=TestSystemNightly
 # TODO: -Dtest=TestSystemStress
 # NOTE: TestSystemOnDiff is not excluded by default.
-mavenRetVal=$(mvn verify \
+set +e
+mvn verify \
   -Dspring.profiles.active=jenkins -Pjenkins \
   -Dit.test=ITComponentLifecycle,ITWebREST,ITComponentRegistration,ITWebStreamingReports \
   -DfailIfNoTests=false \
@@ -134,7 +135,9 @@ openmpf-python-component-sdk/detection/examples/PythonOcvComponent \
   -DgitBranch=`cd .. && git rev-parse --abbrev-ref HEAD` \
   -DgitShortId=`cd .. && git rev-parse --short HEAD` \
   -DjenkinsBuildNumber=1 \
-  $MVN_OPTIONS $EXTRA_MVN_OPTIONS; echo $?) # bash word splitting on maven options
+  $MVN_OPTIONS $EXTRA_MVN_OPTIONS # bash word splitting on maven options
+mavenRetVal=$?
+set -e
 
 # Copy Maven test reports to host
 cd /home/mpf/openmpf-projects
