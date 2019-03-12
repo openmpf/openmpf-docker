@@ -391,10 +391,10 @@ def processTestReports() {
 
     // Touch files to avoid the following error if the test reports are more than 3 seconds old:
     // "Test reports were found but none of them are new"
-    sh 'sudo touch $newReportsPath'
+    sh 'sudo touch ' + newReportsPath
 
-    junit '$newReportsPath'
+    junit newReportsPath
 
-    sh 'mkdir -p $oldReportsPath'
-    sh 'sudo mv $newReportsPath $oldReportsPath'
+    sh 'mkdir -p' + oldReportsPath
+    sh 'sudo mv ' + newReportsPath + ' ' + oldReportsPath
 }
