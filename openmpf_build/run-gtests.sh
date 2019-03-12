@@ -42,10 +42,10 @@ BUILD_ARTIFACTS_PATH=/mnt/build_artifacts
 cd /home/mpf/openmpf-projects/openmpf/trunk/jenkins/scripts
 perl A-RunGTests.pl /home/mpf/openmpf-projects/openmpf 2>&1 | tee A-RunGTests.log
 
-set +o xtrace
+set +e +o xtrace
 grep -q "GTESTS TESTS FAILED" A-RunGTests.log
 gTestsFailed=$?
-set -o xtrace
+set -e -o xtrace
 
 rm A-RunGTests.log
 

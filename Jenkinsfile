@@ -223,13 +223,13 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                         sh 'echo "SKIPPING GOOGLE TESTS"'
                     }
                     when (runGTests) { // if false, don't show this step in the Stage View UI
-                        def gTestRetval = sh(script: 'docker exec ' +
+                        def gTestsRetval = sh(script: 'docker exec ' +
                                 buildContainerId + ' /home/mpf/run-gtests.sh', returnStatus:true)
 
                         processTestReports()
 
-                        if (gTestRetval != 0) {
-                            sh 'exit ' + gTestRetval
+                        if (gTestsRetval != 0) {
+                            sh 'exit ' + gTestsRetval
                         }
                     }
                 }
@@ -276,14 +276,14 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                         // Run supporting containers in background.
                         sh 'docker-compose up -d --scale workflow_manager=0'
 
-                        def mvnTestRetval = sh(script: 'docker exec' +
+                        def mvnTestsRetval = sh(script: 'docker exec' +
                                 ' -e MVN_OPTIONS=\"' + mvnTestOptions + '\" ' +
                                 buildContainerId + ' /home/mpf/run-mvn-tests.sh', returnStatus:true)
 
                         processTestReports()
 
-                        if (mvnTestRetval != 0) {
-                            sh 'exit ' + mvnTestRetval
+                        if (mvnTestsRetval != 0) {
+                            sh 'exit ' + mvnTestsRetval
                         }
                     }
                 }
@@ -317,7 +317,7 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                 }
             }
 
-        } // end docker.withRegistry(
+        } // end docker.withRegistry()
     } catch(Exception e) {
         if (isAborted()) {
             sh 'echo "DETECTED BUILD ABORTED"'
