@@ -397,6 +397,6 @@ def processTestReports() {
 
     junit newReportsPath
 
-    sh 'mkdir -p ' + oldReportsPath
+    sh 'sudo mkdir -p ' + oldReportsPath
     sh 'sudo mv ' + newReportsPath + ' ' + oldReportsPath
 }
