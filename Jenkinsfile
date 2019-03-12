@@ -205,7 +205,7 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                                 '--mount type=bind,source=/home/jenkins/.m2,target=/root/.m2 ' +
                                 '--mount type=bind,source="$(pwd)"/openmpf_runtime/build_artifacts,target=/mnt/build_artifacts ' +
                                 '--mount type=bind,source="$(pwd)"/openmpf_build/openmpf-projects,target=/mnt/openmpf-projects ' +
-                                (runGTests ? ' -e RUN_GTESTS=1' : '') +
+                                (runGTests ? ' -e RUN_GTESTS=1 ' : '') +
                                 (runMvnTests ? '--mount type=volume,source=openmpf_shared_data,target=/home/mpf/openmpf-projects/openmpf/trunk/install/share ' : '') +
                                 (runMvnTests ? '--network=openmpf_default ' : '') +
                                 buildImageName + ' infinity', returnStdout: true).trim()
