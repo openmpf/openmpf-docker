@@ -86,13 +86,13 @@ if [ -f /home/mpf/docker-custom-entrypoint.sh ]; then
 fi
 
 ################################################################################
-# Build OpenMPF and Run Tests                                                  #
+# Build OpenMPF                                                                #
 ################################################################################
 
 parallelism=$(($(nproc) / 2))
 (( parallelism < 2 )) && parallelism=2
 
-# Perform build
+# Perform build. Exit script on failure.
 cd /home/mpf/openmpf-projects/openmpf
 mvn clean install \
   -DskipTests -Dmaven.test.skip=true -DskipITs \

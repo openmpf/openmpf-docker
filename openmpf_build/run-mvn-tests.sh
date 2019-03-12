@@ -107,6 +107,9 @@ mv "$wfmTestSamplesPath"/* "$MPF_HOME/share/samples"
 rmdir "$wfmTestSamplesPath"
 ln -s "$MPF_HOME/share/samples" "$wfmTestSamplesPath"
 
+parallelism=$(($(nproc) / 2))
+(( parallelism < 2 )) && parallelism=2
+
 # Components have already been built in the mpf_post_build image. Only build example components here.
 # Only run integration tests. Unit tests can be run in the openmpf_build container.
 # $MVN_OPTIONS will override other options that appear earlier in the following command.
@@ -114,7 +117,7 @@ ln -s "$MPF_HOME/share/samples" "$wfmTestSamplesPath"
 # TODO: -Dtest=TestSystemNightly
 # TODO: -Dtest=TestSystemStress
 # NOTE: TestSystemOnDiff is not excluded by default.
-mvn verify \
+mavenRetVal=$(mvn verify \
   -Dspring.profiles.active=jenkins -Pjenkins \
   -Dit.test=ITComponentLifecycle,ITWebREST,ITComponentRegistration,ITWebStreamingReports \
   -DfailIfNoTests=false \
@@ -126,11 +129,12 @@ openmpf-python-component-sdk/detection/examples/PythonTestComponent:\
 openmpf-python-component-sdk/detection/examples/PythonOcvComponent \
   -Dstartup.auto.registration.skip=false \
   -Dcomponents.build.dir=/home/mpf/openmpf-projects/openmpf/mpf-component-build \
+  -Dcomponents.build.parallel.builds="$parallelism" \
+  -Dcomponents.build.make.jobs="$parallelism" \
   -DgitBranch=`cd .. && git rev-parse --abbrev-ref HEAD` \
   -DgitShortId=`cd .. && git rev-parse --short HEAD` \
   -DjenkinsBuildNumber=1 \
-  $MVN_OPTIONS # bash word splitting
-mavenRetVal=$?
+  $MVN_OPTIONS; echo $?) # bash word splitting on MVN_OPTIONS
 
 # Copy Maven test reports to host
 cd /home/mpf/openmpf-projects
