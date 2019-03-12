@@ -217,6 +217,10 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                         sh 'docker exec ' +
                                 '-e BUILD_PACKAGE_JSON=' + buildPackageJson + ' ' +
                                 buildContainerId + ' /home/mpf/docker-entrypoint.sh'
+
+                        if (runGTests) {
+                            collectTestReports()
+                        }
                     }
                 }
 
@@ -268,25 +272,23 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                                 '-e MVN_OPTIONS=\"' + mvnTestOptions + '\" ' +
                                 buildContainerId + ' /home/mpf/run-mvn-tests.sh'
 
-                        // Touch files to avoid the following error if the test reports are more than 3 seconds old:
-                        // "Test reports were found but none of them are new"
-                        sh 'sudo touch openmpf_runtime/build_artifacts/*-reports/*.xml'
-
-                        // This will fail if no files are found.
-                        junit 'openmpf_runtime/build_artifacts/*-reports/*.xml'
+                        collectTestReports()
                     }
                 }
 
             } finally {
                 if (buildContainerId != null) {
                     sh 'docker container ls -a' // DEBUG
-                    sh 'docker-compose rm -svf'
-                    sh 'sleep 10' // give previous command some time
-                    sh 'docker container ls -a' // DEBUG
                     sh 'docker container rm -f ' + buildContainerId
                     sh 'docker container ls -a' // DEBUG
-                    sh 'docker volume rm -f openmpf_shared_data openmpf_mysql_data'
-                    sh 'docker network rm openmpf_default'
+
+                    if (runMvnTests) {
+                        sh 'docker-compose rm -svf'
+                        sh 'sleep 10' // give previous command some time
+                        sh 'docker container ls -a' // DEBUG
+                        sh 'docker volume rm -f openmpf_shared_data openmpf_mysql_data'
+                        sh 'docker network rm openmpf_default'
+                    }
                 }
             }
 
@@ -376,4 +378,13 @@ def email(String status) {
 
 def getTimestamp() {
     return sh(script: 'date --iso-8601=seconds', returnStdout: true).trim()
+}
+
+def collectTestReports() {
+    // Touch files to avoid the following error if the test reports are more than 3 seconds old:
+    // "Test reports were found but none of them are new"
+    sh 'sudo touch openmpf_runtime/build_artifacts/*-reports/*.xml'
+
+    // This will fail if no files are found.
+    junit 'openmpf_runtime/build_artifacts/*-reports/*.xml'
 }
