@@ -113,10 +113,9 @@ ln -s "$MPF_HOME/share/samples" "$wfmTestSamplesPath"
 # TODO: -Dit.test=ITComponentLifecycle,ITWebREST,ITComponentRegistration,ITWebStreamingReports,
 # TODO: -Dtest=TestSystemNightly
 # TODO: -Dtest=TestSystemStress
-# TODO: Build example components here.
+# NOTE: TestSystemOnDiff is not excluded by default.
 mvn verify \
   -Dspring.profiles.active=jenkins -Pjenkins \
-  -Dtest=TestSystemOnDiff \
   -Dit.test=ITComponentLifecycle,ITWebREST,ITComponentRegistration,ITWebStreamingReports \
   -DfailIfNoTests=false \
   -Dtransport.guarantee="NONE" -Dweb.rest.protocol="http" \
@@ -144,8 +143,8 @@ find . -path  \*\failsafe-reports\*.xml -exec cp {} "$BUILD_ARTIFACTS_PATH/fails
 set +o xtrace
 # Exit now if any tests failed
 if [ $mavenRetVal -ne 0 ]; then
-    echo 'DETECTED INTEGRATION TEST FAILURE(S)'
+    echo 'DETECTED REGRESSION TEST FAILURE(S)'
     exit 1
 fi
-echo 'DETECTED INTEGRATION TESTS PASSED'
+echo 'DETECTED REGRESSION TESTS PASSED'
 exit 0

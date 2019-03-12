@@ -459,8 +459,8 @@ COPY docker-entrypoint.sh /home/mpf
 RUN dos2unix -q /home/mpf/docker-entrypoint.sh
 ENTRYPOINT ["/home/mpf/docker-entrypoint.sh"]
 
-COPY run-tests.sh /home/mpf
-RUN dos2unix -q /home/mpf/run-tests.sh
+COPY run-mvn-tests.sh /home/mpf
+RUN dos2unix -q /home/mpf/run-mvn-tests.sh
 
 ################################################################################
 # Labels                                                                       #

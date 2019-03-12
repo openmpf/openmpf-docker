@@ -38,10 +38,9 @@ def openmpfBuildToolsBranch = env.getProperty("openmpf_build_tools_branch")
 
 def buildPackageJson = env.getProperty("build_package_json")
 def buildOpenmpf = env.getProperty("build_openmpf").toBoolean()
-def runUnitTests = env.getProperty("run_unit_tests").toBoolean()
-def mvnUnitTestOptions = env.getProperty("mvn_unit_test_options")
-def runIntegrationTests = env.getProperty("run_integration_tests").toBoolean()
-def mvnIntegrationTestOptions = env.getProperty("mvn_integration_test_options")
+def runGTests = env.getProperty("run_gtests").toBoolean()
+def runMvnTests = env.getProperty("run_mvn_tests").toBoolean()
+def mvnTestOptions = env.getProperty("mvn_test_options")
 def buildRuntimeImages = env.getProperty("build_runtime_images").toBoolean()
 def pushRuntimeImages = env.getProperty("push_runtime_images").toBoolean()
 
@@ -90,13 +89,6 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
         def buildContainerId
 
         def workflowManagerImageName = remoteImageTagPrefix + 'openmpf_workflow_manager:' + imageTag
-
-        /*
-        stage('TEST') {
-            sh "echo 'CURRENT BUILD RESULT:_${currentBuild.currentResult}_'"
-            sh 'exit 1' // DEBUG
-        }
-        */
 
         stage('Clone repos') {
 
@@ -213,8 +205,9 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                                 '--mount type=bind,source=/home/jenkins/.m2,target=/root/.m2 ' +
                                 '--mount type=bind,source="$(pwd)"/openmpf_runtime/build_artifacts,target=/mnt/build_artifacts ' +
                                 '--mount type=bind,source="$(pwd)"/openmpf_build/openmpf-projects,target=/mnt/openmpf-projects ' +
-                                (runIntegrationTests ? '--mount type=volume,source=openmpf_shared_data,target=/home/mpf/openmpf-projects/openmpf/trunk/install/share ' : '') +
-                                (runIntegrationTests ? '--network=openmpf_default ' : '') +
+                                (runGTests ? ' -e RUN_GTESTS=1' : '') +
+                                (runMvnTests ? '--mount type=volume,source=openmpf_shared_data,target=/home/mpf/openmpf-projects/openmpf/trunk/install/share ' : '') +
+                                (runMvnTests ? '--network=openmpf_default ' : '') +
                                 buildImageName + ' infinity', returnStdout: true).trim()
 
                         sh 'docker exec ' +
@@ -250,11 +243,11 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                     }
                 }
 
-                stage('Run system tests') {
-                    if (!buildOpenmpf || !runIntegrationTests) {
-                        sh 'echo "SKIPPING INTEGRATION TESTS"'
+                stage('Run regression tests') {
+                    if (!buildOpenmpf || !runMvnTests) {
+                        sh 'echo "SKIPPING REGRESSION TESTS"'
                     }
-                    when (buildOpenmpf && runIntegrationTests) { // if false, don't show this step in the Stage View UI
+                    when (buildOpenmpf && runMvnTests) { // if false, don't show this step in the Stage View UI
                         sh 'cp docker-compose-test.yml docker-compose.yml'
 
                         sh 'docker-compose build' +
@@ -268,8 +261,8 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                         sh 'docker-compose up -d'
 
                         sh 'docker exec ' +
-                                '-e MVN_OPTIONS=\"' + mvnIntegrationTestOptions + '\" ' +
-                                buildContainerId + ' /home/mpf/run-tests.sh'
+                                '-e MVN_OPTIONS=\"' + mvnTestOptions + '\" ' +
+                                buildContainerId + ' /home/mpf/run-mvn-tests.sh'
 
                         // Touch files to avoid the following error if the test reports are more than 3 seconds old:
                         // "Test reports were found but none of them are new"
@@ -302,99 +295,6 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                     sh 'docker-compose push'
                 }
             }
-
-
-
-                                /*
-                                docker.image(buildImageName).inside {
-
-                                    stage('First Run') {
-                                        sh 'touch first-run.txt'
-                                    }
-
-                                    stage('Second Run') {
-                                        sh 'ls'
-                                    }
-                                    */
-
-                                    /*
-
-                                    buildContainerId = sh(script: 'docker run -d ' +
-                                            '--mount type=bind,source=/home/jenkins/.m2,target=/root/.m2 ' +
-                                            '--mount type=bind,source="$(pwd)"/openmpf_runtime/build_artifacts,target=/mnt/build_artifacts ' +
-                                            '--mount type=bind,source="$(pwd)"/openmpf_build/openmpf-projects,target=/mnt/openmpf-projects ' +
-                                            '--mount type=volume,source=openmpf_shared_data,target=/home/mpf/openmpf-projects/openmpf/trunk/install/share ' +
-                                            '-e BUILD_PACKAGE_JSON=' + buildPackageJson + ' ' +
-                                            '-e RUN_TESTS=' + (runUnitTests ? 1 : 0) + ' ' +
-                                            '-e MVN_OPTIONS=\"' + mvnUnitTestOptions + '\" ' +
-                                            buildImageName, returnStdout: true).trim()
-                                    */
-                        //}
-
-                        /*
-                        // Attach to container to show log output and wait until entrypoint completes
-                        def dockerRunRetVal = sh(script:'docker attach ' + buildContainerId, returnStatus:true)
-
-                        if (runUnitTests) {
-                            // Touch files to avoid the following error if the test reports are more than 3 seconds old:
-                            // "Test reports were found but none of them are new"
-
-                            sh 'sudo touch openmpf_runtime/build_artifacts/surefire-reports/*.xml'
-                            junit 'openmpf_runtime/build_artifacts/surefire-reports/*.xml'
-
-                            sh 'sudo touch openmpf_runtime/build_artifacts/gtest-reports/*.xml'
-                            junit 'openmpf_runtime/build_artifacts/gtest-reports/*.xml'
-
-                            // // junit 'openmpf_runtime/build_artifacts/failsafe-reports/*.xml'
-                        }
-
-                        if (dockerRunRetVal != 0) {
-                            sh 'exit ' + dockerRunRetVal
-                        }
-                        */
-
-            /*
-            stage('Run system tests') {
-                if (!runIntegrationTests) {
-                    sh 'echo "SKIPPING INTEGRATION TESTS"'
-                }
-                when (runIntegrationTests) { // if false, don't show this step in the Stage View UI
-                    try {
-                        sh 'mv docker-compose-test.yml docker-compose.yml'
-
-                        sh(script:'docker-compose rm -svf', returnStatus:true)
-                        sh(script:'docker volume rm -f openmpf_shared_data', returnStatus:true)
-                        sh(script:'docker volume rm -f openmpf_mysql_data', returnStatus:true)
-
-                        wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) {
-                            sh 'docker-compose build' +
-                                    ' --build-arg BUILD_IMAGE_NAME=' + buildImageName +
-                                    ' --build-arg POST_BUILD_IMAGE_NAME=' + postBuildImageName +
-                                    ' --build-arg BUILD_DATE=' + buildDate +
-                                    ' --build-arg BUILD_VERSION=' + imageTag +
-                                    ' --build-arg BUILD_SHAS=\"' + buildShas + '\"'
-
-                            sh 'docker exec --entrypoint /opt/mpf/run-tests.sh'
-                        }
-
-                        // Touch files to avoid the following error if the test reports are more than 3 seconds old:
-                        // "Test reports were found but none of them are new"
-
-                        sh 'sudo touch openmpf_runtime/build_artifacts/surefire-reports/*.xml'
-                        junit 'openmpf_runtime/build_artifacts/surefire-reports/*.xml'
-
-                        sh 'sudo touch openmpf_runtime/build_artifacts/failsafe-reports/*.xml'
-                        junit 'openmpf_runtime/build_artifacts/failsafe-reports/*.xml'
-                    } finally {
-                        // Stop and remove containers, networks, and volumes
-                        // TODO: Make "--volumes" flag configurable.
-                        // TODO: Prefix shared volume with Jenkins build name to prevent simultaneous build conflicts.
-                        sh(script: 'docker-compose down ', returnStatus:true)
-                        sh(script: 'docker container rm -f ' + buildContainerId, returnStatus:true)
-                    }
-                }
-            }
-            */
 
         } // end docker.withRegistry(
     } catch(Exception e) {

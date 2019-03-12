@@ -41,7 +41,7 @@ BUILD_ARTIFACTS_PATH=/mnt/build_artifacts
 
 # Use "docker run --env BUILD_PACKAGE_JSON=openmpf-some-other-package.json" option
 BUILD_PACKAGE_JSON=${BUILD_PACKAGE_JSON:=openmpf-open-source-package.json}
-RUN_TESTS=${RUN_TESTS:=0}
+RUN_GTESTS=${RUN_GTESTS:=0}
 
 # Start with a clean slate
 rm -rf $BUILD_ARTIFACTS_PATH/*
@@ -93,72 +93,43 @@ fi
 parallelism=$(($(nproc) / 2))
 (( parallelism < 2 )) && parallelism=2
 
-if [ $RUN_TESTS -le 0 ]; then
-  # Perform build
-  cd /home/mpf/openmpf-projects/openmpf
-  mvn clean install \
-    -DskipTests -Dmaven.test.skip=true -DskipITs \
-    -Dmaven.tomcat.skip=true \
-    -Dcomponents.build.package.json=/home/mpf/openmpf-projects/openmpf/trunk/jenkins/scripts/config_files/$BUILD_PACKAGE_JSON \
-    -Dstartup.auto.registration.skip=false \
-    -Dcomponents.build.dir=/home/mpf/openmpf-projects/openmpf/mpf-component-build \
-    -Dcomponents.build.parallel.builds="$parallelism" \
-    -Dcomponents.build.make.jobs="$parallelism" \
-    -DgitBranch=`cd .. && git rev-parse --abbrev-ref HEAD` \
-    -DgitShortId=`cd .. && git rev-parse --short HEAD` \
-    -DjenkinsBuildNumber=1
-else
-  # Perform build with unit tests
-  # $MVN_OPTIONS will override other options that appear earlier in the following command.
-  # TODO: Use JSON package with examples
-  cd /home/mpf/openmpf-projects/openmpf
-  set +e # Turn off exit on error
-  mvn clean verify \
-    -Dspring.profiles.active=jenkins -Pjenkins \
-    -DskipITs \
-    -DfailIfNoTests=false \
-    -Dmaven.tomcat.skip=true \
-    -Dcomponents.build.package.json=/home/mpf/openmpf-projects/openmpf/trunk/jenkins/scripts/config_files/$BUILD_PACKAGE_JSON \
-    -Dstartup.auto.registration.skip=false \
-    -Dcomponents.build.dir=/home/mpf/openmpf-projects/openmpf/mpf-component-build \
-    -Dcomponents.build.parallel.builds="$parallelism" \
-    -Dcomponents.build.make.jobs="$parallelism" \
-    -DgitBranch=`cd .. && git rev-parse --abbrev-ref HEAD` \
-    -DgitShortId=`cd .. && git rev-parse --short HEAD` \
-    -DjenkinsBuildNumber=1 \
-    $MVN_OPTIONS
-  mavenRetVal=$?
+# Perform build
+cd /home/mpf/openmpf-projects/openmpf
+mvn clean install \
+  -DskipTests -Dmaven.test.skip=true -DskipITs \
+  -Dmaven.tomcat.skip=true \
+  -Dcomponents.build.package.json=/home/mpf/openmpf-projects/openmpf/trunk/jenkins/scripts/config_files/$BUILD_PACKAGE_JSON \
+  -Dstartup.auto.registration.skip=false \
+  -Dcomponents.build.dir=/home/mpf/openmpf-projects/openmpf/mpf-component-build \
+  -Dcomponents.build.parallel.builds="$parallelism" \
+  -Dcomponents.build.make.jobs="$parallelism" \
+  -DgitBranch=`cd .. && git rev-parse --abbrev-ref HEAD` \
+  -DgitShortId=`cd .. && git rev-parse --short HEAD` \
+  -DjenkinsBuildNumber=1
 
+if [ $RUN_GTESTS -gt 0 ]; then
   # Run Gtests
   # TODO: Update A-RunGTests.pl to return a non-zero value
   cd /home/mpf/openmpf-projects/openmpf/trunk/jenkins/scripts
   perl A-RunGTests.pl /home/mpf/openmpf-projects/openmpf 2>&1 | tee A-RunGTests.log
   set +o xtrace
-  gtestRetVal=`grep -q "GTESTS TESTS FAILED!" A-RunGTests.log`
+  gTestRetVal=`grep -q "GTESTS TESTS FAILED!" A-RunGTests.log`
   set -o xtrace
   rm A-RunGTests.log
   set -e # Turn on exit on error
 
-  # Copy Maven test reports to host
-  cd /home/mpf/openmpf-projects
-  mkdir -p $BUILD_ARTIFACTS_PATH/surefire-reports
-  find . -path  \*\surefire-reports\*.xml -exec cp {} $BUILD_ARTIFACTS_PATH/surefire-reports \;
-
-  mkdir -p $BUILD_ARTIFACTS_PATH/failsafe-reports
-  find . -path  \*\failsafe-reports\*.xml -exec cp {} $BUILD_ARTIFACTS_PATH/failsafe-reports \;
-
-  # Copy Gtest reports to host
+  # Copy GTest reports to host
   cd /home/mpf/openmpf-projects/openmpf/mpf-component-build
   mkdir -p $BUILD_ARTIFACTS_PATH/gtest-reports
   find . -name *junit.xml -exec cp {} $BUILD_ARTIFACTS_PATH/gtest-reports \;
 
   set +o xtrace
   # Exit now if any tests failed
-  if [ $mavenRetVal -ne 0 ] || [ $gtestRetval -ne 0 ]; then
-      echo 'DETECTED TEST FAILURE(S)'
+  if [ $gTestRetVal -ne 0 ]; then
+      echo 'DETECTED GTEST FAILURE(S)'
       exit 1
   fi
-  echo 'DETECTED TESTS PASSED'
+  echo 'DETECTED GTESTS PASSED'
   set -o xtrace
 fi
 
