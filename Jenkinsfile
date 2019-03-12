@@ -218,7 +218,7 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                     }
                 }
 
-                stage('Run Google Tests') {
+                stage('Run Google tests') {
                     if (!runGTests) {
                         sh 'echo "SKIPPING GOOGLE TESTS"'
                     }
@@ -386,15 +386,15 @@ def getTimestamp() {
 
 // TODO: Don't use sudo.
 def processTestReports() {
-    newReportsPath="openmpf_runtime/build_artifacts/*-reports/*.xml"
-    oldReportsPath="openmpf_runtime/build_artifacts/processed-reports"
+    def newReportsPath = "openmpf_runtime/build_artifacts/*-reports/*.xml"
+    def oldReportsPath = "openmpf_runtime/build_artifacts/processed-reports"
 
     // Touch files to avoid the following error if the test reports are more than 3 seconds old:
     // "Test reports were found but none of them are new"
-    sh 'sudo touch ' + reportsPath
+    sh 'sudo touch ' + newReportsPath
 
     junit reportsPath
 
     sh 'mkdir -p' + oldReportsPath
-    sh 'sudo mv ' + reportsPath + ' ' + oldReportsPath
+    sh 'sudo mv ' + newReportsPath + ' ' + oldReportsPath
 }
