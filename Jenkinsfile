@@ -277,8 +277,9 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                         sh 'docker-compose up -d --scale workflow_manager=0'
 
                         def mvnTestsRetval = sh(script: 'docker exec' +
-                                ' -e MVN_OPTIONS=\"' + mvnTestOptions + '\" ' +
-                                buildContainerId + ' /home/mpf/run-mvn-tests.sh', returnStatus:true)
+                                buildContainerId +
+                                ' export MVN_OPTIONS=\"$MVN_OPTIONS ' + mvnTestOptions +'\"; ' +
+                                ' /home/mpf/run-mvn-tests.sh', returnStatus:true)
 
                         processTestReports()
 
@@ -290,14 +291,11 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
 
             } finally {
                 if (buildContainerId != null) {
-                    sh 'docker container ls -a' // DEBUG
                     sh 'docker container rm -f ' + buildContainerId
-                    sh 'docker container ls -a' // DEBUG
 
                     if (runMvnTests) {
                         sh 'docker-compose rm -svf'
                         sh 'sleep 10' // give previous command some time
-                        sh 'docker container ls -a' // DEBUG
                         sh 'docker volume rm -f openmpf_shared_data openmpf_mysql_data'
                         sh 'docker network rm openmpf_default'
                     }
@@ -309,8 +307,6 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                     sh 'echo "SKIPPING PUSH OF RUNTIME IMAGES"'
                 }
                 when (pushRuntimeImages) { // if false, don't show this step in the Stage View UI
-                    sh 'cp docker-compose.yml.bak docker-compose.yml'
-
                     // Pushing multiple tags is cheap, as all the layers are reused.
                     sh 'docker push ' + buildImageName
                     sh 'docker-compose push'

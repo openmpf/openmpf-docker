@@ -92,7 +92,7 @@ fi
 parallelism=$(($(nproc) / 2))
 (( parallelism < 2 )) && parallelism=2
 
-# Perform build. Exit script on failure.
+# Perform build. Exit now if build failed.
 cd /home/mpf/openmpf-projects/openmpf
 mvn clean install \
   -DskipTests -Dmaven.test.skip=true -DskipITs \
