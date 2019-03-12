@@ -40,11 +40,11 @@ MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD:=password}
 ln -s /home/mpf/openmpf-projects/openmpf/trunk/install /opt/mpf
 MPF_HOME=/opt/mpf
 
-mkdir -p $MPF_HOME/share; chown -R mpf:mpf $MPF_HOME/share
+mkdir -p "$MPF_HOME/share"; chown -R mpf:mpf "$MPF_HOME/share"
 
 
 # Cleanup
-rm -f $MPF_HOME/share/nodes/MPF_Channel/*workflow_manager*.list
+rm -f "$MPF_HOME/share/nodes/MPF_Channel"/*workflow_manager*.list
 
 # NOTE: $HOSTNAME is not known until runtime.
 echo "export JGROUPS_TCP_ADDRESS=${HOSTNAME}" >> /etc/profile.d/mpf.sh
@@ -93,7 +93,7 @@ set -o xtrace
 # TODO: Move to openmpf_build Dockerfile
 export PKG_CONFIG_PATH=/apps/install/lib/pkgconfig
 export CXXFLAGS=-isystem\ /apps/install/include
-export PATH=$PATH:/apps/install/bin:/opt/apache-maven/bin:/apps/install/lib/pkgconfig:/usr/bin
+export PATH="$PATH":/apps/install/bin:/opt/apache-maven/bin:/apps/install/lib/pkgconfig:/usr/bin
 
 cd /home/mpf/openmpf-projects/openmpf
 
@@ -129,7 +129,7 @@ openmpf-python-component-sdk/detection/examples/PythonOcvComponent \
   -DgitBranch=`cd .. && git rev-parse --abbrev-ref HEAD` \
   -DgitShortId=`cd .. && git rev-parse --short HEAD` \
   -DjenkinsBuildNumber=1 \
-  $MVN_OPTIONS
+  "$MVN_OPTIONS"
 mavenRetVal=$?
 
 # Copy Maven test reports to host
@@ -142,7 +142,7 @@ find . -path  \*\failsafe-reports\*.xml -exec cp {} "$BUILD_ARTIFACTS_PATH/fails
 
 set +o xtrace
 # Exit now if any tests failed
-if [ $mavenRetVal -ne 0 ]; then
+if [ "$mavenRetVal" -ne 0 ]; then
     echo 'DETECTED REGRESSION TEST FAILURE(S)'
     exit 1
 fi

@@ -34,7 +34,7 @@ set -Ee -o pipefail -o xtrace
 
 export PKG_CONFIG_PATH=/apps/install/lib/pkgconfig
 export CXXFLAGS=-isystem\ /apps/install/include
-export PATH=$PATH:/apps/install/bin:/opt/apache-maven/bin:/apps/install/lib/pkgconfig:/usr/bin
+export PATH="$PATH":/apps/install/bin:/opt/apache-maven/bin:/apps/install/lib/pkgconfig:/usr/bin
 
 SOURCE_CODE_PATH=/mnt/openmpf-projects
 BUILD_ARTIFACTS_PATH=/mnt/build_artifacts
@@ -44,13 +44,13 @@ BUILD_PACKAGE_JSON=${BUILD_PACKAGE_JSON:=openmpf-open-source-package.json}
 RUN_GTESTS=${RUN_GTESTS:=0}
 
 # Start with a clean slate
-rm -rf $BUILD_ARTIFACTS_PATH/*
+rm -rf "$BUILD_ARTIFACTS_PATH"/*
 
 ################################################################################
 # Copy the OpenMPF Repository                                                  #
 ################################################################################
 
-cp -R $SOURCE_CODE_PATH /home/mpf
+cp -R "$SOURCE_CODE_PATH" /home/mpf
 
 # Make sure the source code line endings are correct if copying the source from a Windows host.
 cd /home/mpf/openmpf-projects && find . -type f -exec dos2unix -q {} \;
@@ -98,7 +98,7 @@ cd /home/mpf/openmpf-projects/openmpf
 mvn clean install \
   -DskipTests -Dmaven.test.skip=true -DskipITs \
   -Dmaven.tomcat.skip=true \
-  -Dcomponents.build.package.json=/home/mpf/openmpf-projects/openmpf/trunk/jenkins/scripts/config_files/$BUILD_PACKAGE_JSON \
+  -Dcomponents.build.package.json="/home/mpf/openmpf-projects/openmpf/trunk/jenkins/scripts/config_files/$BUILD_PACKAGE_JSON" \
   -Dstartup.auto.registration.skip=false \
   -Dcomponents.build.dir=/home/mpf/openmpf-projects/openmpf/mpf-component-build \
   -Dcomponents.build.parallel.builds="$parallelism" \
@@ -107,25 +107,28 @@ mvn clean install \
   -DgitShortId=`cd .. && git rev-parse --short HEAD` \
   -DjenkinsBuildNumber=1
 
-if [ $RUN_GTESTS -gt 0 ]; then
+if [ "$RUN_GTESTS" -gt 0 ]; then
   # Run Gtests
   # TODO: Update A-RunGTests.pl to return a non-zero value
   cd /home/mpf/openmpf-projects/openmpf/trunk/jenkins/scripts
   perl A-RunGTests.pl /home/mpf/openmpf-projects/openmpf 2>&1 | tee A-RunGTests.log
+
   set +o xtrace
-  gTestRetVal=`grep -q "GTESTS TESTS FAILED!" A-RunGTests.log`
+  if [ `grep -q "GTESTS TESTS FAILED!" A-RunGTests.log` ]; then
+    gTestsFailed=1
+  fi
   set -o xtrace
+
   rm A-RunGTests.log
-  set -e # Turn on exit on error
 
   # Copy GTest reports to host
   cd /home/mpf/openmpf-projects/openmpf/mpf-component-build
-  mkdir -p $BUILD_ARTIFACTS_PATH/gtest-reports
-  find . -name *junit.xml -exec cp {} $BUILD_ARTIFACTS_PATH/gtest-reports \;
+  mkdir -p "$BUILD_ARTIFACTS_PATH/gtest-reports"
+  find . -name *junit.xml -exec cp {} "$BUILD_ARTIFACTS_PATH/gtest-reports" \;
 
   set +o xtrace
   # Exit now if any tests failed
-  if [ $gTestRetVal -ne 0 ]; then
+  if [ -n "$gTestsFailed" ]; then
       echo 'DETECTED GTEST FAILURE(S)'
       exit 1
   fi
@@ -138,11 +141,11 @@ fi
 ################################################################################
 
 cd /home/mpf/openmpf-projects/openmpf/trunk
-cp workflow-manager/target/workflow-manager.war $BUILD_ARTIFACTS_PATH
+cp workflow-manager/target/workflow-manager.war "$BUILD_ARTIFACTS_PATH"
 
 # Exclude the share directory since it can't be extracted to the share volume.
 # Docker cannot extract tars, or mv files to, volumes when the container is being created.
-tar -czf $BUILD_ARTIFACTS_PATH/install.tar -C install --exclude="share" .
-tar -czf $BUILD_ARTIFACTS_PATH/ansible.tar ansible
+tar -czf "$BUILD_ARTIFACTS_PATH/install.tar" -C install --exclude="share" .
+tar -czf "$BUILD_ARTIFACTS_PATH/ansible.tar" ansible
 
-cp -R ../mpf-component-build/plugin-packages $BUILD_ARTIFACTS_PATH
+cp -R ../mpf-component-build/plugin-packages "$BUILD_ARTIFACTS_PATH"

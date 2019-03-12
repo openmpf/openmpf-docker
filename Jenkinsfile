@@ -279,9 +279,12 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
 
             } finally {
                 if (buildContainerId != null) {
+                    sh 'docker container ls -a' // DEBUG
                     sh 'docker-compose rm -svf'
                     sh 'sleep 10' // give previous command some time
+                    sh 'docker container ls -a' // DEBUG
                     sh 'docker container rm -f ' + buildContainerId
+                    sh 'docker container ls -a' // DEBUG
                     sh 'docker volume rm -f openmpf_shared_data openmpf_mysql_data'
                     sh 'docker network rm openmpf_default'
                 }
