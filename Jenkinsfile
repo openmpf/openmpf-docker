@@ -82,6 +82,8 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
     try {
         buildDate = getTimestamp()
 
+        sh 'docker volume rm -f openmpf_shared_data' // openmpf_shared_data may be leftover from the last run
+
         def dockerRegistryHostAndPort = dockerRegistryHost + ':' + dockerRegistryPort
         def remoteImageTagPrefix = dockerRegistryHostAndPort + '/openmpf/'
 
@@ -296,7 +298,7 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                     if (runMvnTests) {
                         sh 'docker-compose rm -svf'
                         sh 'sleep 10' // give previous command some time
-                        sh 'docker volume rm -f openmpf_shared_data openmpf_mysql_data'
+                        sh 'docker volume rm -f openmpf_mysql_data' // preserve openmpf_shared_data for post-run analysis
                         sh 'docker network rm openmpf_default'
                     }
                 }
