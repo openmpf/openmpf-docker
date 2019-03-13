@@ -270,7 +270,6 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                     when (buildOpenmpf && runMvnTests) { // if false, don't show this step in the Stage View UI
                         sh 'docker-compose build' +
                                 ' --build-arg BUILD_IMAGE_NAME=' + buildImageName +
-                                ' --build-arg POST_BUILD_IMAGE_NAME=' + postBuildImageName +
                                 ' --build-arg BUILD_DATE=' + buildDate +
                                 ' --build-arg BUILD_VERSION=' + imageTag +
                                 ' --build-arg BUILD_SHAS=\"' + buildShas + '\"'
