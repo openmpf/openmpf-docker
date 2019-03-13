@@ -99,12 +99,12 @@ cd /home/mpf/openmpf-projects/openmpf
 
 # Move test sample data into a location that's accessible by all of the nodes.
 systemTestSamplesPath="trunk/mpf-system-tests/src/test/resources/samples"
-mv "$systemTestSamplesPath/NOTICE" "$systemTestSamplesPath/SYSTEM-TESTS-NOTICE"
+find "$systemTestSamplesPath" -name NOTICE -delete
 mv "$systemTestSamplesPath" "$MPF_HOME/share/"
 ln -s "$MPF_HOME/share/samples" "$systemTestSamplesPath"
 
 wfmTestSamplesPath="trunk/workflow-manager/src/test/resources/samples"
-mv "$wfmTestSamplesPath/NOTICE" "$wfmTestSamplesPath/WORKFLOW-MANAGER-NOTICE"
+find "$wfmTestSamplesPath" -name NOTICE -delete
 cp -R "$wfmTestSamplesPath"/* "$MPF_HOME/share/samples"
 rmdir "$wfmTestSamplesPath"
 ln -s "$MPF_HOME/share/samples" "$wfmTestSamplesPath"
