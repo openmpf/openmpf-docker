@@ -98,9 +98,12 @@ export PATH="$PATH":/apps/install/bin:/opt/apache-maven/bin:/apps/install/lib/pk
 cd /home/mpf/openmpf-projects/openmpf
 
 # Move test sample data into a location that's accessible by all of the nodes.
+mkdir "$MPF_HOME/share/samples"
+
 systemTestSamplesPath="trunk/mpf-system-tests/src/test/resources/samples"
 find "$systemTestSamplesPath" -name NOTICE -delete
-mv "$systemTestSamplesPath" "$MPF_HOME/share/"
+cp -R "$systemTestSamplesPath" "$MPF_HOME/share/"
+rmdir "$systemTestSamplesPath"
 ln -s "$MPF_HOME/share/samples" "$systemTestSamplesPath"
 
 wfmTestSamplesPath="trunk/workflow-manager/src/test/resources/samples"
