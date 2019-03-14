@@ -28,8 +28,6 @@
 def imageTag = env.getProperty("image_tag")
 
 def openmpfDockerBranch = env.getProperty("openmpf_docker_branch")
-// def pushOpenmpfDockerBranchBuildStatus = env.getProperty("push_openmpf_docker_branch_build_status").toBoolean()
-
 def openmpfProjectsBranch = env.getProperty("openmpf_projects_branch")
 def openmpfBranch = env.getProperty("openmpf_branch")
 def openmpfComponentsBranch = env.getProperty("openmpf_components_branch")
@@ -72,6 +70,20 @@ def openmpfConfigRepoCredId = env.getProperty('openmpf_config_repo_cred_id')
 def openmpfConfigDockerRepo = env.getProperty("openmpf_config_docker_repo")
 def openmpfConfigDockerBranch = env.getProperty("openmpf_config_docker_branch")
 
+// These properties are for posting the Jenkins build status to GitHub
+def postOpenmpfDockerBuildStatus = env.getProperty("post_openmpf_docker_build_status").toBoolean()
+def githubAuthToken = env.getProperty("github_auth_token")
+
+// SHAs
+def openmpfDockerSha
+def openmpfSha
+def openmpfComponentsSha
+def openmpfContribComponentsSha
+def openmpfCppComponentSdkSha
+def openmpfJavaComponentSdkSha
+def openmpfPythonComponentSdkSha
+def openmpfBuildToolsSha
+
 // Labels
 def buildDate
 def buildShas
@@ -96,7 +108,7 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
         def workflowManagerImageName = remoteImageTagPrefix + 'openmpf_workflow_manager:' + imageTag
 
         stage('Clone repos') {
-            def openmpfDockerSha = gitCheckoutAndPull("https://github.com/openmpf/openmpf-docker.git",
+            openmpfDockerSha = gitCheckoutAndPull("https://github.com/openmpf/openmpf-docker.git",
                     '.', openmpfDockerBranch)
 
             // Revert changes made to files by a previous Jenkins build.
@@ -107,19 +119,19 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                     openmpfProjectsPath, openmpfProjectsBranch)
             sh 'cd ' + openmpfProjectsPath + '; git submodule update --init'
 
-            def openmpfSha = gitCheckoutAndPull("https://github.com/openmpf/openmpf.git",
+            openmpfSha = gitCheckoutAndPull("https://github.com/openmpf/openmpf.git",
                     openmpfProjectsPath + '/openmpf', openmpfBranch)
-            def openmpfComponentsSha = gitCheckoutAndPull("https://github.com/openmpf/openmpf-components.git",
+            openmpfComponentsSha = gitCheckoutAndPull("https://github.com/openmpf/openmpf-components.git",
                     openmpfProjectsPath + '/openmpf-components', openmpfComponentsBranch)
-            def openmpfContribComponentsSha = gitCheckoutAndPull("https://github.com/openmpf/openmpf-contrib-components.git",
+            openmpfContribComponentsSha = gitCheckoutAndPull("https://github.com/openmpf/openmpf-contrib-components.git",
                     openmpfProjectsPath + '/openmpf-contrib-components', openmpfContribComponentsBranch)
-            def openmpfCppComponentSdkSha = gitCheckoutAndPull("https://github.com/openmpf/openmpf-cpp-component-sdk.git",
+            openmpfCppComponentSdkSha = gitCheckoutAndPull("https://github.com/openmpf/openmpf-cpp-component-sdk.git",
                     openmpfProjectsPath + '/openmpf-cpp-component-sdk', openmpfCppComponentSdkBranch)
-            def openmpfJavaComponentSdkSha = gitCheckoutAndPull("https://github.com/openmpf/openmpf-java-component-sdk.git",
+            openmpfJavaComponentSdkSha = gitCheckoutAndPull("https://github.com/openmpf/openmpf-java-component-sdk.git",
                     openmpfProjectsPath + '/openmpf-java-component-sdk', openmpfJavaComponentSdkBranch)
-            def openmpfPythonComponentSdkSha = gitCheckoutAndPull("https://github.com/openmpf/openmpf-python-component-sdk.git",
+            openmpfPythonComponentSdkSha = gitCheckoutAndPull("https://github.com/openmpf/openmpf-python-component-sdk.git",
                     openmpfProjectsPath + '/openmpf-python-component-sdk', openmpfPythonComponentSdkBranch)
-            def openmpfBuildToolsSha = gitCheckoutAndPull("https://github.com/openmpf/openmpf-build-tools.git",
+            openmpfBuildToolsSha = gitCheckoutAndPull("https://github.com/openmpf/openmpf-build-tools.git",
                     openmpfProjectsPath + '/openmpf-build-tools', openmpfBuildToolsBranch)
 
             buildShas = 'openmpf-docker: ' + openmpfDockerSha +
@@ -173,10 +185,19 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
         }
 
         stage('Post build status') {
-            sh "echo 'CURRENT BUILD: ${currentBuild.projectName} ${currentBuild.displayName}'" // DEBUG
+            if (postOpenmpfDockerBuildStatus) {
+                postBuildStatus("openmpf-docker", openmpfDockerBranch, openmpfDockerSha)
+            }
 
+            // TODO: Post "failure" build status
 
-            // echo '{"state": "success", "description": "override", "context": "jenkins"}' | curl -X POST -u "jrobble" -d @- https://api.github.com/repos/openmpf/openmpf-docker/statuses/7566d8293ecf
+            postBuildStatus("openmpf", openmpfBranch, openmpfSha)
+            postBuildStatus("openmpf-components", openmpfComponentsBranch, openmpfComponentsSha)
+            postBuildStatus("openmpf-contrib-components", openmpfContribComponentsBranch, openmpfContribComponentsSha)
+            postBuildStatus("openmpf-cpp-components-sdk", openmpfCppComponentSdkBranch, openmpfCppComponentSdkSha)
+            postBuildStatus("openmpf-java-components-sdk", openmpfJavaComponentSdkBranch, openmpfJavaComponentSdkSha)
+            postBuildStatus("openmpf-python-components-sdk", openmpfPythonComponentSdkBranch, openmpfPythonComponentSdkSha)
+            postBuildStatus("openmpf-build-tools", openmpfBuildToolsBranch, openmpfBuildToolsSha)
 
             sh 'exit -1' // DEBUG
         }
@@ -422,4 +443,23 @@ def processTestReports() {
 
     sh 'sudo mkdir -p ' + processedReportsPath
     sh 'sudo mv ' + newReportsPath + '/*-reports' + ' ' + processedReportsPath
+}
+
+def postBuildStatus(String repo, String branch, String sha) {
+    if (branch.isEmpty()) {
+        return
+    }
+
+    def msg = "{\"state\": \"success\", " +
+            "\"description\": \"${currentBuild.projectName} ${currentBuild.displayName}\", " +
+            "\"context\": \"jenkins\"}"
+
+    def url = "https://api.github.com/repos/openmpf/" + repo + "/statuses/" + sha
+
+    def cmd = "curl -X POST " +
+            "-H \"Authorization: token " + githubAuthToken + "\" " +
+            "-H \"Content-Type: application/json\"" +
+            "-d @- " + url
+
+    sh 'echo ' + msg + ' | ' + cmd
 }
