@@ -170,6 +170,8 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
             // built from scratch on a clean Jenkins node.
         }
 
+        sh 'exit 0' // DEBUG
+
         docker.withRegistry('http://' + dockerRegistryHostAndPort, dockerRegistryCredId) {
 
             stage('Build base image') {
@@ -347,27 +349,36 @@ def gitCheckoutAndPull(String repo, String dir, String branch) {
     //    extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: dir]],
     //    userRemoteConfigs: [[url: repo]]])
 
-    if (!fileExists(dir + '/.git')) {
-        sh 'git clone ' + repo + ' ' + dir
+    if (!branch.isEmpty()) {
+        if (!fileExists(dir + '/.git')) {
+            sh 'git clone ' + repo + ' ' + dir
+        }
+        sh 'cd ' + dir + '; git fetch'
+        sh 'cd ' + dir + '; git checkout ' + branch
+        sh 'cd ' + dir + '; git pull origin ' + branch
     }
 
-    sh 'cd ' + dir + '; git fetch'
-    sh 'cd ' + dir + '; git checkout ' + branch
-    sh 'cd ' + dir + '; git pull origin ' + branch
-
-    return sh(script: 'cd ' + dir + '; git rev-parse HEAD', returnStdout: true).trim()
+    return getGitCommitSha(dir) // assume the repo is already cloned
 }
 
 def gitCheckoutAndPullWithCredId(String repo, String credId, String dir, String branch) {
-    def scmVars = checkout([$class: 'GitSCM',
-              branches: [[name: '*/' + branch]],
-              extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: dir]],
-              userRemoteConfigs: [[credentialsId: credId, url: repo]]])
+    if (!branch.isEmpty()) {
+        def scmVars = checkout([$class: 'GitSCM',
+                  branches: [[name: '*/' + branch]],
+                  extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: dir]],
+                  userRemoteConfigs: [[credentialsId: credId, url: repo]]])
 
-    // TODO: Make sure we're not in a detached state.
-    // sh 'cd ' + dir + '; git checkout ' + branch
+        // TODO: Make sure we're not in a detached state.
+        // sh 'cd ' + dir + '; git checkout ' + branch
 
-    return scmVars.GIT_COMMIT
+        return scmVars.GIT_COMMIT
+    }
+
+    return getGitCommitSha(dir) // assume the repo is already cloned
+}
+
+def getGitCommitSha(String dir) {
+    return sh(script: 'cd ' + dir + '; git rev-parse HEAD', returnStdout: true).trim()
 }
 
 def isAborted() {
