@@ -173,7 +173,7 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
         }
 
         stage('Post build status') {
-            sh 'echo "CURRENT BUILD NAME: ${currentBuild.name}"' // DEBUG
+            sh 'echo "CURRENT BUILD NAME: ${currentBuild.displayName}"' // DEBUG
 
 
             // echo '{"state": "success", "description": "override", "context": "jenkins"}' | curl -X POST -u "jrobble" -d @- https://api.github.com/repos/openmpf/openmpf-docker/statuses/7566d8293ecf
