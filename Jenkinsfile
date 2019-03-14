@@ -26,7 +26,10 @@
 
 // Get build parameters.
 def imageTag = env.getProperty("image_tag")
+
 def openmpfDockerBranch = env.getProperty("openmpf_docker_branch")
+def pushOpenmpfDockerBranchBuildStatus = env.getProperty("push_openmpf_docker_branch_build_status").toBoolean()
+
 def openmpfProjectsBranch = env.getProperty("openmpf_projects_branch")
 def openmpfBranch = env.getProperty("openmpf_branch")
 def openmpfComponentsBranch = env.getProperty("openmpf_components_branch")
@@ -93,7 +96,6 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
         def workflowManagerImageName = remoteImageTagPrefix + 'openmpf_workflow_manager:' + imageTag
 
         stage('Clone repos') {
-
             def openmpfDockerSha = gitCheckoutAndPull("https://github.com/openmpf/openmpf-docker.git",
                     '.', openmpfDockerBranch)
 
@@ -170,7 +172,14 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
             // built from scratch on a clean Jenkins node.
         }
 
-        sh 'exit 0' // DEBUG
+        stage('Post build status') {
+            sh 'echo "CURRENT BUILD NAME: ${currentBuild.currentResult}"' // DEBUG
+
+
+            // echo '{"state": "success", "description": "override", "context": "jenkins"}' | curl -X POST -u "jrobble" -d @- https://api.github.com/repos/openmpf/openmpf-docker/statuses/7566d8293ecf
+
+            sh 'exit -1' // DEBUG
+        }
 
         docker.withRegistry('http://' + dockerRegistryHostAndPort, dockerRegistryCredId) {
 
@@ -317,7 +326,7 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
             }
 
         } // end docker.withRegistry()
-    } catch(Exception e) {
+    } catch (Exception e) {
         if (isAborted()) {
             sh 'echo "DETECTED BUILD ABORTED"'
             email("ABORTED")
