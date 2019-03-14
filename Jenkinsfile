@@ -28,7 +28,7 @@
 def imageTag = env.getProperty("image_tag")
 
 def openmpfDockerBranch = env.getProperty("openmpf_docker_branch")
-def pushOpenmpfDockerBranchBuildStatus = env.getProperty("push_openmpf_docker_branch_build_status").toBoolean()
+// def pushOpenmpfDockerBranchBuildStatus = env.getProperty("push_openmpf_docker_branch_build_status").toBoolean()
 
 def openmpfProjectsBranch = env.getProperty("openmpf_projects_branch")
 def openmpfBranch = env.getProperty("openmpf_branch")
