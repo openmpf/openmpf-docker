@@ -24,6 +24,8 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
+// Jenkins Global Variables Reference: https://opensource.triology.de/jenkins/pipeline-syntax/globals
+
 // Get build parameters.
 def imageTag = env.getProperty("image_tag")
 
@@ -184,24 +186,7 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
             // built from scratch on a clean Jenkins node.
         }
 
-        stage('Post build status') {
-            if (postOpenmpfDockerBuildStatus) {
-                postBuildStatus("openmpf-docker", openmpfDockerBranch, openmpfDockerSha)
-            }
-
-            // TODO: Post "failure" build status
-
-            postBuildStatus("openmpf", openmpfBranch, openmpfSha)
-            postBuildStatus("openmpf-components", openmpfComponentsBranch, openmpfComponentsSha)
-            postBuildStatus("openmpf-contrib-components", openmpfContribComponentsBranch, openmpfContribComponentsSha)
-            postBuildStatus("openmpf-cpp-components-sdk", openmpfCppComponentSdkBranch, openmpfCppComponentSdkSha)
-            postBuildStatus("openmpf-java-components-sdk", openmpfJavaComponentSdkBranch, openmpfJavaComponentSdkSha)
-            postBuildStatus("openmpf-python-components-sdk", openmpfPythonComponentSdkBranch, openmpfPythonComponentSdkSha)
-            postBuildStatus("openmpf-build-tools", openmpfBuildToolsBranch, openmpfBuildToolsSha)
-
-            sh 'exit -1' // DEBUG
-        }
-
+        /*
         docker.withRegistry('http://' + dockerRegistryHostAndPort, dockerRegistryCredId) {
 
             stage('Build base image') {
@@ -347,6 +332,7 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
             }
 
         } // end docker.withRegistry()
+        */
     } catch (Exception e) {
         if (isAborted()) {
             sh 'echo "DETECTED BUILD ABORTED"'
@@ -356,6 +342,7 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
             sh 'echo "Exception type: "' + e.getClass()
             sh 'echo "Exception message: "' + e.getMessage()
             email("FAILURE")
+            postBuildStatus("failure")
         }
         throw e // rethrow so Jenkins knows of failure
     }
@@ -368,6 +355,7 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
         sh 'echo "DETECTED BUILD COMPLETED"'
         sh "echo 'CURRENT BUILD RESULT: ${currentBuild.currentResult}'"
         email(currentBuild.currentResult)
+        postBuildStatus(currentBuild.currentResult.equals("SUCCESS") ? "success" : "failure")
     }
 }}
 
@@ -445,12 +433,28 @@ def processTestReports() {
     sh 'sudo mv ' + newReportsPath + '/*-reports' + ' ' + processedReportsPath
 }
 
-def postBuildStatus(String repo, String branch, String sha) {
+def postBuildStatus(String status) {
+    if (postOpenmpfDockerBuildStatus) {
+        postBuildStatus("openmpf-docker", openmpfDockerBranch, openmpfDockerSha, status)
+    }
+
+    postBuildStatus("openmpf", openmpfBranch, openmpfSha, status)
+    postBuildStatus("openmpf-components", openmpfComponentsBranch, openmpfComponentsSha, status)
+    postBuildStatus("openmpf-contrib-components", openmpfContribComponentsBranch, openmpfContribComponentsSha, status)
+    postBuildStatus("openmpf-cpp-components-sdk", openmpfCppComponentSdkBranch, openmpfCppComponentSdkSha, status)
+    postBuildStatus("openmpf-java-components-sdk", openmpfJavaComponentSdkBranch, openmpfJavaComponentSdkSha, status)
+    postBuildStatus("openmpf-python-components-sdk", openmpfPythonComponentSdkBranch, openmpfPythonComponentSdkSha, status)
+    postBuildStatus("openmpf-build-tools", openmpfBuildToolsBranch, openmpfBuildToolsSha, status)
+
+    sh 'exit -1' // DEBUG
+}
+
+def postBuildStatus(String repo, String branch, String sha, String status) {
     if (branch.isEmpty()) {
         return
     }
 
-    def msg = "{\"state\": \"success\", " +
+    def msg = "{\"state\": \"" + status + "\", " +
             "\"description\": \"${currentBuild.projectName} ${currentBuild.displayName}\", " +
             "\"context\": \"jenkins\"}"
 
