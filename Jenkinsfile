@@ -99,6 +99,8 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
     try {
         buildDate = getTimestamp()
 
+        sh 'echo "postOpenmpfDockerBuildStatus: "' + postOpenmpfDockerBuildStatus // DEBUG
+
         sh 'docker volume rm -f openmpf_shared_data' // openmpf_shared_data may be leftover from the last run
 
         def dockerRegistryHostAndPort = dockerRegistryHost + ':' + dockerRegistryPort
