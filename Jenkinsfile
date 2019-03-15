@@ -435,7 +435,7 @@ def processTestReports() {
 
 def postBuildStatus(String status) {
 
-    sh 'echo "postOpenmpfDockerBuildStatus: "' + postOpenmpfDockerBuildStatus // DEBUG
+    // sh 'echo "postOpenmpfDockerBuildStatus: "' + postOpenmpfDockerBuildStatus // DEBUG
     sh 'echo "openmpfDockerBranch: "' + openmpfDockerBranch // DEBUG
     sh 'echo "openmpfDockerSha: "' + openmpfDockerSha // DEBUG
 
