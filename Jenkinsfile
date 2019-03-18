@@ -461,9 +461,5 @@ def postBuildStatus(String repo, String branch, String sha, String status, authT
         return
     }
 
-    sh 'echo \'{"state": "' + status '", ' +
-            '"description": "' + currentBuild.projectName + ' ' + currentBuild.displayName + '", ' +
-            '"context": "jenkins"}\' | ' +
-            'curl -X POST -H "Authorization: token ' + authToken + '" ' +
-            '-d @- https://api.github.com/repos/openmpf/' + repo + '/statuses/' + sha
+    sh 'echo \'{"state": "' + status + '", "description": "' + currentBuild.projectName + ' ' + currentBuild.displayName + '", "context": "jenkins"}\' | curl -X POST -H "Authorization: token ' + authToken + '" -d @- https://api.github.com/repos/openmpf/' + repo + '/statuses/' + sha
 }
