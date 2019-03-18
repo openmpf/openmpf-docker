@@ -187,8 +187,7 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
             // TODO: Attempt to pull images in separate stage so that they are not
             // built from scratch on a clean Jenkins node.
         }
-
-        /*
+        
         docker.withRegistry('http://' + dockerRegistryHostAndPort, dockerRegistryCredId) {
 
             stage('Build base image') {
@@ -334,7 +333,6 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
             }
 
         } // end docker.withRegistry()
-        */
     } catch (Exception e) {
         buildException = e
     }
