@@ -472,5 +472,5 @@ def postBuildStatus(String repo, String branch, String sha, String status, authT
             "-H \"Content-Type: application/json\"" +
             "-d @- " + url
 
-    sh 'echo {\"state\": \"success\"}'
+    sh 'echo {\\"state\\": \\"success\\"}'
 }
