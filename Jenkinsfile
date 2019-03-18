@@ -469,8 +469,8 @@ def postBuildStatus(String repo, String branch, String sha, String status, authT
 
     def cmd = 'curl -X POST ' +
             '-H \\"Authorization: token ' + authToken + '\\" ' +
-            '-H \\"Content-Type: application/json\\"' +
+            '-H \\"Content-Type: application/json\\" ' +
             '-d @- ' + url
 
-    sh 'echo ' + msg + ' | ' + cmd
+    sh 'eval echo ' + msg + ' | ' + cmd
 }
