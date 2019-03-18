@@ -187,7 +187,7 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
             // TODO: Attempt to pull images in separate stage so that they are not
             // built from scratch on a clean Jenkins node.
         }
-        
+
         docker.withRegistry('http://' + dockerRegistryHostAndPort, dockerRegistryCredId) {
 
             stage('Build base image') {
@@ -344,8 +344,8 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
     } else {
         if (buildException != null) {
             echo 'DETECTED BUILD FAILURE'
-            echo 'Exception type: ' + e.getClass()
-            echo 'Exception message: ' + e.getMessage()
+            echo 'Exception type: ' + buildException.getClass()
+            echo 'Exception message: ' + buildException.getMessage()
             buildStatus = "failure"
         } else {
             echo 'DETECTED BUILD COMPLETED'
