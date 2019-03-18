@@ -365,15 +365,15 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
         sh 'echo "openmpfDockerBranch: "' + openmpfDockerBranch // DEBUG
         sh 'echo "openmpfDockerSha: "' + openmpfDockerSha // DEBUG
         if (postOpenmpfDockerBuildStatus) {
-            postBuildStatus("openmpf-docker", openmpfDockerBranch, openmpfDockerSha, buildStatus)
+            postBuildStatus("openmpf-docker", openmpfDockerBranch, openmpfDockerSha, buildStatus, githubAuthToken)
         }
-        postBuildStatus("openmpf", openmpfBranch, openmpfSha, buildStatus)
-        postBuildStatus("openmpf-components", openmpfComponentsBranch, openmpfComponentsSha, buildStatus)
-        postBuildStatus("openmpf-contrib-components", openmpfContribComponentsBranch, openmpfContribComponentsSha, buildStatus)
-        postBuildStatus("openmpf-cpp-components-sdk", openmpfCppComponentSdkBranch, openmpfCppComponentSdkSha, buildStatus)
-        postBuildStatus("openmpf-java-components-sdk", openmpfJavaComponentSdkBranch, openmpfJavaComponentSdkSha, buildStatus)
-        postBuildStatus("openmpf-python-components-sdk", openmpfPythonComponentSdkBranch, openmpfPythonComponentSdkSha, buildStatus)
-        postBuildStatus("openmpf-build-tools", openmpfBuildToolsBranch, openmpfBuildToolsSha, buildStatus)
+        postBuildStatus("openmpf", openmpfBranch, openmpfSha, buildStatus, githubAuthToken)
+        postBuildStatus("openmpf-components", openmpfComponentsBranch, openmpfComponentsSha, buildStatus, githubAuthToken)
+        postBuildStatus("openmpf-contrib-components", openmpfContribComponentsBranch, openmpfContribComponentsSha, buildStatus, githubAuthToken)
+        postBuildStatus("openmpf-cpp-components-sdk", openmpfCppComponentSdkBranch, openmpfCppComponentSdkSha, buildStatus, githubAuthToken)
+        postBuildStatus("openmpf-java-components-sdk", openmpfJavaComponentSdkBranch, openmpfJavaComponentSdkSha, buildStatus, githubAuthToken)
+        postBuildStatus("openmpf-python-components-sdk", openmpfPythonComponentSdkBranch, openmpfPythonComponentSdkSha, buildStatus, githubAuthToken)
+        postBuildStatus("openmpf-build-tools", openmpfBuildToolsBranch, openmpfBuildToolsSha, buildStatus, githubAuthToken)
     }
 
     if (buildException != null) {
@@ -456,7 +456,7 @@ def processTestReports() {
     sh 'sudo mv ' + newReportsPath + '/*-reports' + ' ' + processedReportsPath
 }
 
-def postBuildStatus(String repo, String branch, String sha, String status) {
+def postBuildStatus(String repo, String branch, String sha, String status, authToken) {
     if (branch.isEmpty()) {
         return
     }
@@ -468,7 +468,7 @@ def postBuildStatus(String repo, String branch, String sha, String status) {
     def url = "https://api.github.com/repos/openmpf/" + repo + "/statuses/" + sha
 
     def cmd = "curl -X POST " +
-            "-H \"Authorization: token " + githubAuthToken + "\" " +
+            "-H \"Authorization: token " + authToken + "\" " +
             "-H \"Content-Type: application/json\"" +
             "-d @- " + url
 
