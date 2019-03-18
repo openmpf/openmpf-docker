@@ -456,7 +456,7 @@ def postBuildStatus(String repo, String branch, String sha, String status, authT
     resultJson = sh(script: 'echo \'{"state": "' + status + '", ' +
             '"description": "' + currentBuild.projectName + ' ' + currentBuild.displayName + '", ' +
             '"context": "jenkins"}\' | ' +
-            'curl -X POST -H "Authorization: token ' + authToken + '" ' +
+            'curl -s -X POST -H "Authorization: token ' + authToken + '" ' +
             '-d @- https://api.github.com/repos/openmpf/' + repo + '/statuses/' + sha, returnStdout: true)
 
     def success = resultJson.contains("\"state\": \"" + status + "\"") &&
