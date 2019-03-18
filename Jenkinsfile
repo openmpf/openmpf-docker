@@ -461,16 +461,16 @@ def postBuildStatus(String repo, String branch, String sha, String status, authT
         return
     }
 
-    def msg = '{\"state\": \"' + status + '\", ' +
-            '\"description\": \"${currentBuild.projectName} ${currentBuild.displayName}\", ' +
-            '\"context\": \"jenkins\"}'
+    def msg = "{\"\"state\"\": \"\"" + status + "\"\", " +
+            "\"description\": \"${currentBuild.projectName} ${currentBuild.displayName}\", " +
+            "\"context\": \"jenkins\"}"
 
-    def url = 'https://api.github.com/repos/openmpf/' + repo + '/statuses/' + sha
+    def url = "https://api.github.com/repos/openmpf/" + repo + "/statuses/" + sha
 
-    def cmd = 'curl -X POST ' +
-            '-H \"Authorization: token " + authToken + "\" ' +
-            '-H \"Content-Type: application/json\"' +
-            '-d @- ' + url
+    def cmd = "curl -X POST " +
+            "-H \"Authorization: token " + authToken + "\" " +
+            "-H \"Content-Type: application/json\"" +
+            "-d @- " + url
 
     sh 'eval echo ' + msg + ' | ' + cmd
 }
