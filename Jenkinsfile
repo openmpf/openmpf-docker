@@ -459,9 +459,9 @@ def postBuildStatus(String repo, String branch, String sha, String status, authT
             'curl -X POST -H "Authorization: token ' + authToken + '" ' +
             '-d @- https://api.github.com/repos/openmpf/' + repo + '/statuses/' + sha, returnStdout: true)
 
-    def success = resultJson.contains("\"state\" : \"" + status + "\"") &&
-            resultJson.contains("\"description\" : \"" + currentBuild.projectName + ' ' + currentBuild.displayName + "\"") &&
-            resultJson.contains("\"context\" : \"jenkins\"")
+    def success = resultJson.contains("\"state\": \"" + status + "\"") &&
+            resultJson.contains("\"description\": \"" + currentBuild.projectName + ' ' + currentBuild.displayName + "\"") &&
+            resultJson.contains("\"context\": \"jenkins\"")
 
     if (!success) {
         echo 'Failed to post build status:'
