@@ -339,47 +339,47 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
         buildException = e
     }
 
-    if (isAborted()) {
-        sh 'echo "DETECTED BUILD ABORTED"'
-        email("ABORTED")
-
-    } else {
-        def buildStatus
-
-        if (buildException != null) {
-            sh 'echo "DETECTED BUILD FAILURE"'
-            sh 'echo "Exception type: "' + e.getClass()
-            sh 'echo "Exception message: "' + e.getMessage()
-            email("FAILURE")
-            buildStatus = "failure"
+    try {
+        if (isAborted()) {
+            sh 'echo "DETECTED BUILD ABORTED"'
+            email("ABORTED")
 
         } else {
-            sh 'echo "DETECTED BUILD COMPLETED"'
-            sh "echo 'CURRENT BUILD RESULT: ${currentBuild.currentResult}'"
-            email(currentBuild.currentResult)
-            buildStatus = currentBuild.currentResult.equals("SUCCESS") ? "success" : "failure"
+            def buildStatus
+
+            if (buildException != null) {
+                sh 'echo "DETECTED BUILD FAILURE"'
+                sh 'echo "Exception type: "' + e.getClass()
+                sh 'echo "Exception message: "' + e.getMessage()
+                email("FAILURE")
+                buildStatus = "failure"
+
+            } else {
+                sh 'echo "DETECTED BUILD COMPLETED"'
+                sh "echo 'CURRENT BUILD RESULT: ${currentBuild.currentResult}'"
+                email(currentBuild.currentResult)
+                buildStatus = currentBuild.currentResult.equals("SUCCESS") ? "success" : "failure"
+            }
+
+            // Post build status
+            if (postOpenmpfDockerBuildStatus) {
+                postBuildStatus("openmpf-docker", openmpfDockerBranch, openmpfDockerSha, buildStatus, githubAuthToken)
+            }
+            postBuildStatus("openmpf", openmpfBranch, openmpfSha, buildStatus, githubAuthToken)
+            postBuildStatus("openmpf-components", openmpfComponentsBranch, openmpfComponentsSha, buildStatus, githubAuthToken)
+            postBuildStatus("openmpf-contrib-components", openmpfContribComponentsBranch, openmpfContribComponentsSha, buildStatus, githubAuthToken)
+            postBuildStatus("openmpf-cpp-components-sdk", openmpfCppComponentSdkBranch, openmpfCppComponentSdkSha, buildStatus, githubAuthToken)
+            postBuildStatus("openmpf-java-components-sdk", openmpfJavaComponentSdkBranch, openmpfJavaComponentSdkSha, buildStatus, githubAuthToken)
+            postBuildStatus("openmpf-python-components-sdk", openmpfPythonComponentSdkBranch, openmpfPythonComponentSdkSha, buildStatus, githubAuthToken)
+            postBuildStatus("openmpf-build-tools", openmpfBuildToolsBranch, openmpfBuildToolsSha, buildStatus, githubAuthToken)
         }
 
-        // Post build status
-        // sh 'echo "postOpenmpfDockerBuildStatus: "' + postOpenmpfDockerBuildStatus // DEBUG
-        sh 'echo "openmpfDockerBranch: "' + openmpfDockerBranch // DEBUG
-        sh 'echo "openmpfDockerSha: "' + openmpfDockerSha // DEBUG
-        if (postOpenmpfDockerBuildStatus) {
-            postBuildStatus("openmpf-docker", openmpfDockerBranch, openmpfDockerSha, buildStatus, githubAuthToken)
+        if (buildException != null) {
+            throw buildException // rethrow so Jenkins knows of failure
         }
-        postBuildStatus("openmpf", openmpfBranch, openmpfSha, buildStatus, githubAuthToken)
-        postBuildStatus("openmpf-components", openmpfComponentsBranch, openmpfComponentsSha, buildStatus, githubAuthToken)
-        postBuildStatus("openmpf-contrib-components", openmpfContribComponentsBranch, openmpfContribComponentsSha, buildStatus, githubAuthToken)
-        postBuildStatus("openmpf-cpp-components-sdk", openmpfCppComponentSdkBranch, openmpfCppComponentSdkSha, buildStatus, githubAuthToken)
-        postBuildStatus("openmpf-java-components-sdk", openmpfJavaComponentSdkBranch, openmpfJavaComponentSdkSha, buildStatus, githubAuthToken)
-        postBuildStatus("openmpf-python-components-sdk", openmpfPythonComponentSdkBranch, openmpfPythonComponentSdkSha, buildStatus, githubAuthToken)
-        postBuildStatus("openmpf-build-tools", openmpfBuildToolsBranch, openmpfBuildToolsSha, buildStatus, githubAuthToken)
+    } catch (Exception e) {
+        email("FAILURE")
     }
-
-    if (buildException != null) {
-        throw buildException // rethrow so Jenkins knows of failure
-    }
-
 }}
 
 def gitCheckoutAndPull(String repo, String dir, String branch) {
@@ -461,16 +461,16 @@ def postBuildStatus(String repo, String branch, String sha, String status, authT
         return
     }
 
-    def msg = "{\"state\": \"" + status + "\", " +
-            "\"description\": \"${currentBuild.projectName} ${currentBuild.displayName}\", " +
-            "\"context\": \"jenkins\"}"
+    def msg = '{\"state\": \"' + status + '\", ' +
+            '\"description\": \"${currentBuild.projectName} ${currentBuild.displayName}\", ' +
+            '\"context\": \"jenkins\"}'
 
-    def url = "https://api.github.com/repos/openmpf/" + repo + "/statuses/" + sha
+    def url = 'https://api.github.com/repos/openmpf/' + repo + '/statuses/' + sha
 
-    def cmd = "curl -X POST " +
-            "-H \"Authorization: token " + authToken + "\" " +
-            "-H \"Content-Type: application/json\"" +
-            "-d @- " + url
+    def cmd = 'curl -X POST ' +
+            '-H \"Authorization: token " + authToken + "\" ' +
+            '-H \"Content-Type: application/json\"' +
+            '-d @- ' + url
 
     sh 'eval echo ' + msg + ' | ' + cmd
 }
