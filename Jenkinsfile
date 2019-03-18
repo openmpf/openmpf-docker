@@ -217,7 +217,7 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
             try {
                 stage('Build OpenMPF') {
                     if (!buildOpenmpf) {
-                        sh 'echo "SKIPPING OPENMPF BUILD"'
+                        echo 'SKIPPING OPENMPF BUILD'
                     }
                     when (buildOpenmpf) { // if false, don't show this step in the Stage View UI
                         if (runMvnTests) {
@@ -241,7 +241,7 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
 
                 stage('Run Google tests') {
                     if (!runGTests) {
-                        sh 'echo "SKIPPING GOOGLE TESTS"'
+                        echo 'SKIPPING GOOGLE TESTS'
                     }
                     when (runGTests) { // if false, don't show this step in the Stage View UI
                         def gTestsRetval = sh(script: 'docker exec ' +
@@ -257,7 +257,7 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
 
                 stage('Build runtime images') {
                     if (!buildRuntimeImages) {
-                        sh 'echo "SKIPPING BUILD OF RUNTIME IMAGES"'
+                        echo 'SKIPPING BUILD OF RUNTIME IMAGES'
                     }
                     when (buildRuntimeImages) { // if false, don't show this step in the Stage View UI
                         sh 'docker-compose build' +
@@ -284,7 +284,7 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
 
                 stage('Run Maven tests') {
                     if (!buildOpenmpf || !runMvnTests) {
-                        sh 'echo "SKIPPING MAVEN TESTS"'
+                        echo 'SKIPPING MAVEN TESTS'
                     }
                     when (buildOpenmpf && runMvnTests) { // if false, don't show this step in the Stage View UI
                         sh 'docker-compose build' +
@@ -324,7 +324,7 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
 
             stage('Push runtime images') {
                 if (!pushRuntimeImages) {
-                    sh 'echo "SKIPPING PUSH OF RUNTIME IMAGES"'
+                    echo 'SKIPPING PUSH OF RUNTIME IMAGES'
                 }
                 when (pushRuntimeImages) { // if false, don't show this step in the Stage View UI
                     // Pushing multiple tags is cheap, as all the layers are reused.
@@ -341,17 +341,17 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
 
     def buildStatus
     if (isAborted()) {
-        sh 'echo "DETECTED BUILD ABORTED"'
+        echo 'DETECTED BUILD ABORTED'
         buildStatus = "aborted"
     } else {
         if (buildException != null) {
-            sh 'echo "DETECTED BUILD FAILURE"'
-            sh 'echo "Exception type: "' + e.getClass()
-            sh 'echo "Exception message: "' + e.getMessage()
+            echo 'DETECTED BUILD FAILURE'
+            echo 'Exception type: ' + e.getClass()
+            echo 'Exception message: ' + e.getMessage()
             buildStatus = "failure"
         } else {
-            sh 'echo "DETECTED BUILD COMPLETED"'
-            sh "echo 'CURRENT BUILD RESULT: ${currentBuild.currentResult}'"
+            echo 'DETECTED BUILD COMPLETED'
+            echo "CURRENT BUILD RESULT: ${currentBuild.currentResult}"
             buildStatus = currentBuild.currentResult.equals("SUCCESS") ? "success" : "failure"
         }
         // Post build status
@@ -460,9 +460,11 @@ def postBuildStatus(String repo, String branch, String sha, String status, authT
             '-d @- https://api.github.com/repos/openmpf/' + repo + '/statuses/' + sha, returnStdout: true)
 
     def success = resultJson.contains("\"state\" : \"" + status + "\"") &&
-           resultJson.contains("\"description\" : \"" + currentBuild.projectName + ' ' + currentBuild.displayName + "\"") &&
-           resultJson.contains("\"context\" : \"jenkins\"")
+            resultJson.contains("\"description\" : \"" + currentBuild.projectName + ' ' + currentBuild.displayName + "\"") &&
+            resultJson.contains("\"context\" : \"jenkins\"")
 
-    echo 'Failed to post build status:'
-    echo resultJson
+    if (!success) {
+        echo 'Failed to post build status:'
+        echo resultJson
+    }
 }
