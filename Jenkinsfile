@@ -461,8 +461,10 @@ def postBuildStatus(String repo, String branch, String sha, String status, authT
         return
     }
 
+    def desc = "${currentBuild.projectName} ${currentBuild.displayName}"
+
     def msg = '{\\"state\\": \\"' + status + '\\", ' +
-            '\\"description\\": \\"' + "${currentBuild.projectName} ${currentBuild.displayName}" + '\\", ' +
+            '\\"description\\": \\"' + desc + '\\", ' +
             '\\"context\\": \\"jenkins\\"}'
 
     def url = 'https://api.github.com/repos/openmpf/' + repo + '/statuses/' + sha
