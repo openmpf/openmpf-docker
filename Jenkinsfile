@@ -96,6 +96,8 @@ def openmpfConfigDockerSha
 
 node(jenkinsNodes) {
 wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color in Jenkins console
+    def buildException
+
     try {
         buildDate = getTimestamp()
 
@@ -334,29 +336,50 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
         } // end docker.withRegistry()
         */
     } catch (Exception e) {
-        if (isAborted()) {
-            sh 'echo "DETECTED BUILD ABORTED"'
-            email("ABORTED")
-        } else {
-            sh 'echo "DETECTED BUILD FAILURE"'
-            sh 'echo "Exception type: "' + e.getClass()
-            sh 'echo "Exception message: "' + e.getMessage()
-            email("FAILURE")
-            postBuildStatus("failure")
-        }
-        throw e // rethrow so Jenkins knows of failure
+        buildException = e
     }
 
     if (isAborted()) {
         sh 'echo "DETECTED BUILD ABORTED"'
         email("ABORTED")
+
     } else {
-        // if we get here then the build completed
-        sh 'echo "DETECTED BUILD COMPLETED"'
-        sh "echo 'CURRENT BUILD RESULT: ${currentBuild.currentResult}'"
-        email(currentBuild.currentResult)
-        postBuildStatus(currentBuild.currentResult.equals("SUCCESS") ? "success" : "failure")
+        def buildStatus
+
+        if (buildException != null) {
+            sh 'echo "DETECTED BUILD FAILURE"'
+            sh 'echo "Exception type: "' + e.getClass()
+            sh 'echo "Exception message: "' + e.getMessage()
+            email("FAILURE")
+            buildStatus = "failure"
+
+        } else {
+            sh 'echo "DETECTED BUILD COMPLETED"'
+            sh "echo 'CURRENT BUILD RESULT: ${currentBuild.currentResult}'"
+            email(currentBuild.currentResult)
+            buildStatus = currentBuild.currentResult.equals("SUCCESS") ? "success" : "failure"
+        }
+
+        // Post build status
+        // sh 'echo "postOpenmpfDockerBuildStatus: "' + postOpenmpfDockerBuildStatus // DEBUG
+        sh 'echo "openmpfDockerBranch: "' + openmpfDockerBranch // DEBUG
+        sh 'echo "openmpfDockerSha: "' + openmpfDockerSha // DEBUG
+        if (postOpenmpfDockerBuildStatus) {
+            postBuildStatus("openmpf-docker", openmpfDockerBranch, openmpfDockerSha, buildStatus)
+        }
+        postBuildStatus("openmpf", openmpfBranch, openmpfSha, buildStatus)
+        postBuildStatus("openmpf-components", openmpfComponentsBranch, openmpfComponentsSha, buildStatus)
+        postBuildStatus("openmpf-contrib-components", openmpfContribComponentsBranch, openmpfContribComponentsSha, buildStatus)
+        postBuildStatus("openmpf-cpp-components-sdk", openmpfCppComponentSdkBranch, openmpfCppComponentSdkSha, buildStatus)
+        postBuildStatus("openmpf-java-components-sdk", openmpfJavaComponentSdkBranch, openmpfJavaComponentSdkSha, buildStatus)
+        postBuildStatus("openmpf-python-components-sdk", openmpfPythonComponentSdkBranch, openmpfPythonComponentSdkSha, buildStatus)
+        postBuildStatus("openmpf-build-tools", openmpfBuildToolsBranch, openmpfBuildToolsSha, buildStatus)
     }
+
+    if (buildException != null) {
+        throw buildException // rethrow so Jenkins knows of failure
+    }
+
 }}
 
 def gitCheckoutAndPull(String repo, String dir, String branch) {
@@ -431,27 +454,6 @@ def processTestReports() {
 
     sh 'sudo mkdir -p ' + processedReportsPath
     sh 'sudo mv ' + newReportsPath + '/*-reports' + ' ' + processedReportsPath
-}
-
-def postBuildStatus(String status) {
-
-    // sh 'echo "postOpenmpfDockerBuildStatus: "' + postOpenmpfDockerBuildStatus // DEBUG
-    sh 'echo "openmpfDockerBranch: "' + openmpfDockerBranch // DEBUG
-    sh 'echo "openmpfDockerSha: "' + openmpfDockerSha // DEBUG
-
-    if (postOpenmpfDockerBuildStatus) {
-        postBuildStatus("openmpf-docker", openmpfDockerBranch, openmpfDockerSha, status)
-    }
-
-    postBuildStatus("openmpf", openmpfBranch, openmpfSha, status)
-    postBuildStatus("openmpf-components", openmpfComponentsBranch, openmpfComponentsSha, status)
-    postBuildStatus("openmpf-contrib-components", openmpfContribComponentsBranch, openmpfContribComponentsSha, status)
-    postBuildStatus("openmpf-cpp-components-sdk", openmpfCppComponentSdkBranch, openmpfCppComponentSdkSha, status)
-    postBuildStatus("openmpf-java-components-sdk", openmpfJavaComponentSdkBranch, openmpfJavaComponentSdkSha, status)
-    postBuildStatus("openmpf-python-components-sdk", openmpfPythonComponentSdkBranch, openmpfPythonComponentSdkSha, status)
-    postBuildStatus("openmpf-build-tools", openmpfBuildToolsBranch, openmpfBuildToolsSha, status)
-
-    sh 'exit -1' // DEBUG
 }
 
 def postBuildStatus(String repo, String branch, String sha, String status) {
