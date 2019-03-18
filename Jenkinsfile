@@ -463,6 +463,6 @@ def postBuildStatus(String repo, String branch, String sha, String status, authT
            resultJson.contains("\"description\" : \"" + currentBuild.projectName + ' ' + currentBuild.displayName + "\"") &&
            resultJson.contains("\"context\" : \"jenkins\"")
 
-    sh 'echo "Failed to post build status:"'
-    sh 'echo '+ resultJson
+    echo 'Failed to post build status:'
+    echo resultJson
 }
