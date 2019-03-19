@@ -37,4 +37,6 @@ component_dir=/home/mpf/openmpf-projects/openmpf-python-component-sdk/detection/
 #    -v openmpf_shared_data:/opt/mpf/share \
 #    python_executor
 
+echo ===========
 
+/home/mpf/python_docker_test/PythonOcvComponent/run.sh
