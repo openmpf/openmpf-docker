@@ -87,10 +87,15 @@ RUN yum install -y log4cxx libdc1394 unzip libjpeg-turbo libpng \
 # Install Component-Specific Dependencies                                      #
 ################################################################################
 
-# ImageMagick6 :
+# ImageMagick6:
 RUN yum install -y http://rpms.remirepo.net/enterprise/remi-release-7.rpm && \
     yum --enablerepo=remi install -y ImageMagick6 ImageMagick6-c++ \
     ImageMagick6-c++-devel ImageMagick6-devel ImageMagick6-libs && \
+    yum clean all && rm -rf /var/cache/yum/*
+
+# Install locales:
+RUN sed -i "/^override_install_lang/d" /etc/yum.conf && \
+    yum reinstall -y glibc-common && \
     yum clean all && rm -rf /var/cache/yum/*
 
 ################################################################################
