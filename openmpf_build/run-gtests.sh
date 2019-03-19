@@ -34,12 +34,6 @@ set -Ee -o pipefail -o xtrace
 
 BUILD_ARTIFACTS_PATH=/mnt/build_artifacts
 
-# Make sure MPF_HOME matches what it's set to in the node-manager container.
-if [ ! -d "/opt/mpf" ]; then
-  ln -s /home/mpf/openmpf-projects/openmpf/trunk/install /opt/mpf
-  MPF_HOME=/opt/mpf
-fi
-
 ################################################################################
 # Run Google Tests                                                             #
 ################################################################################
