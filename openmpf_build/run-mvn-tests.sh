@@ -35,13 +35,13 @@ set -Ee -o pipefail -o xtrace
 BUILD_ARTIFACTS_PATH=/mnt/build_artifacts
 MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD:=password}
 
-
 # Make sure MPF_HOME matches what it's set to in the node-manager container.
-ln -s /home/mpf/openmpf-projects/openmpf/trunk/install /opt/mpf
-MPF_HOME=/opt/mpf
+if [ ! -d "/opt/mpf" ]; then
+  ln -s /home/mpf/openmpf-projects/openmpf/trunk/install /opt/mpf
+  MPF_HOME=/opt/mpf
+fi
 
 mkdir -p "$MPF_HOME/share"; chown -R mpf:mpf "$MPF_HOME/share"
-
 
 # Cleanup
 rm -f "$MPF_HOME/share/nodes/MPF_Channel"/*workflow_manager*.list
@@ -118,9 +118,6 @@ parallelism=$(($(nproc) / 2))
 # Components have already been built in the mpf_post_build image. Only build example components here.
 # Only run integration tests. Unit tests can be run in the openmpf_build container.
 # $MVN_OPTIONS will override other options that appear earlier in the following command.
-# TODO: -Dit.test=ITComponentLifecycle,ITWebREST,ITComponentRegistration,ITWebStreamingReports,
-# TODO: -Dtest=TestSystemNightly
-# TODO: -Dtest=TestSystemStress
 # NOTE: TestSystemOnDiff is not excluded by default.
 set +e
 mvn verify \
