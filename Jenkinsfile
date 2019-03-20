@@ -265,20 +265,6 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                                 ' --build-arg BUILD_VERSION=' + imageTag +
                                 ' --build-arg BUILD_SHAS=\"' + buildShas + '\"'
                     }
-
-                    if (applyCustomConfig) {
-                        buildShas += ', openmpf-config-docker: ' + openmpfConfigDockerSha
-
-                        // Build and tag the new Workflow Manager image with the image tag used in the compose files.
-                        // That way, we do not have to modify the compose files. This overwrites the tag that referred
-                        // to the original Workflow Manager image without the custom config.
-                        sh 'docker build openmpf_custom_config/workflow_manager' +
-                                ' --build-arg BUILD_IMAGE_NAME=' + workflowManagerImageName +
-                                ' --build-arg BUILD_DATE=' + buildDate +
-                                ' --build-arg BUILD_VERSION=' + imageTag +
-                                ' --build-arg BUILD_SHAS=\"' + buildShas + '\"' +
-                                ' -t ' + workflowManagerImageName
-                    }
                 }
 
                 stage('Run Maven tests') {
@@ -318,6 +304,25 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                         sh 'docker volume rm -f openmpf_mysql_data' // preserve openmpf_shared_data for post-run analysis
                         sh 'docker network rm openmpf_default'
                     }
+                }
+            }
+
+            stage('Apply custom config') {
+                if (!applyCustomConfig) {
+                    echo 'SKIPPING CUSTOM CONFIGURATION'
+                }
+                when (applyCustomConfig) { // if false, don't show this step in the Stage View UI
+                    buildShas += ', openmpf-config-docker: ' + openmpfConfigDockerSha
+
+                    // Build and tag the new Workflow Manager image with the image tag used in the compose files.
+                    // That way, we do not have to modify the compose files. This overwrites the tag that referred
+                    // to the original Workflow Manager image without the custom config.
+                    sh 'docker build openmpf_custom_config/workflow_manager' +
+                            ' --build-arg BUILD_IMAGE_NAME=' + workflowManagerImageName +
+                            ' --build-arg BUILD_DATE=' + buildDate +
+                            ' --build-arg BUILD_VERSION=' + imageTag +
+                            ' --build-arg BUILD_SHAS=\"' + buildShas + '\"' +
+                            ' -t ' + workflowManagerImageName
                 }
             }
 
