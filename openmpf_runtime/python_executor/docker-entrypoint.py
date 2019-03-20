@@ -51,8 +51,6 @@ def tail_log():
 
 
 def run_executor(descriptor_path, mpf_home, activemq_host):
-    activemq_broker_uri = 'failover://(tcp://%s:61616)?jms.prefetchPolicy.all=1&startupMaxReconnectAttempts=1' \
-                          % activemq_host
     with open(descriptor_path, 'r') as descriptor_file:
         descriptor = json.load(descriptor_file)
     component_name = descriptor['componentName']
@@ -65,6 +63,8 @@ def run_executor(descriptor_path, mpf_home, activemq_host):
     executor_env_vars['LD_LIBRARY_PATH'] \
         = executor_env_vars.get('LD_LIBRARY_PATH', '') + ':' + os.path.join(mpf_home, 'lib')
 
+    activemq_broker_uri = 'failover://(tcp://%s:61616)?jms.prefetchPolicy.all=1&startupMaxReconnectAttempts=1' \
+                          % activemq_host
 
     amq_detection_component_path = os.path.join(mpf_home, 'bin/amq_detection_component')
     command = (amq_detection_component_path, activemq_broker_uri, component_name, queue_name, 'python')

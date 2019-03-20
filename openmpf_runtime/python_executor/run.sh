@@ -18,25 +18,24 @@ fi
 
 # TODO: Use openmpf_runtime as build context
 #cd /home/mpf/openmpf-docker/openmpf_runtime
-#docker build . -f python_executor/Dockerfile -t python_executor --build-arg "COMPONENT_NAME=$COMPONENT_NAME"
+#docker build . -f python_executor/Dockerfile -t python_executor
+
+run_child=1
 
 cd /home/mpf/openmpf-docker/openmpf_runtime/python_executor
 docker build . -t python_executor
 
-component_dir=/home/mpf/openmpf-projects/openmpf-python-component-sdk/detection/examples/PythonOcvComponent/
+if [ "$run_child" ]; then
+    echo ===========
+    /home/mpf/python_docker_test/PythonOcvComponent/run.sh
+else
+    component_dir=/home/mpf/openmpf-projects/openmpf-python-component-sdk/detection/examples/PythonOcvComponent/
+    docker run --rm -it \
+        --network host \
+        -e ACTIVE_MQ_HOST=localhost \
+        -e WFM_BASE_URL=http://localhost:8080/workflow-manager \
+        -v "$component_dir:/home/mpf/component_src" \
+        -v "$MPF_HOME/share/remote-media:$MPF_HOME/share/remote-media" \
+        python_executor
+fi
 
-#docker run --rm -it \
-#    --network host \
-#    -v "$component_dir:/component" \
-#    -v "$MPF_HOME/share/remote-media:$MPF_HOME/share/remote-media" \
-#    python_executor
-#
-#docker run --rm -it \
-#    --network openmpf_default \
-#    -v "$component_dir:/component" \
-#    -v openmpf_shared_data:/opt/mpf/share \
-#    python_executor
-
-echo ===========
-
-/home/mpf/python_docker_test/PythonOcvComponent/run.sh

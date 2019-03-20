@@ -1,8 +1,8 @@
-# Extract tar in separate container since we only need some of the files. Saves about 190mb on image size
+# Extract tar in separate container to avoid bloat in final image since we only need some of the files.
 FROM centos:7 as extract_tar
 
-ENV MPF_HOME=/opt/mpf
-ENV COMPONENT_VIRTUALENV=$MPF_HOME/plugins/plugin/venv
+ENV MPF_HOME /opt/mpf
+ENV COMPONENT_VIRTUALENV $MPF_HOME/plugins/plugin/venv
 
 RUN yum install -y epel-release \
     # libSM and libXrender packages are required for opencv-python
@@ -37,31 +37,23 @@ FROM centos:7
 COPY --from=extract_tar /usr/lib64/libSM.so* /usr/lib64/libICE.so* /usr/lib64/libXrender.so* /usr/lib64/libX11* \
                         /usr/lib64/libxcb.so* /usr/lib64/libXau.so* /usr/lib64/
 
-ENV MPF_HOME=/opt/mpf
-ENV COMPONENT_VIRTUALENV=$MPF_HOME/plugins/plugin/venv
+ENV MPF_HOME /opt/mpf
+ENV COMPONENT_VIRTUALENV $MPF_HOME/plugins/plugin/venv
 
 WORKDIR $MPF_HOME
 COPY --from=extract_tar /root/install_files/ $MPF_HOME
 COPY --from=extract_tar $COMPONENT_VIRTUALENV $COMPONENT_VIRTUALENV
 
-ENV MPF_LOG_PATH=$MPF_HOME/share/logs
-ENV THIS_MPF_NODE=python_executor
+ENV MPF_LOG_PATH $MPF_HOME/share/logs
+ENV THIS_MPF_NODE python_executor
 
+COPY scripts /home/mpf/scripts
 COPY docker-entrypoint.py /home/mpf/
 
-# Start by just installing dependencies of component. This way the dependencies will only need to be re-installed if
-# setup.py is modified.
-ONBUILD COPY setup.py /home/mpf/component_src/
-# Don't know of a better way to get the list of dependencies
-ONBUILD RUN "$COMPONENT_VIRTUALENV/bin/python" /home/mpf/component_src/setup.py egg_info -e /tmp/ \
-        && "$COMPONENT_VIRTUALENV/bin/pip" install --no-cache-dir -r /tmp/*.egg-info/requires.txt \
-        && rm -r /tmp/*.egg-info
+# Command used when this Dockerfile is extended by component's Dockerfile
+ONBUILD ENTRYPOINT ["python", "/home/mpf/docker-entrypoint.py"]
 
-ONBUILD COPY . /home/mpf/component_src/
-ONBUILD COPY plugin-files $MPF_HOME/plugins/plugin/
-# Now, actually install the component. The dependencies have already been installed so it should print
-# "Requirement already satisfied:" for the dependencies.
-ONBUILD RUN "$COMPONENT_VIRTUALENV/bin/pip" install --no-cache-dir /home/mpf/component_src
+# Command used when this Dockerfile is not extended. Source code must be bind-mounted to /home/mpf/component_src
+ENTRYPOINT ["bash", "-c", "/home/mpf/scripts/install-component.sh && python /home/mpf/docker-entrypoint.py"]
 
-ENTRYPOINT ["python", "/home/mpf/docker-entrypoint.py"]
 
