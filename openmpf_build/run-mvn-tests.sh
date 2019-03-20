@@ -101,16 +101,18 @@ cd /home/mpf/openmpf-projects/openmpf
 mkdir -p "$MPF_HOME/share/samples"
 
 systemTestSamplesPath="trunk/mpf-system-tests/src/test/resources/samples"
-find "$systemTestSamplesPath" -name NOTICE -delete
+rm "$systemTestSamplesPath/NOTICE"
 cp -R "$systemTestSamplesPath" "$MPF_HOME/share/"
 rm -rf "$systemTestSamplesPath"
 ln -s "$MPF_HOME/share/samples" "$systemTestSamplesPath"
 
 wfmTestSamplesPath="trunk/workflow-manager/src/test/resources/samples"
-find "$wfmTestSamplesPath" -name NOTICE -delete
+rm "$wfmTestSamplesPath/NOTICE"
 cp -R "$wfmTestSamplesPath"/* "$MPF_HOME/share/samples"
 rm -rf "$wfmTestSamplesPath"
 ln -s "$MPF_HOME/share/samples" "$wfmTestSamplesPath"
+
+echo "These samples are copied from various source code locations." >> "$MPF_HOME/share/samples/NOTICE"
 
 parallelism=$(($(nproc) / 2))
 (( parallelism < 2 )) && parallelism=2
