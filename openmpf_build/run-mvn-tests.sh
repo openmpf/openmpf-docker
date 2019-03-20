@@ -44,7 +44,7 @@ fi
 mkdir -p "$MPF_HOME/share"; chown -R mpf:mpf "$MPF_HOME/share"
 
 # Cleanup
-rm -f "$MPF_HOME/share/nodes/MPF_Channel"/*workflow_manager*.list
+rm -rf "$MPF_HOME/plugins"
 
 # NOTE: $HOSTNAME is not known until runtime.
 echo "export JGROUPS_TCP_ADDRESS=${HOSTNAME}" >> /etc/profile.d/mpf.sh
