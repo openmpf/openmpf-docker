@@ -101,13 +101,13 @@ cd /home/mpf/openmpf-projects/openmpf
 mkdir -p "$MPF_HOME/share/samples"
 
 systemTestSamplesPath="trunk/mpf-system-tests/src/test/resources/samples"
-rm "$systemTestSamplesPath/NOTICE"
+find "$systemTestSamplesPath" -name NOTICE -delete
 cp -R "$systemTestSamplesPath" "$MPF_HOME/share/"
 rm -rf "$systemTestSamplesPath"
 ln -s "$MPF_HOME/share/samples" "$systemTestSamplesPath"
 
 wfmTestSamplesPath="trunk/workflow-manager/src/test/resources/samples"
-rm "$wfmTestSamplesPath/NOTICE"
+find "$wfmTestSamplesPath" -name NOTICE -delete
 cp -R "$wfmTestSamplesPath"/* "$MPF_HOME/share/samples"
 rm -rf "$wfmTestSamplesPath"
 ln -s "$MPF_HOME/share/samples" "$wfmTestSamplesPath"
