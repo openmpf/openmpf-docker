@@ -20,7 +20,6 @@ def main():
 
     descriptor_path = os.path.join(mpf_home, 'plugins/plugin/descriptor/descriptor.json')
     register_component(descriptor_path, wfm_base_url, wfm_user, wfm_password)
-    tail_log()
     run_executor(descriptor_path, mpf_home, activemq_host)
 
 
@@ -37,7 +36,7 @@ def register_component(descriptor_path, wfm_base_url, wfm_user, wfm_password):
         print response
 
 
-def tail_log():
+def tail_log(executor_pid):
     log_dir = os.path.join(os.getenv('MPF_LOG_PATH'), os.getenv('THIS_MPF_NODE'), 'log')
     if not os.path.exists(log_dir):
         os.makedirs(log_dir)
@@ -47,7 +46,12 @@ def tail_log():
         open(log_file, 'a').close()
     # Use preexec_fn=os.setpgrp to prevent ctrl-c from killing tail since
     # executor may write to log file when shutting down.
-    subprocess.Popen(['tail', '--follow', log_file], preexec_fn=os.setpgrp)
+    # TODO: Look in to --retry
+    # TODO: Look in to --follow=name
+    # TODO: Show component log. Maybe use --quiet so there is only one tail proc
+    return subprocess.Popen(['tail', '--follow', '--pid', str(executor_pid), '--lines=+1', log_file],
+                            preexec_fn=os.setpgrp)
+
 
 
 def run_executor(descriptor_path, mpf_home, activemq_host):
@@ -69,14 +73,15 @@ def run_executor(descriptor_path, mpf_home, activemq_host):
     amq_detection_component_path = os.path.join(mpf_home, 'bin/amq_detection_component')
     command = (amq_detection_component_path, activemq_broker_uri, component_name, queue_name, 'python')
     executor_proc = subprocess.Popen(command, env=executor_env_vars, cwd=plugin_dir, stdin=subprocess.PIPE)
+    tail_proc = tail_log(executor_proc.pid)
 
     signal.signal(signal.SIGINT, lambda sig, frame: stop_executor(executor_proc))
     signal.signal(signal.SIGTERM, lambda sig, frame: stop_executor(executor_proc))
 
     exit_code = executor_proc.wait()
-    # It takes a short amount of time for the log messages to actually show up
-    time.sleep(1)
-    print 'wait done'
+    # Should we give up after a second?
+    tail_proc.wait()
+
     print 'Executor exit code =', exit_code
     sys.exit(exit_code)
 
