@@ -34,6 +34,9 @@ else
         --network host \
         -e ACTIVE_MQ_HOST=localhost \
         -e WFM_BASE_URL=http://localhost:8080/workflow-manager \
+        -e WFM_USER=admin \
+        -e WFM_PASSWORD=mpfadm \
+        -e COMPONENT_LOG_NAME=python-ocv-test.log \
         -v "$component_dir:/home/mpf/component_src" \
         -v "$MPF_HOME/share/remote-media:$MPF_HOME/share/remote-media" \
         python_executor
