@@ -230,7 +230,7 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                                 '--mount type=bind,source="$(pwd)"/openmpf_runtime/build_artifacts,target=/mnt/build_artifacts ' +
                                 '--mount type=bind,source="$(pwd)"/openmpf_build/openmpf-projects,target=/mnt/openmpf-projects ' +
                                 (runMvnTests ? '--mount type=volume,source=openmpf_shared_data,target=/home/mpf/openmpf-projects/openmpf/trunk/install/share ' : '') +
-                                (runMvnTests ? '--mount type=bind,source="' + extraTestDataPath + ',target=/mpfdata,readonly ' : '') +
+                                (runMvnTests ? '--mount type=bind,source=' + extraTestDataPath + ',target=/mpfdata,readonly ' : '') +
                                 (runMvnTests ? '--network=openmpf_default ' : '') +
                                 buildImageName + ' infinity', returnStdout: true).trim()
 
@@ -462,13 +462,13 @@ def postBuildStatus(String repo, String branch, String sha, String status, authT
         return
     }
 
-    def resultsJson = sh(script: 'echo \'{"state": "' + status + '", ' +
+    def resultJson = sh(script: 'echo \'{"state": "' + status + '", ' +
             '"description": "' + currentBuild.projectName + ' ' + currentBuild.displayName + '", ' +
             '"context": "jenkins"}\' | ' +
             'curl -s -X POST -H "Authorization: token ' + authToken + '" ' +
             '-d @- https://api.github.com/repos/openmpf/' + repo + '/statuses/' + sha, returnStdout: true)
 
-    def success = resultsJson.contains("\"state\": \"" + status + "\"") &&
+    def success = resultJson.contains("\"state\": \"" + status + "\"") &&
             resultJson.contains("\"description\": \"" + currentBuild.projectName + ' ' + currentBuild.displayName + "\"") &&
             resultJson.contains("\"context\": \"jenkins\"")
 
