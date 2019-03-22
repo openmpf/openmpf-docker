@@ -14,20 +14,32 @@ import urllib2
 
 
 def main():
-    # Configurable environment variables
-    wfm_base_url = os.getenv('WFM_BASE_URL', 'http://workflow_manager:8080/workflow-manager')
-    activemq_host = os.getenv('ACTIVE_MQ_HOST', 'activemq')
-
-    # Required at runtime environment variables
+    # Environment variables that are required at runtime
     wfm_user = os.getenv('WFM_USER')
     wfm_password = os.getenv('WFM_PASSWORD')
 
-    mpf_home = os.getenv('MPF_HOME', '/opt/mpf')
-    descriptor_path = os.path.join(mpf_home, 'plugins/plugin/descriptor/descriptor.json')
+    # Optional configurable environment variables
+    wfm_base_url = os.getenv('WFM_BASE_URL', 'http://workflow_manager:8080/workflow-manager')
+    activemq_host = os.getenv('ACTIVE_MQ_HOST', 'activemq')
+    component_log_name = os.getenv('COMPONENT_LOG_NAME')
+    disable_component_registration = os.getenv('DISABLE_COMPONENT_REGISTRATION')
 
-    register_component(descriptor_path, wfm_base_url, wfm_user, wfm_password)
+    # Environment variables from base Docker image
+    mpf_home = os.getenv('MPF_HOME', '/opt/mpf')
+    base_log_path = os.getenv('MPF_LOG_PATH', mpf_home + '/share/logs')
+    node_name = os.getenv('THIS_MPF_NODE', 'python_executor')
+
+    descriptor_path = os.path.join(mpf_home, 'plugins/plugin/descriptor/descriptor.json')
+    log_dir = os.path.join(base_log_path, node_name, 'log')
+
+    if disable_component_registration:
+        print('Component registration disabled because the '
+              '"DISABLE_COMPONENT_REGISTRATION" environment variable was set.')
+    else:
+        register_component(descriptor_path, wfm_base_url, wfm_user, wfm_password)
+
     executor_proc = start_executor(descriptor_path, mpf_home, activemq_host)
-    tail_proc = tail_log(executor_proc.pid)
+    tail_proc = tail_log(log_dir, component_log_name, executor_proc.pid)
 
     exit_code = executor_proc.wait()
     # Should we give up after a second?
@@ -37,8 +49,8 @@ def main():
     sys.exit(exit_code)
 
 
-
 def register_component(descriptor_path, wfm_base_url, wfm_user, wfm_password):
+    # TODO: Check wfm_user and wfm_password
     url = wfm_base_url + '/rest/components/registerUnmanaged'
     headers = {
         'Content-Length': os.stat(descriptor_path).st_size,
@@ -47,7 +59,8 @@ def register_component(descriptor_path, wfm_base_url, wfm_user, wfm_password):
     print('Registering component by posting', descriptor_path, 'to', url)
     with open(descriptor_path, 'r') as descriptor_file:
         request = urllib2.Request(url, descriptor_file, headers=headers)
-        # TODO handle descriptor validation and http errors
+        # TODO: handle descriptor validation and http errors
+        # TODO: Check if http url gets redirected when WFM is using https
         response = urllib2.urlopen(request).read()
         print('Registration response:', response)
 
@@ -70,7 +83,9 @@ def start_executor(descriptor_path, mpf_home, activemq_host):
                                      cwd=os.path.join(mpf_home, 'plugins/plugin'),
                                      stdin=subprocess.PIPE)
 
+    # Handle ctrl-c
     signal.signal(signal.SIGINT, lambda sig, frame: stop_executor(executor_proc))
+    # Handle docker stop
     signal.signal(signal.SIGTERM, lambda sig, frame: stop_executor(executor_proc))
     return executor_proc
 
@@ -83,28 +98,33 @@ def stop_executor(executor_proc):
         executor_proc.communicate('q\n')
 
 
-def tail_log(executor_pid):
-    log_dir = os.path.join(os.getenv('MPF_LOG_PATH'), os.getenv('THIS_MPF_NODE'), 'log')
+def tail_log(log_dir, component_log_name, executor_pid):
     if not os.path.exists(log_dir):
         os.makedirs(log_dir)
+
     detection_log_file = os.path.join(log_dir, 'detection.log')
-    if not os.path.exists(detection_log_file):
-        # Create file if it doesn't exist
-        open(detection_log_file, 'a').close()
-    # TODO: Look in to --retry
-    # TODO: Look in to --follow=name
-    # TODO: Show component log. Maybe use --quiet so there is only one tail proc
+    if component_log_name:
+        component_log_file = os.path.join(log_dir, component_log_name)
+        log_files = (detection_log_file, component_log_file)
+    else:
+        print('WARNING: No component log file specified. Only component executor\'s log will appear')
+        log_files = (detection_log_file, )
+
+    for log_file in log_files:
+        if not os.path.exists(log_file):
+            # Create file if it doesn't exist.
+            open(log_file, 'a').close()
+
     tail_command = (
         'tail',
         # Follow by name to handle log rollover.
         '--follow=name',
-        # Prevent tail from exiting if tail starts before log file is created
-        # '--retry',
-        # Watch executor process and exit when executor exists
+        # Watch executor process and exit when executor exists.
         '--pid', str(executor_pid),
-        # Start by outputting any lines already in file in case log messages get written before tail starts
+        # Start by outputting any lines already in file in case log messages get written before tail starts.
         '--lines=+1',
-        detection_log_file)
+        # Don't output file name headers which tail does by default when tailing multiple files.
+        '--quiet') + log_files
 
     print('Displaying logs with command: ', format_command_list(tail_command))
     # Use preexec_fn=os.setpgrp to prevent ctrl-c from killing tail since
@@ -140,6 +160,7 @@ def expand_env_vars(raw_str, env):
     return string.Template(raw_str).substitute(defaults, **env)
 
 def format_command_list(command):
+    # Makes sure any arguments with spaces are quoted.
     return ' '.join(map(pipes.quote, command))
 
 

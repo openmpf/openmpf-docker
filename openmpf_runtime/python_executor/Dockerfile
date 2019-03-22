@@ -8,8 +8,10 @@ RUN yum install -y epel-release \
     # libSM and libXrender packages are required for opencv-python
     && yum install -y python-pip libSM libXrender \
     && yum clean all \
-    && rm -rf /var/cache/yum/* \
-    && pip install --no-cache-dir --upgrade pip virtualenv \
+    && rm -rf /var/cache/yum/*
+
+# Virtualenv must be in exact same directory as in the final image because virtualenvs are not relocatable.
+RUN pip install --no-cache-dir --upgrade pip virtualenv \
     && virtualenv "$COMPONENT_VIRTUALENV"
 
 WORKDIR /root/install_files
@@ -46,6 +48,9 @@ COPY --from=extract_tar $COMPONENT_VIRTUALENV $COMPONENT_VIRTUALENV
 
 ENV MPF_LOG_PATH $MPF_HOME/share/logs
 ENV THIS_MPF_NODE python_executor
+# print()'ed messsages from docker-entrypoint.py were not being shown at the right time.
+# Only applies to stdin, stdout and stderr
+ENV PYTHONUNBUFFERED 1
 
 COPY scripts /home/mpf/scripts
 COPY docker-entrypoint.py /home/mpf/
