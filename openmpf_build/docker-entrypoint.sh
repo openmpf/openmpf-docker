@@ -115,7 +115,7 @@ cp workflow-manager/target/workflow-manager.war "$BUILD_ARTIFACTS_PATH"
 
 # Exclude the share directory since it can't be extracted to the share volume.
 # Docker cannot extract tars, or mv files to, volumes when the container is being created.
-tar -czf "$BUILD_ARTIFACTS_PATH/install.tar" -C install --exclude="share" --exclude="plugins" .
-tar -czf "$BUILD_ARTIFACTS_PATH/ansible.tar" ansible
+tar -cf - -C install --exclude="share" --exclude="plugins" . | gzip --no-name > "$BUILD_ARTIFACTS_PATH/install.tar"
+tar -cf - ansible | gzip --no-name > "$BUILD_ARTIFACTS_PATH/ansible.tar"
 
 cp -R ../mpf-component-build/plugin-packages "$BUILD_ARTIFACTS_PATH"
