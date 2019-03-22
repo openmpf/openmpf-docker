@@ -51,6 +51,7 @@ def dockerRegistryHost = env.getProperty("docker_registry_host")
 def dockerRegistryPort = env.getProperty("docker_registry_port")
 def dockerRegistryCredId = env.getProperty("docker_registry_cred_id")
 def jenkinsNodes = env.getProperty("jenkins_nodes")
+def extraTestDataPath = env.getProperty("extra_test_data_path")
 // def buildNum = env.getProperty("BUILD_NUMBER")
 // def workspacePath = env.getProperty("WORKSPACE")
 
@@ -229,6 +230,7 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                                 '--mount type=bind,source="$(pwd)"/openmpf_runtime/build_artifacts,target=/mnt/build_artifacts ' +
                                 '--mount type=bind,source="$(pwd)"/openmpf_build/openmpf-projects,target=/mnt/openmpf-projects ' +
                                 (runMvnTests ? '--mount type=volume,source=openmpf_shared_data,target=/home/mpf/openmpf-projects/openmpf/trunk/install/share ' : '') +
+                                (runMvnTests ? '--mount type=bind,source="' + extraTestDataPath + ',target=/mpfdata,readonly ' : '') +
                                 (runMvnTests ? '--network=openmpf_default ' : '') +
                                 buildImageName + ' infinity', returnStdout: true).trim()
 
@@ -278,8 +280,12 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                                 ' --build-arg BUILD_VERSION=' + imageTag +
                                 ' --build-arg BUILD_SHAS=\"' + buildShas + '\"'
 
+                        // Add extra test data volume
+                        sh 'sed \'/shared_data:\\/opt\\/mpf\\/share/a \\      - ' + extraTestDataPath + ':/mpfdata:ro\'' +
+                                ' docker-compose.yml > docker-compose-test.yml'
+
                         // Run supporting containers in background.
-                        sh 'docker-compose up -d --scale workflow_manager=0'
+                        sh 'docker-compose -f docker-compose-test.yml up -d --scale workflow_manager=0'
 
                         def mvnTestsRetval = sh(script: 'docker exec' +
                                 ' -e EXTRA_MVN_OPTIONS=\"' + mvnTestOptions + '\" ' +
@@ -456,13 +462,13 @@ def postBuildStatus(String repo, String branch, String sha, String status, authT
         return
     }
 
-    resultJson = sh(script: 'echo \'{"state": "' + status + '", ' +
+    def resultsJson = sh(script: 'echo \'{"state": "' + status + '", ' +
             '"description": "' + currentBuild.projectName + ' ' + currentBuild.displayName + '", ' +
             '"context": "jenkins"}\' | ' +
             'curl -s -X POST -H "Authorization: token ' + authToken + '" ' +
             '-d @- https://api.github.com/repos/openmpf/' + repo + '/statuses/' + sha, returnStdout: true)
 
-    def success = resultJson.contains("\"state\": \"" + status + "\"") &&
+    def success = resultsJson.contains("\"state\": \"" + status + "\"") &&
             resultJson.contains("\"description\": \"" + currentBuild.projectName + ' ' + currentBuild.displayName + "\"") &&
             resultJson.contains("\"context\": \"jenkins\"")
 
