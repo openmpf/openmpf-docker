@@ -41,6 +41,8 @@ services:
     ]
     volumes:
       - mysql_data:/var/lib/mysql
+    networks:
+      - compose_overlay
 
   active_mq:
     image: <registry>/<repository>/openmpf_active_mq:<image_tag>
@@ -49,11 +51,15 @@ services:
     restart: always
     ports:
       - "8161:8161"
+    networks:
+      - compose_overlay
 
   redis:
     container_name: redis
     image: redis
     restart: always
+    networks:
+      - compose_overlay
 
   workflow_manager:
     image: <registry>/<repository>/openmpf_workflow_manager:<image_tag>
@@ -76,6 +82,8 @@ services:
     volumes:
       - shared_data:/opt/mpf/share
       - <keystore_path>:/run/secrets/https_keystore:ro
+    networks:
+      - compose_overlay
 
   node_manager:
     image: <registry>/<repository>/openmpf_node_manager:<image_tag>
@@ -93,7 +101,12 @@ services:
     #  - "8008:8008"
     volumes:
       - shared_data:/opt/mpf/share
+    networks:
+      - compose_overlay
 
 volumes:
   shared_data:
   mysql_data:
+
+networks:
+  compose_overlay:

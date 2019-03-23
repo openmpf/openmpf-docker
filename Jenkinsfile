@@ -99,10 +99,22 @@ node(jenkinsNodes) {
 wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color in Jenkins console
     def buildException
 
+    // Rename the named volumes and networks to be unique to this Jenkins build pipeline
+    def buildSharedDataVolumeSuffix = 'shared_data_' + currentBuild.projectName
+    def buildSharedDataVolume = 'openmpf_' + buildSharedDataVolumeSuffix
+
+    def buildMySqlDataVolumeSuffix = 'mysql_data_' + currentBuild.projectName
+    def buildMySqlDataVolume = 'openmpf_' + buildMySqlDataVolumeSuffix
+
+    def buildNetworkSuffix = 'compose_overlay_' + currentBuild.projectName
+    def buildNetwork = 'openmpf_' + buildNetworkSuffix
+
     try {
         buildDate = getTimestamp()
 
-        sh 'docker volume rm -f openmpf_shared_data' // openmpf_shared_data may be leftover from the last run
+        // Clean up last run
+        sh 'docker volume rm -f ' + buildSharedDataVolume + ' ' + buildMySqlDataVolume
+        sh 'docker network rm ' + buildNetwork + ' || true'
 
         def dockerRegistryHostAndPort = dockerRegistryHost + ':' + dockerRegistryPort
         def remoteImageTagPrefix = dockerRegistryHostAndPort + '/openmpf/'
@@ -221,7 +233,7 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                     }
                     when (buildOpenmpf) { // if false, don't show this step in the Stage View UI
                         if (runMvnTests) {
-                            sh 'docker network create openmpf_default'
+                            sh 'docker network create ' + buildNetwork
                         }
 
                         // Run container as daemon in background.
@@ -229,9 +241,9 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                                 '--mount type=bind,source=/home/jenkins/.m2,target=/root/.m2 ' +
                                 '--mount type=bind,source="$(pwd)"/openmpf_runtime/build_artifacts,target=/mnt/build_artifacts ' +
                                 '--mount type=bind,source="$(pwd)"/openmpf_build/openmpf-projects,target=/mnt/openmpf-projects ' +
-                                (runMvnTests ? '--mount type=volume,source=openmpf_shared_data,target=/home/mpf/openmpf-projects/openmpf/trunk/install/share ' : '') +
+                                (runMvnTests ? '--mount type=volume,source=' + buildSharedDataVolume +  ',target=/home/mpf/openmpf-projects/openmpf/trunk/install/share ' : '') +
                                 (runMvnTests ? '--mount type=bind,source=' + extraTestDataPath + ',target=/mpfdata,readonly ' : '') +
-                                (runMvnTests ? '--network=openmpf_default ' : '') +
+                                (runMvnTests ? '--network=' + buildNetwork +  ' ' : '') +
                                 buildImageName + ' infinity', returnStdout: true).trim()
 
                         sh 'docker exec ' +
@@ -246,7 +258,7 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                     }
                     when (runGTests) { // if false, don't show this step in the Stage View UI
                         def gTestsRetval = sh(script: 'docker exec ' +
-                                buildContainerId + ' /home/mpf/run-gtests.sh', returnStatus:true)
+                                buildContainerId + ' /home/mpf/run-gtests.sh', returnStatus: true)
 
                         processTestReports()
 
@@ -284,13 +296,18 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                         sh 'sed \'/shared_data:\\/opt\\/mpf\\/share/a \\      - ' + extraTestDataPath + ':/mpfdata:ro\'' +
                                 ' docker-compose.yml > docker-compose-test.yml'
 
+                        // Update volume and network names
+                        sh 'sed -i \'s/shared_data/' + buildSharedDataVolumeSuffix + '/g\' docker-compose-test.yml'
+                        sh 'sed -i \'s/mysql_data/' + buildMySqlDataVolumeSuffix + '/g\' docker-compose-test.yml'
+                        sh 'sed -i \'s/compose_overlay/' + buildNetworkSuffix + '/g\' docker-compose-test.yml'
+
                         // Run supporting containers in background.
                         sh 'docker-compose -f docker-compose-test.yml up -d --scale workflow_manager=0'
 
                         def mvnTestsRetval = sh(script: 'docker exec' +
                                 ' -e EXTRA_MVN_OPTIONS=\"' + mvnTestOptions + '\" ' +
                                 buildContainerId +
-                                ' /home/mpf/run-mvn-tests.sh', returnStatus:true)
+                                ' /home/mpf/run-mvn-tests.sh', returnStatus: true)
 
                         processTestReports()
 
@@ -305,10 +322,10 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                     sh 'docker container rm -f ' + buildContainerId
 
                     if (runMvnTests) {
-                        sh 'docker-compose rm -svf'
+                        sh 'docker-compose -f docker-compose-test.yml rm -svf || true'
                         sh 'sleep 10' // give previous command some time
-                        sh 'docker volume rm -f openmpf_mysql_data' // preserve openmpf_shared_data for post-run analysis
-                        sh 'docker network rm openmpf_default'
+                        sh 'docker volume rm -f ' + buildMySqlDataVolume // preserve openmpf_shared_data for post-run analysis
+                        sh 'docker network rm ' + buildNetwork + ' || true'
                     }
                 }
             }
