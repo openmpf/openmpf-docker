@@ -505,6 +505,6 @@ def postBuildStatus(String repo, String branch, String sha, String status, authT
 
 def removeDockerNetwork(network) {
     if (sh(script: 'docker network inspect ' + network + ' > /dev/null 2>&1', returnStatus: true) == 0) {
-        sh 'docker network rm ' + buildNetwork
+        sh 'docker network rm ' + network
     }
 }
