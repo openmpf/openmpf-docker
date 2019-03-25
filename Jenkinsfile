@@ -283,16 +283,10 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                 }
 
                 stage('Run Maven tests') {
-                    if (!buildOpenmpf || !runMvnTests) {
+                    if (!buildOpenmpf || !buildRuntimeImages || !runMvnTests) {
                         echo 'SKIPPING MAVEN TESTS'
                     }
-                    when (buildOpenmpf && runMvnTests) { // if false, don't show this step in the Stage View UI
-                        sh 'docker-compose build' +
-                                ' --build-arg BUILD_IMAGE_NAME=' + buildImageName +
-                                ' --build-arg BUILD_DATE=' + buildDate +
-                                ' --build-arg BUILD_VERSION=' + imageTag +
-                                ' --build-arg BUILD_SHAS=\"' + buildShas + '\"'
-
+                    when (buildOpenmpf && buildRuntimeImages && runMvnTests) { // if false, don't show this step in the Stage View UI
                         // Add extra test data volume
                         sh 'sed \'/shared_data:\\/opt\\/mpf\\/share/a \\      - ' + extraTestDataPath + ':/mpfdata:ro\'' +
                                 ' docker-compose.yml > docker-compose-test.yml'
