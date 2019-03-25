@@ -111,7 +111,7 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
     def buildNetwork = 'openmpf_' + buildNetworkSuffix
 
     try {
-        email("TEST") // DEBUG
+        email("TEST", emailRecipients) // DEBUG
         exit(-1)
 
         buildDate = getTimestamp()
@@ -398,7 +398,7 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
         postBuildStatus("openmpf-build-tools", openmpfBuildToolsBranch, openmpfBuildToolsSha, buildStatus, githubAuthToken)
     }
 
-    email(buildStatus)
+    email(buildStatus, emailRecipients)
 
     if (buildException != null) {
         throw buildException // rethrow so Jenkins knows of failure
@@ -450,14 +450,14 @@ def isAborted() {
     return !actions.isEmpty()
 }
 
-def email(String status) {
+def email(String status, String recipients) {
     emailext (
             subject: status.toUpperCase() + ": ${env.JOB_NAME} [${env.BUILD_NUMBER}]",
             // mimeType: 'text/html',
             // body: "<p>Check console output at <a href=\"${env.BUILD_URL}\">${env.BUILD_URL}</a></p>",
             body: '${JELLY_SCRIPT,template="text"}',
             // recipientProviders: [[$class: 'RequesterRecipientProvider']],
-            to: emailRecipients
+            to: recipients
     )
 }
 
