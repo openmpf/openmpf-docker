@@ -7,6 +7,7 @@ import json
 import os
 import pipes
 import signal
+import ssl
 import string
 import subprocess
 import sys
@@ -26,7 +27,7 @@ def main():
 
     # Environment variables from base Docker image
     mpf_home = os.getenv('MPF_HOME', '/opt/mpf')
-    base_log_path = os.getenv('MPF_LOG_PATH', mpf_home + '/share/logs')
+    base_log_path = os.getenv('MPF_LOG_PATH', os.path.join(mpf_home, 'share/logs'))
     node_name = os.getenv('THIS_MPF_NODE', 'python_executor')
 
     descriptor_path = os.path.join(mpf_home, 'plugins/plugin/descriptor/descriptor.json')
@@ -49,20 +50,36 @@ def main():
     sys.exit(exit_code)
 
 
+
 def register_component(descriptor_path, wfm_base_url, wfm_user, wfm_password):
-    # TODO: Check wfm_user and wfm_password
+    # TODO: Check if wfm_user and wfm_password are present
+
     url = wfm_base_url + '/rest/components/registerUnmanaged'
     headers = {
         'Content-Length': os.stat(descriptor_path).st_size,
         'Authorization': 'Basic ' + base64.b64encode(wfm_user + ':' + wfm_password)
     }
-    print('Registering component by posting', descriptor_path, 'to', url)
-    with open(descriptor_path, 'r') as descriptor_file:
-        request = urllib2.Request(url, descriptor_file, headers=headers)
+
+    ssl_ctx = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
+    ssl_ctx.verify_mode = ssl.CERT_NONE
+
+    def do_registration(registration_url):
         # TODO: handle descriptor validation and http errors
-        # TODO: Check if http url gets redirected when WFM is using https
-        response = urllib2.urlopen(request).read()
-        print('Registration response:', response)
+        with open(descriptor_path, 'r') as descriptor_file:
+            request = urllib2.Request(registration_url, descriptor_file, headers=headers)
+            response = urllib2.urlopen(request, context=ssl_ctx).read()
+            print('Registration response:', response)
+
+    try:
+        print('Registering component by posting', descriptor_path, 'to', url)
+        do_registration(url)
+    except urllib2.HTTPError as err:
+        if err.url == url:
+            raise
+        # This generally means the provided WFM url used HTTP, but WFM was configured to use HTTPS
+        print('Initial registration response failed. Trying with redirected url: ', err.url)
+        do_registration(err.url)
+
 
 
 def start_executor(descriptor_path, mpf_home, activemq_host):
@@ -108,7 +125,7 @@ def tail_log(log_dir, component_log_name, executor_pid):
         log_files = (detection_log_file, component_log_file)
     else:
         print('WARNING: No component log file specified. Only component executor\'s log will appear')
-        log_files = (detection_log_file, )
+        log_files = (detection_log_file,)
 
     for log_file in log_files:
         if not os.path.exists(log_file):
@@ -121,8 +138,6 @@ def tail_log(log_dir, component_log_name, executor_pid):
         '--follow=name',
         # Watch executor process and exit when executor exists.
         '--pid', str(executor_pid),
-        # Start by outputting any lines already in file in case log messages get written before tail starts.
-        '--lines=+1',
         # Don't output file name headers which tail does by default when tailing multiple files.
         '--quiet') + log_files
 
@@ -166,3 +181,5 @@ def format_command_list(command):
 
 if __name__ == '__main__':
     main()
+
+

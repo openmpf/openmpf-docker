@@ -20,11 +20,12 @@ fi
 #cd /home/mpf/openmpf-docker/openmpf_runtime
 #docker build . -f python_executor/Dockerfile -t python_executor
 
-run_child=1
-#wfm_docker=1
 
-# component_dir=/home/mpf/openmpf-projects/openmpf-python-component-sdk/detection/examples/PythonOcvComponent/
-component_dir=/home/mpf/python_docker_test/PythonOcvComponent
+#run_child=1
+wfm_docker=1
+
+ component_dir=/home/mpf/openmpf-projects/openmpf-python-component-sdk/detection/examples/PythonOcvComponent/
+#component_dir=/home/mpf/python_docker_test/PythonOcvComponent
 
 cd /home/mpf/openmpf-docker/openmpf_runtime/python_executor
 docker build . -t python_executor
