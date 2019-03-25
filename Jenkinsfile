@@ -111,9 +111,6 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
     def buildNetwork = 'openmpf_' + buildNetworkSuffix
 
     try {
-        email("TEST", emailRecipients) // DEBUG
-        sh 'exit -1' // DEBUG
-
         buildDate = getTimestamp()
 
         // Clean up last run
