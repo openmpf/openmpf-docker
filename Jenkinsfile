@@ -28,6 +28,7 @@
 
 // Get build parameters.
 def imageTag = env.getProperty("image_tag")
+def emailRecipients = env.getProperty("email_recipients")
 
 def openmpfDockerBranch = env.getProperty("openmpf_docker_branch")
 def openmpfProjectsBranch = env.getProperty("openmpf_projects_branch")
@@ -110,6 +111,9 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
     def buildNetwork = 'openmpf_' + buildNetworkSuffix
 
     try {
+        email("TEST") // DEBUG
+        exit(-1)
+
         buildDate = getTimestamp()
 
         // Clean up last run
@@ -452,7 +456,8 @@ def email(String status) {
             // mimeType: 'text/html',
             // body: "<p>Check console output at <a href=\"${env.BUILD_URL}\">${env.BUILD_URL}</a></p>",
             body: '${JELLY_SCRIPT,template="text"}',
-            recipientProviders: [[$class: 'RequesterRecipientProvider']]
+            // recipientProviders: [[$class: 'RequesterRecipientProvider']],
+            to: emailRecipients
     )
 }
 
