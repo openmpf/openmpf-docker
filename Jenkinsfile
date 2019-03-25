@@ -298,8 +298,8 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                                 ' docker-compose.yml > docker-compose-test.yml'
 
                         // Update volume and network names
-                        sh 'sed -i \'s/shared_data/' + buildSharedDataVolumeSuffix + '/g\' docker-compose-test.yml'
-                        sh 'sed -i \'s/mysql_data/' + buildMySqlDataVolumeSuffix + '/g\' docker-compose-test.yml'
+                        sh 'sed -i \'s/shared_data:/' + buildSharedDataVolumeSuffix + ':/g\' docker-compose-test.yml'
+                        sh 'sed -i \'s/mysql_data:/' + buildMySqlDataVolumeSuffix + ':/g\' docker-compose-test.yml'
                         sh 'sed -i \'s/compose_overlay/' + buildNetworkSuffix + '/g\' docker-compose-test.yml'
 
                         // Run supporting containers in background.
