@@ -112,7 +112,7 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
 
     try {
         email("TEST", emailRecipients) // DEBUG
-        exit(-1)
+        sh 'exit -1' // DEBUG
 
         buildDate = getTimestamp()
 
