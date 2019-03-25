@@ -115,7 +115,7 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
 
         // Clean up last run
         sh 'docker volume rm -f ' + buildSharedDataVolume + ' ' + buildMySqlDataVolume
-        sh 'docker network rm ' + buildNetwork + ' || true'
+        removeDockerNetwork(buildNetwork)
 
         def dockerRegistryHostAndPort = dockerRegistryHost + ':' + dockerRegistryPort
         def remoteImageTagPrefix = dockerRegistryHostAndPort + '/openmpf/'
@@ -324,10 +324,15 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                     sh 'docker container rm -f ' + buildContainerId
 
                     if (runMvnTests) {
-                        sh 'docker-compose -f docker-compose-test.yml rm -svf || true'
-                        sh 'sleep 10' // give previous command some time
+
+                        def dockerComposeTestFile = new File('docker-compose-test.yml')
+                        if (dockerComposeTestFile.exists()) {
+                            sh 'docker-compose -f docker-compose-test.yml rm -svf || true'
+                            sh 'sleep 10' // give previous command some time
+                        }
+
                         sh 'docker volume rm -f ' + buildMySqlDataVolume // preserve openmpf_shared_data for post-run analysis
-                        sh 'docker network rm ' + buildNetwork + ' || true'
+                        removeDockerNetwork(buildNetwork)
                     }
                 }
             }
@@ -495,5 +500,11 @@ def postBuildStatus(String repo, String branch, String sha, String status, authT
     if (!success) {
         echo 'Failed to post build status:'
         echo resultJson
+    }
+}
+
+def removeDockerNetwork(network) {
+    if (sh(script: 'docker network inspect ' + network + ' > /dev/null 2>&1', returnStatus: true) == 0) {
+        sh 'docker network rm ' + buildNetwork
     }
 }
