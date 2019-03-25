@@ -456,7 +456,7 @@ def email(String status, String recipients) {
             // mimeType: 'text/html',
             // body: "<p>Check console output at <a href=\"${env.BUILD_URL}\">${env.BUILD_URL}</a></p>",
             body: '${JELLY_SCRIPT,template="text"}',
-            // recipientProviders: [[$class: 'RequesterRecipientProvider']],
+            recipientProviders: [[$class: 'RequesterRecipientProvider']],
             to: recipients
     )
 }
