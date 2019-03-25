@@ -325,8 +325,7 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
 
                     if (runMvnTests) {
 
-                        def dockerComposeTestFile = new File('docker-compose-test.yml')
-                        if (dockerComposeTestFile.exists()) {
+                        if (fileExists('docker-compose-test.yml')) {
                             sh 'docker-compose -f docker-compose-test.yml rm -svf || true'
                             sh 'sleep 10' // give previous command some time
                         }
