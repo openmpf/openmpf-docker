@@ -6,3 +6,5 @@ RUN "$COMPONENT_VIRTUALENV/bin/pip" install --no-cache-dir 'opencv-python>=3.3'
 COPY . /home/mpf/component_src/
 
 RUN /home/mpf/scripts/install-component.sh
+
+ENV COMPONENT_LOG_NAME python-ocv-test.log
