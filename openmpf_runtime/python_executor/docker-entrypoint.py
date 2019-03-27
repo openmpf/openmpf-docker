@@ -59,27 +59,45 @@ def register_component(descriptor_path, wfm_base_url, wfm_user, wfm_password):
         'Content-Length': os.stat(descriptor_path).st_size,
         'Authorization': 'Basic ' + base64.b64encode(wfm_user + ':' + wfm_password)
     }
-
     ssl_ctx = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
     ssl_ctx.verify_mode = ssl.CERT_NONE
 
-    def do_registration(registration_url):
-        # TODO: handle descriptor validation and http errors
-        with open(descriptor_path, 'r') as descriptor_file:
-            request = urllib2.Request(registration_url, descriptor_file, headers=headers)
-            response = urllib2.urlopen(request, context=ssl_ctx).read()
-            print('Registration response:', response)
-
     try:
         print('Registering component by posting', descriptor_path, 'to', url)
-        do_registration(url)
-    except urllib2.HTTPError as err:
-        if err.url == url:
+        post_descriptor(descriptor_path, url, headers, ssl_ctx)
+    except urllib2.HTTPError as first_attempt_err:
+        if first_attempt_err.url == url:
+            handle_registration_error(first_attempt_err)
             raise
         # This generally means the provided WFM url used HTTP, but WFM was configured to use HTTPS
-        print('Initial registration response failed. Trying with redirected url: ', err.url)
-        do_registration(err.url)
+        try:
+            print('Initial registration response failed. Trying with redirected url: ', first_attempt_err.url)
+            post_descriptor(descriptor_path, url, headers, ssl_ctx)
+        except urllib2.HTTPError as retry_error:
+            handle_registration_error(retry_error)
 
+
+def post_descriptor(descriptor_path, url, headers, ssl_ctx):
+    with open(descriptor_path, 'r') as descriptor_file:
+        request = urllib2.Request(url, descriptor_file, headers=headers)
+        response = urllib2.urlopen(request, context=ssl_ctx).read()
+        print('Registration response:', response)
+
+
+def handle_registration_error(http_error):
+    import traceback
+    traceback.print_exc()
+    print(file=sys.stderr)
+
+    response_content = http_error.read()
+    try:
+        server_message = json.loads(response_content)['message']
+    except (ValueError,  KeyError):
+        server_message = response_content
+
+    error_msg = 'The following error occurred while trying to register component: {}: {}' \
+        .format(http_error, server_message)
+    raise RuntimeError(error_msg)
 
 
 def start_executor(descriptor_path, mpf_home, activemq_host):
