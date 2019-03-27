@@ -52,7 +52,8 @@ def main():
 
 
 def register_component(descriptor_path, wfm_base_url, wfm_user, wfm_password):
-    # TODO: Check if wfm_user and wfm_password are present
+    if not wfm_user or not wfm_password:
+        raise RuntimeError('The WFM_USER and WFM_PASSWORD environment variables must both be set.')
 
     url = wfm_base_url + '/rest/components/registerUnmanaged'
     headers = {
@@ -96,7 +97,9 @@ def handle_registration_error(http_error):
         server_message = response_content
 
     error_msg = 'The following error occurred while trying to register component: {}: {}' \
-        .format(http_error, server_message)
+                .format(http_error, server_message)
+    if http_error.code == 401:
+        error_msg += '\nThe WFM_USER and WFM_PASSWORD environment variables need to be changed.'
     raise RuntimeError(error_msg)
 
 
@@ -199,5 +202,4 @@ def format_command_list(command):
 
 if __name__ == '__main__':
     main()
-
 
