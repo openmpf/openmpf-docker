@@ -6,6 +6,24 @@ You can either create a Dockerfile in your Python component project or use this 
 
 Create a Dockerfile in your Python component project
 ----------------------------
+You should put your Dockerfile in the component project's top level directory. For example:
+```
+PythonOcvComponent
+├── Dockerfile
+├── setup.py
+├── ocv_component
+│   ├── ocv_component.py
+│   ├── __init__.py
+│   └── models
+│       ├── animal_names.txt
+│       ├── animal_network.bin
+│       └── models.ini
+└── plugin-files
+    └── descriptor
+        └── descriptor.json
+```
+
+
 The minimal Dockerfile is:
 ```dockerfile
 FROM python_executor:latest
@@ -38,7 +56,9 @@ ENV COMPONENT_LOG_NAME python-ocv-test.log
 ### Build image for your component
 Run the following command, replacing `<component_name>` with the name of your component and `<component_path>` with the
 path on the host file system to the component projects's top level directory:
-`docker build -t <component_name> <component_path>`
+```bash
+docker build -t <component_name> <component_path>
+```
 
 
 ### Run your component

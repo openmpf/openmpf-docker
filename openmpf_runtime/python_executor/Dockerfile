@@ -47,7 +47,7 @@ COPY --from=extract_tar /root/install_files/ $MPF_HOME
 COPY --from=extract_tar $COMPONENT_VIRTUALENV $COMPONENT_VIRTUALENV
 
 ENV MPF_LOG_PATH $MPF_HOME/share/logs
-ENV THIS_MPF_NODE python_executor
+
 # print()'ed messsages from docker-entrypoint.py were not being shown at the right time.
 # Only applies to stdin, stdout and stderr
 ENV PYTHONUNBUFFERED 1

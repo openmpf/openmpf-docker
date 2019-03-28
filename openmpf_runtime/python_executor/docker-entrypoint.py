@@ -24,14 +24,14 @@ def main():
     activemq_host = os.getenv('ACTIVE_MQ_HOST', 'activemq')
     component_log_name = os.getenv('COMPONENT_LOG_NAME')
     disable_component_registration = os.getenv('DISABLE_COMPONENT_REGISTRATION')
+    node_name = os.getenv('THIS_MPF_NODE')
 
     # Environment variables from base Docker image
     mpf_home = os.getenv('MPF_HOME', '/opt/mpf')
     base_log_path = os.getenv('MPF_LOG_PATH', os.path.join(mpf_home, 'share/logs'))
-    node_name = os.getenv('THIS_MPF_NODE', 'python_executor')
+
 
     descriptor_path = os.path.join(mpf_home, 'plugins/plugin/descriptor/descriptor.json')
-    log_dir = os.path.join(base_log_path, node_name, 'log')
 
     if disable_component_registration:
         print('Component registration disabled because the '
@@ -39,7 +39,15 @@ def main():
     else:
         register_component(descriptor_path, wfm_base_url, wfm_user, wfm_password)
 
-    executor_proc = start_executor(descriptor_path, mpf_home, activemq_host)
+    with open(descriptor_path, 'r') as descriptor_file:
+        descriptor = json.load(descriptor_file)
+
+    if not node_name:
+        component_name = descriptor['componentName']
+        node_name = '{}_id_{}'.format(component_name, os.getenv('HOSTNAME'))
+    log_dir = os.path.join(base_log_path, node_name, 'log')
+
+    executor_proc = start_executor(descriptor, mpf_home, activemq_host, node_name)
     tail_proc = tail_log(log_dir, component_log_name, executor_proc.pid)
 
     exit_code = executor_proc.wait()
@@ -103,10 +111,7 @@ def handle_registration_error(http_error):
     raise RuntimeError(error_msg)
 
 
-def start_executor(descriptor_path, mpf_home, activemq_host):
-    with open(descriptor_path, 'r') as descriptor_file:
-        descriptor = json.load(descriptor_file)
-
+def start_executor(descriptor, mpf_home, activemq_host, node_name):
     amq_detection_component_path = os.path.join(mpf_home, 'bin/amq_detection_component')
     activemq_broker_uri = 'failover://(tcp://{}:61616)?jms.prefetchPolicy.all=1&startupMaxReconnectAttempts=1'\
                           .format(activemq_host)
@@ -117,7 +122,7 @@ def start_executor(descriptor_path, mpf_home, activemq_host):
     executor_command = (amq_detection_component_path, activemq_broker_uri, component_name, queue_name, 'python')
     print('Starting component executor with command:', format_command_list(executor_command))
     executor_proc = subprocess.Popen(executor_command,
-                                     env=get_executor_env_vars(mpf_home, descriptor),
+                                     env=get_executor_env_vars(mpf_home, descriptor, node_name),
                                      cwd=os.path.join(mpf_home, 'plugins/plugin'),
                                      stdin=subprocess.PIPE)
 
@@ -169,9 +174,11 @@ def tail_log(log_dir, component_log_name, executor_pid):
 
 
 
-def get_executor_env_vars(mpf_home, descriptor):
+def get_executor_env_vars(mpf_home, descriptor, node_name):
     executor_env = os.environ.copy()
+    executor_env['THIS_MPF_NODE'] = node_name
     executor_env['SERVICE_NAME'] = descriptor['componentName']
+
     for json_env_var in descriptor.get('environmentVariables', ()):
         var_name = json_env_var['name']
         var_value = expand_env_vars(json_env_var['value'], executor_env)
