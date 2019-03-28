@@ -65,8 +65,10 @@ def register_component(descriptor_path, wfm_base_url, wfm_user, wfm_password):
 
     url = wfm_base_url + '/rest/components/registerUnmanaged'
     headers = {
+        'Authorization': 'Basic ' + base64.b64encode(wfm_user + ':' + wfm_password),
         'Content-Length': os.stat(descriptor_path).st_size,
-        'Authorization': 'Basic ' + base64.b64encode(wfm_user + ':' + wfm_password)
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
     }
     ssl_ctx = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
     ssl_ctx.verify_mode = ssl.CERT_NONE
