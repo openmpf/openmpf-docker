@@ -4,6 +4,8 @@
 set -e
 set -x
 
+cd /home/mpf/openmpf-docker/openmpf_runtime/python_executor
+
 # After install.tar is rebuilt, the hard link (unlike a symlink) will still be pointing to the previous version of
 # install.tar. In other words `rm ../build_artifacts/install.tar` has no effect on ./install.tar
 if ! [ "install.tar" -ef "../build_artifacts/install.tar" ]; then
@@ -27,7 +29,6 @@ wfm_docker=1
 component_dir=/home/mpf/openmpf-projects/openmpf-python-component-sdk/detection/examples/PythonOcvComponent/
 #component_dir=/home/mpf/python_docker_test/PythonOcvComponent
 
-cd /home/mpf/openmpf-docker/openmpf_runtime/python_executor
 docker build . -t python_executor
 
 if [ "$run_child" ]; then

@@ -3,14 +3,17 @@ from __future__ import print_function, division
 
 import base64
 import collections
+import errno
 import json
 import os
 import pipes
 import signal
+import socket
 import ssl
 import string
 import subprocess
 import sys
+import time
 import urllib2
 
 
@@ -75,7 +78,7 @@ def register_component(descriptor_path, wfm_base_url, wfm_user, wfm_password):
 
     try:
         print('Registering component by posting', descriptor_path, 'to', url)
-        post_descriptor(descriptor_path, url, headers, ssl_ctx)
+        post_descriptor_with_retry(descriptor_path, url, headers, ssl_ctx)
     except urllib2.HTTPError as first_attempt_err:
         if first_attempt_err.url == url:
             handle_registration_error(first_attempt_err)
@@ -87,6 +90,28 @@ def register_component(descriptor_path, wfm_base_url, wfm_user, wfm_password):
         except urllib2.HTTPError as retry_error:
             handle_registration_error(retry_error)
 
+
+def post_descriptor_with_retry(descriptor_path, url, headers, ssl_ctx):
+    while True:
+        try:
+            post_descriptor(descriptor_path, url, headers, ssl_ctx)
+            return
+        except urllib2.HTTPError as err:
+            if err.code != 404:
+                raise
+            print('Registration failed due to "{}". This is either because Tomcat has started, but the '
+                  'Workflow Manager is still deploying or because the wrong URL was used for the WFM_BASE_URL '
+                  'environment variable. Registration will be re-attempted in 5 seconds.'.format(err))
+        except urllib2.URLError as err:
+            reason = err.reason
+            should_retry = (isinstance(reason, socket.gaierror) and reason.errno == socket.EAI_NONAME
+                            or isinstance(reason, socket.error) and reason.errno == errno.ECONNREFUSED)
+            if not should_retry:
+                raise
+            print('Registration failed due to "{}". This is either because the Workflow Manager is still starting or '
+                  'because the wrong URL was used for the WFM_BASE_URL environment variable. Registration will '
+                  'be re-attempted in 5 seconds.'.format(reason.strerror))
+        time.sleep(5)
 
 def post_descriptor(descriptor_path, url, headers, ssl_ctx):
     with open(descriptor_path, 'r') as descriptor_file:
