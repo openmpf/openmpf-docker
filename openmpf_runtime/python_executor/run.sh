@@ -20,7 +20,7 @@ fi
 
 # TODO: Use openmpf_runtime as build context
 #cd /home/mpf/openmpf-docker/openmpf_runtime
-#docker build . -f python_executor/Dockerfile -t python_executor
+#docker build . -f python_executor/Dockerfile -t openmpf_python_executor
 
 
 #run_child=1
@@ -29,7 +29,7 @@ wfm_docker=1
 component_dir=/home/mpf/openmpf-projects/openmpf-python-component-sdk/detection/examples/PythonOcvComponent/
 #component_dir=/home/mpf/python_docker_test/PythonOcvComponent
 
-docker build . -t python_executor
+docker build . -t openmpf_python_executor
 
 if [ "$run_child" ]; then
     echo 'Building child Docker image...'
@@ -63,7 +63,7 @@ elif [ "$wfm_docker" ]; then
         -e WFM_PASSWORD=mpfadm \
         -e COMPONENT_LOG_NAME=python-ocv-test.log \
         -v "$component_dir:/home/mpf/component_src" \
-        python_executor
+        openmpf_python_executor
 
 else
     docker run --rm -it \
@@ -75,6 +75,6 @@ else
         -e COMPONENT_LOG_NAME=python-ocv-test.log \
         -v "$component_dir:/home/mpf/component_src" \
         -v "$MPF_HOME/share/remote-media:$MPF_HOME/share/remote-media" \
-        python_executor
+        openmpf_python_executor
 fi
 

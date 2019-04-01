@@ -26,7 +26,7 @@ PythonOcvComponent
 
 The minimal Dockerfile is:
 ```dockerfile
-FROM python_executor:latest
+FROM openmpf_python_executor:latest
 
 COPY . /home/mpf/component_src/
 
@@ -37,7 +37,7 @@ However, it is recommended that you set up your environment and install any depe
 `COPY . /home/mpf/component_src/` command. Putting steps before `COPY` allows you to avoid re-running those commands
 every time you modify your source code. For example:
 ```dockerfile
-FROM python_executor:latest
+FROM openmpf_python_executor:latest
 
 # Replace with your actual dependencies
 RUN "$COMPONENT_VIRTUALENV/bin/pip" install --no-cache-dir 'opencv-python>=3.3' 'tensorflow'
@@ -89,6 +89,6 @@ docker run --rm -it \
     -e WFM_PASSWORD=<wfm_password> \
     -e COMPONENT_LOG_NAME=<component_log_name> \
     -v "<component_path>:/home/mpf/component_src" \
-    python_executor
+    openmpf_python_executor
 ```
 
