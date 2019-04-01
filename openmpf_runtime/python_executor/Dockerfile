@@ -15,7 +15,7 @@ RUN pip install --no-cache-dir --upgrade pip virtualenv \
     && virtualenv "$COMPONENT_VIRTUALENV"
 
 WORKDIR /root/install_files
-COPY install.tar .
+COPY build_artifacts/install.tar .
 
 RUN tar -xf install.tar \
         # Python component SDK wheels
@@ -52,8 +52,8 @@ ENV MPF_LOG_PATH $MPF_HOME/share/logs
 # Only applies to stdin, stdout and stderr
 ENV PYTHONUNBUFFERED 1
 
-COPY scripts /home/mpf/scripts
-COPY docker-entrypoint.py /home/mpf/
+COPY python_executor/scripts /home/mpf/scripts
+COPY python_executor/docker-entrypoint.py /home/mpf/
 
 # Command used when this Dockerfile is extended by component's Dockerfile
 ONBUILD ENTRYPOINT ["python", "/home/mpf/docker-entrypoint.py"]

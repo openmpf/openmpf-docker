@@ -1,8 +1,15 @@
+How to build the openmpf_python_executor base image
+======================================================
+```bash
+cd /path/to/openmpf-docker/openmpf_runtime
+docker build . -f python_executor/Dockerfile -t openmpf_python_executor
+```
+
+
 How to use this image
 ===========================
 
 You can either create a Dockerfile in your Python component project or use this image directly using a bind mount.
-
 
 Create a Dockerfile in your Python component project
 ----------------------------
@@ -92,3 +99,51 @@ docker run --rm -it \
     openmpf_python_executor
 ```
 
+
+How to use this image with a non-Docker deployment of OpenMPF
+----------------------------------------------
+Additional command line arguments need to be added to the `docker run ...` command in order to use 
+openmpf_python_executor with a non-Docker deployment.
+
+If you are using your own Dockerfile, to start your component run the following command replacing 
+`<activemq_hostname>`, `<wfm_base_url>`, `<wfm_admin_user>`, `<wfm_password>`, and `<component_name>` with
+appropriate values.
+```bash
+docker run --rm -it \
+    --network host \
+    -e ACTIVE_MQ_HOST=<activemq_hostname> \
+    -e WFM_BASE_URL=<wfm_base_url> \
+    -e WFM_USER=<wfm_admin_user> \
+    -e WFM_PASSWORD=<wfm_password> \
+    -v "$MPF_HOME/share/remote-media:$MPF_HOME/share/remote-media" \
+    -v "$MPF_HOME/share:/opt/mpf/share"
+    <component_name>
+```
+As an example, if you are running ActiveMQ and Workflow Manager on your local machine and you want to run the 
+`python_ocv_component` component, you would run the following command.
+```bash
+docker run --rm -it \
+    --network host \
+    -e ACTIVE_MQ_HOST=localhost \
+    -e WFM_BASE_URL=http://localhost:8080/workflow-manager \
+    -e WFM_USER=my_admin_user \
+    -e WFM_PASSWORD=my_admin_password \
+    -v "$MPF_HOME/share/remote-media:$MPF_HOME/share/remote-media" \
+    -v "$MPF_HOME/share:/opt/mpf/share"
+    python_ocv_component
+```
+
+If you are not using your own Dockerfile the command would be:
+```bash
+docker run --rm -it \
+    --network host \
+    -e ACTIVE_MQ_HOST=<activemq_hostname> \
+    -e WFM_BASE_URL=<wfm_base_url> \
+    -e WFM_USER=<wfm_admin_user> \
+    -e WFM_PASSWORD=<wfm_password> \
+    -e COMPONENT_LOG_NAME=<component_log_name> \
+    -v "$component_dir:/home/mpf/component_src" \
+    -v "$MPF_HOME/share/remote-media:$MPF_HOME/share/remote-media" \
+    -v "$MPF_HOME/share:/opt/mpf/share"
+    openmpf_python_executor
+```
