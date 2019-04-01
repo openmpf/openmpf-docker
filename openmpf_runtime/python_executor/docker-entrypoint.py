@@ -54,7 +54,6 @@ def main():
     tail_proc = tail_log(log_dir, component_log_name, executor_proc.pid)
 
     exit_code = executor_proc.wait()
-    # Should we give up after a second?
     tail_proc.wait()
 
     print('Executor exit code =', exit_code)
@@ -76,19 +75,11 @@ def register_component(descriptor_path, wfm_base_url, wfm_user, wfm_password):
     ssl_ctx = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
     ssl_ctx.verify_mode = ssl.CERT_NONE
 
+    print('Registering component by posting', descriptor_path, 'to', url)
     try:
-        print('Registering component by posting', descriptor_path, 'to', url)
         post_descriptor_with_retry(descriptor_path, url, headers, ssl_ctx)
-    except urllib2.HTTPError as first_attempt_err:
-        if first_attempt_err.url == url:
-            handle_registration_error(first_attempt_err)
-            raise
-        # This generally means the provided WFM url used HTTP, but WFM was configured to use HTTPS
-        try:
-            print('Initial registration response failed. Trying with redirected url: ', first_attempt_err.url)
-            post_descriptor(descriptor_path, url, headers, ssl_ctx)
-        except urllib2.HTTPError as retry_error:
-            handle_registration_error(retry_error)
+    except urllib2.HTTPError as err:
+        handle_registration_error(err)
 
 
 def post_descriptor_with_retry(descriptor_path, url, headers, ssl_ctx):
@@ -97,6 +88,11 @@ def post_descriptor_with_retry(descriptor_path, url, headers, ssl_ctx):
             post_descriptor(descriptor_path, url, headers, ssl_ctx)
             return
         except urllib2.HTTPError as err:
+            if err.url != url:
+                # This generally means the provided WFM url used HTTP, but WFM was configured to use HTTPS
+                print('Initial registration response failed. Trying with redirected url: ', err.url)
+                post_descriptor(descriptor_path, err.url, headers, ssl_ctx)
+                return
             if err.code != 404:
                 raise
             print('Registration failed due to "{}". This is either because Tomcat has started, but the '
@@ -112,6 +108,7 @@ def post_descriptor_with_retry(descriptor_path, url, headers, ssl_ctx):
                   'because the wrong URL was used for the WFM_BASE_URL environment variable. Registration will '
                   'be re-attempted in 5 seconds.'.format(reason.strerror))
         time.sleep(5)
+
 
 def post_descriptor(descriptor_path, url, headers, ssl_ctx):
     with open(descriptor_path, 'r') as descriptor_file:
