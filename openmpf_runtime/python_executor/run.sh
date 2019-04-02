@@ -44,7 +44,7 @@ elif [ "$wfm_docker" ]; then
         -e WFM_USER=admin \
         -e WFM_PASSWORD=mpfadm \
         -e COMPONENT_LOG_NAME=python-ocv-test.log \
-        -v "$component_dir:/home/mpf/component_src" \
+        -v "$component_dir:/home/mpf/component_src:ro" \
         openmpf_python_executor
 
 else
@@ -55,7 +55,7 @@ else
         -e WFM_USER=admin \
         -e WFM_PASSWORD=mpfadm \
         -e COMPONENT_LOG_NAME=python-ocv-test.log \
-        -v "$component_dir:/home/mpf/component_src" \
+        -v "$component_dir:/home/mpf/component_src:ro" \
         -v "$MPF_HOME/share/remote-media:$MPF_HOME/share/remote-media" \
         openmpf_python_executor
 fi

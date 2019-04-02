@@ -139,11 +139,11 @@ def start_executor(descriptor, mpf_home, activemq_host, node_name):
     amq_detection_component_path = os.path.join(mpf_home, 'bin/amq_detection_component')
     activemq_broker_uri = 'failover://(tcp://{}:61616)?jms.prefetchPolicy.all=1&startupMaxReconnectAttempts=1'\
                           .format(activemq_host)
-    component_name = descriptor['componentName']
+    batch_lib = descriptor['batchLibrary']
     algorithm_name = descriptor['algorithm']['name'].upper()
     queue_name = 'MPF.DETECTION_{}_REQUEST'.format(algorithm_name)
 
-    executor_command = (amq_detection_component_path, activemq_broker_uri, component_name, queue_name, 'python')
+    executor_command = (amq_detection_component_path, activemq_broker_uri, batch_lib, queue_name, 'python')
     print('Starting component executor with command:', format_command_list(executor_command))
     executor_proc = subprocess.Popen(executor_command,
                                      env=get_executor_env_vars(mpf_home, descriptor, node_name),

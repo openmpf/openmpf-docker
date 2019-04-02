@@ -95,7 +95,7 @@ docker run --rm -it \
     -e WFM_USER=<wfm_admin_user> \
     -e WFM_PASSWORD=<wfm_password> \
     -e COMPONENT_LOG_NAME=<component_log_name> \
-    -v "<component_path>:/home/mpf/component_src" \
+    -v "<component_path>:/home/mpf/component_src:ro" \
     openmpf_python_executor
 ```
 
@@ -129,7 +129,7 @@ docker run --rm -it \
     -e WFM_USER=my_admin_user \
     -e WFM_PASSWORD=my_admin_password \
     -v "$MPF_HOME/share/remote-media:$MPF_HOME/share/remote-media" \
-    -v "$MPF_HOME/share:/opt/mpf/share"
+    -v "$MPF_HOME/share:/opt/mpf/share" \
     python_ocv_component
 ```
 
@@ -142,8 +142,8 @@ docker run --rm -it \
     -e WFM_USER=<wfm_admin_user> \
     -e WFM_PASSWORD=<wfm_password> \
     -e COMPONENT_LOG_NAME=<component_log_name> \
-    -v "$component_dir:/home/mpf/component_src" \
+    -v "$component_dir:/home/mpf/component_src:ro" \
     -v "$MPF_HOME/share/remote-media:$MPF_HOME/share/remote-media" \
-    -v "$MPF_HOME/share:/opt/mpf/share"
+    -v "$MPF_HOME/share:/opt/mpf/share" \
     openmpf_python_executor
 ```

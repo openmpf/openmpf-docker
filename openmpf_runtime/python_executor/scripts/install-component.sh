@@ -4,20 +4,23 @@ set -e
 set -x
 
 
-if [ ! -e /home/mpf/component_src/setup.py ]; then
-    echo 'Error expected /home/mpf/component_src/setup.py to exist'
-    exit 4
-fi
-
 mkdir -p "$MPF_HOME/plugins/plugin"
-cp -r /home/mpf/component_src/plugin-files/* "$MPF_HOME/plugins/plugin/"
+
+if [ -e /home/mpf/component_src/setup.py ]; then
+    echo 'Installing setuptools plugin'
+    cp -r /home/mpf/component_src/plugin-files/* "$MPF_HOME/plugins/plugin/"
 
 
-if [ -d /home/mpf/component_src/plugin-files/wheelhouse ]; then
-    "$COMPONENT_VIRTUALENV/bin/pip" install \
-        --find-links /home/mpf/component_src/plugin-files/wheelhouse \
-        --no-cache-dir /home/mpf/component_src
-else
-    "$COMPONENT_VIRTUALENV/bin/pip" install \
-        --no-cache-dir /home/mpf/component_src
+    if [ -d /home/mpf/component_src/plugin-files/wheelhouse ]; then
+        "$COMPONENT_VIRTUALENV/bin/pip" install \
+            --find-links /home/mpf/component_src/plugin-files/wheelhouse \
+            --no-cache-dir /home/mpf/component_src
+    else
+        "$COMPONENT_VIRTUALENV/bin/pip" install \
+            --no-cache-dir /home/mpf/component_src
 fi
+else
+    echo 'Installing basic component'
+    cp -r /home/mpf/component_src/* "$MPF_HOME/plugins/plugin"
+fi
+
