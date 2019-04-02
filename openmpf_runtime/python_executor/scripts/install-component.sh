@@ -43,7 +43,7 @@ if [ -e /home/mpf/component_src/setup.py ]; then
     else
         "$COMPONENT_VIRTUALENV/bin/pip" install \
             --no-cache-dir /home/mpf/component_src
-fi
+    fi
 else
     echo 'Installing basic component'
     cp -r /home/mpf/component_src/* "$MPF_HOME/plugins/plugin"
