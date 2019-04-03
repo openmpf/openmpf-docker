@@ -44,8 +44,14 @@ if [ -e /home/mpf/component_src/setup.py ]; then
         "$COMPONENT_VIRTUALENV/bin/pip" install \
             --no-cache-dir /home/mpf/component_src
     fi
-else
+elif [ -e /home/mpf/component_src/descriptor/descriptor.json ]; then
     echo 'Installing basic component'
     cp -r /home/mpf/component_src/* "$MPF_HOME/plugins/plugin"
+else
+    set +x
+    echo 'ERROR: Expected either /home/mpf/component_src/setup.py or'\
+         '/home/mpf/component_src/descriptor/descriptor.json to exist.' \
+         'Did you forget to COPY or bind mount your component source code?'
+    exit 3
 fi
 
