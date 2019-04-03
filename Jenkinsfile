@@ -24,8 +24,12 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
+// Jenkins Global Variables Reference: https://opensource.triology.de/jenkins/pipeline-syntax/globals
+
 // Get build parameters.
 def imageTag = env.getProperty("image_tag")
+def emailRecipients = env.getProperty("email_recipients")
+
 def openmpfDockerBranch = env.getProperty("openmpf_docker_branch")
 def openmpfProjectsBranch = env.getProperty("openmpf_projects_branch")
 def openmpfBranch = env.getProperty("openmpf_branch")
@@ -35,16 +39,20 @@ def openmpfCppComponentSdkBranch = env.getProperty("openmpf_cpp_component_sdk_br
 def openmpfJavaComponentSdkBranch = env.getProperty("openmpf_java_component_sdk_branch")
 def openmpfPythonComponentSdkBranch = env.getProperty("openmpf_python_component_sdk_branch")
 def openmpfBuildToolsBranch = env.getProperty("openmpf_build_tools_branch")
+
 def buildPackageJson = env.getProperty("build_package_json")
 def buildOpenmpf = env.getProperty("build_openmpf").toBoolean()
-def runUnitTests = env.getProperty("run_unit_tests").toBoolean()
-def runIntegrationTests = env.getProperty("run_integration_tests").toBoolean()
+def runGTests = env.getProperty("run_gtests").toBoolean()
+def runMvnTests = env.getProperty("run_mvn_tests").toBoolean()
+def mvnTestOptions = env.getProperty("mvn_test_options")
 def buildRuntimeImages = env.getProperty("build_runtime_images").toBoolean()
 def pushRuntimeImages = env.getProperty("push_runtime_images").toBoolean()
+
 def dockerRegistryHost = env.getProperty("docker_registry_host")
 def dockerRegistryPort = env.getProperty("docker_registry_port")
 def dockerRegistryCredId = env.getProperty("docker_registry_cred_id")
 def jenkinsNodes = env.getProperty("jenkins_nodes")
+def extraTestDataPath = env.getProperty("extra_test_data_path")
 // def buildNum = env.getProperty("BUILD_NUMBER")
 // def workspacePath = env.getProperty("WORKSPACE")
 
@@ -66,6 +74,20 @@ def openmpfConfigRepoCredId = env.getProperty('openmpf_config_repo_cred_id')
 def openmpfConfigDockerRepo = env.getProperty("openmpf_config_docker_repo")
 def openmpfConfigDockerBranch = env.getProperty("openmpf_config_docker_branch")
 
+// These properties are for posting the Jenkins build status to GitHub
+def postOpenmpfDockerBuildStatus = env.getProperty("post_openmpf_docker_build_status").toBoolean()
+def githubAuthToken = env.getProperty("github_auth_token")
+
+// SHAs
+def openmpfDockerSha
+def openmpfSha
+def openmpfComponentsSha
+def openmpfContribComponentsSha
+def openmpfCppComponentSdkSha
+def openmpfJavaComponentSdkSha
+def openmpfPythonComponentSdkSha
+def openmpfBuildToolsSha
+
 // Labels
 def buildDate
 def buildShas
@@ -75,29 +97,37 @@ def openmpfCustomSystemTestsSha
 def openmpfConfigDockerSha
 
 node(jenkinsNodes) {
+wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color in Jenkins console
+    def buildException
+
+    // Rename the named volumes and networks to be unique to this Jenkins build pipeline
+    def buildSharedDataVolumeSuffix = 'shared_data_' + currentBuild.projectName
+    def buildSharedDataVolume = 'openmpf_' + buildSharedDataVolumeSuffix
+
+    def buildMySqlDataVolumeSuffix = 'mysql_data_' + currentBuild.projectName
+    def buildMySqlDataVolume = 'openmpf_' + buildMySqlDataVolumeSuffix
+
+    def buildNetworkSuffix = 'compose_overlay_' + currentBuild.projectName
+    def buildNetwork = 'openmpf_' + buildNetworkSuffix
+
     try {
         buildDate = getTimestamp()
+
+        // Clean up last run
+        sh 'docker volume rm -f ' + buildSharedDataVolume + ' ' + buildMySqlDataVolume
+        removeDockerNetwork(buildNetwork)
 
         def dockerRegistryHostAndPort = dockerRegistryHost + ':' + dockerRegistryPort
         def remoteImageTagPrefix = dockerRegistryHostAndPort + '/openmpf/'
 
         def buildImageName = remoteImageTagPrefix + 'openmpf_build:' + imageTag
-        def postBuildImageName = 'openmpf_post_build:' + imageTag
         def buildContainerId
-        def postBuildImageId
 
         def workflowManagerImageName = remoteImageTagPrefix + 'openmpf_workflow_manager:' + imageTag
-
-        /*
-        stage('TEST') {
-            sh "echo 'CURRENT BUILD RESULT:_${currentBuild.currentResult}_'"
-            sh 'exit 1' // DEBUG
-        }
-        */
+        def pythonExecutorImageName = remoteImageTagPrefix + 'openmpf_python_executor:' + imageTag
 
         stage('Clone repos') {
-
-            def openmpfDockerSha = gitCheckoutAndPull("https://github.com/openmpf/openmpf-docker.git",
+            openmpfDockerSha = gitCheckoutAndPull("https://github.com/openmpf/openmpf-docker.git",
                     '.', openmpfDockerBranch)
 
             // Revert changes made to files by a previous Jenkins build.
@@ -108,19 +138,19 @@ node(jenkinsNodes) {
                     openmpfProjectsPath, openmpfProjectsBranch)
             sh 'cd ' + openmpfProjectsPath + '; git submodule update --init'
 
-            def openmpfSha = gitCheckoutAndPull("https://github.com/openmpf/openmpf.git",
+            openmpfSha = gitCheckoutAndPull("https://github.com/openmpf/openmpf.git",
                     openmpfProjectsPath + '/openmpf', openmpfBranch)
-            def openmpfComponentsSha = gitCheckoutAndPull("https://github.com/openmpf/openmpf-components.git",
+            openmpfComponentsSha = gitCheckoutAndPull("https://github.com/openmpf/openmpf-components.git",
                     openmpfProjectsPath + '/openmpf-components', openmpfComponentsBranch)
-            def openmpfContribComponentsSha = gitCheckoutAndPull("https://github.com/openmpf/openmpf-contrib-components.git",
+            openmpfContribComponentsSha = gitCheckoutAndPull("https://github.com/openmpf/openmpf-contrib-components.git",
                     openmpfProjectsPath + '/openmpf-contrib-components', openmpfContribComponentsBranch)
-            def openmpfCppComponentSdkSha = gitCheckoutAndPull("https://github.com/openmpf/openmpf-cpp-component-sdk.git",
+            openmpfCppComponentSdkSha = gitCheckoutAndPull("https://github.com/openmpf/openmpf-cpp-component-sdk.git",
                     openmpfProjectsPath + '/openmpf-cpp-component-sdk', openmpfCppComponentSdkBranch)
-            def openmpfJavaComponentSdkSha = gitCheckoutAndPull("https://github.com/openmpf/openmpf-java-component-sdk.git",
+            openmpfJavaComponentSdkSha = gitCheckoutAndPull("https://github.com/openmpf/openmpf-java-component-sdk.git",
                     openmpfProjectsPath + '/openmpf-java-component-sdk', openmpfJavaComponentSdkBranch)
-            def openmpfPythonComponentSdkSha = gitCheckoutAndPull("https://github.com/openmpf/openmpf-python-component-sdk.git",
+            openmpfPythonComponentSdkSha = gitCheckoutAndPull("https://github.com/openmpf/openmpf-python-component-sdk.git",
                     openmpfProjectsPath + '/openmpf-python-component-sdk', openmpfPythonComponentSdkBranch)
-            def openmpfBuildToolsSha = gitCheckoutAndPull("https://github.com/openmpf/openmpf-build-tools.git",
+            openmpfBuildToolsSha = gitCheckoutAndPull("https://github.com/openmpf/openmpf-build-tools.git",
                     openmpfProjectsPath + '/openmpf-build-tools', openmpfBuildToolsBranch)
 
             buildShas = 'openmpf-docker: ' + openmpfDockerSha +
@@ -168,7 +198,6 @@ node(jenkinsNodes) {
             // Generate compose files
             sh './scripts/docker-generate-compose-files.sh ' + dockerRegistryHost + ':' +
                     dockerRegistryPort + ' openmpf ' + imageTag
-            sh 'cp docker-compose.yml docker-compose.yml.bak'
 
             // TODO: Attempt to pull images in separate stage so that they are not
             // built from scratch on a clean Jenkins node.
@@ -199,133 +228,123 @@ node(jenkinsNodes) {
                 }
             }
 
-            stage('Build OpenMPF') {
-                if (!buildOpenmpf) {
-                    sh 'echo "SKIPPING OPENMPF BUILD"'
-                }
-                when (buildOpenmpf) { // if false, don't show this step in the Stage View UI
-                    try {
-                        if (!runUnitTests) {
-                            sh 'echo "SKIPPING UNIT TESTS"'
+            try {
+                stage('Build OpenMPF') {
+                    if (!buildOpenmpf) {
+                        echo 'SKIPPING OPENMPF BUILD'
+                    }
+                    when (buildOpenmpf) { // if false, don't show this step in the Stage View UI
+                        if (runMvnTests) {
+                            sh 'docker network create ' + buildNetwork
                         }
 
-                        // Run container as daemon in background to capture container id
-                        buildContainerId = sh(script: 'docker run -d ' +
+                        // Run container as daemon in background.
+                        buildContainerId = sh(script: 'docker run --entrypoint sleep -t -d ' +
                                 '--mount type=bind,source=/home/jenkins/.m2,target=/root/.m2 ' +
                                 '--mount type=bind,source="$(pwd)"/openmpf_runtime/build_artifacts,target=/mnt/build_artifacts ' +
                                 '--mount type=bind,source="$(pwd)"/openmpf_build/openmpf-projects,target=/mnt/openmpf-projects ' +
+                                (runMvnTests ? '--mount type=volume,source=' + buildSharedDataVolume +  ',target=/home/mpf/openmpf-projects/openmpf/trunk/install/share ' : '') +
+                                (runMvnTests ? '--mount type=bind,source=' + extraTestDataPath + ',target=/mpfdata,readonly ' : '') +
+                                (runMvnTests ? '--network=' + buildNetwork +  ' ' : '') +
+                                buildImageName + ' infinity', returnStdout: true).trim()
+
+                        sh 'docker exec ' +
                                 '-e BUILD_PACKAGE_JSON=' + buildPackageJson + ' ' +
-                                '-e RUN_TESTS=' + (runUnitTests ? 1 : 0) + ' ' +
-                                buildImageName, returnStdout: true).trim()
+                                buildContainerId + ' /home/mpf/docker-entrypoint.sh'
+                    }
+                }
 
-                        // Attach to container to show log output and wait until entrypoint completes
-                        def dockerRunRetVal = sh(script:'docker attach ' + buildContainerId, returnStatus:true)
+                stage('Run Google tests') {
+                    if (!runGTests) {
+                        echo 'SKIPPING GOOGLE TESTS'
+                    }
+                    when (runGTests) { // if false, don't show this step in the Stage View UI
+                        def gTestsRetval = sh(script: 'docker exec ' +
+                                buildContainerId + ' /home/mpf/run-gtests.sh', returnStatus: true)
 
-                        if (runUnitTests) {
-                            // Touch files to avoid the following error if the test reports are more than 3 seconds old:
-                            // "Test reports were found but none of them are new"
+                        processTestReports()
 
-                            sh 'sudo touch openmpf_runtime/build_artifacts/surefire-reports/*.xml'
-                            junit 'openmpf_runtime/build_artifacts/surefire-reports/*.xml'
-
-                            sh 'sudo touch openmpf_runtime/build_artifacts/gtest-reports/*.xml'
-                            junit 'openmpf_runtime/build_artifacts/gtest-reports/*.xml'
-
-                            // // junit 'openmpf_runtime/build_artifacts/failsafe-reports/*.xml'
-                        }
-
-                        if (dockerRunRetVal != 0) {
-                            sh 'exit ' + dockerRunRetVal
-                        }
-                    } catch (Exception e) {
-                        if (buildContainerId != null) {
-                            sh(script: 'docker container rm -f ' + buildContainerId, returnStatus:true)
-                        }
-                        throw e; // rethrow so Jenkins knows of failure
-                    } finally {
-                        if (!runIntegrationTests && buildContainerId != null) {
-                            sh(script: 'docker container rm -f ' + buildContainerId, returnStatus:true)
+                        if (gTestsRetval != 0) {
+                            sh 'exit ' + gTestsRetval
                         }
                     }
                 }
-            }
 
-            stage('Commit post-build image') {
-                // Save the post-build image to run system tests.
-                if (!buildOpenmpf || !runIntegrationTests) {
-                    sh 'echo "SKIPPING COMMIT OF POST-BUILD IMAGE"'
-                }
-                when (buildOpenmpf && runIntegrationTests) { // if false, don't show this step in the Stage View UI
-                    try {
-                        postBuildImageId = sh(script: 'docker commit ' + buildContainerId +
-                                ' ' + postBuildImageName, returnStdout: true)
-                    } finally {
-                        sh(script: 'docker container rm -f ' + buildContainerId, returnStatus:true)
+                stage('Build runtime images') {
+                    if (!buildRuntimeImages) {
+                        echo 'SKIPPING BUILD OF RUNTIME IMAGES'
                     }
-                }
-            }
-
-            stage('Run system tests') {
-                if (!runIntegrationTests) {
-                    sh 'echo "SKIPPING INTEGRATION TESTS"'
-                }
-                when (runIntegrationTests) { // if false, don't show this step in the Stage View UI
-                    try {
-                        sh 'sed "s/~\\/\\.m2/\\/home\\/jenkins\\/\\.m2/g"' +
-                                ' docker-compose-test.yml > docker-compose.yml'
-
-                        sh(script:'docker-compose rm -svf', returnStatus:true)
-                        sh(script:'docker volume rm -f openmpf-docker_mpf_data', returnStatus:true)
-                        sh(script:'docker volume rm -f openmpf-docker_mysql_data', returnStatus:true)
-
+                    when (buildRuntimeImages) { // if false, don't show this step in the Stage View UI
                         sh 'docker-compose build' +
                                 ' --build-arg BUILD_IMAGE_NAME=' + buildImageName +
-                                ' --build-arg POST_BUILD_IMAGE_NAME=' + postBuildImageName +
                                 ' --build-arg BUILD_DATE=' + buildDate +
                                 ' --build-arg BUILD_VERSION=' + imageTag +
                                 ' --build-arg BUILD_SHAS=\"' + buildShas + '\"'
 
-                        sh 'docker-compose up --force-recreate' +
-                                ' --abort-on-container-exit --exit-code-from workflow_manager_test'
+                        sh 'docker build openmpf_runtime ' +
+                                '--file openmpf_runtime/python_executor/Dockerfile ' +
+                                "--tag '${pythonExecutorImageName}'"
+                    }
+                }
 
-                        // Touch files to avoid the following error if the test reports are more than 3 seconds old:
-                        // "Test reports were found but none of them are new"
+                stage('Run Maven tests') {
+                    if (!buildOpenmpf || !buildRuntimeImages || !runMvnTests) {
+                        echo 'SKIPPING MAVEN TESTS'
+                    }
+                    when (buildOpenmpf && buildRuntimeImages && runMvnTests) { // if false, don't show this step in the Stage View UI
+                        // Add extra test data volume
+                        sh 'sed \'/shared_data:\\/opt\\/mpf\\/share/a \\      - ' + extraTestDataPath + ':/mpfdata:ro\'' +
+                                ' docker-compose.yml > docker-compose-test.yml'
 
-                        sh 'sudo touch openmpf_runtime/build_artifacts/surefire-reports/*.xml'
-                        junit 'openmpf_runtime/build_artifacts/surefire-reports/*.xml'
+                        // Update volume and network names
+                        sh 'sed -i \'s/shared_data:/' + buildSharedDataVolumeSuffix + ':/g\' docker-compose-test.yml'
+                        sh 'sed -i \'s/mysql_data:/' + buildMySqlDataVolumeSuffix + ':/g\' docker-compose-test.yml'
+                        sh 'sed -i \'s/compose_overlay/' + buildNetworkSuffix + '/g\' docker-compose-test.yml'
 
-                        sh 'sudo touch openmpf_runtime/build_artifacts/failsafe-reports/*.xml'
-                        junit 'openmpf_runtime/build_artifacts/failsafe-reports/*.xml'
-                    } finally {
-                        // Stop and remove containers, networks, and volumes
-                        sh(script: 'docker-compose down --volumes', returnStatus:true)
-                        if (postBuildImageId != null) {
-                            // Discard the post build image
-                            // sh(script: 'docker image rm -f ' + postBuildImageId, returnStatus:true) // DEBUG
+                        // Run supporting containers in background.
+                        sh 'docker-compose -f docker-compose-test.yml up -d' +
+                                ' --scale workflow_manager=0 --scale node_manager=2'
+
+                        def mvnTestsRetval = sh(script: 'docker exec' +
+                                ' -e EXTRA_MVN_OPTIONS=\"' + mvnTestOptions + '\" ' +
+                                buildContainerId +
+                                ' /home/mpf/run-mvn-tests.sh', returnStatus: true)
+
+                        processTestReports()
+
+                        if (mvnTestsRetval != 0) {
+                            sh 'exit ' + mvnTestsRetval
                         }
+                    }
+                }
+
+            } finally {
+                if (buildContainerId != null) {
+                    sh 'docker container rm -f ' + buildContainerId
+
+                    if (runMvnTests) {
+
+                        if (fileExists('docker-compose-test.yml')) {
+                            sh 'docker-compose -f docker-compose-test.yml rm -svf || true'
+                            sh 'sleep 10' // give previous command some time
+                        }
+
+                        sh 'docker volume rm -f ' + buildMySqlDataVolume // preserve openmpf_shared_data for post-run analysis
+                        removeDockerNetwork(buildNetwork)
                     }
                 }
             }
 
-            stage('Build runtime images') {
-                if (!buildRuntimeImages) {
-                    sh 'echo "SKIPPING BUILD OF RUNTIME IMAGES"'
+            stage('Apply custom config') {
+                if (!applyCustomConfig) {
+                    echo 'SKIPPING CUSTOM CONFIGURATION'
                 }
-                when (buildRuntimeImages) { // if false, don't show this step in the Stage View UI
-                    sh 'cp docker-compose.yml.bak docker-compose.yml'
-                    sh 'docker-compose build' +
-                            ' --build-arg BUILD_IMAGE_NAME=' + buildImageName +
-                            ' --build-arg BUILD_DATE=' + buildDate +
-                            ' --build-arg BUILD_VERSION=' + imageTag +
-                            ' --build-arg BUILD_SHAS=\"' + buildShas + '\"'
-                }
-
-                if (applyCustomConfig) {
+                when (applyCustomConfig) { // if false, don't show this step in the Stage View UI
                     buildShas += ', openmpf-config-docker: ' + openmpfConfigDockerSha
 
                     // Build and tag the new Workflow Manager image with the image tag used in the compose files.
-                    // That way, we do not have to modify the compose files. This overwrites the tag that referred to
-                    // the original Workflow Manager image without the custom config.
+                    // That way, we do not have to modify the compose files. This overwrites the tag that referred
+                    // to the original Workflow Manager image without the custom config.
                     sh 'docker build openmpf_custom_config/workflow_manager' +
                             ' --build-arg BUILD_IMAGE_NAME=' + workflowManagerImageName +
                             ' --build-arg BUILD_DATE=' + buildDate +
@@ -337,37 +356,55 @@ node(jenkinsNodes) {
 
             stage('Push runtime images') {
                 if (!pushRuntimeImages) {
-                    sh 'echo "SKIPPING PUSH OF RUNTIME IMAGES"'
+                    echo 'SKIPPING PUSH OF RUNTIME IMAGES'
                 }
                 when (pushRuntimeImages) { // if false, don't show this step in the Stage View UI
                     // Pushing multiple tags is cheap, as all the layers are reused.
                     sh 'docker push ' + buildImageName
                     sh 'docker-compose push'
+                    sh "docker push '${pythonExecutorImageName}'"
                 }
             }
 
-        } // end docker.withRegistry(
-    } catch(Exception e) {
-        if (isAborted()) {
-            sh 'echo "DETECTED BUILD ABORTED"'
-            email("ABORTED")
-        } else {
-            sh 'echo "DETECTED BUILD FAILURE"'
-            email("FAILURE")
-        }
-        throw e; // rethrow so Jenkins knows of failure
+        } // end docker.withRegistry()
+    } catch (Exception e) {
+        buildException = e
     }
 
+    def buildStatus
     if (isAborted()) {
-        sh 'echo "DETECTED BUILD ABORTED"'
-        email("ABORTED")
+        echo 'DETECTED BUILD ABORTED'
+        buildStatus = "aborted"
     } else {
-        // if we get here then the build completed
-        sh 'echo "DETECTED BUILD COMPLETED"'
-        sh "echo 'CURRENT BUILD RESULT: ${currentBuild.currentResult}'"
-        email(currentBuild.currentResult)
+        if (buildException != null) {
+            echo 'DETECTED BUILD FAILURE'
+            echo 'Exception type: ' + buildException.getClass()
+            echo 'Exception message: ' + buildException.getMessage()
+            buildStatus = "failure"
+        } else {
+            echo 'DETECTED BUILD COMPLETED'
+            echo "CURRENT BUILD RESULT: ${currentBuild.currentResult}"
+            buildStatus = currentBuild.currentResult.equals("SUCCESS") ? "success" : "failure"
+        }
+        // Post build status
+        if (postOpenmpfDockerBuildStatus) {
+            postBuildStatus("openmpf-docker", openmpfDockerBranch, openmpfDockerSha, buildStatus, githubAuthToken)
+        }
+        postBuildStatus("openmpf", openmpfBranch, openmpfSha, buildStatus, githubAuthToken)
+        postBuildStatus("openmpf-components", openmpfComponentsBranch, openmpfComponentsSha, buildStatus, githubAuthToken)
+        postBuildStatus("openmpf-contrib-components", openmpfContribComponentsBranch, openmpfContribComponentsSha, buildStatus, githubAuthToken)
+        postBuildStatus("openmpf-cpp-components-sdk", openmpfCppComponentSdkBranch, openmpfCppComponentSdkSha, buildStatus, githubAuthToken)
+        postBuildStatus("openmpf-java-components-sdk", openmpfJavaComponentSdkBranch, openmpfJavaComponentSdkSha, buildStatus, githubAuthToken)
+        postBuildStatus("openmpf-python-components-sdk", openmpfPythonComponentSdkBranch, openmpfPythonComponentSdkSha, buildStatus, githubAuthToken)
+        postBuildStatus("openmpf-build-tools", openmpfBuildToolsBranch, openmpfBuildToolsSha, buildStatus, githubAuthToken)
     }
-}
+
+    email(buildStatus, emailRecipients)
+
+    if (buildException != null) {
+        throw buildException // rethrow so Jenkins knows of failure
+    }
+}}
 
 def gitCheckoutAndPull(String repo, String dir, String branch) {
     // This is the official procedure, but we don't want all of the "Git Build Data"
@@ -377,27 +414,36 @@ def gitCheckoutAndPull(String repo, String dir, String branch) {
     //    extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: dir]],
     //    userRemoteConfigs: [[url: repo]]])
 
-    if (!fileExists(dir + '/.git')) {
-        sh 'git clone ' + repo + ' ' + dir
+    if (!branch.isEmpty()) {
+        if (!fileExists(dir + '/.git')) {
+            sh 'git clone ' + repo + ' ' + dir
+        }
+        sh 'cd ' + dir + '; git fetch'
+        sh 'cd ' + dir + '; git checkout ' + branch
+        sh 'cd ' + dir + '; git pull origin ' + branch
     }
 
-    sh 'cd ' + dir + '; git fetch'
-    sh 'cd ' + dir + '; git checkout ' + branch
-    sh 'cd ' + dir + '; git pull origin ' + branch
-
-    return sh(script: 'cd ' + dir + '; git rev-parse HEAD', returnStdout: true).trim()
+    return getGitCommitSha(dir) // assume the repo is already cloned
 }
 
 def gitCheckoutAndPullWithCredId(String repo, String credId, String dir, String branch) {
-    def scmVars = checkout([$class: 'GitSCM',
-              branches: [[name: '*/' + branch]],
-              extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: dir]],
-              userRemoteConfigs: [[credentialsId: credId, url: repo]]])
+    if (!branch.isEmpty()) {
+        def scmVars = checkout([$class: 'GitSCM',
+                  branches: [[name: '*/' + branch]],
+                  extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: dir]],
+                  userRemoteConfigs: [[credentialsId: credId, url: repo]]])
 
-    // TODO: Make sure we're not in a detached state.
-    // sh 'cd ' + dir + '; git checkout ' + branch
+        // TODO: Make sure we're not in a detached state.
+        // sh 'cd ' + dir + '; git checkout ' + branch
 
-    return scmVars.GIT_COMMIT
+        return scmVars.GIT_COMMIT
+    }
+
+    return getGitCommitSha(dir) // assume the repo is already cloned
+}
+
+def getGitCommitSha(String dir) {
+    return sh(script: 'cd ' + dir + '; git rev-parse HEAD', returnStdout: true).trim()
 }
 
 def isAborted() {
@@ -405,16 +451,59 @@ def isAborted() {
     return !actions.isEmpty()
 }
 
-def email(String status) {
+def email(String status, String recipients) {
     emailext (
-            subject: status + ": ${env.JOB_NAME} [${env.BUILD_NUMBER}]",
+            subject: status.toUpperCase() + ": ${env.JOB_NAME} [${env.BUILD_NUMBER}]",
             // mimeType: 'text/html',
             // body: "<p>Check console output at <a href=\"${env.BUILD_URL}\">${env.BUILD_URL}</a></p>",
             body: '${JELLY_SCRIPT,template="text"}',
-            recipientProviders: [[$class: 'RequesterRecipientProvider']]
+            recipientProviders: [[$class: 'RequesterRecipientProvider']],
+            to: recipients
     )
 }
 
 def getTimestamp() {
     return sh(script: 'date --iso-8601=seconds', returnStdout: true).trim()
+}
+
+// TODO: Don't use sudo.
+def processTestReports() {
+    def newReportsPath = 'openmpf_runtime/build_artifacts/reports'
+    def processedReportsPath = newReportsPath + '/processed'
+
+    // Touch files to avoid the following error if the test reports are more than 3 seconds old:
+    // "Test reports were found but none of them are new"
+    sh 'sudo touch ' + newReportsPath + '/*-reports/*.xml'
+
+    junit newReportsPath + '/*-reports/*.xml'
+
+    sh 'sudo mkdir -p ' + processedReportsPath
+    sh 'sudo mv ' + newReportsPath + '/*-reports' + ' ' + processedReportsPath
+}
+
+def postBuildStatus(String repo, String branch, String sha, String status, authToken) {
+    if (branch.isEmpty()) {
+        return
+    }
+
+    def resultJson = sh(script: 'echo \'{"state": "' + status + '", ' +
+            '"description": "' + currentBuild.projectName + ' ' + currentBuild.displayName + '", ' +
+            '"context": "jenkins"}\' | ' +
+            'curl -s -X POST -H "Authorization: token ' + authToken + '" ' +
+            '-d @- https://api.github.com/repos/openmpf/' + repo + '/statuses/' + sha, returnStdout: true)
+
+    def success = resultJson.contains("\"state\": \"" + status + "\"") &&
+            resultJson.contains("\"description\": \"" + currentBuild.projectName + ' ' + currentBuild.displayName + "\"") &&
+            resultJson.contains("\"context\": \"jenkins\"")
+
+    if (!success) {
+        echo 'Failed to post build status:'
+        echo resultJson
+    }
+}
+
+def removeDockerNetwork(network) {
+    if (sh(script: 'docker network inspect ' + network + ' > /dev/null 2>&1', returnStatus: true) == 0) {
+        sh 'docker network rm ' + network
+    }
 }
