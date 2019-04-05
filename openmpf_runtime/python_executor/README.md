@@ -17,15 +17,15 @@ You have two options:
   - Do this if you need to install custom dependencies in the image to run your component.
   - This Dockerfile extends from the base `openmpf_python_executor` image.
   - This approach will pull in your component source code via the Docker build context 
-    with a COPY command when you run `docker build …`.
+    with a `COPY` command when you run `docker build …`.
   - This approach will install your component in the image at build time. 
     In the end you will have a Docker image for your component.
  
 2\. Use the base `openmpf_python_executor` image without your own Dockerfile.
   - This is a simpler option if you don’t need to install custom dependencies.
-  - This approach will pull in your component source from a bind-mount 
+  - This approach will pull in your component source from a bind mount 
     that you must specify when you execute `docker run …`.
-  - This approach will install your component in the container as part of the Docker entrypoint at runtime. 
+  - This approach will install your component in the container as part of the Docker entry point at runtime. 
     Your code only ever exists in the container. This approach will not generate a Docker image for your component.
   - You can think of the `openmpf_python_executor` image as a tool that you use to build and run your code.
  
