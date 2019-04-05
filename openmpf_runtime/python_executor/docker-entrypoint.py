@@ -143,6 +143,8 @@ def post_descriptor_with_retry(descriptor_path, url, headers, ssl_ctx):
                       'This usually means that the server is using HTTP on the specified port, '
                       'but an "https://" URL was used. Trying again with:', new_url)
                 url = new_url
+                # continue since the post to new_url might cause a redirect which raises an error that can be
+                # handled.
                 continue
             should_retry_after_delay = (isinstance(reason, socket.gaierror) and reason.errno == socket.EAI_NONAME
                                         or isinstance(reason, socket.error) and reason.errno == errno.ECONNREFUSED)
