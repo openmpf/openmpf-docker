@@ -1,4 +1,39 @@
-How to build the openmpf_python_executor base image
+Overview
+==================
+The purpose of this image is to enable a developer to write a Python component for OpenMPF that can be encapsulated 
+within a Docker container. This isolates the execution environment from the rest of OpenMPF, 
+thereby providing greater freedom and portability.
+
+This image will:
+ 
+- Register your component with the Workflow Manager.
+- Execute your code using the OpenMPF component executor binary.
+- Tail log files so that they appear in the terminal window where you ran `docker run ..` 
+  to start your component container.
+
+You have two options:
+ 
+1\. Create a Dockerfile in your Python component project.
+  - Do this if you need to install custom dependencies in the image to run your component.
+  - This Dockerfile extends from the base `openmpf_python_executor` image.
+  - This approach will pull in your component source code via the Docker build context 
+    with a COPY command when you run `docker build …`.
+  - This approach will install your component in the image at build time. 
+    In the end you will have a Docker image for your component.
+ 
+2\. Use the base `openmpf_python_executor` image without your own Dockerfile.
+  - This is a simpler option if you don’t need to install custom dependencies.
+  - This approach will pull in your component source from a bind-mount 
+    that you must specify when you execute `docker run …`.
+  - This approach will install your component in the container as part of the Docker entrypoint at runtime. 
+    Your code only ever exists in the container. This approach will not generate a Docker image for your component.
+  - You can think of the `openmpf_python_executor` image as a tool that you use to build and run your code.
+ 
+Each approach installs your component the same way, 
+but the former does it at build time and the latter does it at runtime.
+
+
+How to build the `openmpf_python_executor` base image
 ======================================================
 ```bash
 cd /path/to/openmpf-docker/openmpf_runtime
@@ -142,7 +177,7 @@ docker run --rm -it \
     -e WFM_USER=<wfm_admin_user> \
     -e WFM_PASSWORD=<wfm_password> \
     -e COMPONENT_LOG_NAME=<component_log_name> \
-    -v "$component_dir:/home/mpf/component_src:ro" \
+    -v "<component_path>:/home/mpf/component_src:ro" \
     -v "$MPF_HOME/share/remote-media:$MPF_HOME/share/remote-media" \
     -v "$MPF_HOME/share:/opt/mpf/share" \
     openmpf_python_executor
