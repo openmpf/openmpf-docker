@@ -30,6 +30,7 @@ from __future__ import print_function, division
 import base64
 import collections
 import errno
+import httplib
 import json
 import os
 import pipes
@@ -113,6 +114,14 @@ def post_descriptor_with_retry(descriptor_path, url, headers, ssl_ctx):
         try:
             post_descriptor(descriptor_path, url, headers, ssl_ctx)
             return
+        except httplib.BadStatusLine:
+            new_url = url.replace('http://', 'https://')
+            print('Initial registration response failed due to an invalid status line in the HTTP response. '
+                  'This usually means that the server is using HTTPS, but an "http://" URL was used. '
+                  'Trying again with:', new_url)
+            post_descriptor(descriptor_path, new_url, headers, ssl_ctx)
+            return
+
         except urllib2.HTTPError as err:
             if err.url != url:
                 # This generally means the provided WFM url used HTTP, but WFM was configured to use HTTPS
@@ -124,11 +133,20 @@ def post_descriptor_with_retry(descriptor_path, url, headers, ssl_ctx):
             print('Registration failed due to "{}". This is either because Tomcat has started, but the '
                   'Workflow Manager is still deploying or because the wrong URL was used for the WFM_BASE_URL '
                   'environment variable. Registration will be re-attempted in 5 seconds.'.format(err))
+
         except urllib2.URLError as err:
             reason = err.reason
-            should_retry = (isinstance(reason, socket.gaierror) and reason.errno == socket.EAI_NONAME
-                            or isinstance(reason, socket.error) and reason.errno == errno.ECONNREFUSED)
-            if not should_retry:
+            should_retry_immediately = isinstance(reason, ssl.SSLError) and reason.reason == 'UNKNOWN_PROTOCOL'
+            if should_retry_immediately:
+                new_url = url.replace('https://', 'http://')
+                print('Initial registration response failed due to an "UNKNOWN_PROTOCOL" SSL error. '
+                      'This usually means that the server is using HTTP on the specified port, '
+                      'but an "https://" URL was used. Trying again with:', new_url)
+                url = new_url
+                continue
+            should_retry_after_delay = (isinstance(reason, socket.gaierror) and reason.errno == socket.EAI_NONAME
+                                        or isinstance(reason, socket.error) and reason.errno == errno.ECONNREFUSED)
+            if not should_retry_after_delay:
                 raise
             print('Registration failed due to "{}". This is either because the Workflow Manager is still starting or '
                   'because the wrong URL was used for the WFM_BASE_URL environment variable. Registration will '
