@@ -298,7 +298,7 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
 
                         // Run supporting containers in background.
                         sh 'docker-compose -f docker-compose-test.yml up -d' +
-                                ' --scale workflow_manager=0 --scale node_manager=2'
+                                ' --scale workflow_manager=0'
 
                         def mvnTestsRetval = sh(script: 'docker exec' +
                                 ' -e EXTRA_MVN_OPTIONS=\"' + mvnTestOptions + '\" ' +
