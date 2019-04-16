@@ -59,12 +59,19 @@ RUN tar -xf install.tar \
     && rm -rf python
 
 
+# Docker COPY only preserves symlinks when copying an entire directory so we copy the files and their symlinks in to
+# a temporary directory.
+RUN mkdir /root/copy_libs64 \
+    && cd /usr/lib64 \
+    && cp --preserve=links --no-dereference libSM.so* libICE.so* libXrender.so* libX11* libxcb.so* libXau.so* \
+            /root/copy_libs64
+
+
 
 FROM centos:7
 
 # Copy in opencv-python dependencies
-COPY --from=extract_tar /usr/lib64/libSM.so* /usr/lib64/libICE.so* /usr/lib64/libXrender.so* /usr/lib64/libX11* \
-                        /usr/lib64/libxcb.so* /usr/lib64/libXau.so* /usr/lib64/
+COPY --from=extract_tar /root/copy_libs64 /usr/lib64/
 
 ENV MPF_HOME /opt/mpf
 ENV COMPONENT_VIRTUALENV $MPF_HOME/plugins/plugin/venv
