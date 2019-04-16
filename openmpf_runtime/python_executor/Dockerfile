@@ -59,7 +59,7 @@ RUN tar -xf install.tar \
     && rm -rf python
 
 
-# docker COPY only preserves symlinks when copying an entire directory so we copy the files and their symlinks in to
+# Docker COPY only preserves symlinks when copying an entire directory so we copy the files and their symlinks in to
 # a temporary directory.
 RUN mkdir /root/copy_libs64 \
     && cd /usr/lib64 \
