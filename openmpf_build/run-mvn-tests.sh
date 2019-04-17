@@ -37,7 +37,7 @@ MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD:=password}
 
 # Make sure MPF_HOME matches what it's set to in the node-manager container.
 MPF_HOME=/opt/mpf
-if [ ! -d "/opt/mpf" ]; then
+if [ ! -d "$MPF_HOME" ]; then
   ln -s /home/mpf/openmpf-projects/openmpf/trunk/install "$MPF_HOME"
 fi
 
