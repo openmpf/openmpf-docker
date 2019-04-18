@@ -125,6 +125,8 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
 
         def workflowManagerImageName = remoteImageTagPrefix + 'openmpf_workflow_manager:' + imageTag
 
+        def pythonExecutorImageName = remoteImageTagPrefix + 'openmpf_python_executor:' + imageTag
+
         stage('Clone repos') {
             openmpfDockerSha = gitCheckoutAndPull("https://github.com/openmpf/openmpf-docker.git",
                     '.', openmpfDockerBranch)
@@ -279,6 +281,10 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                                 ' --build-arg BUILD_DATE=' + buildDate +
                                 ' --build-arg BUILD_VERSION=' + imageTag +
                                 ' --build-arg BUILD_SHAS=\"' + buildShas + '\"'
+
+                        sh 'docker build openmpf_runtime ' +
+                                '--file openmpf_runtime/python_executor/Dockerfile ' +
+                                "--tag '${pythonExecutorImageName}'"
                     }
                 }
 
@@ -357,6 +363,7 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                     // Pushing multiple tags is cheap, as all the layers are reused.
                     sh 'docker push ' + buildImageName
                     sh 'docker-compose push'
+                    sh "docker push '${pythonExecutorImageName}'"
                 }
             }
 
