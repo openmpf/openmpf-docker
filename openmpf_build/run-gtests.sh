@@ -1,3 +1,5 @@
+#!/usr/bin/bash
+
 #############################################################################
 # NOTICE                                                                    #
 #                                                                           #
@@ -24,72 +26,38 @@
 # limitations under the License.                                            #
 #############################################################################
 
-version: '3.3'
-services:
-  mysql_database:
-    image: mariadb:latest
-    environment:
-      - MYSQL_ROOT_PASSWORD=password
-      - MYSQL_DATABASE=mpf
-      - MYSQL_USER=mpf
-      - MYSQL_PASSWORD=mpf
-    command: [
-      '--wait_timeout=28800',
-    ]
-    volumes:
-      - mysql_data:/var/lib/mysql
-    networks:
-      - swarm_overlay
-    deploy:
-      placement:
-        constraints:
-          - node.role == manager
+set -Ee -o pipefail -o xtrace
 
-  activemq:
-    image: <registry>/<repository>/openmpf_active_mq:<image_tag>
-    ports:
-      - "8161:8161"
-    networks:
-      - swarm_overlay
+################################################################################
+# Initial Setup                                                                #
+################################################################################
 
-  redis:
-    image: redis:latest
-    networks:
-      - swarm_overlay
+BUILD_ARTIFACTS_PATH=/mnt/build_artifacts
 
-  workflow_manager:
-    image: <registry>/<repository>/openmpf_workflow_manager:<image_tag>
-    environment:
-      # The following line is needed to wait until the mySQL service is available:
-      - MYSQL_ROOT_PASSWORD=password
-      - KEYSTORE_PASSWORD=<keystore_password>
-    ports:
-      - "8080:8080"
-      - "8443:8443"
-    volumes:
-      - shared_data:/opt/mpf/share
-    networks:
-      - swarm_overlay
-    secrets: [https_keystore]
-    deploy:
-      placement:
-        constraints:
-          - node.role == manager
+################################################################################
+# Run Google Tests                                                             #
+################################################################################
 
-  node_manager:
-    image: <registry>/<repository>/openmpf_node_manager:<image_tag>
-    volumes:
-      - shared_data:/opt/mpf/share
-    networks:
-      - swarm_overlay
-    deploy:
-      mode: global
+# TODO: Update A-RunGTests.pl to return a non-zero value
+cd /home/mpf/openmpf-projects/openmpf/trunk/jenkins/scripts
+perl A-RunGTests.pl /home/mpf/openmpf-projects/openmpf 2>&1 | tee A-RunGTests.log
 
-volumes:
-  shared_data:
-  mysql_data:
+set +o xtrace
+gTestsFailed=$(grep -q "GTESTS TESTS FAILED" A-RunGTests.log; echo $?)
+set -o xtrace
 
-networks:
-  swarm_overlay:
+rm A-RunGTests.log
 
-secrets: { https_keystore: { file: <keystore_path> } } # One line to make easier for script to remove
+# Copy GTest reports to host
+cd /home/mpf/openmpf-projects/openmpf/mpf-component-build
+mkdir -p "$BUILD_ARTIFACTS_PATH/reports/gtest-reports"
+find . -name *junit.xml -exec cp {} "$BUILD_ARTIFACTS_PATH/reports/gtest-reports" \;
+
+set +o xtrace
+# Exit now if any tests failed
+if [ "$gTestsFailed" -eq 0 ]; then
+  echo 'DETECTED GOOGLE TEST FAILURE(S)'
+  exit 1
+fi
+echo 'DETECTED GOOGLE TESTS PASSED'
+exit 0

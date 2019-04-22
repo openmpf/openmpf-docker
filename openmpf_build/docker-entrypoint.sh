@@ -34,26 +34,22 @@ set -Ee -o pipefail -o xtrace
 
 export PKG_CONFIG_PATH=/apps/install/lib/pkgconfig
 export CXXFLAGS=-isystem\ /apps/install/include
-export PATH=$PATH:/apps/install/bin:/opt/apache-maven/bin:/apps/install/lib/pkgconfig:/usr/bin
+export PATH="$PATH":/apps/install/bin:/opt/apache-maven/bin:/apps/install/lib/pkgconfig:/usr/bin
 
 SOURCE_CODE_PATH=/mnt/openmpf-projects
 BUILD_ARTIFACTS_PATH=/mnt/build_artifacts
 
 # Use "docker run --env BUILD_PACKAGE_JSON=openmpf-some-other-package.json" option
 BUILD_PACKAGE_JSON=${BUILD_PACKAGE_JSON:=openmpf-open-source-package.json}
-RUN_TESTS=${RUN_TESTS:=0}
-
-# Give some time for "docker attach"
-sleep 3
 
 # Start with a clean slate
-rm -rf $BUILD_ARTIFACTS_PATH/*
+rm -rf "$BUILD_ARTIFACTS_PATH"/*
 
 ################################################################################
 # Copy the OpenMPF Repository                                                  #
 ################################################################################
 
-cp -R $SOURCE_CODE_PATH /home/mpf/openmpf-projects
+cp -R "$SOURCE_CODE_PATH" /home/mpf
 
 # Make sure the source code line endings are correct if copying the source from a Windows host.
 cd /home/mpf/openmpf-projects && find . -type f -exec dos2unix -q {} \;
@@ -75,8 +71,6 @@ cp /home/mpf/openmpf-projects/openmpf/trunk/workflow-manager/src/main/resources/
 sed -i '37s/.*/              p:hostName="redis"/' \
     /home/mpf/openmpf-projects/openmpf/trunk/workflow-manager/src/main/resources/applicationContext-redis.xml
 
-# TODO: Get the server set up with HTTPS.
-
 # Add Maven dependencies (CMU Sphinx, etc.)
 mkdir -p /root/.m2/repository
 tar xzf /home/mpf/openmpf-projects/openmpf-build-tools/mpf-maven-deps.tar.gz \
@@ -92,90 +86,36 @@ if [ -f /home/mpf/docker-custom-entrypoint.sh ]; then
 fi
 
 ################################################################################
-# Build OpenMPF and Run Tests                                                  #
+# Build OpenMPF                                                                #
 ################################################################################
 
 parallelism=$(($(nproc) / 2))
 (( parallelism < 2 )) && parallelism=2
 
-if [ $RUN_TESTS -le 0 ]; then
-  # Perform build
-  cd /home/mpf/openmpf-projects/openmpf
-  mvn clean install \
-    -DskipTests -Dmaven.test.skip=true -DskipITs \
-    -Dmaven.tomcat.skip=true \
-    -Dcomponents.build.package.json=/home/mpf/openmpf-projects/openmpf/trunk/jenkins/scripts/config_files/$BUILD_PACKAGE_JSON \
-    -Dstartup.auto.registration.skip=false \
-    -Dcomponents.build.dir=/home/mpf/openmpf-projects/openmpf/mpf-component-build \
-    -Dcomponents.build.parallel.builds="$parallelism" \
-    -Dcomponents.build.make.jobs="$parallelism" \
-    -DgitBranch=`cd .. && git rev-parse --abbrev-ref HEAD` \
-    -DgitShortId=`cd .. && git rev-parse --short HEAD` \
-    -DjenkinsBuildNumber=1
-else
-  # Perform build with unit tests
-  # TODO: Use JSON package with examples
-  # TODO: Remove -Dtest
-  # TODO: Create different application context?
-  cd /home/mpf/openmpf-projects/openmpf
-  set +e # Turn off exit on error
-  mvn clean verify \
-    -Dspring.profiles.active=jenkins -Pjenkins \
-    -DfailIfNoTests=false -DskipITs \
-    -Dtest=TestImageMediaSegmenter \
-    -Dmaven.tomcat.skip=true \
-    -Dcomponents.build.package.json=/home/mpf/openmpf-projects/openmpf/trunk/jenkins/scripts/config_files/$BUILD_PACKAGE_JSON \
-    -Dstartup.auto.registration.skip=false \
-    -Dcomponents.build.dir=/home/mpf/openmpf-projects/openmpf/mpf-component-build \
-    -Dcomponents.build.parallel.builds="$parallelism" \
-    -Dcomponents.build.make.jobs="$parallelism" \
-    -DgitBranch=`cd .. && git rev-parse --abbrev-ref HEAD` \
-    -DgitShortId=`cd .. && git rev-parse --short HEAD` \
-    -DjenkinsBuildNumber=1
-  mavenRetVal=$?
-
-  # Run Gtests
-  # TODO: Update A-RunGTests.pl to return a non-zero value
-  cd /home/mpf/openmpf-projects/openmpf/trunk/jenkins/scripts
-  perl A-RunGTests.pl /home/mpf/openmpf-projects/openmpf 2>&1 | tee A-RunGTests.log
-  set +o xtrace
-  gtestRetVal=`grep -q "GTESTS TESTS FAILED!" A-RunGTests.log`
-  set -o xtrace
-  rm A-RunGTests.log
-  set -e # Turn on exit on error
-
-  # Copy Maven test reports to host
-  cd /home/mpf/openmpf-projects
-  mkdir -p $BUILD_ARTIFACTS_PATH/surefire-reports
-  find . -path  \*\surefire-reports\*.xml -exec cp {} $BUILD_ARTIFACTS_PATH/surefire-reports \;
-
-  mkdir -p $BUILD_ARTIFACTS_PATH/failsafe-reports
-  find . -path  \*\failsafe-reports\*.xml -exec cp {} $BUILD_ARTIFACTS_PATH/failsafe-reports \;
-
-  # Copy Gtest reports to host
-  cd /home/mpf/openmpf-projects/openmpf/mpf-component-build
-  mkdir -p $BUILD_ARTIFACTS_PATH/gtest-reports
-  find . -name *junit.xml -exec cp {} $BUILD_ARTIFACTS_PATH/gtest-reports \;
-
-  set +o xtrace
-  # Exit now if any tests failed
-  if [ $mavenRetVal -ne 0 ] || [ $gtestRetval -ne 0 ]; then
-      echo 'DETECTED TEST FAILURE(S)'
-      exit 1
-  fi
-  set -o xtrace
-fi
+# Perform build. Exit now if build failed.
+cd /home/mpf/openmpf-projects/openmpf
+mvn install \
+  -DskipTests -Dmaven.test.skip=true -DskipITs \
+  -Dmaven.tomcat.skip=true \
+  -Dcomponents.build.package.json="/home/mpf/openmpf-projects/openmpf/trunk/jenkins/scripts/config_files/$BUILD_PACKAGE_JSON" \
+  -Dstartup.auto.registration.skip=false \
+  -Dcomponents.build.dir=/home/mpf/openmpf-projects/openmpf/mpf-component-build \
+  -Dcomponents.build.parallel.builds="$parallelism" \
+  -Dcomponents.build.make.jobs="$parallelism" \
+  -DgitBranch=`cd .. && git rev-parse --abbrev-ref HEAD` \
+  -DgitShortId=`cd .. && git rev-parse --short HEAD` \
+  -DjenkinsBuildNumber=1
 
 ################################################################################
 # Copy Artifacts to Host                                                       #
 ################################################################################
 
 cd /home/mpf/openmpf-projects/openmpf/trunk
-cp workflow-manager/target/workflow-manager.war $BUILD_ARTIFACTS_PATH
+cp workflow-manager/target/workflow-manager.war "$BUILD_ARTIFACTS_PATH"
 
 # Exclude the share directory since it can't be extracted to the share volume.
 # Docker cannot extract tars, or mv files to, volumes when the container is being created.
-tar -czf $BUILD_ARTIFACTS_PATH/install.tar -C install --exclude="share" .
-tar -czf $BUILD_ARTIFACTS_PATH/ansible.tar ansible
+tar -cf - -C install --exclude="share" --exclude="plugins" . | gzip --no-name > "$BUILD_ARTIFACTS_PATH/install.tar"
+tar -cf - ansible | gzip --no-name > "$BUILD_ARTIFACTS_PATH/ansible.tar"
 
-cp -R ../mpf-component-build/plugin-packages $BUILD_ARTIFACTS_PATH
+cp -R ../mpf-component-build/plugin-packages "$BUILD_ARTIFACTS_PATH"

@@ -101,7 +101,7 @@ else
 fi
 
 
-templateFiles=('docker-compose.yml' 'docker-compose-test.yml' 'swarm-compose.yml')
+templateFiles=('docker-compose.yml' 'swarm-compose.yml')
 
 ################################################################################
 # Without registry                                                             #

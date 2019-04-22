@@ -33,9 +33,18 @@ set -Ee -o pipefail -o xtrace
 ################################################################################
 
 BUILD_ARTIFACTS_PATH=/mnt/build_artifacts
+MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD:=password}
+
+# Make sure MPF_HOME matches what it's set to in the node-manager container.
+MPF_HOME=/opt/mpf
+if [ ! -d "$MPF_HOME" ]; then
+  ln -s /home/mpf/openmpf-projects/openmpf/trunk/install "$MPF_HOME"
+fi
+
+mkdir -p "$MPF_HOME/share"; chown -R mpf:mpf "$MPF_HOME/share"
 
 # Cleanup
-rm -f $MPF_HOME/share/nodes/MPF_Channel/*workflow_manager*.list
+rm -rf "$MPF_HOME/plugins"
 
 # NOTE: $HOSTNAME is not known until runtime.
 echo "export JGROUPS_TCP_ADDRESS=${HOSTNAME}" >> /etc/profile.d/mpf.sh
@@ -50,7 +59,7 @@ echo "node.auto.config.enabled=true" >> "$MPF_HOME/share/config/mpf-custom.prope
 echo "node.auto.unconfig.enabled=true" >> "$MPF_HOME/share/config/mpf-custom.properties"
 
 ################################################################################
-# Run Integration Tests                                                        #
+# Run Maven Tests                                                              #
 ################################################################################
 
 # Wait for mySQL service.
@@ -84,37 +93,69 @@ set -o xtrace
 # TODO: Move to openmpf_build Dockerfile
 export PKG_CONFIG_PATH=/apps/install/lib/pkgconfig
 export CXXFLAGS=-isystem\ /apps/install/include
-export PATH=$PATH:/apps/install/bin:/opt/apache-maven/bin:/apps/install/lib/pkgconfig:/usr/bin
+export PATH="$PATH":/apps/install/bin:/opt/apache-maven/bin:/apps/install/lib/pkgconfig:/usr/bin
 
 cd /home/mpf/openmpf-projects/openmpf
-# Leave "components.build.package.json" blank. The components should have
-# already been built in the mpf_post_build image.
-# TODO: -Dit.test=ITComponentLifecycle,ITWebREST,ITComponentRegistration,ITWebStreamingReports, -DskipITs
+
+# Move test sample data into a location that's accessible by all of the nodes.
+mkdir -p "$MPF_HOME/share/samples"
+
+systemTestSamplesPath="trunk/mpf-system-tests/src/test/resources/samples"
+find "$systemTestSamplesPath" -name NOTICE -delete
+cp -R "$systemTestSamplesPath" "$MPF_HOME/share/"
+rm -rf "$systemTestSamplesPath"
+ln -s "$MPF_HOME/share/samples" "$systemTestSamplesPath"
+
+wfmTestSamplesPath="trunk/workflow-manager/src/test/resources/samples"
+find "$wfmTestSamplesPath" -name NOTICE -delete
+cp -R "$wfmTestSamplesPath"/* "$MPF_HOME/share/samples"
+rm -rf "$wfmTestSamplesPath"
+ln -s "$MPF_HOME/share/samples" "$wfmTestSamplesPath"
+
+echo "These samples are copied from various source code locations." >> "$MPF_HOME/share/samples/NOTICE"
+
+parallelism=$(($(nproc) / 2))
+(( parallelism < 2 )) && parallelism=2
+
+# Components have already been built in the mpf_post_build image. Only build example components here.
+# Only run integration tests. Unit tests can be run in the openmpf_build container.
+# $MVN_OPTIONS will override other options that appear earlier in the following command.
+# NOTE: TestSystemOnDiff is not excluded by default.
+set +e
 mvn verify \
   -Dspring.profiles.active=jenkins -Pjenkins \
+  -Dit.test=ITComponentLifecycle,ITWebREST,ITComponentRegistration,ITWebStreamingReports \
   -DfailIfNoTests=false \
-  -Dit.test=ITComponentRegistration,ITWebStreamingReports \
   -Dtransport.guarantee="NONE" -Dweb.rest.protocol="http" \
-  -Dcomponents.build.package.json= \
+  -Dcomponents.build.components=\
+openmpf-cpp-component-sdk/detection/examples:\
+openmpf-java-component-sdk/detection/examples:\
+openmpf-python-component-sdk/detection/examples/PythonTestComponent:\
+openmpf-python-component-sdk/detection/examples/PythonOcvComponent \
   -Dstartup.auto.registration.skip=false \
   -Dcomponents.build.dir=/home/mpf/openmpf-projects/openmpf/mpf-component-build \
+  -Dcomponents.build.parallel.builds="$parallelism" \
+  -Dcomponents.build.make.jobs="$parallelism" \
   -DgitBranch=`cd .. && git rev-parse --abbrev-ref HEAD` \
   -DgitShortId=`cd .. && git rev-parse --short HEAD` \
-  -DjenkinsBuildNumber=1
+  -DjenkinsBuildNumber=1 \
+  $MVN_OPTIONS $EXTRA_MVN_OPTIONS # bash word splitting on maven options
 mavenRetVal=$?
+set -e
 
 # Copy Maven test reports to host
 cd /home/mpf/openmpf-projects
-mkdir -p $BUILD_ARTIFACTS_PATH/surefire-reports
-find . -path  \*\surefire-reports\*.xml -exec cp {} $BUILD_ARTIFACTS_PATH/surefire-reports \;
+mkdir -p "$BUILD_ARTIFACTS_PATH/reports/surefire-reports"
+find . -path  \*\surefire-reports\*.xml -exec cp {} "$BUILD_ARTIFACTS_PATH/reports/surefire-reports" \;
 
-mkdir -p $BUILD_ARTIFACTS_PATH/failsafe-reports
-find . -path  \*\failsafe-reports\*.xml -exec cp {} $BUILD_ARTIFACTS_PATH/failsafe-reports \;
+mkdir -p "$BUILD_ARTIFACTS_PATH/reports/failsafe-reports"
+find . -path  \*\failsafe-reports\*.xml -exec cp {} "$BUILD_ARTIFACTS_PATH/reports/failsafe-reports" \;
 
 set +o xtrace
 # Exit now if any tests failed
-if [ $mavenRetVal -ne 0 ]; then
-    echo 'DETECTED INTEGRATION TEST FAILURE(S)'
+if [ "$mavenRetVal" -ne 0 ]; then
+    echo 'DETECTED MAVEN TEST FAILURE(S)'
     exit 1
 fi
-set -o xtrace
+echo 'DETECTED MAVEN TESTS PASSED'
+exit 0
