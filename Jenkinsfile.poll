@@ -99,7 +99,7 @@ node(jenkinsNodes) {
 
             newShas.put(openmpfDockerRepo, gitCheckoutAndPull(openmpfDockerRepo, openmpfDockerPath, openmpfDockerBranch))
 
-            gitCheckoutAndPull("https://github.com/openmpf/openmpf-projects.git", openmpfProjectsPath, openmpfProjectsBranch)
+            gitCheckoutAndPull('https://github.com/openmpf/openmpf-projects.git', openmpfProjectsPath, openmpfProjectsBranch)
             sh 'cd ' + openmpfProjectsPath + '; git submodule update --init'
 
             newShas.put(openmpfRepo, gitCheckoutAndPull(openmpfRepo, openmpfPath, openmpfBranch))
@@ -145,7 +145,7 @@ node(jenkinsNodes) {
                 // Get old SHA
                 oldShas.put(openmpfConfigDockerRepo, getGitCommitSha(openmpfConfigDockerPath))
 
-                / Pull and get new SHA
+                // Pull and get new SHA
                 newShas.put(openmpfConfigDockerRepo, gitCheckoutAndPullWithCredId(openmpfConfigDockerRepo,
                         openmpfConfigRepoCredId, openmpfConfigDockerPath, openmpfConfigDockerBranch))
             }
@@ -158,7 +158,7 @@ node(jenkinsNodes) {
                 requiresBuild |= (oldSha != newSha)
             }
 
-            println "\nREQUIRES BUILD: " + requiresBuild
+            println '\nREQUIRES BUILD: ' + requiresBuild
 
         }
     } catch (Exception e) {
