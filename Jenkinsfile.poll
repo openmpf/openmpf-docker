@@ -39,6 +39,8 @@ def openmpfJavaComponentSdkBranch = env.getProperty("openmpf_java_component_sdk_
 def openmpfPythonComponentSdkBranch = env.getProperty("openmpf_python_component_sdk_branch")
 def openmpfBuildToolsBranch = env.getProperty("openmpf_build_tools_branch")
 
+def jenkinsNodes = env.getProperty("jenkins_nodes")
+
 // These properties are for building with custom components
 def buildCustomComponents = env.getProperty("build_custom_components").toBoolean()
 def openmpfCustomRepoCredId = env.getProperty('openmpf_custom_repo_cred_id')
