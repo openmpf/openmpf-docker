@@ -1,0 +1,214 @@
+/******************************************************************************
+ * NOTICE                                                                     *
+ *                                                                            *
+ * This software (or technical data) was produced for the U.S. Government     *
+ * under contract, and is subject to the Rights in Data-General Clause        *
+ * 52.227-14, Alt. IV (DEC 2007).                                             *
+ *                                                                            *
+ * Copyright 2019 The MITRE Corporation. All Rights Reserved.                 *
+ ******************************************************************************/
+
+/******************************************************************************
+ * Copyright 2019 The MITRE Corporation                                       *
+ *                                                                            *
+ * Licensed under the Apache License, Version 2.0 (the "License");            *
+ * you may not use this file except in compliance with the License.           *
+ * You may obtain a copy of the License at                                    *
+ *                                                                            *
+ *    http://www.apache.org/licenses/LICENSE-2.0                              *
+ *                                                                            *
+ * Unless required by applicable law or agreed to in writing, software        *
+ * distributed under the License is distributed on an "AS IS" BASIS,          *
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.   *
+ * See the License for the specific language governing permissions and        *
+ * limitations under the License.                                             *
+ ******************************************************************************/
+
+// Jenkins Global Variables Reference: https://opensource.triology.de/jenkins/pipeline-syntax/globals
+
+// Get build parameters.
+def emailRecipients = env.getProperty("email_recipients")
+
+def openmpfDockerBranch = env.getProperty("openmpf_docker_branch")
+def openmpfProjectsBranch = env.getProperty("openmpf_projects_branch")
+def openmpfBranch = env.getProperty("openmpf_branch")
+def openmpfComponentsBranch = env.getProperty("openmpf_components_branch")
+def openmpfContribComponentsBranch = env.getProperty("openmpf_contrib_components_branch")
+def openmpfCppComponentSdkBranch = env.getProperty("openmpf_cpp_component_sdk_branch")
+def openmpfJavaComponentSdkBranch = env.getProperty("openmpf_java_component_sdk_branch")
+def openmpfPythonComponentSdkBranch = env.getProperty("openmpf_python_component_sdk_branch")
+def openmpfBuildToolsBranch = env.getProperty("openmpf_build_tools_branch")
+
+// These properties are for building with custom components
+def buildCustomComponents = env.getProperty("build_custom_components").toBoolean()
+def openmpfCustomRepoCredId = env.getProperty('openmpf_custom_repo_cred_id')
+def openmpfCustomDockerRepo = env.getProperty("openmpf_custom_docker_repo")
+def openmpfCustomDockerBranch = env.getProperty("openmpf_custom_docker_branch")
+def openmpfCustomComponentsRepo = env.getProperty("openmpf_custom_components_repo")
+def openmpfCustomComponentsSlug = env.getProperty("openmpf_custom_components_slug")
+def openmpfCustomComponentsBranch = env.getProperty("openmpf_custom_components_branch")
+def openmpfCustomSystemTestsRepo = env.getProperty("openmpf_custom_system_tests_repo")
+def openmpfCustomSystemTestsSlug = env.getProperty("openmpf_custom_system_tests_slug")
+def openmpfCustomSystemTestsBranch = env.getProperty("openmpf_custom_system_tests_branch")
+
+// These properties are for applying custom configurations to images
+def applyCustomConfig = env.getProperty("apply_custom_config").toBoolean()
+def openmpfConfigRepoCredId = env.getProperty('openmpf_config_repo_cred_id')
+def openmpfConfigDockerRepo = env.getProperty("openmpf_config_docker_repo")
+def openmpfConfigDockerBranch = env.getProperty("openmpf_config_docker_branch")
+
+node(jenkinsNodes) {
+
+    try {
+        stage('Poll repos') {
+            oldShas = [:]
+            newShas = [:]
+
+            // Define repo URLs
+            openmpfDockerRepo = 'https://github.com/openmpf/openmpf-docker.git'
+            openmpfRepo = 'https://github.com/openmpf/openmpf.git'
+            openmpfComponentsRepo = 'https://github.com/openmpf/openmpf-components.git'
+            openmpfContribComponentsRepo = 'https://github.com/openmpf/openmpf-contrib-components.git'
+            openmpfCppComponentSdkRepo = 'https://github.com/openmpf/openmpf-cpp-component-sdk.git'
+            openmpfJavaComponentSdkRepo = 'https://github.com/openmpf/openmpf-java-component-sdk.git'
+            openmpfPythonComponentSdkRepo = 'https://github.com/openmpf/openmpf-python-component-sdk.git'
+            openmpfBuildToolsRepo = 'https://github.com/openmpf/openmpf-build-tools.git'
+
+            // Define paths
+            openmpfDockerPath = '.'
+            openmpfProjectsPath = 'openmpf_build/openmpf-projects'
+            openmpfPath = openmpfProjectsPath + '/openmpf'
+            openmpfComponentsPath = openmpfProjectsPath + '/openmpf-components'
+            openmpfContribComponentsPath = openmpfProjectsPath + '/openmpf-contrib-components'
+            openmpfCppComponentSdkPath = openmpfProjectsPath + '/openmpf-cpp-component-sdk'
+            openmpfJavaComponentSdkPath = openmpfProjectsPath + '/openmpf-java-component-sdk'
+            openmpfPythonComponentSdkPath = openmpfProjectsPath + '/openmpf-python-component-sdk'
+            openmpfBuildToolsPath = openmpfProjectsPath + '/openmpf-build-tools'
+
+            // Get old SHAs
+            oldShas.put(openmpfDockerRepo, getGitCommitSha(openmpfDockerPath))
+            oldShas.put(openmpfRepo, getGitCommitSha(openmpfPath))
+            oldShas.put(openmpfComponentsRepo, getGitCommitSha(openmpfComponentsPath))
+            oldShas.put(openmpfContribComponentsRepo, getGitCommitSha(openmpfContribComponentsPath))
+            oldShas.put(openmpfCppComponentSdkRepo, getGitCommitSha(openmpfCppComponentSdkPath))
+            oldShas.put(openmpfJavaComponentSdkRepo, getGitCommitSha(openmpfJavaComponentSdkPath))
+            oldShas.put(openmpfPythonComponentSdkRepo, getGitCommitSha(openmpfPythonComponentSdkPath))
+            oldShas.put(openmpfBuildToolsRepo, getGitCommitSha(openmpfBuildToolsPath))
+
+            // Pull and get new SHAs
+
+            newShas.put(openmpfDockerRepo, gitCheckoutAndPull(openmpfDockerRepo, openmpfDockerPath, openmpfDockerBranch))
+
+            gitCheckoutAndPull("https://github.com/openmpf/openmpf-projects.git", openmpfProjectsPath, openmpfProjectsBranch)
+            sh 'cd ' + openmpfProjectsPath + '; git submodule update --init'
+
+            newShas.put(openmpfRepo, gitCheckoutAndPull(openmpfRepo, openmpfPath, openmpfBranch))
+            newShas.put(openmpfComponentsRepo,
+                    gitCheckoutAndPull(openmpfComponentsRepo, openmpfComponentsPath, openmpfComponentsBranch))
+            newShas.put(openmpfContribComponentsRepo,
+                    gitCheckoutAndPull(openmpfContribComponentsRepo, openmpfContribComponentsPath, openmpfContribComponentsBranch))
+            newShas.put(openmpfCppComponentSdkRepo,
+                    gitCheckoutAndPull(openmpfCppComponentSdkRepo, openmpfCppComponentSdkPath, openmpfCppComponentSdkBranch))
+            newShas.put(openmpfJavaComponentSdkRepo,
+                    gitCheckoutAndPull(openmpfJavaComponentSdkRepo, openmpfJavaComponentSdkPath, openmpfJavaComponentSdkBranch))
+            newShas.put(openmpfPythonComponentSdkRepo,
+                    gitCheckoutAndPull(openmpfPythonComponentSdkRepo, openmpfPythonComponentSdkPath, openmpfPythonComponentSdkBranch))
+            newShas.put(openmpfBuildToolsRepo,
+                    gitCheckoutAndPull(openmpfBuildToolsRepo, openmpfBuildToolsPath, openmpfBuildToolsBranch))
+
+            if (buildCustomComponents) {
+
+                // Define paths
+                openmpfCustomDockerPath = 'openmpf_custom_build'
+                openmpfCustomComponentsPath = openmpfProjectsPath + '/' + openmpfCustomComponentsSlug
+                openmpfCustomSystemTestsPath = openmpfProjectsPath + '/' + openmpfCustomSystemTestsSlug
+
+                // Get old SHAs
+                oldShas.put(openmpfCustomDockerRepo, getGitCommitSha(openmpfCustomDockerPath))
+                oldShas.put(openmpfCustomComponentsRepo, getGitCommitSha(openmpfCustomComponentsPath))
+                oldShas.put(openmpfCustomSystemTestsRepo, getGitCommitSha(openmpfCustomSystemTestsPath))
+
+                // Pull and get new SHAs
+                newShas.put(openmpfCustomDockerRepo, gitCheckoutAndPullWithCredId(openmpfCustomDockerRepo,
+                        openmpfCustomRepoCredId, openmpfCustomDockerPath, openmpfCustomDockerBranch))
+                newShas.put(openmpfCustomComponentsRepo, gitCheckoutAndPullWithCredId(openmpfCustomComponentsRepo,
+                        openmpfCustomRepoCredId, openmpfCustomComponentsPath, openmpfCustomComponentsBranch))
+                newShas.put(openmpfCustomSystemTestsRepo, gitCheckoutAndPullWithCredId(openmpfCustomSystemTestsRepo,
+                        openmpfCustomRepoCredId, openmpfCustomSystemTestsPath, openmpfCustomSystemTestsBranch))
+            }
+
+            if (applyCustomConfig) {
+
+                // Define path
+                openmpfConfigDockerPath = 'openmpf_custom_config'
+
+                // Get old SHA
+                oldShas.put(openmpfConfigDockerRepo, getGitCommitSha(openmpfConfigDockerPath))
+
+                / Pull and get new SHA
+                newShas.put(openmpfConfigDockerRepo, gitCheckoutAndPullWithCredId(openmpfConfigDockerRepo,
+                        openmpfConfigRepoCredId, openmpfConfigDockerPath, openmpfConfigDockerBranch))
+            }
+
+            requiresBuild = false
+            for (repo in oldShas.keySet()) {
+                oldSha = oldShas.get(repo)
+                newSha = newShas.get(repo)
+                println repo + ': ' + oldSha + ' --> ' + newSha
+                requiresBuild |= (oldSha != newSha)
+            }
+
+            println "\nREQUIRES BUILD: " + requiresBuild
+
+        }
+    } catch (Exception e) {
+        echo 'DETECTED BUILD FAILURE'
+        echo 'Exception type: ' + e.getClass()
+        echo 'Exception message: ' + e.getMessage()
+        throw e // rethrow so Jenkins knows of failure
+    }
+}
+
+def gitCheckoutAndPull(String repo, String dir, String branch) {
+    // This is the official procedure, but we don't want all of the "Git Build Data"
+    // entries clogging up the sidebar in the build UI:
+    // checkout([$class: 'GitSCM',
+    //    branches: [[name: '*/' + branch]],
+    //    extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: dir]],
+    //    userRemoteConfigs: [[url: repo]]])
+
+    if (!branch.isEmpty()) {
+        if (!fileExists(dir + '/.git')) {
+            sh 'git clone ' + repo + ' ' + dir
+        }
+        sh 'cd ' + dir + '; git fetch'
+        sh 'cd ' + dir + '; git checkout ' + branch
+        sh 'cd ' + dir + '; git pull origin ' + branch
+    }
+
+    return getGitCommitSha(dir) // assume the repo is already cloned
+}
+
+def gitCheckoutAndPullWithCredId(String repo, String credId, String dir, String branch) {
+    if (!branch.isEmpty()) {
+        def scmVars = checkout([$class: 'GitSCM',
+                  branches: [[name: '*/' + branch]],
+                  extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: dir]],
+                  userRemoteConfigs: [[credentialsId: credId, url: repo]]])
+
+        // TODO: Make sure we're not in a detached state.
+        // sh 'cd ' + dir + '; git checkout ' + branch
+
+        return scmVars.GIT_COMMIT
+    }
+
+    return getGitCommitSha(dir) // assume the repo is already cloned
+}
+
+def getGitCommitSha(String dir) {
+    if (!fileExists(dir + '/.git')) {
+        return sh(script: 'cd ' + dir + '; git rev-parse HEAD', returnStdout: true).trim()
+    }
+    return ''
+}
+
