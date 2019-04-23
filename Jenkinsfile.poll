@@ -208,7 +208,7 @@ def gitCheckoutAndPullWithCredId(String repo, String credId, String dir, String 
 }
 
 def getGitCommitSha(String dir) {
-    if (!fileExists(dir + '/.git')) {
+    if (fileExists(dir + '/.git')) {
         return sh(script: 'cd ' + dir + '; git rev-parse HEAD', returnStdout: true).trim()
     }
     return ''
