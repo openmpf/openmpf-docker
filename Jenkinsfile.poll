@@ -153,7 +153,7 @@ node(jenkinsNodes) {
             }
 
             requiresBuild = false
-            print '\n'
+            println 'CHANGES:'
 
             for (repo in oldShas.keySet()) {
                 oldSha = oldShas.get(repo)
