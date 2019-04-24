@@ -153,14 +153,16 @@ node(jenkinsNodes) {
             }
 
             requiresBuild = false
+            println
+
             for (repo in oldShas.keySet()) {
                 oldSha = oldShas.get(repo)
                 newSha = newShas.get(repo)
                 requiresBuild |= (oldSha != newSha)
                 if (oldSha) {
-                    println repo + ': ' + oldSha + ' --> ' + newSha
+                    println repo + ':\n\t ' + oldSha + ' --> ' + newSha
                 } else {
-                    println repo + ': ' + newSha
+                    println repo + ':\n\t ' + newSha
                 }
             }
 
