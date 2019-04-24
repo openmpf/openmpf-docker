@@ -156,12 +156,20 @@ node(jenkinsNodes) {
             for (repo in oldShas.keySet()) {
                 oldSha = oldShas.get(repo)
                 newSha = newShas.get(repo)
-                println repo + ': ' + oldSha + ' --> ' + newSha
                 requiresBuild |= (oldSha != newSha)
+                if (oldSha) {
+                    println repo + ': ' + oldSha + ' --> ' + newSha
+                } else {
+                    println repo + ': ' + newSha
+                }
             }
 
             println '\nREQUIRES BUILD: ' + requiresBuild
 
+            if (!requiresBuild) {
+                currentBuild.result = 'ABORTED'
+                error('SHAs have not changed. Aborting.')
+            }
         }
     } catch (Exception e) {
         echo 'DETECTED BUILD FAILURE'
