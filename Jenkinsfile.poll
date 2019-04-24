@@ -166,11 +166,10 @@ node(jenkinsNodes) {
                 }
             }
 
-            println '\nREQUIRES BUILD: ' + requiresBuild
+            println 'REQUIRES BUILD: ' + requiresBuild
 
             if (!requiresBuild) {
                 currentBuild.result = 'ABORTED'
-                error('SHAs have not changed. Aborting.')
             }
         }
     } catch (Exception e) {
