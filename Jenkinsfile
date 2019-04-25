@@ -90,7 +90,7 @@ def customComponentRepos = []
 def customConfigRepo
 
 class Repo {
-    def script // instance of the Groovy script
+    def script // need this to call global methods
     def name
     def url
     def path
@@ -105,12 +105,16 @@ class Repo {
         this.url = url
         this.path = path
         this.branch = branch
-        // this.oldSha = script.getGitCommitSha(path)
     }
 
     Repo(script, name, url, path, branch, credId) {
         this(script, name, url, path, branch)
         this.credId = credId
+    }
+
+    // Cannot call this method within constructor due to https://issues.jenkins-ci.org/browse/JENKINS-26313
+    def getGitCommitSha() {
+        this.oldSha = script.getGitCommitSha(path)
     }
 
     def gitCheckoutAndPull() {
@@ -126,7 +130,7 @@ class Repo {
     }
 }
 
-def script = this
+def script = this // instance of the Groovy script
 
 node(jenkinsNodes) {
 wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color in Jenkins console
@@ -162,8 +166,7 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
         def openmpfProjectsPath = 'openmpf_build/openmpf-projects'
 
         stage('Clone repos') {
-            // Define repos and get old SHAs
-
+            // Define repos
             coreRepos.add(new Repo(script, 'openmpf-docker', openmpfGitHubUrl + '/openmpf-docker.git',
                     '.', openmpfDockerBranch))
             coreRepos.add(new Repo(script, 'openmpf', openmpfGitHubUrl + '/openmpf.git',
@@ -182,6 +185,11 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                     openmpfProjectsPath + '/openmpf-build-tools', openmpfBuildToolsBranch))
             allRepos.addAll(coreRepos)
 
+            // Get old SHAs
+            for (repo in coreRepos) {
+                repo.getGitCommitSha()
+            }
+
             // Pull and get new SHAs
 
             sh 'git reset --hard HEAD' // Revert changes made to files by a previous Jenkins build
@@ -194,7 +202,7 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
             }
 
             if (buildCustomComponents) {
-                // Define repos and get old SHAs
+                // Define repos
                 customComponentRepos.add(new Repo(script, 'openmpf-custom-docker', openmpfCustomDockerRepo,
                         'openmpf_custom_build', openmpfCustomDockerBranch, openmpfCustomRepoCredId))
                 customComponentRepos.add(new Repo(script, 'openmpf-custom-components', openmpfCustomComponentsRepo,
@@ -203,6 +211,11 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                         openmpfProjectsPath + '/' + openmpfCustomSystemTestsSlug, openmpfCustomSystemTestsBranch, openmpfCustomRepoCredId))
                 allRepos.addAll(customComponentRepos)
 
+                // Get old SHAs
+                for (repo in customComponentRepos) {
+                    repo.getGitCommitSha()
+                }
+
                 // Pull and get new SHAs
                 for (repo in customComponentRepos) {
                     repo.gitCheckoutAndPull()
@@ -210,10 +223,13 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
             }
 
             if (applyCustomConfig) {
-                // Define repo and get old SHA
+                // Define repo
                 customConfigRepo = new Repo(script, 'openmpf-custom-config', openmpfConfigDockerRepo,
                         'openmpf_custom_config', openmpfConfigDockerBranch, openmpfConfigRepoCredId)
-                allRepos.put(customConfigRepo)
+                allRepos.add(customConfigRepo)
+
+                // Get old SHA
+                customConfigRepo.getGitCommitSha()
 
                 // Pull and get new SHA
                 customConfigRepo.gitCheckoutAndPull()
