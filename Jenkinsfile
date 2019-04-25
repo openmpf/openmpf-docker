@@ -193,7 +193,9 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
 
             // Pull and get new SHAs
 
-            sh 'git reset --hard HEAD' // Revert changes made to files by a previous Jenkins build
+            if (fileExists('.git')) {
+                sh 'git reset --hard HEAD' // Revert changes made to files by a previous Jenkins build
+            }
 
             gitCheckoutAndPull('https://github.com/openmpf/openmpf-projects.git', openmpfProjectsPath, openmpfProjectsBranch)
             sh 'cd ' + openmpfProjectsPath + '; git submodule update --init'
