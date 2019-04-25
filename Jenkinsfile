@@ -47,7 +47,7 @@ def runMvnTests = env.getProperty("run_mvn_tests").toBoolean()
 def mvnTestOptions = env.getProperty("mvn_test_options")
 def buildRuntimeImages = env.getProperty("build_runtime_images").toBoolean()
 def pushRuntimeImages = env.getProperty("push_runtime_images").toBoolean()
-def onlyBuildWhenReposUpdated = true // TODO: env.getProperty("only_build_when_repos_updated").toBoolean()
+def onlyBuildWhenReposUpdated = env.getProperty("only_build_when_repos_updated").toBoolean()
 
 def dockerRegistryHost = env.getProperty("docker_registry_host")
 def dockerRegistryPort = env.getProperty("docker_registry_port")
