@@ -135,6 +135,7 @@ def script = this // instance of the Groovy script
 node(jenkinsNodes) {
 wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color in Jenkins console
     def buildException
+    def requiresBuild = !onlyBuildWhenReposUpdated
 
     // Rename the named volumes and networks to be unique to this Jenkins build pipeline
     def buildSharedDataVolumeSuffix = 'shared_data_' + currentBuild.projectName
@@ -236,26 +237,30 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
             }
         }
 
-        if (onlyBuildWhenReposUpdated) {
-            requiresBuild = false
-            println 'CHANGES:'
-
-            for (repo in allRepos) {
-                oldSha = repo.oldSha
-                newSha = repo.newSha
-                requiresBuild |= (oldSha != newSha)
-                if (oldSha) {
-                    println repo.name + ':\n\t ' + oldSha + ' --> ' + newSha
-                } else {
-                    println repo.name + ':\n\t ' + newSha
-                }
+        stage('Abort if repos unchanged') {
+            if (!onlyBuildWhenReposUpdated) {
+                echo 'SKIPPING REPO UPDATE CHECK'
             }
+            when(onlyBuildWhenReposUpdated) { // if false, don't show this step in the Stage View UI
+                println 'CHANGES:'
 
-            println 'REQUIRES BUILD: ' + requiresBuild
+                for (repo in allRepos) {
+                    oldSha = repo.oldSha
+                    newSha = repo.newSha
+                    requiresBuild |= (oldSha != newSha)
+                    if (oldSha) {
+                        println repo.name + ':\n\t ' + oldSha + ' --> ' + newSha
+                    } else {
+                        println repo.name + ':\n\t ' + newSha
+                    }
+                }
 
-            if (!requiresBuild) {
-                currentBuild.result = 'ABORTED'
-                return // do this outside of a stage
+                println 'REQUIRES BUILD: ' + requiresBuild
+
+                if (!requiresBuild) {
+                    currentBuild.result = 'ABORTED'
+                    error('Build not required. Aborting.')
+                }
             }
         }
 
@@ -522,8 +527,8 @@ def getGitCommitSha(String dir) {
 }
 
 def isAborted() {
-    def actions = currentBuild.getRawBuild().getActions(jenkins.model.InterruptedBuildAction)
-    return !actions.isEmpty()
+    return currentBuild.result.equals('ABORTED') ||
+            !currentBuild.getRawBuild().getActions(jenkins.model.InterruptedBuildAction).isEmpty()
 }
 
 def email(String status, String recipients) {
