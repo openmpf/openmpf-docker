@@ -266,12 +266,17 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                 }
 
                 println 'REQUIRES BUILD: ' + requiresBuild
+
+                if (requiresBuild) {
+                    currentBuild.result = 'SUCCESS'
+                } else {
+                    currentBuild.result = 'ABORTED'
+                }
             }
         }
 
-        if (!requiresBuild) {
-            currentBuild.result = 'NOT_BUILT'
-            return // do this outside of a stage
+        if (onlyBuildWhenReposUpdated) {
+            return // end build early; do this outside of a stage
         }
 
         docker.withRegistry('http://' + dockerRegistryHostAndPort, dockerRegistryCredId) {
