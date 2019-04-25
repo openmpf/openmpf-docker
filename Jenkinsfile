@@ -158,11 +158,11 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
         def workflowManagerImageName = remoteImageTagPrefix + 'openmpf_workflow_manager:' + imageTag
         def pythonExecutorImageName = remoteImageTagPrefix + 'openmpf_python_executor:' + imageTag
 
+        def openmpfGitHubUrl = 'https://github.com/openmpf'
+        def openmpfProjectsPath = 'openmpf_build/openmpf-projects'
+
         stage('Clone repos') {
             // Define repos and get old SHAs
-
-            def openmpfGitHubUrl = 'https://github.com/openmpf'
-            def openmpfProjectsPath = 'openmpf_build/openmpf-projects'
 
             coreRepos.add(new Repo(script, 'openmpf-docker', openmpfGitHubUrl + '/openmpf-docker.git',
                     '.', openmpfDockerBranch))
