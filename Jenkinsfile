@@ -92,41 +92,6 @@ def coreRepos = []
 def customComponentRepos = []
 def customConfigRepo
 
-class Repo {
-    def name
-    def url
-    def path
-    def branch
-    def credId
-    def oldSha
-    def newSha
-
-    Repo(name, url, path, branch) {
-        this.name = name
-        this.url = url
-        this.path = path
-        this.branch = branch
-        this.oldSha = getGitCommitSha(path)
-    }
-
-    Repo(name, url, path, branch, credId) {
-        this(name, url, path, branch)
-        this.credId = credId
-    }
-
-    def gitCheckoutAndPull() {
-        if (credId) {
-            this.newSha = gitCheckoutAndPullWithCredId(url, path, branch, credId)
-        } else {
-            this.newSha = gitCheckoutAndPull(url, path, branch)
-        }
-    }
-
-    def postBuildStatus(buildStatus, authToken) {
-        postBuildStatus(name, branch, newSha, buildStatus, authToken)
-    }
-}
-
 node(jenkinsNodes) {
 wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color in Jenkins console
     def buildException
@@ -574,4 +539,39 @@ def getBuildShasStr(repos) {
         buildShas += repo.name + ': ' + repo.newSha
     }
     return buildShas
+}
+
+class Repo {
+    def name
+    def url
+    def path
+    def branch
+    def credId
+    def oldSha
+    def newSha
+
+    Repo(name, url, path, branch) {
+        this.name = name
+        this.url = url
+        this.path = path
+        this.branch = branch
+        this.oldSha = getGitCommitSha(path)
+    }
+
+    Repo(name, url, path, branch, credId) {
+        this(name, url, path, branch)
+        this.credId = credId
+    }
+
+    def gitCheckoutAndPull() {
+        if (credId) {
+            this.newSha = gitCheckoutAndPullWithCredId(url, path, branch, credId)
+        } else {
+            this.newSha = gitCheckoutAndPull(url, path, branch)
+        }
+    }
+
+    def postBuildStatus(buildStatus, authToken) {
+        postBuildStatus(name, branch, newSha, buildStatus, authToken)
+    }
 }
