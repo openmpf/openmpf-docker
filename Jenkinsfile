@@ -115,7 +115,7 @@ class Repo {
 
     def gitCheckoutAndPull() {
         if (credId) {
-            this.newSha = script.gitCheckoutAndPullWithCredId(url, path, branch, credId)
+            this.newSha = script.gitCheckoutAndPullWithCredId(url, credId, path, branch)
         } else {
             this.newSha = script.gitCheckoutAndPull(url, path, branch)
         }
