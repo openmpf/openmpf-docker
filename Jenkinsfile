@@ -87,6 +87,7 @@ def buildShas
 def allRepos = []
 def coreRepos = []
 def customComponentRepos = []
+def openmpfDockerRepo
 def customConfigRepo
 
 class Repo {
@@ -154,6 +155,11 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
         sh 'docker volume rm -f ' + buildSharedDataVolume + ' ' + buildMySqlDataVolume
         removeDockerNetwork(buildNetwork)
 
+        // Revert changes made to files by a previous Jenkins build
+        if (fileExists('.git')) {
+            sh 'git reset --hard HEAD'
+        }
+
         def dockerRegistryHostAndPort = dockerRegistryHost + ':' + dockerRegistryPort
         def remoteImageTagPrefix = dockerRegistryHostAndPort + '/openmpf/'
 
@@ -168,8 +174,10 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
 
         stage('Clone repos') {
             // Define repos
-            coreRepos.add(new Repo(script, 'openmpf-docker', openmpfGitHubUrl + '/openmpf-docker.git',
-                    '.', openmpfDockerBranch))
+            openmpfDockerRepo = new Repo(script, 'openmpf-docker', openmpfGitHubUrl + '/openmpf-docker.git',
+                    '.', openmpfDockerBranch)
+            allRepos.add(openmpfDockerRepo)
+
             coreRepos.add(new Repo(script, 'openmpf', openmpfGitHubUrl + '/openmpf.git',
                     openmpfProjectsPath + '/openmpf', openmpfBranch))
             coreRepos.add(new Repo(script, 'openmpf-components', openmpfGitHubUrl + '/openmpf-components.git',
@@ -187,15 +195,15 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
             allRepos.addAll(coreRepos)
 
             // Get old SHAs
+            openmpfDockerRepo.getGitCommitSha()
+
             for (repo in coreRepos) {
                 repo.getGitCommitSha()
             }
 
             // Pull and get new SHAs
 
-            if (fileExists('.git')) {
-                sh 'git reset --hard HEAD' // Revert changes made to files by a previous Jenkins build
-            }
+            openmpfDockerRepo.gitCheckoutAndPull() // do this first since other repos are cloned into this repo's path
 
             gitCheckoutAndPull('https://github.com/openmpf/openmpf-projects.git', openmpfProjectsPath, openmpfProjectsBranch)
             sh 'cd ' + openmpfProjectsPath + '; git submodule update --init'
@@ -286,7 +294,8 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                 // TODO: Attempt to pull images in separate stage so that they are not
                 // built from scratch on a clean Jenkins node.
 
-                buildShas = getBuildShasStr(coreRepos)
+                buildShas = 'openmpf-docker: ' + openmpfDockerRepo.newSha
+                buildShas += ', ' + getBuildShasStr(coreRepos)
 
                 sh 'docker build openmpf_build/' +
                         ' --build-arg BUILD_DATE=' + buildDate +
