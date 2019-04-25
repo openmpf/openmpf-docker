@@ -103,6 +103,7 @@ class Repo {
     def newSha
 
     Repo(script, name, url, path, branch) {
+        this.script = script
         this.name = name
         this.url = url
         this.path = path
@@ -111,7 +112,7 @@ class Repo {
     }
 
     Repo(script, name, url, path, branch, credId) {
-        this(name, url, path, branch)
+        this(script, name, url, path, branch)
         this.credId = credId
     }
 
