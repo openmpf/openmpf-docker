@@ -494,7 +494,7 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
     }
 }}
 
-def gitCheckoutAndPull(String url, String dir, String branch) {
+def gitCheckoutAndPull(url, dir, branch) {
     // This is the official procedure, but we don't want all of the "Git Build Data"
     // entries clogging up the sidebar in the build UI:
     // checkout([$class: 'GitSCM',
@@ -514,7 +514,7 @@ def gitCheckoutAndPull(String url, String dir, String branch) {
     return getGitCommitSha(dir) // assume the repo is already cloned
 }
 
-def gitCheckoutAndPullWithCredId(String url, String credId, String dir, String branch) {
+def gitCheckoutAndPullWithCredId(url, credId, dir, branch) {
     if (!branch.isEmpty()) {
         def scmVars = checkout([$class: 'GitSCM',
                   branches: [[name: '*/' + branch]],
@@ -530,7 +530,7 @@ def gitCheckoutAndPullWithCredId(String url, String credId, String dir, String b
     return getGitCommitSha(dir) // assume the repo is already cloned
 }
 
-def getGitCommitSha(String dir) {
+def getGitCommitSha(dir) {
     if (fileExists(dir + '/.git')) {
         return sh(script: 'cd ' + dir + '; git rev-parse HEAD', returnStdout: true).trim()
     }
@@ -542,7 +542,7 @@ def isAborted() {
             !currentBuild.getRawBuild().getActions(jenkins.model.InterruptedBuildAction).isEmpty()
 }
 
-def email(String status, String recipients) {
+def email(status, recipients) {
     emailext (
             subject: status.toUpperCase() + ": ${env.JOB_NAME} [${env.BUILD_NUMBER}]",
             // mimeType: 'text/html',
@@ -572,7 +572,7 @@ def processTestReports() {
     sh 'sudo mv ' + newReportsPath + '/*-reports' + ' ' + processedReportsPath
 }
 
-def postBuildStatus(String repo, String branch, String sha, String status, authToken) {
+def postBuildStatus(repo, branch, sha, status, authToken) {
     if (branch.isEmpty()) {
         return
     }
