@@ -237,7 +237,7 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
             }
         }
 
-        stage('Check repos for changes') {
+        stage('Check repos for updates') {
             if (!onlyBuildWhenReposUpdated) {
                 echo 'SKIPPING REPO UPDATE CHECK'
             }
