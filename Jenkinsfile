@@ -79,9 +79,6 @@ def openmpfConfigDockerBranch = env.getProperty("openmpf_config_docker_branch")
 def postOpenmpfDockerBuildStatus = env.getProperty("post_openmpf_docker_build_status").toBoolean()
 def githubAuthToken = env.getProperty("github_auth_token")
 
-// SHAs
-def openmpfDockerSha
-
 // Labels
 def buildDate
 def buildShas
@@ -129,6 +126,8 @@ class Repo {
     }
 }
 
+def script = this
+
 node(jenkinsNodes) {
 wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color in Jenkins console
     def buildException
@@ -165,21 +164,21 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
             def openmpfGitHubUrl = 'https://github.com/openmpf'
             def openmpfProjectsPath = 'openmpf_build/openmpf-projects'
 
-            coreRepos.add(new Repo(this, 'openmpf-docker', openmpfGitHubUrl + '/openmpf-docker.git',
+            coreRepos.add(new Repo(script, 'openmpf-docker', openmpfGitHubUrl + '/openmpf-docker.git',
                     '.', openmpfDockerBranch))
-            coreRepos.add(new Repo(this, 'openmpf', openmpfGitHubUrl + '/openmpf.git',
+            coreRepos.add(new Repo(script, 'openmpf', openmpfGitHubUrl + '/openmpf.git',
                     openmpfProjectsPath + '/openmpf', openmpfBranch))
-            coreRepos.add(new Repo(this. 'openmpf-components', openmpfGitHubUrl + '/openmpf-components.git',
+            coreRepos.add(new Repo(script. 'openmpf-components', openmpfGitHubUrl + '/openmpf-components.git',
                     openmpfProjectsPath + '/openmpf-components', openmpfComponentsBranch))
-            coreRepos.add(new Repo(this, 'openmpf-contrib-components', openmpfGitHubUrl + '/openmpf-contrib-components.git',
+            coreRepos.add(new Repo(script, 'openmpf-contrib-components', openmpfGitHubUrl + '/openmpf-contrib-components.git',
                     openmpfProjectsPath + '/openmpf-contrib-components', openmpfContribComponentsBranch))
-            coreRepos.add(new Repo(this, 'openmpf-cpp-component-sdk', openmpfGitHubUrl + '/openmpf-cpp-component-sdk.git',
+            coreRepos.add(new Repo(script, 'openmpf-cpp-component-sdk', openmpfGitHubUrl + '/openmpf-cpp-component-sdk.git',
                     openmpfProjectsPath + '/openmpf-cpp-component-sdk', openmpfCppComponentSdkBranch))
-            coreRepos.add(new Repo(this, 'openmpf-java-component-sdk', openmpfGitHubUrl + '/openmpf-java-component-sdk.git',
+            coreRepos.add(new Repo(script, 'openmpf-java-component-sdk', openmpfGitHubUrl + '/openmpf-java-component-sdk.git',
                     openmpfProjectsPath + '/openmpf-java-component-sdk', openmpfJavaComponentSdkBranch))
-            coreRepos.add(new Repo(this, 'openmpf-python-component-sdk', openmpfGitHubUrl + '/openmpf-python-component-sdk.git',
+            coreRepos.add(new Repo(script, 'openmpf-python-component-sdk', openmpfGitHubUrl + '/openmpf-python-component-sdk.git',
                     openmpfProjectsPath + '/openmpf-python-component-sdk', openmpfPythonComponentSdkBranch))
-            coreRepos.add(new Repo(this, 'openmpf-build-tools', openmpfGitHubUrl + '/openmpf-build-tools.git',
+            coreRepos.add(new Repo(script, 'openmpf-build-tools', openmpfGitHubUrl + '/openmpf-build-tools.git',
                     openmpfProjectsPath + '/openmpf-build-tools', openmpfBuildToolsBranch))
             allRepos.addAll(coreRepos)
 
@@ -196,11 +195,11 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
 
             if (buildCustomComponents) {
                 // Define repos and get old SHAs
-                customComponentRepos.add(new Repo(this, 'openmpf-custom-docker', openmpfCustomDockerRepo,
+                customComponentRepos.add(script Repo(this, 'openmpf-custom-docker', openmpfCustomDockerRepo,
                         'openmpf_custom_build', openmpfCustomDockerBranch, openmpfCustomRepoCredId))
-                customComponentRepos.add(new Repo(this, 'openmpf-custom-components', openmpfCustomComponentsRepo,
+                customComponentRepos.add(script Repo(this, 'openmpf-custom-components', openmpfCustomComponentsRepo,
                         openmpfProjectsPath + '/' + openmpfCustomComponentsSlug, openmpfCustomComponentsBranch, openmpfCustomRepoCredId))
-                customComponentRepos.add(new Repo(this, 'openmpf-custom-system-tests', openmpfCustomSystemTestsRepo,
+                customComponentRepos.add(script Repo(this, 'openmpf-custom-system-tests', openmpfCustomSystemTestsRepo,
                         openmpfProjectsPath + '/' + openmpfCustomSystemTestsSlug, openmpfCustomSystemTestsBranch, openmpfCustomRepoCredId))
                 allRepos.addAll(customComponentRepos)
 
@@ -212,7 +211,7 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
 
             if (applyCustomConfig) {
                 // Define repo and get old SHA
-                customConfigRepo = new Repo(this, 'openmpf-custom-config', openmpfConfigDockerRepo,
+                customConfigRepo = new Repo(script, 'openmpf-custom-config', openmpfConfigDockerRepo,
                         'openmpf_custom_config', openmpfConfigDockerBranch, openmpfConfigRepoCredId)
                 allRepos.put(customConfigRepo)
 
