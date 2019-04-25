@@ -168,7 +168,7 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                     '.', openmpfDockerBranch))
             coreRepos.add(new Repo(script, 'openmpf', openmpfGitHubUrl + '/openmpf.git',
                     openmpfProjectsPath + '/openmpf', openmpfBranch))
-            coreRepos.add(new Repo(script. 'openmpf-components', openmpfGitHubUrl + '/openmpf-components.git',
+            coreRepos.add(new Repo(script, 'openmpf-components', openmpfGitHubUrl + '/openmpf-components.git',
                     openmpfProjectsPath + '/openmpf-components', openmpfComponentsBranch))
             coreRepos.add(new Repo(script, 'openmpf-contrib-components', openmpfGitHubUrl + '/openmpf-contrib-components.git',
                     openmpfProjectsPath + '/openmpf-contrib-components', openmpfContribComponentsBranch))
