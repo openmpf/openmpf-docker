@@ -270,7 +270,7 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
         }
 
         if (!requiresBuild) {
-            currentBuild.result = 'ABORTED'
+            currentBuild.result = 'NOT_BUILT'
             return // do this outside of a stage
         }
 
