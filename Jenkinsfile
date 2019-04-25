@@ -47,6 +47,7 @@ def runMvnTests = env.getProperty("run_mvn_tests").toBoolean()
 def mvnTestOptions = env.getProperty("mvn_test_options")
 def buildRuntimeImages = env.getProperty("build_runtime_images").toBoolean()
 def pushRuntimeImages = env.getProperty("push_runtime_images").toBoolean()
+def onlyBuildWhenReposUpdated = true // TODO: env.getProperty("only_build_when_repos_updated").toBoolean()
 
 def dockerRegistryHost = env.getProperty("docker_registry_host")
 def dockerRegistryPort = env.getProperty("docker_registry_port")
@@ -80,21 +81,51 @@ def githubAuthToken = env.getProperty("github_auth_token")
 
 // SHAs
 def openmpfDockerSha
-def openmpfSha
-def openmpfComponentsSha
-def openmpfContribComponentsSha
-def openmpfCppComponentSdkSha
-def openmpfJavaComponentSdkSha
-def openmpfPythonComponentSdkSha
-def openmpfBuildToolsSha
 
 // Labels
 def buildDate
 def buildShas
-def openmpfCustomDockerSha
-def openmpfCustomComponentsSha
-def openmpfCustomSystemTestsSha
-def openmpfConfigDockerSha
+
+// Repos
+def allRepos = []
+def coreRepos = []
+def customComponentRepos = []
+def customConfigRepo
+
+class Repo {
+    def name
+    def url
+    def path
+    def branch
+    def credId
+    def oldSha
+    def newSha
+
+    Repo(name, url, path, branch) {
+        this.name = name
+        this.url = url
+        this.path = path
+        this.branch = branch
+        this.oldSha = getGitCommitSha(path)
+    }
+
+    Repo(name, url, path, branch, credId) {
+        this(name, url, path, branch)
+        this.credId = credId
+    }
+
+    def gitCheckoutAndPull() {
+        if (credId) {
+            this.newSha = gitCheckoutAndPullWithCredId(url, path, branch, credId)
+        } else {
+            this.newSha = gitCheckoutAndPull(url, path, branch)
+        }
+    }
+
+    def postBuildStatus(buildStatus, authToken) {
+        postBuildStatus(name, branch, newSha, buildStatus, authToken)
+    }
+}
 
 node(jenkinsNodes) {
 wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color in Jenkins console
@@ -124,89 +155,114 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
         def buildContainerId
 
         def workflowManagerImageName = remoteImageTagPrefix + 'openmpf_workflow_manager:' + imageTag
-
         def pythonExecutorImageName = remoteImageTagPrefix + 'openmpf_python_executor:' + imageTag
 
         stage('Clone repos') {
-            openmpfDockerSha = gitCheckoutAndPull("https://github.com/openmpf/openmpf-docker.git",
-                    '.', openmpfDockerBranch)
+            // Define repos and get old SHAs
 
-            // Revert changes made to files by a previous Jenkins build.
-            sh 'git reset --hard HEAD '
-
+            def openmpfGitHubUrl = 'https://github.com/openmpf'
             def openmpfProjectsPath = 'openmpf_build/openmpf-projects'
-            gitCheckoutAndPull("https://github.com/openmpf/openmpf-projects.git",
-                    openmpfProjectsPath, openmpfProjectsBranch)
+
+            coreRepos.add(new Repo('openmpf-docker', openmpfGitHubUrl + '/openmpf-docker.git',
+                    '.', openmpfDockerBranch))
+            coreRepos.add(new Repo('openmpf', openmpfGitHubUrl + '/openmpf.git',
+                    openmpfProjectsPath + '/openmpf', openmpfBranch))
+            coreRepos.add(new Repo('openmpf-components', openmpfGitHubUrl + '/openmpf-components.git',
+                    openmpfProjectsPath + '/openmpf-components', openmpfComponentsBranch))
+            coreRepos.add(new Repo('openmpf-contrib-components', openmpfGitHubUrl + '/openmpf-contrib-components.git',
+                    openmpfProjectsPath + '/openmpf-contrib-components', openmpfContribComponentsBranch))
+            coreRepos.add(new Repo('openmpf-cpp-component-sdk', openmpfGitHubUrl + '/openmpf-cpp-component-sdk.git',
+                    openmpfProjectsPath + '/openmpf-cpp-component-sdk', openmpfCppComponentSdkBranch))
+            coreRepos.add(new Repo('openmpf-java-component-sdk', openmpfGitHubUrl + '/openmpf-java-component-sdk.git',
+                    openmpfProjectsPath + '/openmpf-java-component-sdk', openmpfJavaComponentSdkBranch))
+            coreRepos.add(new Repo('openmpf-python-component-sdk', openmpfGitHubUrl + '/openmpf-python-component-sdk.git',
+                    openmpfProjectsPath + '/openmpf-python-component-sdk', openmpfPythonComponentSdkBranch))
+            coreRepos.add(new Repo('openmpf-build-tools', openmpfGitHubUrl + '/openmpf-build-tools.git',
+                    openmpfProjectsPath + '/openmpf-build-tools', openmpfBuildToolsBranch))
+            allRepos.addAll(coreRepos)
+
+            // Pull and get new SHAs
+
+            sh 'git reset --hard HEAD' // Revert changes made to files by a previous Jenkins build
+
+            gitCheckoutAndPull('https://github.com/openmpf/openmpf-projects.git', openmpfProjectsPath, openmpfProjectsBranch)
             sh 'cd ' + openmpfProjectsPath + '; git submodule update --init'
 
-            openmpfSha = gitCheckoutAndPull("https://github.com/openmpf/openmpf.git",
-                    openmpfProjectsPath + '/openmpf', openmpfBranch)
-            openmpfComponentsSha = gitCheckoutAndPull("https://github.com/openmpf/openmpf-components.git",
-                    openmpfProjectsPath + '/openmpf-components', openmpfComponentsBranch)
-            openmpfContribComponentsSha = gitCheckoutAndPull("https://github.com/openmpf/openmpf-contrib-components.git",
-                    openmpfProjectsPath + '/openmpf-contrib-components', openmpfContribComponentsBranch)
-            openmpfCppComponentSdkSha = gitCheckoutAndPull("https://github.com/openmpf/openmpf-cpp-component-sdk.git",
-                    openmpfProjectsPath + '/openmpf-cpp-component-sdk', openmpfCppComponentSdkBranch)
-            openmpfJavaComponentSdkSha = gitCheckoutAndPull("https://github.com/openmpf/openmpf-java-component-sdk.git",
-                    openmpfProjectsPath + '/openmpf-java-component-sdk', openmpfJavaComponentSdkBranch)
-            openmpfPythonComponentSdkSha = gitCheckoutAndPull("https://github.com/openmpf/openmpf-python-component-sdk.git",
-                    openmpfProjectsPath + '/openmpf-python-component-sdk', openmpfPythonComponentSdkBranch)
-            openmpfBuildToolsSha = gitCheckoutAndPull("https://github.com/openmpf/openmpf-build-tools.git",
-                    openmpfProjectsPath + '/openmpf-build-tools', openmpfBuildToolsBranch)
-
-            buildShas = 'openmpf-docker: ' + openmpfDockerSha +
-                    ', openmpf: ' + openmpfSha +
-                    ', openmpf-components: ' + openmpfComponentsSha +
-                    ', openmpf-contrib-components: ' + openmpfContribComponentsSha +
-                    ', openmpf-cpp-component-sdk: ' + openmpfCppComponentSdkSha +
-                    ', openmpf-java-component-sdk: ' + openmpfJavaComponentSdkSha +
-                    ', openmpf-python-component-sdk: ' + openmpfPythonComponentSdkSha +
-                    ', openmpf-build-tools: ' + openmpfBuildToolsSha
+            for (repo in coreRepos) {
+                repo.gitCheckoutAndPull()
+            }
 
             if (buildCustomComponents) {
-                def openmpfCustomDockerPath = 'openmpf_custom_build'
-                openmpfCustomDockerSha = gitCheckoutAndPullWithCredId(openmpfCustomDockerRepo, openmpfCustomRepoCredId,
-                        openmpfCustomDockerPath, openmpfCustomDockerBranch)
+                // Define repos and get old SHAs
+                customComponentRepos.add(new Repo('openmpf-custom-docker', openmpfCustomDockerRepo,
+                        'openmpf_custom_build', openmpfCustomDockerBranch, openmpfCustomRepoCredId))
+                customComponentRepos.add(new Repo('openmpf-custom-components', openmpfCustomComponentsRepo,
+                        openmpfProjectsPath + '/' + openmpfCustomComponentsSlug, openmpfCustomComponentsBranch, openmpfCustomRepoCredId))
+                customComponentRepos.add(new Repo('openmpf-custom-system-tests', openmpfCustomSystemTestsRepo,
+                        openmpfProjectsPath + '/' + openmpfCustomSystemTestsSlug, openmpfCustomSystemTestsBranch, openmpfCustomRepoCredId))
+                allRepos.addAll(customComponentRepos)
 
-                // Copy custom component build files into place (SDKs, etc.)
-                sh 'cp -u /data/openmpf/custom-build-files/* ' + openmpfCustomDockerPath
-
-                def openmpfCustomComponentsPath = openmpfProjectsPath + '/' + openmpfCustomComponentsSlug
-                openmpfCustomComponentsSha = gitCheckoutAndPullWithCredId(openmpfCustomComponentsRepo, openmpfCustomRepoCredId,
-                        openmpfCustomComponentsPath, openmpfCustomComponentsBranch)
-
-                def openmpfCustomSystemTestsPath = openmpfProjectsPath + '/' + openmpfCustomSystemTestsSlug
-                openmpfCustomSystemTestsSha = gitCheckoutAndPullWithCredId(openmpfCustomSystemTestsRepo, openmpfCustomRepoCredId,
-                        openmpfCustomSystemTestsPath, openmpfCustomSystemTestsBranch)
+                // Pull and get new SHAs
+                for (repo in customComponentRepos) {
+                    repo.gitCheckoutAndPull()
+                }
             }
 
             if (applyCustomConfig) {
-                def openmpfConfigDockerPath = 'openmpf_custom_config'
-                openmpfConfigDockerSha = gitCheckoutAndPullWithCredId(openmpfConfigDockerRepo, openmpfConfigRepoCredId,
-                        openmpfConfigDockerPath, openmpfConfigDockerBranch)
+                // Define repo and get old SHA
+                customConfigRepo = new Repo('openmpf-custom-config', openmpfConfigDockerRepo,
+                        'openmpf_custom_config', openmpfConfigDockerBranch, openmpfConfigRepoCredId)
+                allRepos.put(customConfigRepo)
+
+                // Pull and get new SHA
+                customConfigRepo.gitCheckoutAndPull()
             }
 
-            // Copy JDK into place
-            sh 'cp -u /data/openmpf/jdk-*-linux-x64.rpm openmpf_build'
+            if (onlyBuildWhenReposUpdated) {
+                requiresBuild = false
+                println 'CHANGES:'
 
-            // Copy *package.json into place
-            if (buildPackageJson.contains("/")) {
-                sh 'cp ' + buildPackageJson + ' ' + openmpfProjectsPath +
-                        '/openmpf/trunk/jenkins/scripts/config_files'
-                buildPackageJson = buildPackageJson.substring(buildPackageJson.lastIndexOf("/") + 1)
+                for (repo in allRepos) {
+                    oldSha = repo.oldSha
+                    newSha = repo.newSha
+                    requiresBuild |= (oldSha != newSha)
+                    if (oldSha) {
+                        println repo.name + ':\n\t ' + oldSha + ' --> ' + newSha
+                    } else {
+                        println repo.name + ':\n\t ' + newSha
+                    }
+                }
+
+                println 'REQUIRES BUILD: ' + requiresBuild
+
+                if (!requiresBuild) {
+                    currentBuild.result = 'ABORTED'
+                }
             }
-
-            // Generate compose files
-            sh './scripts/docker-generate-compose-files.sh ' + dockerRegistryHost + ':' +
-                    dockerRegistryPort + ' openmpf ' + imageTag
-
-            // TODO: Attempt to pull images in separate stage so that they are not
-            // built from scratch on a clean Jenkins node.
         }
 
         docker.withRegistry('http://' + dockerRegistryHostAndPort, dockerRegistryCredId) {
 
             stage('Build base image') {
+                // Copy JDK into place
+                sh 'cp -u /data/openmpf/jdk-*-linux-x64.rpm openmpf_build'
+
+                // Copy *package.json into place
+                if (buildPackageJson.contains("/")) {
+                    sh 'cp ' + buildPackageJson + ' ' + openmpfProjectsPath +
+                            '/openmpf/trunk/jenkins/scripts/config_files'
+                    buildPackageJson = buildPackageJson.substring(buildPackageJson.lastIndexOf("/") + 1)
+                }
+
+                // Generate compose files
+                sh './scripts/docker-generate-compose-files.sh ' + dockerRegistryHost + ':' +
+                        dockerRegistryPort + ' openmpf ' + imageTag
+
+                // TODO: Attempt to pull images in separate stage so that they are not
+                // built from scratch on a clean Jenkins node.
+
+                buildShas = getBuildShasStr(coreRepos)
+
                 sh 'docker build openmpf_build/' +
                         ' --build-arg BUILD_DATE=' + buildDate +
                         ' --build-arg BUILD_VERSION=' + imageTag +
@@ -214,9 +270,10 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                         ' -t ' + buildImageName
 
                 if (buildCustomComponents) {
-                    buildShas += ', openmpf-custom-docker: ' + openmpfCustomDockerSha +
-                            ', openmpf-custom-components: ' + openmpfCustomComponentsSha +
-                            ', openmpf-custom-system-tests: ' + openmpfCustomSystemTestsSha
+                    // Copy custom component build files into place (SDKs, etc.)
+                    sh 'cp -u /data/openmpf/custom-build-files/* ' + openmpfCustomDockerPath
+
+                    buildShas += ', ' + getBuildShasStr(customComponentRepos)
 
                     // Build the new build image for custom components using the original build image for open source
                     // components. This overwrites the original build image tag.
@@ -341,7 +398,7 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                     echo 'SKIPPING CUSTOM CONFIGURATION'
                 }
                 when (applyCustomConfig) { // if false, don't show this step in the Stage View UI
-                    buildShas += ', openmpf-config-docker: ' + openmpfConfigDockerSha
+                    buildShas += ', openmpf-custom-config: ' + customConfigRepo.newSha
 
                     // Build and tag the new Workflow Manager image with the image tag used in the compose files.
                     // That way, we do not have to modify the compose files. This overwrites the tag that referred
@@ -388,16 +445,12 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
             buildStatus = currentBuild.currentResult.equals("SUCCESS") ? "success" : "failure"
         }
         // Post build status
-        if (postOpenmpfDockerBuildStatus) {
-            postBuildStatus("openmpf-docker", openmpfDockerBranch, openmpfDockerSha, buildStatus, githubAuthToken)
+        for (repo in coreRepos) {
+            if (repo.name.equals('openmpf-docker') && !postOpenmpfDockerBuildStatus) {
+                continue
+            }
+            repo.postBuildStatus(buildStatus, githubAuthToken)
         }
-        postBuildStatus("openmpf", openmpfBranch, openmpfSha, buildStatus, githubAuthToken)
-        postBuildStatus("openmpf-components", openmpfComponentsBranch, openmpfComponentsSha, buildStatus, githubAuthToken)
-        postBuildStatus("openmpf-contrib-components", openmpfContribComponentsBranch, openmpfContribComponentsSha, buildStatus, githubAuthToken)
-        postBuildStatus("openmpf-cpp-components-sdk", openmpfCppComponentSdkBranch, openmpfCppComponentSdkSha, buildStatus, githubAuthToken)
-        postBuildStatus("openmpf-java-components-sdk", openmpfJavaComponentSdkBranch, openmpfJavaComponentSdkSha, buildStatus, githubAuthToken)
-        postBuildStatus("openmpf-python-components-sdk", openmpfPythonComponentSdkBranch, openmpfPythonComponentSdkSha, buildStatus, githubAuthToken)
-        postBuildStatus("openmpf-build-tools", openmpfBuildToolsBranch, openmpfBuildToolsSha, buildStatus, githubAuthToken)
     }
 
     email(buildStatus, emailRecipients)
@@ -407,17 +460,17 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
     }
 }}
 
-def gitCheckoutAndPull(String repo, String dir, String branch) {
+def gitCheckoutAndPull(String url, String dir, String branch) {
     // This is the official procedure, but we don't want all of the "Git Build Data"
     // entries clogging up the sidebar in the build UI:
     // checkout([$class: 'GitSCM',
     //    branches: [[name: '*/' + branch]],
     //    extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: dir]],
-    //    userRemoteConfigs: [[url: repo]]])
+    //    userRemoteConfigs: [[url: url]]])
 
     if (!branch.isEmpty()) {
         if (!fileExists(dir + '/.git')) {
-            sh 'git clone ' + repo + ' ' + dir
+            sh 'git clone ' + url + ' ' + dir
         }
         sh 'cd ' + dir + '; git fetch'
         sh 'cd ' + dir + '; git checkout ' + branch
@@ -427,12 +480,12 @@ def gitCheckoutAndPull(String repo, String dir, String branch) {
     return getGitCommitSha(dir) // assume the repo is already cloned
 }
 
-def gitCheckoutAndPullWithCredId(String repo, String credId, String dir, String branch) {
+def gitCheckoutAndPullWithCredId(String url, String credId, String dir, String branch) {
     if (!branch.isEmpty()) {
         def scmVars = checkout([$class: 'GitSCM',
                   branches: [[name: '*/' + branch]],
                   extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: dir]],
-                  userRemoteConfigs: [[credentialsId: credId, url: repo]]])
+                  userRemoteConfigs: [[credentialsId: credId, url: url]]])
 
         // TODO: Make sure we're not in a detached state.
         // sh 'cd ' + dir + '; git checkout ' + branch
@@ -444,7 +497,10 @@ def gitCheckoutAndPullWithCredId(String repo, String credId, String dir, String 
 }
 
 def getGitCommitSha(String dir) {
-    return sh(script: 'cd ' + dir + '; git rev-parse HEAD', returnStdout: true).trim()
+    if (fileExists(dir + '/.git')) {
+        return sh(script: 'cd ' + dir + '; git rev-parse HEAD', returnStdout: true).trim()
+    }
+    return ''
 }
 
 def isAborted() {
@@ -507,4 +563,15 @@ def removeDockerNetwork(network) {
     if (sh(script: 'docker network inspect ' + network + ' > /dev/null 2>&1', returnStatus: true) == 0) {
         sh 'docker network rm ' + network
     }
+}
+
+def getBuildShasStr(repos) {
+    buildShas = ''
+    for (repo in repos) {
+        if (!buildShas.isEmpty()) {
+            buildShas += ', '
+        }
+        buildShas += repo.name + ': ' + repo.newSha
+    }
+    return buildShas
 }
