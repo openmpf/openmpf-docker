@@ -234,27 +234,28 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                 // Pull and get new SHA
                 customConfigRepo.gitCheckoutAndPull()
             }
+        }
 
-            if (onlyBuildWhenReposUpdated) {
-                requiresBuild = false
-                println 'CHANGES:'
+        if (onlyBuildWhenReposUpdated) {
+            requiresBuild = false
+            println 'CHANGES:'
 
-                for (repo in allRepos) {
-                    oldSha = repo.oldSha
-                    newSha = repo.newSha
-                    requiresBuild |= (oldSha != newSha)
-                    if (oldSha) {
-                        println repo.name + ':\n\t ' + oldSha + ' --> ' + newSha
-                    } else {
-                        println repo.name + ':\n\t ' + newSha
-                    }
+            for (repo in allRepos) {
+                oldSha = repo.oldSha
+                newSha = repo.newSha
+                requiresBuild |= (oldSha != newSha)
+                if (oldSha) {
+                    println repo.name + ':\n\t ' + oldSha + ' --> ' + newSha
+                } else {
+                    println repo.name + ':\n\t ' + newSha
                 }
+            }
 
-                println 'REQUIRES BUILD: ' + requiresBuild
+            println 'REQUIRES BUILD: ' + requiresBuild
 
-                if (!requiresBuild) {
-                    currentBuild.result = 'ABORTED'
-                }
+            if (!requiresBuild) {
+                currentBuild.result = 'ABORTED'
+                return // do this outside of a stage
             }
         }
 
