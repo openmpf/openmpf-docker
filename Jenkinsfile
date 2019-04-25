@@ -47,7 +47,7 @@ def runMvnTests = env.getProperty("run_mvn_tests").toBoolean()
 def mvnTestOptions = env.getProperty("mvn_test_options")
 def buildRuntimeImages = env.getProperty("build_runtime_images").toBoolean()
 def pushRuntimeImages = env.getProperty("push_runtime_images").toBoolean()
-def onlyBuildWhenReposUpdated = env.getProperty("only_build_when_repos_updated").toBoolean()
+def pollReposAndEndBuild = env.getProperty("poll_repos_and_end_build").toBoolean()
 
 def dockerRegistryHost = env.getProperty("docker_registry_host")
 def dockerRegistryPort = env.getProperty("docker_registry_port")
@@ -136,7 +136,6 @@ def script = this // instance of the Groovy script
 node(jenkinsNodes) {
 wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color in Jenkins console
     def buildException
-    def requiresBuild = !onlyBuildWhenReposUpdated
 
     // Rename the named volumes and networks to be unique to this Jenkins build pipeline
     def buildSharedDataVolumeSuffix = 'shared_data_' + currentBuild.projectName
@@ -248,12 +247,13 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
         }
 
         stage('Check repos for updates') {
-            if (!onlyBuildWhenReposUpdated) {
+            if (!pollReposAndEndBuild) {
                 echo 'SKIPPING REPO UPDATE CHECK'
             }
-            when(onlyBuildWhenReposUpdated) { // if false, don't show this step in the Stage View UI
+            when(pollReposAndEndBuild) { // if false, don't show this step in the Stage View UI
                 println 'CHANGES:'
 
+                requiresBuild = false
                 for (repo in allRepos) {
                     oldSha = repo.oldSha
                     newSha = repo.newSha
@@ -275,7 +275,7 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
             }
         }
 
-        if (onlyBuildWhenReposUpdated) {
+        if (pollReposAndEndBuild) {
             return // end build early; do this outside of a stage
         }
 
