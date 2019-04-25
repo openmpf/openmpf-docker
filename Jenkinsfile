@@ -105,7 +105,7 @@ class Repo {
         this.url = url
         this.path = path
         this.branch = branch
-        this.oldSha = script.getGitCommitSha(path)
+        // this.oldSha = script.getGitCommitSha(path)
     }
 
     Repo(script, name, url, path, branch, credId) {
