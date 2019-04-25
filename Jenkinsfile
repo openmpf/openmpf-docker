@@ -272,7 +272,7 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
 
                 if (buildCustomComponents) {
                     // Copy custom component build files into place (SDKs, etc.)
-                    sh 'cp -u /data/openmpf/custom-build-files/* ' + openmpfCustomDockerPath
+                    sh 'cp -u /data/openmpf/custom-build-files/* openmpf_custom_build'
 
                     buildShas += ', ' + getBuildShasStr(customComponentRepos)
 
