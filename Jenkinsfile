@@ -195,11 +195,11 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
 
             if (buildCustomComponents) {
                 // Define repos and get old SHAs
-                customComponentRepos.add(script Repo(this, 'openmpf-custom-docker', openmpfCustomDockerRepo,
+                customComponentRepos.add(new Repo(script, 'openmpf-custom-docker', openmpfCustomDockerRepo,
                         'openmpf_custom_build', openmpfCustomDockerBranch, openmpfCustomRepoCredId))
-                customComponentRepos.add(script Repo(this, 'openmpf-custom-components', openmpfCustomComponentsRepo,
+                customComponentRepos.add(new Repo(script, 'openmpf-custom-components', openmpfCustomComponentsRepo,
                         openmpfProjectsPath + '/' + openmpfCustomComponentsSlug, openmpfCustomComponentsBranch, openmpfCustomRepoCredId))
-                customComponentRepos.add(script Repo(this, 'openmpf-custom-system-tests', openmpfCustomSystemTestsRepo,
+                customComponentRepos.add(new Repo(script, 'openmpf-custom-system-tests', openmpfCustomSystemTestsRepo,
                         openmpfProjectsPath + '/' + openmpfCustomSystemTestsSlug, openmpfCustomSystemTestsBranch, openmpfCustomRepoCredId))
                 allRepos.addAll(customComponentRepos)
 
