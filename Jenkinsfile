@@ -237,7 +237,7 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
             }
         }
 
-        stage('Abort if repos unchanged') {
+        stage('Check repos for changes') {
             if (!onlyBuildWhenReposUpdated) {
                 echo 'SKIPPING REPO UPDATE CHECK'
             }
@@ -256,12 +256,12 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                 }
 
                 println 'REQUIRES BUILD: ' + requiresBuild
-
-                if (!requiresBuild) {
-                    currentBuild.result = 'ABORTED'
-                    error('Build not required. Aborting.')
-                }
             }
+        }
+
+        if (!requiresBuild) {
+            currentBuild.result = 'ABORTED'
+            return // do this outside of a stage
         }
 
         docker.withRegistry('http://' + dockerRegistryHostAndPort, dockerRegistryCredId) {
