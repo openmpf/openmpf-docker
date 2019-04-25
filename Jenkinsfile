@@ -92,6 +92,42 @@ def coreRepos = []
 def customComponentRepos = []
 def customConfigRepo
 
+class Repo {
+    def script // instance of the Groovy script
+    def name
+    def url
+    def path
+    def branch
+    def credId
+    def oldSha
+    def newSha
+
+    Repo(script, name, url, path, branch) {
+        this.name = name
+        this.url = url
+        this.path = path
+        this.branch = branch
+        this.oldSha = script.getGitCommitSha(path)
+    }
+
+    Repo(script, name, url, path, branch, credId) {
+        this(name, url, path, branch)
+        this.credId = credId
+    }
+
+    def gitCheckoutAndPull() {
+        if (credId) {
+            this.newSha = script.gitCheckoutAndPullWithCredId(url, path, branch, credId)
+        } else {
+            this.newSha = script.gitCheckoutAndPull(url, path, branch)
+        }
+    }
+
+    def postBuildStatus(buildStatus, authToken) {
+        script.postBuildStatus(name, branch, newSha, buildStatus, authToken)
+    }
+}
+
 node(jenkinsNodes) {
 wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color in Jenkins console
     def buildException
@@ -128,21 +164,21 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
             def openmpfGitHubUrl = 'https://github.com/openmpf'
             def openmpfProjectsPath = 'openmpf_build/openmpf-projects'
 
-            coreRepos.add(new Repo('openmpf-docker', openmpfGitHubUrl + '/openmpf-docker.git',
+            coreRepos.add(new Repo(this, 'openmpf-docker', openmpfGitHubUrl + '/openmpf-docker.git',
                     '.', openmpfDockerBranch))
-            coreRepos.add(new Repo('openmpf', openmpfGitHubUrl + '/openmpf.git',
+            coreRepos.add(new Repo(this, 'openmpf', openmpfGitHubUrl + '/openmpf.git',
                     openmpfProjectsPath + '/openmpf', openmpfBranch))
-            coreRepos.add(new Repo('openmpf-components', openmpfGitHubUrl + '/openmpf-components.git',
+            coreRepos.add(new Repo(this. 'openmpf-components', openmpfGitHubUrl + '/openmpf-components.git',
                     openmpfProjectsPath + '/openmpf-components', openmpfComponentsBranch))
-            coreRepos.add(new Repo('openmpf-contrib-components', openmpfGitHubUrl + '/openmpf-contrib-components.git',
+            coreRepos.add(new Repo(this, 'openmpf-contrib-components', openmpfGitHubUrl + '/openmpf-contrib-components.git',
                     openmpfProjectsPath + '/openmpf-contrib-components', openmpfContribComponentsBranch))
-            coreRepos.add(new Repo('openmpf-cpp-component-sdk', openmpfGitHubUrl + '/openmpf-cpp-component-sdk.git',
+            coreRepos.add(new Repo(this, 'openmpf-cpp-component-sdk', openmpfGitHubUrl + '/openmpf-cpp-component-sdk.git',
                     openmpfProjectsPath + '/openmpf-cpp-component-sdk', openmpfCppComponentSdkBranch))
-            coreRepos.add(new Repo('openmpf-java-component-sdk', openmpfGitHubUrl + '/openmpf-java-component-sdk.git',
+            coreRepos.add(new Repo(this, 'openmpf-java-component-sdk', openmpfGitHubUrl + '/openmpf-java-component-sdk.git',
                     openmpfProjectsPath + '/openmpf-java-component-sdk', openmpfJavaComponentSdkBranch))
-            coreRepos.add(new Repo('openmpf-python-component-sdk', openmpfGitHubUrl + '/openmpf-python-component-sdk.git',
+            coreRepos.add(new Repo(this, 'openmpf-python-component-sdk', openmpfGitHubUrl + '/openmpf-python-component-sdk.git',
                     openmpfProjectsPath + '/openmpf-python-component-sdk', openmpfPythonComponentSdkBranch))
-            coreRepos.add(new Repo('openmpf-build-tools', openmpfGitHubUrl + '/openmpf-build-tools.git',
+            coreRepos.add(new Repo(this, 'openmpf-build-tools', openmpfGitHubUrl + '/openmpf-build-tools.git',
                     openmpfProjectsPath + '/openmpf-build-tools', openmpfBuildToolsBranch))
             allRepos.addAll(coreRepos)
 
@@ -159,11 +195,11 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
 
             if (buildCustomComponents) {
                 // Define repos and get old SHAs
-                customComponentRepos.add(new Repo('openmpf-custom-docker', openmpfCustomDockerRepo,
+                customComponentRepos.add(new Repo(this, 'openmpf-custom-docker', openmpfCustomDockerRepo,
                         'openmpf_custom_build', openmpfCustomDockerBranch, openmpfCustomRepoCredId))
-                customComponentRepos.add(new Repo('openmpf-custom-components', openmpfCustomComponentsRepo,
+                customComponentRepos.add(new Repo(this, 'openmpf-custom-components', openmpfCustomComponentsRepo,
                         openmpfProjectsPath + '/' + openmpfCustomComponentsSlug, openmpfCustomComponentsBranch, openmpfCustomRepoCredId))
-                customComponentRepos.add(new Repo('openmpf-custom-system-tests', openmpfCustomSystemTestsRepo,
+                customComponentRepos.add(new Repo(this, 'openmpf-custom-system-tests', openmpfCustomSystemTestsRepo,
                         openmpfProjectsPath + '/' + openmpfCustomSystemTestsSlug, openmpfCustomSystemTestsBranch, openmpfCustomRepoCredId))
                 allRepos.addAll(customComponentRepos)
 
@@ -175,7 +211,7 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
 
             if (applyCustomConfig) {
                 // Define repo and get old SHA
-                customConfigRepo = new Repo('openmpf-custom-config', openmpfConfigDockerRepo,
+                customConfigRepo = new Repo(this, 'openmpf-custom-config', openmpfConfigDockerRepo,
                         'openmpf_custom_config', openmpfConfigDockerBranch, openmpfConfigRepoCredId)
                 allRepos.put(customConfigRepo)
 
@@ -539,39 +575,4 @@ def getBuildShasStr(repos) {
         buildShas += repo.name + ': ' + repo.newSha
     }
     return buildShas
-}
-
-class Repo {
-    def name
-    def url
-    def path
-    def branch
-    def credId
-    def oldSha
-    def newSha
-
-    Repo(name, url, path, branch) {
-        this.name = name
-        this.url = url
-        this.path = path
-        this.branch = branch
-        this.oldSha = getGitCommitSha(path)
-    }
-
-    Repo(name, url, path, branch, credId) {
-        this(name, url, path, branch)
-        this.credId = credId
-    }
-
-    def gitCheckoutAndPull() {
-        if (credId) {
-            this.newSha = gitCheckoutAndPullWithCredId(url, path, branch, credId)
-        } else {
-            this.newSha = gitCheckoutAndPull(url, path, branch)
-        }
-    }
-
-    def postBuildStatus(buildStatus, authToken) {
-        postBuildStatus(name, branch, newSha, buildStatus, authToken)
-    }
 }
