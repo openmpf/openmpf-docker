@@ -35,10 +35,11 @@ set -Ee -o pipefail -o xtrace
 BUILD_ARTIFACTS_PATH=/mnt/build_artifacts
 MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD:=password}
 
+# At this point, MPF_HOME=/home/mpf/openmpf-projects/openmpf/trunk/install.
+
 # Make sure MPF_HOME matches what it's set to in the node-manager container.
-MPF_HOME=/opt/mpf
-if [ ! -d "$MPF_HOME" ]; then
-  ln -s /home/mpf/openmpf-projects/openmpf/trunk/install "$MPF_HOME"
+if [ ! -d "/opt/mpf" ]; then
+  ln -s "$MPF_HOME" "/opt/mpf"
 fi
 
 mkdir -p "$MPF_HOME/share"; chown -R mpf:mpf "$MPF_HOME/share"
