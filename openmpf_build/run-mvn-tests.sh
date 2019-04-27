@@ -36,10 +36,12 @@ BUILD_ARTIFACTS_PATH=/mnt/build_artifacts
 MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD:=password}
 
 # At this point, MPF_HOME=/home/mpf/openmpf-projects/openmpf/trunk/install.
+installPath="$MPF_HOME"
 
 # Make sure MPF_HOME matches what it's set to in the node-manager container.
-if [ ! -d "/opt/mpf" ]; then
-  ln -s "$MPF_HOME" "/opt/mpf"
+MPF_HOME=/opt/mpf
+if [ ! -d "$MPF_HOME" ]; then
+  ln -s "$installPath" "$MPF_HOME"
 fi
 
 mkdir -p "$MPF_HOME/share"; chown -R mpf:mpf "$MPF_HOME/share"
