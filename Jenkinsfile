@@ -429,6 +429,9 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                         sh 'docker volume rm -f ' + buildMySqlDataVolume // preserve openmpf_shared_data for post-run analysis
                         removeDockerNetwork(buildNetwork)
                     }
+
+                    // Remove dangling <none> images.
+                    sh 'docker images -f "dangling=true" -q | xargs -r docker rmi'
                 }
             }
 
