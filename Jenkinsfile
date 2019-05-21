@@ -431,7 +431,7 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                     }
 
                     // Remove dangling <none> images.
-                    sh 'docker images -f "dangling=true" -q | xargs -r docker rmi -f'
+                    sh 'docker image prune -f'
                 }
             }
 
