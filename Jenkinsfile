@@ -90,6 +90,10 @@ def customComponentRepos = []
 def openmpfDockerRepo
 def customConfigRepo
 
+// Tests
+def gTestsRetval = -1
+def mvnTestsRetval = -1
+
 class Repo {
     def script // need this to call global methods
     def name
@@ -356,7 +360,7 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                         echo 'SKIPPING GOOGLE TESTS'
                     }
                     when (runGTests) { // if false, don't show this step in the Stage View UI
-                        def gTestsRetval = sh(script: 'docker exec ' +
+                        gTestsRetval = sh(script: 'docker exec ' +
                                 buildContainerId + ' /home/mpf/run-gtests.sh', returnStatus: true)
 
                         processTestReports()
@@ -402,7 +406,7 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                         sh 'docker-compose -f docker-compose-test.yml up -d' +
                                 ' --scale workflow_manager=0'
 
-                        def mvnTestsRetval = sh(script: 'docker exec' +
+                        mvnTestsRetval = sh(script: 'docker exec' +
                                 ' -e EXTRA_MVN_OPTIONS=\"' + mvnTestOptions + '\" ' +
                                 buildContainerId +
                                 ' /home/mpf/run-mvn-tests.sh', returnStatus: true)
@@ -490,8 +494,10 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
         if (postOpenmpfDockerBuildStatus) {
             openmpfDockerRepo.postBuildStatus(buildStatus, githubAuthToken)
         }
-        for (repo in coreRepos) {
-            repo.postBuildStatus(buildStatus, githubAuthToken)
+        if (gTestsRetval == 0 && mvnTestsRetval == 0) {
+            for (repo in coreRepos) {
+                repo.postBuildStatus(buildStatus, githubAuthToken)
+            }
         }
     }
 
