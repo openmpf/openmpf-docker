@@ -79,6 +79,7 @@ RUN cd /home/mpf && easy_install -U cffi
 
 # Install OpenJDK:
 RUN yum -y install java-1.8.0-openjdk && \
+# /usr/lib/jvm/java-1.8.0-openjdk-1.8.0.212.b04-0.el7_6.x86_64/bin/java
     alternatives --install /usr/bin/java java /usr/java/jdk*/jre/bin/java 20000 && \
     alternatives --install /usr/bin/jar jar /usr/java/jdk*/bin/jar 20000 && \
     alternatives --install /usr/bin/javac javac /usr/java/jdk*/bin/javac 20000 && \
@@ -428,6 +429,20 @@ ENV CORE_MPF_NODES=
 ENV LD_LIBRARY_PATH=/usr/lib64:$MPF_HOME/lib
 ENV PATH=$PATH:$MPF_HOME/bin
 ENV TOMCAT_BASE_URL=http://$THIS_MPF_NODE:8181
+
+# TDOD move this to install java section
+ENV JAVA_HOME=/usr/lib/jvm/java-1.8.0-openjdk-1.8.0.212.b04-0.el7_6.x86_64
+RUN yum -y install java-1.8.0-openjdk-devel && \
+    alternatives --install /usr/bin/java java $JAVA_HOME/bin/java 20000 && \
+    alternatives --install /usr/bin/jar jar $JAVA_HOME/bin/jar 20000 && \
+    alternatives --install /usr/bin/javac javac $JAVA_HOME/bin/javac 20000 && \
+    alternatives --install /usr/bin/javaws javaws $JAVA_HOME/jre/bin/javaws 20000 && \
+    alternatives --set java $JAVA_HOME/jre/bin/java && \
+    alternatives --set javaws $JAVA_HOME/jre/bin/javaws && \
+    alternatives --set javac $JAVA_HOME/bin/javac && \
+    alternatives --set jar $JAVA_HOME/bin/jar; \
+    alternatives --install /usr/bin/jar jar $JAVA_HOME/bin/jar 20000 && \
+    alternatives --set jar $JAVA_HOME/bin/jar
 
 # The workflow manager must be added as an mpf-child so that plugin packages are
 # extracted at startup, which is necessary for component auto-registration.

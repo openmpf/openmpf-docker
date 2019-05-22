@@ -50,18 +50,20 @@ RUN yum update -y && yum clean all
 ################################################################################
 
 # Install OpenJDK:
+ENV JAVA_HOME=/usr/lib/jvm/java-11-openjdk-1.8.0.212.b04-0.el7_6.x86_64
+
+# intalls only the JRE
 RUN yum -y install java-1.8.0-openjdk && \
-    alternatives --install /usr/bin/java java /usr/java/jdk*/jre/bin/java 20000 && \
-    alternatives --install /usr/bin/jar jar /usr/java/jdk*/bin/jar 20000 && \
-    alternatives --install /usr/bin/javac javac /usr/java/jdk*/bin/javac 20000 && \
-    alternatives --install /usr/bin/javaws javaws /usr/java/jdk*/jre/bin/javaws 20000 && \
-    alternatives --set java /usr/java/jdk*/jre/bin/java && \
-    alternatives --set javaws /usr/java/jdk*/jre/bin/javaws && \
-    alternatives --set javac /usr/java/jdk*/bin/javac && \
-    alternatives --set jar /usr/java/jdk*/bin/jar; \
-    alternatives --install /usr/bin/jar jar /usr/java/jdk*/bin/jar 20000 && \
-    alternatives --set jar /usr/java/jdk*/bin/jar; \
-    rm /apps/bin/jdk-*-linux-x64.rpm
+    alternatives --install /usr/bin/java java $JAVA_HOME/bin/java 20000 && \
+    alternatives --install /usr/bin/jar jar $JAVA_HOME/bin/jar 20000 && \
+    alternatives --install /usr/bin/javac javac $JAVA_HOME/bin/javac 20000 && \
+    alternatives --install /usr/bin/javaws javaws $JAVA_HOME/jre/bin/javaws 20000 && \
+    alternatives --set java $JAVA_HOME/jre/bin/java && \
+    alternatives --set javaws $JAVA_HOME/jre/bin/javaws && \
+    alternatives --set javac $JAVA_HOME/bin/javac && \
+    alternatives --set jar $JAVA_HOME/bin/jar; \
+    alternatives --install /usr/bin/jar jar $JAVA_HOME/bin/jar 20000 && \
+    alternatives --set jar $JAVA_HOME/bin/jar
 
 ################################################################################
 # Install yum Dependencies                                                     #
@@ -137,6 +139,7 @@ ENV MPF_LOG_PATH=$MPF_HOME/share/logs
 ENV CORE_MPF_NODES=
 ENV LD_LIBRARY_PATH=/usr/lib64:$MPF_HOME/lib
 ENV PATH=$PATH:$MPF_HOME/bin
+ENV JAVA_HOME=/usr
 
 # The workflow manager must be added as an mpf-child so that plugin packages are
 # extracted at startup, which is necessary for component auto-registration.
