@@ -2,9 +2,6 @@
 *.idea*
 *.iml
 
-# files that must be downloaded separately
-openmpf_build/jdk*.rpm
-
 # docker image archives
 *.tar.gz
 

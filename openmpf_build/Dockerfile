@@ -33,9 +33,6 @@ WORKDIR /home/mpf
 # Initial Setup                                                                #
 ################################################################################
 
-# Do this right away so that we fail fast if the user doesn't provide the JDK:
-COPY jdk-*-linux-x64.rpm /apps/bin/
-
 # Create the "mpf" user:
 RUN useradd -u 376 -U -d /home/mpf -ms /bin/bash -G wheel -p mpf mpf
 
@@ -77,11 +74,11 @@ RUN pip install --upgrade pip && pip install --upgrade setuptools && \
 RUN cd /home/mpf && easy_install -U cffi
 
 ################################################################################
-# Install Oracle JDK                                                           #
+# Install OpenJDK                                                              #
 ################################################################################
 
-# Install Oracle JDK:
-RUN yum -y localinstall --nogpgcheck /apps/bin/jdk-*-linux-x64.rpm && \
+# Install OpenJDK:
+RUN yum -y install java-1.8.0-openjdk && \
     alternatives --install /usr/bin/java java /usr/java/jdk*/jre/bin/java 20000 && \
     alternatives --install /usr/bin/jar jar /usr/java/jdk*/bin/jar 20000 && \
     alternatives --install /usr/bin/javac javac /usr/java/jdk*/bin/javac 20000 && \
