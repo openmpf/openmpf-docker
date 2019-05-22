@@ -487,10 +487,10 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
             buildStatus = currentBuild.currentResult.equals("SUCCESS") ? "success" : "failure"
         }
         // Post build status
+        if (postOpenmpfDockerBuildStatus) {
+            openmpfDockerRepo.postBuildStatus(buildStatus, githubAuthToken)
+        }
         for (repo in coreRepos) {
-            if (repo.name.equals('openmpf-docker') && !postOpenmpfDockerBuildStatus) {
-                continue
-            }
             repo.postBuildStatus(buildStatus, githubAuthToken)
         }
     }
