@@ -491,11 +491,21 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
             buildStatus = currentBuild.currentResult.equals("SUCCESS") ? "success" : "failure"
         }
         // Post build status
-        if (postOpenmpfDockerBuildStatus) {
-            openmpfDockerRepo.postBuildStatus(buildStatus, githubAuthToken)
+        def skipStatusPostReason = ''
+        if (buildStatus == "success") {
+            if (gTestsRetval == -1) {
+                skipStatusPostReason += ' gtests not run.'
+            }
+            if (mvnTestsRetval == -1) {
+                skipStatusPostReason += ' Maven tests not run.'
+            }
         }
-        if (buildStatus == "failure" ||
-                (buildStatus == "success" && gTestsRetval == 0 && mvnTestsRetval == 0)) {
+        if (!skipStatusPostReason.isEmpty()) {
+            echo "SKIPPING POST OF BUILD STATUS:${skipStatusPostReason}"
+        } else {
+            if (postOpenmpfDockerBuildStatus) {
+                openmpfDockerRepo.postBuildStatus(buildStatus, githubAuthToken)
+            }
             for (repo in coreRepos) {
                 repo.postBuildStatus(buildStatus, githubAuthToken)
             }
