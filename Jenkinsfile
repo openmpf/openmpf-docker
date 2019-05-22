@@ -380,8 +380,7 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
 
                         sh 'DOCKER_BUILDKIT=1 docker build openmpf_runtime ' +
                                 '--file openmpf_runtime/python_executor/Dockerfile ' +
-                                "--tag '${pythonExecutorImageName}' " +
-                                '--progress=plain'
+                                "--tag '${pythonExecutorImageName}'"
                     }
                 }
 
