@@ -494,7 +494,8 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
         if (postOpenmpfDockerBuildStatus) {
             openmpfDockerRepo.postBuildStatus(buildStatus, githubAuthToken)
         }
-        if (gTestsRetval == 0 && mvnTestsRetval == 0) {
+        if (buildStatus == "failure" ||
+                (buildStatus == "success" && gTestsRetval == 0 && mvnTestsRetval == 0)) {
             for (repo in coreRepos) {
                 repo.postBuildStatus(buildStatus, githubAuthToken)
             }
