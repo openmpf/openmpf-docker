@@ -78,18 +78,18 @@ RUN cd /home/mpf && easy_install -U cffi
 ################################################################################
 
 # Install OpenJDK:
-RUN yum -y install java-1.8.0-openjdk && \
-# /usr/lib/jvm/java-1.8.0-openjdk-1.8.0.212.b04-0.el7_6.x86_64/bin/java
-    alternatives --install /usr/bin/java java /usr/java/jdk*/jre/bin/java 20000 && \
-    alternatives --install /usr/bin/jar jar /usr/java/jdk*/bin/jar 20000 && \
-    alternatives --install /usr/bin/javac javac /usr/java/jdk*/bin/javac 20000 && \
-    alternatives --install /usr/bin/javaws javaws /usr/java/jdk*/jre/bin/javaws 20000 && \
-    alternatives --set java /usr/java/jdk*/jre/bin/java && \
-    alternatives --set javaws /usr/java/jdk*/jre/bin/javaws && \
-    alternatives --set javac /usr/java/jdk*/bin/javac && \
-    alternatives --set jar /usr/java/jdk*/bin/jar; \
-    alternatives --install /usr/bin/jar jar /usr/java/jdk*/bin/jar 20000 && \
-    alternatives --set jar /usr/java/jdk*/bin/jar
+ENV JAVA_HOME=/usr/lib/jvm/java-11
+RUN yum -y install java-11-openjdk-devel && \
+    alternatives --install /usr/bin/java java $JAVA_HOME/jre/bin/java 20000 && \
+    alternatives --install /usr/bin/jar jar $JAVA_HOME/bin/jar 20000 && \
+    alternatives --install /usr/bin/javac javac $JAVA_HOME/bin/javac 20000 && \
+    alternatives --install /usr/bin/javaws javaws $JAVA_HOME/jre/bin/javaws 20000 && \
+    alternatives --set java $JAVA_HOME/jre/bin/java && \
+    alternatives --set javaws $JAVA_HOME/jre/bin/javaws && \
+    alternatives --set javac $JAVA_HOME/bin/javac && \
+    alternatives --set jar $JAVA_HOME/bin/jar; \
+    alternatives --install /usr/bin/jar jar $JAVA_HOME/bin/jar 20000 && \
+    alternatives --set jar $JAVA_HOME/bin/jar
 
 # TODO: Pipe all tars into extract command:
 #  wget -qO- your_link_here | tar xvz -C /target/directory
@@ -98,12 +98,12 @@ RUN yum -y install java-1.8.0-openjdk && \
 # Install Apache Tomcat                                                        #
 ################################################################################
 
-# Apache Tomcat 7.0.72:
-RUN wget -nv -O /apps/bin/apache/apache-tomcat-7.0.72.tar.gz \
-    "http://archive.apache.org/dist/tomcat/tomcat-7/v7.0.72/bin/apache-tomcat-7.0.72.tar.gz" && \
-    cd /apps/bin/apache && tar xzf apache-tomcat-7.0.72.tar.gz && \
+# Apache Tomcat 8.5.41:
+RUN wget -nv -O /apps/bin/apache/apache-tomcat-8.5.41.tar.gz \
+    "http://archive.apache.org/dist/tomcat/tomcat-8/v8.5.41/bin/apache-tomcat-8.5.41.tar.gz" && \
+    cd /apps/bin/apache && tar xzf apache-tomcat-8.5.41.tar.gz && \
     mkdir -p /usr/share/apache-tomcat && \
-    cp -Rf /apps/bin/apache/apache-tomcat-7.0.72/* /usr/share/apache-tomcat/ && \
+    cp -Rf /apps/bin/apache/apache-tomcat-8.5.41/* /usr/share/apache-tomcat/ && \
     chown -R mpf /usr/share/apache-tomcat && chmod -R 755 /usr/share/apache-tomcat && \
     ln -s /usr/share/apache-tomcat /opt/apache-tomcat && \
     perl -i -p0e 's/<!--\n    <Manager pathname="" \/>\n      -->.*?/<!-- -->\n    <Manager pathname="" \/>/s' \
@@ -429,20 +429,6 @@ ENV CORE_MPF_NODES=
 ENV LD_LIBRARY_PATH=/usr/lib64:$MPF_HOME/lib
 ENV PATH=$PATH:$MPF_HOME/bin
 ENV TOMCAT_BASE_URL=http://$THIS_MPF_NODE:8181
-
-# TDOD move this to install java section
-ENV JAVA_HOME=/usr/lib/jvm/java-1.8.0-openjdk-1.8.0.212.b04-0.el7_6.x86_64
-RUN yum -y install java-1.8.0-openjdk-devel && \
-    alternatives --install /usr/bin/java java $JAVA_HOME/bin/java 20000 && \
-    alternatives --install /usr/bin/jar jar $JAVA_HOME/bin/jar 20000 && \
-    alternatives --install /usr/bin/javac javac $JAVA_HOME/bin/javac 20000 && \
-    alternatives --install /usr/bin/javaws javaws $JAVA_HOME/jre/bin/javaws 20000 && \
-    alternatives --set java $JAVA_HOME/jre/bin/java && \
-    alternatives --set javaws $JAVA_HOME/jre/bin/javaws && \
-    alternatives --set javac $JAVA_HOME/bin/javac && \
-    alternatives --set jar $JAVA_HOME/bin/jar; \
-    alternatives --install /usr/bin/jar jar $JAVA_HOME/bin/jar 20000 && \
-    alternatives --set jar $JAVA_HOME/bin/jar
 
 # The workflow manager must be added as an mpf-child so that plugin packages are
 # extracted at startup, which is necessary for component auto-registration.

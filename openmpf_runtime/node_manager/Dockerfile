@@ -58,20 +58,11 @@ RUN yum update -y && yum clean all
 ################################################################################
 
 # Install OpenJDK:
-ENV JAVA_HOME=/usr/lib/jvm/java-1.8.0-openjdk-1.8.0.212.b04-0.el7_6.x86_64
+ENV JAVA_HOME=/usr/lib/jvm/jre-11
 
-# intalls only the JRE
-RUN yum -y install java-1.8.0-openjdk && \
-    alternatives --install /usr/bin/java java $JAVA_HOME/bin/java 20000 && \
-    alternatives --install /usr/bin/jar jar $JAVA_HOME/bin/jar 20000 && \
-    alternatives --install /usr/bin/javac javac $JAVA_HOME/bin/javac 20000 && \
-    alternatives --install /usr/bin/javaws javaws $JAVA_HOME/jre/bin/javaws 20000 && \
-    alternatives --set java $JAVA_HOME/jre/bin/java && \
-    alternatives --set javaws $JAVA_HOME/jre/bin/javaws && \
-    alternatives --set javac $JAVA_HOME/bin/javac && \
-    alternatives --set jar $JAVA_HOME/bin/jar; \
-    alternatives --install /usr/bin/jar jar $JAVA_HOME/bin/jar 20000 && \
-    alternatives --set jar $JAVA_HOME/bin/jar
+# installs only the JRE
+RUN yum -y install java-11-openjdk && \
+    alternatives --install /usr/bin/java java $JAVA_HOME/bin/java 20000
 
 ################################################################################
 # Install yum Dependencies                                                     #
