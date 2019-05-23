@@ -90,6 +90,10 @@ def customComponentRepos = []
 def openmpfDockerRepo
 def customConfigRepo
 
+// Tests
+def gTestsRetval = -1
+def mvnTestsRetval = -1
+
 class Repo {
     def script // need this to call global methods
     def name
@@ -336,7 +340,7 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                         }
 
                         // Run container as daemon in background.
-                        buildContainerId = sh(script: 'docker run --entrypoint sleep -t -d ' +
+                        buildContainerId = sh(script: 'docker run --rm --entrypoint sleep -t -d ' +
                                 '--mount type=bind,source=/home/jenkins/.m2,target=/root/.m2 ' +
                                 '--mount type=bind,source="$(pwd)"/openmpf_runtime/build_artifacts,target=/mnt/build_artifacts ' +
                                 '--mount type=bind,source="$(pwd)"/openmpf_build/openmpf-projects,target=/mnt/openmpf-projects ' +
@@ -356,7 +360,7 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                         echo 'SKIPPING GOOGLE TESTS'
                     }
                     when (runGTests) { // if false, don't show this step in the Stage View UI
-                        def gTestsRetval = sh(script: 'docker exec ' +
+                        gTestsRetval = sh(script: 'docker exec ' +
                                 buildContainerId + ' /home/mpf/run-gtests.sh', returnStatus: true)
 
                         processTestReports()
@@ -378,7 +382,7 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                                 ' --build-arg BUILD_VERSION=' + imageTag +
                                 ' --build-arg BUILD_SHAS=\"' + buildShas + '\"'
 
-                        sh 'docker build openmpf_runtime ' +
+                        sh 'DOCKER_BUILDKIT=1 docker build openmpf_runtime ' +
                                 '--file openmpf_runtime/python_executor/Dockerfile ' +
                                 "--tag '${pythonExecutorImageName}'"
                     }
@@ -402,7 +406,7 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                         sh 'docker-compose -f docker-compose-test.yml up -d' +
                                 ' --scale workflow_manager=0'
 
-                        def mvnTestsRetval = sh(script: 'docker exec' +
+                        mvnTestsRetval = sh(script: 'docker exec' +
                                 ' -e EXTRA_MVN_OPTIONS=\"' + mvnTestOptions + '\" ' +
                                 buildContainerId +
                                 ' /home/mpf/run-mvn-tests.sh', returnStatus: true)
@@ -431,7 +435,7 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                     }
 
                     // Remove dangling <none> images.
-                    sh 'docker images -f "dangling=true" -q | xargs -r docker rmi'
+                    sh 'docker image prune -f'
                 }
             }
 
@@ -487,11 +491,24 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
             buildStatus = currentBuild.currentResult.equals("SUCCESS") ? "success" : "failure"
         }
         // Post build status
-        for (repo in coreRepos) {
-            if (repo.name.equals('openmpf-docker') && !postOpenmpfDockerBuildStatus) {
-                continue
+        def skipStatusPostReason = ''
+        if (buildStatus == "success") {
+            if (gTestsRetval == -1) {
+                skipStatusPostReason += ' gtests not run.'
             }
-            repo.postBuildStatus(buildStatus, githubAuthToken)
+            if (mvnTestsRetval == -1) {
+                skipStatusPostReason += ' Maven tests not run.'
+            }
+        }
+        if (!skipStatusPostReason.isEmpty()) {
+            echo "SKIPPING POST OF BUILD STATUS:${skipStatusPostReason}"
+        } else {
+            if (postOpenmpfDockerBuildStatus) {
+                openmpfDockerRepo.postBuildStatus(buildStatus, githubAuthToken)
+            }
+            for (repo in coreRepos) {
+                repo.postBuildStatus(buildStatus, githubAuthToken)
+            }
         }
     }
 
