@@ -105,6 +105,11 @@ RUN mkdir $MPF_HOME/plugins && cd $MPF_HOME/plugins && \
 
 COPY build_artifacts/workflow-manager.war /opt/apache-tomcat/webapps/workflow-manager.war
 
+# Configure Tomcat cache size:
+RUN sed -i '24s/.*/    <WatchedResource>$\{catalina\.ba\se\}\/conf\/web.xml<\/WatchedResource>\n    <Resources cachingAllowed="true" cacheMaxSize="100000" \/>/' \
+    /opt/apache-tomcat/conf/context.xml
+
+
 # TODO: Choose a better path than /home/mpf/openmpf-projects/openmpf/trunk/ansible on a production container.
 # For example: ${env:MPF_HOME}/manage/ansible/roles/child
 COPY build_artifacts/ansible.tar /home/mpf/
