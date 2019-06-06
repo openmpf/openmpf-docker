@@ -51,6 +51,10 @@ rm -rf "$BUILD_ARTIFACTS_PATH"/*
 
 cp -R "$SOURCE_CODE_PATH" /home/mpf
 
+# This directory would only exist at this point if MPF was also built outside of Docker on the same machine.
+# In this case, we don't want to use the build artifacts from the non-Docker build.
+rm -rf /home/mpf/openmpf-projects/openmpf/trunk/install
+
 # Make sure the source code line endings are correct if copying the source from a Windows host.
 cd /home/mpf/openmpf-projects && find . -type f -exec dos2unix -q {} \;
 
