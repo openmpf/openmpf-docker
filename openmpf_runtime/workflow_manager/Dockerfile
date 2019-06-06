@@ -46,15 +46,12 @@ RUN yum install -y epel-release deltarpm && yum clean all
 RUN yum update -y && yum clean all
 
 ################################################################################
-# Install OpenDK                                                               #
+# Install OpenJDK JRE                                                          #
 ################################################################################
 
-# Install OpenJDK:
-ENV JAVA_HOME=/usr/lib/jvm/jre-11
-
-# installs only the JRE
+# Install OpenJDK JRE only:
 RUN yum -y install java-11-openjdk && \
-    alternatives --install /usr/bin/java java $JAVA_HOME/bin/java 20000
+    alternatives --install /usr/bin/java java /usr/lib/jvm/jre-11/bin/java 20000
 
 ################################################################################
 # Install yum Dependencies                                                     #
@@ -106,6 +103,7 @@ RUN mkdir $MPF_HOME/plugins && cd $MPF_HOME/plugins && \
 COPY build_artifacts/workflow-manager.war /opt/apache-tomcat/webapps/workflow-manager.war
 
 # Configure Tomcat cache size:
+# https://stackoverflow.com/questions/26893297/tomcat-8-throwing-org-apache-catalina-webresources-cache-getresource-unable-to
 RUN sed -i '24s/.*/    <WatchedResource>$\{catalina\.ba\se\}\/conf\/web.xml<\/WatchedResource>\n    <Resources cachingAllowed="true" cacheMaxSize="100000" \/>/' \
     /opt/apache-tomcat/conf/context.xml
 

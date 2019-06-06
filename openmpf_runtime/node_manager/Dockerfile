@@ -54,15 +54,12 @@ RUN yum install -y epel-release deltarpm && yum clean all
 RUN yum update -y && yum clean all
 
 ################################################################################
-# Install OpenJDK                                                              #
+# Install OpenJDK JRE                                                          #
 ################################################################################
 
-# Install OpenJDK:
-ENV JAVA_HOME=/usr/lib/jvm/jre-11
-
-# installs only the JRE
+# Install OpenJDK JRE only:
 RUN yum -y install java-11-openjdk && \
-    alternatives --install /usr/bin/java java $JAVA_HOME/bin/java 20000
+    alternatives --install /usr/bin/java java /usr/lib/jvm/jre-11/bin/java 20000
 
 ################################################################################
 # Install yum Dependencies                                                     #
@@ -163,7 +160,6 @@ ENV MPF_LOG_PATH=$MPF_HOME/share/logs
 ENV MASTER_MPF_NODE=workflow_manager
 ENV MAIL=/var/spool/mail/mpf
 ENV PATH=$PATH:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin:$MPF_HOME/bin:/usr/bin/
-ENV JAVA_HOME=/usr/bin/java
 ENV HOME=/home/mpf
 ENV LOGNAME=mpf
 
