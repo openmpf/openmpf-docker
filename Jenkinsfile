@@ -170,6 +170,7 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
         def buildContainerId
 
         def workflowManagerImageName = remoteImageTagPrefix + 'openmpf_workflow_manager:' + imageTag
+        def nodeManagerImageName = remoteImageTagPrefix + 'openmpf_node_manager:' + imageTag
         def pythonExecutorImageName = remoteImageTagPrefix + 'openmpf_python_executor:' + imageTag
 
         def openmpfGitHubUrl = 'https://github.com/openmpf'
@@ -451,7 +452,7 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                     // that referred to the original images without the custom config.
 
                     sh 'docker build openmpf_custom_config' +
-                            ' -f workflow_manager/Dockerfile' +
+                            ' -f openmpf_custom_config/workflow_manager/Dockerfile' +
                             ' --build-arg BUILD_IMAGE_NAME=' + workflowManagerImageName +
                             ' --build-arg BUILD_DATE=' + buildDate +
                             ' --build-arg BUILD_VERSION=' + imageTag +
@@ -459,7 +460,7 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                             ' -t ' + workflowManagerImageName
 
                     sh 'docker build openmpf_custom_config' +
-                            ' -f node_manager/Dockerfile' +
+                            ' -f openmpf_custom_config/node_manager/Dockerfile' +
                             ' --build-arg BUILD_IMAGE_NAME=' + nodeManagerImageName +
                             ' --build-arg BUILD_DATE=' + buildDate +
                             ' --build-arg BUILD_VERSION=' + imageTag +
