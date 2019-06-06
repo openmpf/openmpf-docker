@@ -324,10 +324,15 @@ RUN cd /apps/source/openalpr_sources && git clone https://github.com/openalpr/op
     make install -j && \
     ldconfig
 
-# ImageMagick6 :
+# ImageMagick6:
 RUN yum install -y http://rpms.remirepo.net/enterprise/remi-release-7.rpm && \
     yum --enablerepo=remi install -y ImageMagick6 ImageMagick6-c++ \
     ImageMagick6-c++-devel ImageMagick6-devel ImageMagick6-libs && \
+    yum clean all && rm -rf /var/cache/yum/*
+
+# Install locales:
+RUN sed -i "/^override_install_lang/d" /etc/yum.conf && \
+    yum reinstall -y glibc-common && \
     yum clean all && rm -rf /var/cache/yum/*
 
 ################################################################################
@@ -384,11 +389,76 @@ RUN cd /apps/source/gtest_sources && git clone https://github.com/google/googlet
     make -j$(nproc) && make install && ldconfig
 
 ################################################################################
+# For Tests: Install yum Dependencies                                          #
+################################################################################
+
+RUN yum install -y git asciidoc rpm-build \
+    python2-devel PyYAML python-httplib2 python-jinja2 libtomcrypt \
+    python-paramiko python-six sshpass which mysql dos2unix && \
+    yum clean all && rm -rf /var/cache/yum/*
+
+# TODO: For some reason this needs to be a separate step. I think it's because the
+#   mirror it choses for the other yum install does not have python-keyczar.
+#   This happens even if python-keyczar is the first thing in the list.
+RUN yum install -y python-keyczar && yum clean all
+
+################################################################################
+# For Tests: Link ffserver and ffprobe                                         #
+################################################################################
+
+RUN ln -s /apps/install/bin/ffserver /usr/bin/ffserver && \
+    ln -s /apps/install/bin/ffprobe /usr/bin/ffprobe
+
+################################################################################
+# For Tests: Install Ansible                                                   #
+################################################################################
+
+# TODO: Build the Ansible RPM on openmpf_build; install on workflow_manager
+
+# Ansible:
+RUN mkdir -p /apps/source/ansible_sources && cd /apps/source/ansible_sources && \
+    git clone https://github.com/ansible/ansible.git --recursive && \
+    cd ansible && git checkout e71cce777685f96223856d5e6cf506a9ea2ef3ff && \
+    git submodule update --init --recursive && \
+    cd /apps/source/ansible_sources/ansible/lib/ansible/modules/core && \
+    git checkout 36f512abc1a75b01ae7207c74cdfbcb54a84be54 && \
+    cd /apps/source/ansible_sources/ansible/lib/ansible/modules/extras && \
+    git checkout 32338612b38d1ddfd0d42b1245c597010da02970 && \
+    cd /apps/source/ansible_sources/ansible && make rpm && \
+    cd /apps/source/ansible_sources/ansible && \
+    rpm -Uvh ./rpm-build/ansible-*.noarch.rpm
+
+################################################################################
+# For Tests: Configure Environment Variables                                   #
+################################################################################
+
+ENV ACTIVE_MQ_HOST=activemq
+ENV ACTIVE_MQ_BROKER_URI=failover://(tcp://$ACTIVE_MQ_HOST:61616)?jms.prefetchPolicy.all=1&startupMaxReconnectAttempts=1
+ENV MYSQL_HOST=mysql_database
+ENV THIS_MPF_NODE=localhost
+# JGROUPS_TCP_ADDRESS set in docker-entrypoint-test.sh
+ENV JGROUPS_TCP_PORT=7800
+ENV JGROUPS_FILE_PING_LOCATION=$MPF_HOME/share/nodes
+ENV no_proxy=localhost
+ENV MPF_USER=mpf
+ENV MPF_LOG_PATH=$MPF_HOME/share/logs
+# Every child node-manager container is treated as a spare node.
+ENV CORE_MPF_NODES=
+ENV LD_LIBRARY_PATH=/usr/lib64:$MPF_HOME/lib
+ENV PATH=$PATH:$MPF_HOME/bin
+ENV TOMCAT_BASE_URL=http://$THIS_MPF_NODE:8181
+
+# The workflow manager must be added as an mpf-child so that plugin packages are
+# extracted at startup, which is necessary for component auto-registration.
+RUN echo '[mpf-child]' >> /etc/ansible/hosts; \
+    echo $THIS_MPF_NODE >> /etc/ansible/hosts;
+
+################################################################################
 # Prepare Entrypoint                                                           #
 ################################################################################
 
-COPY docker-entrypoint.sh /home/mpf
-RUN dos2unix -q /home/mpf/docker-entrypoint.sh
+COPY *.sh /home/mpf/
+RUN dos2unix -q /home/mpf/*.sh
 ENTRYPOINT ["/home/mpf/docker-entrypoint.sh"]
 
 ################################################################################

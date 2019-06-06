@@ -1,3 +1,4 @@
+#! /bin/bash
 #############################################################################
 # NOTICE                                                                    #
 #                                                                           #
@@ -24,72 +25,33 @@
 # limitations under the License.                                            #
 #############################################################################
 
-version: '3.3'
-services:
-  mysql_database:
-    image: mariadb:latest
-    environment:
-      - MYSQL_ROOT_PASSWORD=password
-      - MYSQL_DATABASE=mpf
-      - MYSQL_USER=mpf
-      - MYSQL_PASSWORD=mpf
-    command: [
-      '--wait_timeout=28800',
-    ]
-    volumes:
-      - mysql_data:/var/lib/mysql
-    networks:
-      - swarm_overlay
-    deploy:
-      placement:
-        constraints:
-          - node.role == manager
+set -e
+set -x
 
-  activemq:
-    image: <registry>/<repository>/openmpf_active_mq:<image_tag>
-    ports:
-      - "8161:8161"
-    networks:
-      - swarm_overlay
 
-  redis:
-    image: redis:latest
-    networks:
-      - swarm_overlay
+mkdir -p "$MPF_HOME/plugins/plugin"
 
-  workflow_manager:
-    image: <registry>/<repository>/openmpf_workflow_manager:<image_tag>
-    environment:
-      # The following line is needed to wait until the mySQL service is available:
-      - MYSQL_ROOT_PASSWORD=password
-      - KEYSTORE_PASSWORD=<keystore_password>
-    ports:
-      - "8080:8080"
-      - "8443:8443"
-    volumes:
-      - shared_data:/opt/mpf/share
-    networks:
-      - swarm_overlay
-    secrets: [https_keystore]
-    deploy:
-      placement:
-        constraints:
-          - node.role == manager
+if [ -e /home/mpf/component_src/setup.py ]; then
+    echo 'Installing setuptools plugin'
+    cp -r /home/mpf/component_src/plugin-files/* "$MPF_HOME/plugins/plugin/"
 
-  node_manager:
-    image: <registry>/<repository>/openmpf_node_manager:<image_tag>
-    volumes:
-      - shared_data:/opt/mpf/share
-    networks:
-      - swarm_overlay
-    deploy:
-      mode: global
 
-volumes:
-  shared_data:
-  mysql_data:
+    if [ -d /home/mpf/component_src/plugin-files/wheelhouse ]; then
+        "$COMPONENT_VIRTUALENV/bin/pip" install \
+            --find-links /home/mpf/component_src/plugin-files/wheelhouse \
+            --no-cache-dir /home/mpf/component_src
+    else
+        "$COMPONENT_VIRTUALENV/bin/pip" install \
+            --no-cache-dir /home/mpf/component_src
+    fi
+elif [ -e /home/mpf/component_src/descriptor/descriptor.json ]; then
+    echo 'Installing basic component'
+    cp -r /home/mpf/component_src/* "$MPF_HOME/plugins/plugin"
+else
+    set +x
+    echo 'ERROR: Expected either /home/mpf/component_src/setup.py or'\
+         '/home/mpf/component_src/descriptor/descriptor.json to exist.' \
+         'Did you forget to COPY or bind mount your component source code?'
+    exit 3
+fi
 
-networks:
-  swarm_overlay:
-
-secrets: { https_keystore: { file: <keystore_path> } } # One line to make easier for script to remove
