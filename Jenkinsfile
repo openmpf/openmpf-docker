@@ -87,6 +87,7 @@ node(jenkinsNodes) {
         def postBuildImageId
 
         def workflowManagerImageName = remoteImageTagPrefix + 'openmpf_workflow_manager:' + imageTag
+        def nodeManagerImageName = remoteImageTagPrefix + 'openmpf_node_manager:' + imageTag
 
         /*
         stage('TEST') {
@@ -323,15 +324,25 @@ node(jenkinsNodes) {
                 if (applyCustomConfig) {
                     buildShas += ', openmpf-config-docker: ' + openmpfConfigDockerSha
 
-                    // Build and tag the new Workflow Manager image with the image tag used in the compose files.
-                    // That way, we do not have to modify the compose files. This overwrites the tag that referred to
-                    // the original Workflow Manager image without the custom config.
-                    sh 'docker build openmpf_custom_config/workflow_manager' +
+                    // Build and tag the new Workflow Manager image and Node Manager image with the image tag used in
+                    // the compose files. That way, we do not have to modify the compose files. This overwrites the tags
+                    // that referred to the original images without the custom config.
+
+                    sh 'docker build openmpf_custom_config' +
+                            ' -f workflow_manager/Dockerfile' +
                             ' --build-arg BUILD_IMAGE_NAME=' + workflowManagerImageName +
                             ' --build-arg BUILD_DATE=' + buildDate +
                             ' --build-arg BUILD_VERSION=' + imageTag +
                             ' --build-arg BUILD_SHAS=\"' + buildShas + '\"' +
                             ' -t ' + workflowManagerImageName
+
+                    sh 'docker build openmpf_custom_config' +
+                            ' -f node_manager/Dockerfile' +
+                            ' --build-arg BUILD_IMAGE_NAME=' + nodeManagerImageName +
+                            ' --build-arg BUILD_DATE=' + buildDate +
+                            ' --build-arg BUILD_VERSION=' + imageTag +
+                            ' --build-arg BUILD_SHAS=\"' + buildShas + '\"' +
+                            ' -t ' + nodeManagerImageName
                 }
             }
 
