@@ -372,7 +372,7 @@ HTTPS you must run `docker-generate-compose-files.sh` with additional arguments.
 
 If you don't have access to a private Docker registry, then run:
 
-- `/scripts/docker-generate-compose-files.sh -nr [<image-tag>=latest] <keystore-path> <keystore-password>`
+- `./scripts/docker-generate-compose-files.sh -nr [<image-tag>=latest] <keystore-path> <keystore-password>`
 
 Note that `image-tag` is an optional parameter and has a default value of
 `latest`.
