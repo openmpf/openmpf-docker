@@ -139,6 +139,7 @@ def script = this // instance of the Groovy script
 
 node(jenkinsNodes) {
 wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color in Jenkins console
+    properties([disableConcurrentBuilds()])
     def buildException
 
     // Rename the named volumes and networks to be unique to this Jenkins build pipeline
