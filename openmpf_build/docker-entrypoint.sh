@@ -54,8 +54,8 @@ cp -R "$SOURCE_CODE_PATH" /home/mpf
 # This directory would only exist at this point if MPF was also built outside of Docker on the same machine.
 # In this case, we don't want to use the build artifacts from the non-Docker build.
 cd /home/mpf/openmpf-projects/openmpf/trunk/install
-ls | grep --invert-match share | xargs rm -rf
-rm -rf share/*
+ls | grep --invert-match share | xargs rm -rf ||:
+rm -rf share/* ||:
 
 
 
