@@ -40,6 +40,7 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 -->
+<!-- TEST CONFIGURATION -->
 <!-- START SNIPPET: example -->
 <beans
   xmlns="http://www.springframework.org/schema/beans"
@@ -63,12 +64,20 @@
     <!--
         The <broker> element is used to configure the ActiveMQ broker.
     -->
-    <broker xmlns="http://activemq.apache.org/schema/core" brokerName="localhost" dataDirectory="${activemq.data}" persistent="false">
+    <broker xmlns="http://activemq.apache.org/schema/core" brokerName="localhost" dataDirectory="${activemq.data}" persistent="true">
 
         <destinationPolicy>
             <policyMap>
               <policyEntries>
-                <policyEntry queue=">" prioritizedMessages="true" useCache="false" expireMessagesPeriod="0" queuePrefetch="0" />
+ 		<policyEntry queue="MPF.COMPLETED_DETECTIONS" memoryLimit="500MB"/>
+		<policyEntry queue="MPF.ARTIFACT_EXTRACTION_WORK_QUEUE" memoryLimit="500MB"/>
+		<policyEntry queue="MPF.DETECTION_PP5_REQUEST" memoryLimit="500MB"/>
+		<policyEntry queue="MPF.DETECTION_DARKNET_REQUEST" memoryLimit="500MB"/>
+		<policyEntry queue="MPF.DETECTION_SUBSENSE_REQUEST" memoryLimit="200MB"/>
+		<policyEntry queue="MPF.DETECTION_CAFFE_REQUEST" memoryLimit="100MB"/>
+		<policyEntry queue="MPF.DETECTION_TESSERACTOCR_REQUEST" memoryLimit="100MB"/>
+		
+               <policyEntry queue=">" prioritizedMessages="true" useCache="false" expireMessagesPeriod="0" queuePrefetch="0" />
                 <policyEntry topic=">" >
                     <!-- The constantPendingMessageLimitStrategy is used to prevent
                          slow topic consumers to block producers and affect other consumers
@@ -117,7 +126,7 @@
           <systemUsage>
             <systemUsage>
                 <memoryUsage>
-                    <memoryUsage percentOfJvmHeap="70" />
+                    <memoryUsage limit="4 gb" percentOfJvmHeap="90" />
                 </memoryUsage>
                 <storeUsage>
                     <storeUsage limit="100 gb"/>
@@ -136,11 +145,11 @@
         -->
         <transportConnectors>
             <!-- DOS protection, limit concurrent connections to 1000 and frame size to 100MB -->
-            <transportConnector name="openwire" uri="tcp://0.0.0.0:61616?maximumConnections=1000&amp;wireFormat.maxFrameSize=104857600"/>
-            <transportConnector name="amqp" uri="amqp://0.0.0.0:5672?maximumConnections=1000&amp;wireFormat.maxFrameSize=104857600"/>
-            <transportConnector name="stomp" uri="stomp://0.0.0.0:61613?maximumConnections=1000&amp;wireFormat.maxFrameSize=104857600"/>
-            <transportConnector name="mqtt" uri="mqtt://0.0.0.0:1883?maximumConnections=1000&amp;wireFormat.maxFrameSize=104857600"/>
-            <transportConnector name="ws" uri="ws://0.0.0.0:61614?maximumConnections=1000&amp;wireFormat.maxFrameSize=104857600"/>
+            <transportConnector name="openwire" uri="tcp://0.0.0.0:61616?maximumConnections=5000&amp;wireFormat.maxFrameSize=104857600"/>
+            <transportConnector name="amqp" uri="amqp://0.0.0.0:5672?maximumConnections=5000&amp;wireFormat.maxFrameSize=104857600"/>
+            <transportConnector name="stomp" uri="stomp://0.0.0.0:61613?maximumConnections=5000&amp;wireFormat.maxFrameSize=104857600"/>
+            <transportConnector name="mqtt" uri="mqtt://0.0.0.0:1883?maximumConnections=5000&amp;wireFormat.maxFrameSize=104857600"/>
+            <transportConnector name="ws" uri="ws://0.0.0.0:61614?maximumConnections=5000&amp;wireFormat.maxFrameSize=104857600"/>
         </transportConnectors>
 
         <!-- destroy the spring context on shutdown to stop jetty -->

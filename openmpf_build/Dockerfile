@@ -433,7 +433,7 @@ RUN mkdir -p /apps/source/ansible_sources && cd /apps/source/ansible_sources && 
 ################################################################################
 
 ENV ACTIVE_MQ_HOST=activemq
-ENV ACTIVE_MQ_BROKER_URI=failover://(tcp://$ACTIVE_MQ_HOST:61616)?jms.prefetchPolicy.all=1&startupMaxReconnectAttempts=1
+ENV ACTIVE_MQ_BROKER_URI=failover://(tcp://$ACTIVE_MQ_HOST:61616)?jms.prefetchPolicy.all=0&startupMaxReconnectAttempts=1
 ENV MYSQL_HOST=mysql_database
 ENV THIS_MPF_NODE=localhost
 # JGROUPS_TCP_ADDRESS set in docker-entrypoint-test.sh

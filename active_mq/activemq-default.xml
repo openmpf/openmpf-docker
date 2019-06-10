@@ -40,6 +40,8 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 -->
+
+<!-- DEFAULT CONFIGURATION -->
 <!-- START SNIPPET: example -->
 <beans
   xmlns="http://www.springframework.org/schema/beans"
@@ -68,7 +70,7 @@
         <destinationPolicy>
             <policyMap>
               <policyEntries>
-                <policyEntry queue=">" prioritizedMessages="true" useCache="false" expireMessagesPeriod="0" queuePrefetch="0" />
+                <policyEntry queue=">" prioritizedMessages="true" useCache="false" expireMessagesPeriod="0" queuePrefetch="1" />
                 <policyEntry topic=">" >
                     <!-- The constantPendingMessageLimitStrategy is used to prevent
                          slow topic consumers to block producers and affect other consumers
