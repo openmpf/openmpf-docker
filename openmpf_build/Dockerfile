@@ -107,8 +107,7 @@ RUN wget -nv -O /apps/bin/apache/apache-tomcat-8.5.41.tar.gz \
     chown -R mpf /usr/share/apache-tomcat && chmod -R 755 /usr/share/apache-tomcat && \
     ln -s /usr/share/apache-tomcat /opt/apache-tomcat && \
     perl -i -p0e 's/<!--\n    <Manager pathname="" \/>\n      -->.*?/<!-- -->\n    <Manager pathname="" \/>/s' \
-        /opt/apache-tomcat/conf/context.xml && \
-    rm -rf /opt/apache-tomcat/webapps/*
+        /opt/apache-tomcat/conf/context.xml
 
 ################################################################################
 # Install Apache Maven                                                         #
