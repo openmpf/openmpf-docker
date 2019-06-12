@@ -47,10 +47,9 @@ services:
   active_mq:
     image: <registry>/<repository>/openmpf_active_mq:<image_tag>
     container_name: activemq
-    build:
-        context: ./active_mq
-        args:
-            PROFILE: ${ACTIVEMQ_PROFILE}
+    build: ./active_mq
+    environment:
+        - ACTIVEMQ_PROFILE=default
     restart: always
     ports:
       - "8161:8161"

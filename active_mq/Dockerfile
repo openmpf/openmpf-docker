@@ -26,14 +26,13 @@
 
 FROM webcenter/activemq
 
-# If PROFILE is not specified as a build-arg on the command line, then the base profile is the default. Additional profiles
-# available are custom and test.
-ARG PROFILE=base
-RUN echo "PROFILE = $PROFILE"
+ENV ACTIVEMQ_PROFILE=default
+
+COPY activemq-$ACTIVEMQ_PROFILE.xml /opt/activemq/conf/activemq.xml
+COPY wrapper-$ACTIVEMQ_PROFILE.conf /opt/activemq/bin/linux-x86-64/wrapper.conf
+
 # TODO: This approach to using sed is brittle:
 RUN sed -i '34s/.*/ACTIVEMQ_OPTS_MEMORY="-Xms64M -Xmx32G"/' /opt/activemq/bin/env
-
-COPY activemq-${PROFILE}.xml /opt/activemq/conf/activemq.xml
 
 # TODO: This approach to using sed is brittle:
 RUN sed -i '52s/.*/log4j.appender.logfile.layout.ConversionPattern=%d %p [%t] %c - %m%n/' /opt/activemq/conf/log4j.properties
