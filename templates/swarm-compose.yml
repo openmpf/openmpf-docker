@@ -47,6 +47,8 @@ services:
 
   activemq:
     image: <registry>/<repository>/openmpf_active_mq:<image_tag>
+    environment:
+        - ACTIVEMQ_PROFILE=default
     ports:
       - "8161:8161"
     networks:
