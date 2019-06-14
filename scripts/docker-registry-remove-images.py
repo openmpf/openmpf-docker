@@ -75,9 +75,14 @@ def get_digest(repo, tag):
     if err:
         raise Exception(err)
     for line in out.splitlines():
-        if line.find("Docker-Content-Digest") > -1:
+        if line.find("Docker-Content-Digest") > -1 and line.find("sha256:") > 1:
             return line.split()[1]
     raise Exception("Cannot get digest")
+
+
+def get_creation_date(repo, tag):
+    data = do_rest_call("GET", repo + "/manifests/" + tag)
+    return json.loads(data["history"][0]["v1Compatibility"])["created"][0:10]
 
 
 dryRun = False
@@ -198,8 +203,13 @@ for repo in catalog["repositories"]:
                 continue
 
     print repo
+    try:
+        tagList = do_rest_call("GET", repo + "/tags/list")
+    except Exception as e:
+        print "* [ERROR] " + repo + " (" + str(e) + ")"
+        print
+        continue   
 
-    tagList = do_rest_call("GET", repo + "/tags/list")
     if not tagList["tags"]:
         print "* [EMPTY]"
         print
@@ -225,9 +235,10 @@ for repo in catalog["repositories"]:
         if removeTag:
             try:
                 digest = get_digest(repo, tag)
+                creationDate = get_creation_date(repo, tag)
                 if repo not in tagsToRemove:
                     tagsToRemove[repo] = {}
-                tagsToRemove[repo][tag] = digest
+                tagsToRemove[repo][tag] = [digest, creationDate]
                 print "- [REMOVE] " + tag
             except Exception as e:
                 print "* [ERROR] " + tag + " (" + str(e) + ")"
@@ -238,18 +249,22 @@ if not tagsToRemove:
     print "No images found."
     exit(0)
 
-if not dryRun:
-    print
+print
+if dryRun:  
+    print "Found images:"
+else:
     print "Removing images:"
-    print
+print
 
-    for repo in tagsToRemove:
-        print repo
-        for tag in tagsToRemove[repo]:
-            digest = tagsToRemove[repo][tag]
-            print tag + " (" + digest + ")"
+for repo in tagsToRemove:
+    print repo
+    maxTagLen = len(max(tagsToRemove[repo], key=len))
+    for tag in tagsToRemove[repo]:
+        digest, creationDate = tagsToRemove[repo][tag]
+        print "- " + tag.ljust(maxTagLen) + "  " + creationDate + "  " + digest[7:19]
+        if not dryRun:
             do_rest_call("DELETE", repo + "/manifests/" + digest, False)
-        print
+    print
 
 print
 print "To force garbage collection, run the following command on the registry host:"
