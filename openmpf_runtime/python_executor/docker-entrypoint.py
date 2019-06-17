@@ -183,7 +183,7 @@ def handle_registration_error(http_error):
 
 def start_executor(descriptor, mpf_home, activemq_host, node_name):
     amq_detection_component_path = os.path.join(mpf_home, 'bin/amq_detection_component')
-    activemq_broker_uri = 'failover://(tcp://{}:61616)?jms.prefetchPolicy.all=1&startupMaxReconnectAttempts=1'\
+    activemq_broker_uri = 'failover://(tcp://{}:61616)?jms.prefetchPolicy.all=0&startupMaxReconnectAttempts=1'\
                           .format(activemq_host)
     batch_lib = descriptor['batchLibrary']
     algorithm_name = descriptor['algorithm']['name'].upper()
