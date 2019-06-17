@@ -72,7 +72,7 @@ RUN yum -y localinstall --nogpgcheck /apps/bin/jdk-*-linux-x64.rpm && \
 
 RUN yum install -y git asciidoc rpm-build \
     python2-devel PyYAML python-httplib2 python-jinja2 libtomcrypt \
-    python-paramiko python-six sshpass which mysql dos2unix && \
+    python-paramiko python-six sshpass which mysql dos2unix ansible && \
     yum clean all && rm -rf /var/cache/yum/*
 
 # TODO: For some reason this needs to be a separate step. I think it's because the
@@ -98,15 +98,11 @@ COPY --from=openmpf_build /apps/install/bin/ffmpeg /apps/install/bin/ffprobe \
      /apps/install/bin/ffserver $MPF_HOME/bin/
 COPY --from=openmpf_build /etc/ld.so.conf.d/ /etc/ld.so.conf.d/
 COPY --from=openmpf_build /opt/apache-tomcat/ /opt/apache-tomcat/
-COPY --from=openmpf_build /apps/source/ansible_sources/ansible/rpm-build/ansible-*.noarch.rpm .
 
 # Link FFmpeg:
 RUN ln -s $MPF_HOME/bin/ffmpeg /usr/bin/ffmpeg && \
     ln -s $MPF_HOME/bin/ffserver /usr/bin/ffserver && \
     ln -s $MPF_HOME/bin/ffprobe /usr/bin/ffprobe
-
-# Install Ansible:
-RUN rpm -Uvh ansible-*.noarch.rpm && rm ansible-*.noarch.rpm
 
 COPY build_artifacts/install.tar /home/mpf/
 RUN cd /home/mpf && tar -xzf install.tar -C $MPF_HOME && rm install.tar

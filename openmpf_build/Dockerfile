@@ -47,11 +47,11 @@ ENV MPF_HOME=/home/mpf/openmpf-projects/openmpf/trunk/install
 
 # Create directories for sources:
 RUN mkdir -p /apps/install/lib && mkdir -p /apps/bin/apache && \
-    mkdir /apps/ansible && mkdir -p /apps/source/cmake_sources && \
+    mkdir -p /apps/source/cmake_sources && \
     mkdir /apps/source/apache_sources && mkdir /apps/source/google_sources && \
     mkdir /apps/source/opencv_sources && mkdir /apps/source/ffmpeg_sources && \
     mkdir /apps/source/dlib-sources && mkdir /apps/source/openalpr_sources && \
-    mkdir /apps/source/ansible_sources && mkdir /apps/source/tesseract_sources && \
+    mkdir /apps/source/tesseract_sources && \
     chown -R mpf /apps && chmod -R 755 /apps
 
 # Create the OpenMPF ldconfig file:
@@ -394,7 +394,7 @@ RUN cd /apps/source/gtest_sources && git clone https://github.com/google/googlet
 
 RUN yum install -y git asciidoc rpm-build \
     python2-devel PyYAML python-httplib2 python-jinja2 libtomcrypt \
-    python-paramiko python-six sshpass which mysql dos2unix && \
+    python-paramiko python-six sshpass which mysql dos2unix ansible && \
     yum clean all && rm -rf /var/cache/yum/*
 
 # TODO: For some reason this needs to be a separate step. I think it's because the
@@ -402,31 +402,15 @@ RUN yum install -y git asciidoc rpm-build \
 #   This happens even if python-keyczar is the first thing in the list.
 RUN yum install -y python-keyczar && yum clean all
 
+# Update timeout for component deployment tests
+RUN echo 'gather_timeout = 60' >> /etc/ansible/ansible.cfg
+
 ################################################################################
 # For Tests: Link ffserver and ffprobe                                         #
 ################################################################################
 
 RUN ln -s /apps/install/bin/ffserver /usr/bin/ffserver && \
     ln -s /apps/install/bin/ffprobe /usr/bin/ffprobe
-
-################################################################################
-# For Tests: Install Ansible                                                   #
-################################################################################
-
-# TODO: Build the Ansible RPM on openmpf_build; install on workflow_manager
-
-# Ansible:
-RUN mkdir -p /apps/source/ansible_sources && cd /apps/source/ansible_sources && \
-    git clone https://github.com/ansible/ansible.git --recursive && \
-    cd ansible && git checkout e71cce777685f96223856d5e6cf506a9ea2ef3ff && \
-    git submodule update --init --recursive && \
-    cd /apps/source/ansible_sources/ansible/lib/ansible/modules/core && \
-    git checkout 36f512abc1a75b01ae7207c74cdfbcb54a84be54 && \
-    cd /apps/source/ansible_sources/ansible/lib/ansible/modules/extras && \
-    git checkout 32338612b38d1ddfd0d42b1245c597010da02970 && \
-    cd /apps/source/ansible_sources/ansible && make rpm && \
-    cd /apps/source/ansible_sources/ansible && \
-    rpm -Uvh ./rpm-build/ansible-*.noarch.rpm
 
 ################################################################################
 # For Tests: Configure Environment Variables                                   #
