@@ -1,3 +1,5 @@
+#!/bin/bash
+
 #############################################################################
 # NOTICE                                                                    #
 #                                                                           #
@@ -18,41 +20,41 @@
 #    http://www.apache.org/licenses/LICENSE-2.0                             #
 #                                                                           #
 # Unless required by applicable law or agreed to in writing, software       #
-# distributed under the License is distributed on an "AS IS" BASIS,         #
+# distributed under the License is distributed don an "AS IS" BASIS,        #
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  #
 # See the License for the specific language governing permissions and       #
 # limitations under the License.                                            #
 #############################################################################
 
-FROM webcenter/activemq
-
-ENV ACTIVEMQ_PROFILE=default
-
-COPY activemq-default.xml /opt/activemq/conf/
-COPY wrapper-default.conf /opt/activemq/bin/linux-x86-64/
-
-COPY docker-entrypoint.sh /opt/activemq/bin/entrypoint.sh.tmp
-RUN tr -d '\r' < /opt/activemq/bin/entrypoint.sh.tmp > /opt/activemq/bin/docker-entrypoint.sh
-RUN chmod 755 /opt/activemq/bin/docker-entrypoint.sh
-
-ENTRYPOINT ["/opt/activemq/bin/docker-entrypoint.sh"]
-
+set -Ee -o pipefail -o xtrace
 
 ################################################################################
-# Labels                                                                       #
+# Custom Steps                                                                 #
 ################################################################################
 
-ARG BUILD_DATE
-ARG BUILD_VERSION
-ARG BUILD_SHAS
+# If this is a custom build, run the custom entrypoint steps.
+#if [ -f /home/mpf/docker-custom-entrypoint.sh ]; then
+#  /home/mpf/docker-custom-entrypoint.sh
+#fi
 
-# Set labels
-LABEL org.label-schema.build-date=$BUILD_DATE \
-      org.label-schema.license="GPLv2" \
-      org.label-schema.name="OpenMPF ActiveMQ" \
-      org.label-schema.schema-version="1.0" \
-      org.label-schema.url="https://openmpf.github.io" \
-      org.label-schema.vcs-ref=$BUILD_SHAS \
-      org.label-schema.vcs-url="https://github.com/openmpf" \
-      org.label-schema.vendor=MITRE \
-      org.label-schema.version=$BUILD_VERSION
+cd /opt/activemq/conf
+# Put the appropriate activemq.xml file into place
+cp /opt/activemq/conf/activemq-$ACTIVEMQ_PROFILE.xml activemq.xml
+
+# Put the appropriate env file in place
+cd /opt/activemq/bin
+cp env.$ACTIVEMQ_PROFILE env
+
+
+cd /opt/activemq/bin/linux-x86-64
+# copy the appropriate Java wrapper config file into place
+cp wrapper-$ACTIVEMQ_PROFILE.conf wrapper.conf
+
+echo "Run /app/run.sh"
+
+/app/run.sh
+
+
+#Run activemq through the Java Service Wrapper
+#/opt/activemq/bin/activemq start &
+
