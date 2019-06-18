@@ -169,7 +169,7 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
         def buildImageName = remoteImageTagPrefix + 'openmpf_build:' + imageTag
         def buildContainerId
 
-        def workflowManagerImageName = remoteImageTagPrefix + 'openmpf_workflow_manager:' + imageTag
+        def workflowManagerImageName = remoteImageTagPrefix + 'openmpf_workflow-manager:' + imageTag
         def pythonExecutorImageName = remoteImageTagPrefix + 'openmpf_python_executor:' + imageTag
 
         def openmpfGitHubUrl = 'https://github.com/openmpf'
@@ -401,7 +401,7 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
 
                         // Run supporting containers in background.
                         sh 'docker-compose -f docker-compose-test.yml up -d' +
-                                ' --scale workflow_manager=0'
+                                ' --scale workflow-manager=0'
 
                         mvnTestsRetval = sh(script: 'docker exec' +
                                 ' -e EXTRA_MVN_OPTIONS=\"' + mvnTestOptions + '\" ' +
@@ -446,7 +446,7 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                     // Build and tag the new Workflow Manager image with the image tag used in the compose files.
                     // That way, we do not have to modify the compose files. This overwrites the tag that referred
                     // to the original Workflow Manager image without the custom config.
-                    sh 'docker build openmpf_custom_config/workflow_manager' +
+                    sh 'docker build openmpf_custom_config/workflow-manager' +
                             ' --build-arg BUILD_IMAGE_NAME=' + workflowManagerImageName +
                             ' --build-arg BUILD_DATE=' + buildDate +
                             ' --build-arg BUILD_VERSION=' + imageTag +

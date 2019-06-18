@@ -50,7 +50,7 @@ def main():
     wfm_password = os.getenv('WFM_PASSWORD')
 
     # Optional configurable environment variables
-    wfm_base_url = os.getenv('WFM_BASE_URL', 'http://workflow_manager:8080/workflow-manager')
+    wfm_base_url = os.getenv('WFM_BASE_URL', 'http://workflow-manager:8080/workflow-manager')
     activemq_host = os.getenv('ACTIVE_MQ_HOST', 'activemq')
     component_log_name = os.getenv('COMPONENT_LOG_NAME')
     disable_component_registration = os.getenv('DISABLE_COMPONENT_REGISTRATION')

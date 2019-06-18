@@ -57,8 +57,8 @@ services:
     networks:
       - swarm_overlay
 
-  workflow_manager:
-    image: <registry>/<repository>/openmpf_workflow_manager:<image_tag>
+  workflow-manager:
+    image: <registry>/<repository>/openmpf_workflow-manager:<image_tag>
     environment:
       # The following line is needed to wait until the mySQL service is available:
       - MYSQL_ROOT_PASSWORD=password

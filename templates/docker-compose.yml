@@ -61,12 +61,12 @@ services:
     networks:
       - compose_overlay
 
-  workflow_manager:
-    image: <registry>/<repository>/openmpf_workflow_manager:<image_tag>
-    container_name: workflow_manager
+  workflow-manager:
+    image: <registry>/<repository>/openmpf_workflow-manager:<image_tag>
+    container_name: workflow-manager
     build:
       context: ./openmpf_runtime
-      dockerfile: workflow_manager/Dockerfile
+      dockerfile: workflow-manager/Dockerfile
     depends_on:
       - mysql
       - redis

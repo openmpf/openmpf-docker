@@ -109,7 +109,7 @@ ENV LD_LIBRARY_PATH /usr/local/nvidia/lib:/usr/local/nvidia/lib64
 # NOTE: This will change the most often so it should  be as far down in the Dockerfile as possible.
 
 # TODO: The more steps that can be kept the same (and in the same order) as the
-#   workflow_manager Dockerfile, the more docker can share the build steps
+#   workflow-manager Dockerfile, the more docker can share the build steps
 #   between the containers. All shared steps (installing java, copying files
 #   from openmpf_build) should be moved to the top of both Dockerfiles.
 
@@ -157,7 +157,7 @@ ENV JGROUPS_FILE_PING_LOCATION=$MPF_HOME/share/nodes
 ENV no_proxy=localhost,$THIS_MPF_NODE
 ENV MPF_USER=root
 ENV MPF_LOG_PATH=$MPF_HOME/share/logs
-ENV MASTER_MPF_NODE=workflow_manager
+ENV MASTER_MPF_NODE=workflow-manager
 ENV MAIL=/var/spool/mail/mpf
 ENV PATH=$PATH:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin:$MPF_HOME/bin:/usr/bin/
 ENV HOME=/home/mpf
