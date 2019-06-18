@@ -54,7 +54,3 @@ echo "Run /app/run.sh"
 
 /app/run.sh
 
-
-#Run activemq through the Java Service Wrapper
-#/opt/activemq/bin/activemq start &
-
