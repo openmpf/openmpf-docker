@@ -26,7 +26,7 @@
 # limitations under the License.                                            #
 #############################################################################
 
-set -Ee -o pipefail -o xtrace
+set +x -Ee -o pipefail -o xtrace
 
 ################################################################################
 # Custom Steps                                                                 #
@@ -37,12 +37,16 @@ set -Ee -o pipefail -o xtrace
 #  /home/mpf/docker-custom-entrypoint.sh
 #fi
 
+echo "Change directory to /opt/activemq/conf"
 cd /opt/activemq/conf
 # Put the appropriate activemq.xml file into place
+echo "Put the appropriate activemq.xml file into place"
 cp /opt/activemq/conf/activemq-$ACTIVEMQ_PROFILE.xml activemq.xml
 
 # Put the appropriate env file in place
+echo "Change directory to /opt/activemq/bin"
 cd /opt/activemq/bin
+echo "Put the appropriate env file into place"
 cp env.$ACTIVEMQ_PROFILE env
 
 echo "Run /app/run.sh"
