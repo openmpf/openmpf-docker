@@ -45,11 +45,6 @@ cp /opt/activemq/conf/activemq-$ACTIVEMQ_PROFILE.xml activemq.xml
 cd /opt/activemq/bin
 cp env.$ACTIVEMQ_PROFILE env
 
-
-cd /opt/activemq/bin/linux-x86-64
-# copy the appropriate Java wrapper config file into place
-cp wrapper-$ACTIVEMQ_PROFILE.conf wrapper.conf
-
 echo "Run /app/run.sh"
 
 /app/run.sh

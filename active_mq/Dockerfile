@@ -29,7 +29,6 @@ FROM webcenter/activemq
 ENV ACTIVEMQ_PROFILE=default
 
 COPY activemq-default.xml /opt/activemq/conf/
-COPY wrapper-default.conf /opt/activemq/bin/linux-x86-64/
 COPY env.default /opt/activemq/bin
 
 COPY docker-entrypoint.sh /opt/activemq/bin/entrypoint.sh.tmp
