@@ -39,14 +39,15 @@ set +x -Ee -o pipefail -o xtrace
 
 echo "Change directory to /opt/activemq/conf"
 cd /opt/activemq/conf
+echo "ACTIVEMQ_PROFILE =" $ACTIVEMQ_PROFILE
 # Put the appropriate activemq.xml file into place
-echo "Put the appropriate activemq.xml file into place"
+echo "Put activemq-$ACTIVEMQ_PROFILE.xml file into place"
 cp /opt/activemq/conf/activemq-$ACTIVEMQ_PROFILE.xml activemq.xml
 
 # Put the appropriate env file in place
 echo "Change directory to /opt/activemq/bin"
 cd /opt/activemq/bin
-echo "Put the appropriate env file into place"
+echo "Put  env.$ACTIVEMQ_PROFILE file into place"
 cp env.$ACTIVEMQ_PROFILE env
 
 echo "Run /app/run.sh"
