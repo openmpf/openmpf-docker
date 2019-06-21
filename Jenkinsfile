@@ -457,7 +457,6 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                             ' --build-arg BUILD_SHAS=\"' + buildShas + '\"' +
                             ' -t ' + workflowManagerImageName
 
-
                     // Build and tag the new ActiveMQ image with the image tag used in the compose files.
                     sh 'docker build openmpf_custom_config/active_mq' +
                             ' --build-arg BUILD_DATE=' + buildDate +
