@@ -26,7 +26,7 @@
 # limitations under the License.                                            #
 #############################################################################
 
-set +x -Ee -o pipefail -o xtrace
+set -Ee -o pipefail -o xtrace
 
 ################################################################################
 # Custom Steps                                                                 #
