@@ -51,6 +51,15 @@ rm -rf "$BUILD_ARTIFACTS_PATH"/*
 
 cp -R "$SOURCE_CODE_PATH" /home/mpf
 
+# This directory would only exist at this point if MPF was also built outside of Docker on the same machine.
+# In this case, we don't want to use the build artifacts from the non-Docker build.
+# We can't just delete the entire install directory because the share directory gets mounted when running system tests
+# and you can't delete a directory that is mounted.
+cd /home/mpf/openmpf-projects/openmpf/trunk/install
+ls | grep --invert-match '^share$' | xargs rm -rf ||:
+rm -rf share/* ||:
+
+
 # Make sure the source code line endings are correct if copying the source from a Windows host.
 cd /home/mpf/openmpf-projects && find . -type f -exec dos2unix -q {} \;
 
