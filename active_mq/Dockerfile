@@ -28,8 +28,8 @@ FROM webcenter/activemq
 
 ENV ACTIVEMQ_PROFILE=default
 
-COPY activemq-default.xml /opt/activemq/conf/
-COPY env.default /opt/activemq/bin
+COPY activemq-*.xml /opt/activemq/conf/
+COPY env.* /opt/activemq/bin/
 
 COPY docker-entrypoint.sh /opt/activemq/bin/entrypoint.sh.tmp
 RUN tr -d '\r' < /opt/activemq/bin/entrypoint.sh.tmp > /opt/activemq/bin/docker-entrypoint.sh
