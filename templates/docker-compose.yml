@@ -106,6 +106,10 @@ services:
 
   east_text_detection:
     image: <registry>/<repository>/openmpf_east_text_detection:<image_tag>
+    build:
+      context: ${OPENMPF_PROJECTS_PATH}/openmpf-components/python/EastTextDetection
+    depends_on:
+      - workflow_manager
     environment:
       - WFM_USER=admin
       - WFM_PASSWORD=mpfadm

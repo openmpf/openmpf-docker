@@ -376,7 +376,7 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                         echo 'SKIPPING BUILD OF RUNTIME IMAGES'
                     }
                     when (buildRuntimeImages) { // if false, don't show this step in the Stage View UI
-                        sh 'docker-compose build' +
+                        sh 'OPENMPF_PROJECTS_PATH=' + openmpfProjectsPath + ' docker-compose build' +
                                 ' --build-arg BUILD_IMAGE_NAME=' + buildImageName +
                                 ' --build-arg BUILD_DATE=' + buildDate +
                                 ' --build-arg BUILD_VERSION=' + imageTag +
