@@ -137,7 +137,7 @@ COPY build_artifacts/plugin-packages $MPF_HOME/share/components
 RUN mkdir $MPF_HOME/plugins && cd $MPF_HOME/plugins && \
     for file in $MPF_HOME/share/components/*.tar.gz; do tar xzf "$file"; done
 
-COPY node_manager/setup-python-component-venv.py /home/mpf
+COPY node-manager/setup-python-component-venv.py /home/mpf
 RUN dos2unix -q /home/mpf/setup-python-component-venv.py
 
 # Setup venv for Python components:
@@ -149,8 +149,8 @@ RUN for dir in $MPF_HOME/plugins/*; do /home/mpf/setup-python-component-venv.py 
 
 ENV ACTIVE_MQ_HOST=activemq
 ENV ACTIVE_MQ_BROKER_URI=failover://(tcp://$ACTIVE_MQ_HOST:61616)?jms.prefetchPolicy.all=1&startupMaxReconnectAttempts=1
-ENV MYSQL_HOST=mysql_database
-ENV THIS_MPF_NODE=node_manager
+ENV MYSQL_HOST=mysql-database
+ENV THIS_MPF_NODE=node-manager
 # JGROUPS_TCP_ADDRESS set in docker-entrypoint.sh
 ENV JGROUPS_TCP_PORT=7800
 ENV JGROUPS_FILE_PING_LOCATION=$MPF_HOME/share/nodes
@@ -180,7 +180,7 @@ RUN echo "export JAVA_HOME=/usr" >> /etc/profile.d/mpf.sh; \
 # If any build steps change the data within the volume after it has been declared, those changes will be discarded.
 VOLUME $MPF_HOME/share
 
-COPY node_manager/docker-entrypoint.sh /home/mpf
+COPY node-manager/docker-entrypoint.sh /home/mpf
 RUN dos2unix -q /home/mpf/docker-entrypoint.sh
 ENTRYPOINT ["/home/mpf/docker-entrypoint.sh"]
 

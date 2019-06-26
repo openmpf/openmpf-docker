@@ -27,7 +27,7 @@
 version: '2.3'
 services:
   mysql:
-    container_name: mysql_database
+    container_name: mysql-database
     image: mariadb:latest
     restart: always
     environment:
@@ -44,8 +44,8 @@ services:
     networks:
       - compose_overlay
 
-  active_mq:
-    image: <registry>/<repository>/openmpf_active_mq:<image_tag>
+  activemq:
+    image: <registry>/<repository>/openmpf_activemq:<image_tag>
     container_name: activemq
     build: ./active_mq
     restart: always
@@ -70,7 +70,7 @@ services:
     depends_on:
       - mysql
       - redis
-      - active_mq
+      - activemq
     restart: always
     environment:
       # The following line is needed to wait until the mySQL service is available:
@@ -85,11 +85,11 @@ services:
     networks:
       - compose_overlay
 
-  node_manager:
-    image: <registry>/<repository>/openmpf_node_manager:<image_tag>
+  node-manager:
+    image: <registry>/<repository>/openmpf_node-manager:<image_tag>
     build:
       context: ./openmpf_runtime
-      dockerfile: node_manager/Dockerfile
+      dockerfile: node-manager/Dockerfile
     # Uncomment the following line once you have the NVIDIA docker runtime
     #   installed if you want to make use of NVIDIA GPUs:
     # runtime: nvidia

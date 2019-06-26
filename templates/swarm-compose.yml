@@ -46,7 +46,7 @@ services:
           - node.role == manager
 
   activemq:
-    image: <registry>/<repository>/openmpf_active_mq:<image_tag>
+    image: <registry>/<repository>/openmpf_activemq:<image_tag>
     ports:
       - "8161:8161"
     networks:
@@ -76,8 +76,8 @@ services:
         constraints:
           - node.role == manager
 
-  node_manager:
-    image: <registry>/<repository>/openmpf_node_manager:<image_tag>
+  node-manager:
+    image: <registry>/<repository>/openmpf_node-manager:<image_tag>
     volumes:
       - shared_data:/opt/mpf/share
     networks:
