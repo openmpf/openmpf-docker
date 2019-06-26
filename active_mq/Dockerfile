@@ -26,12 +26,13 @@
 
 FROM webcenter/activemq
 
-ENV ACTIVEMQ_PROFILE=default
+ENV ACTIVE_MQ_PROFILE=default
 
 COPY activemq-*.xml /opt/activemq/conf/
 COPY env.* /opt/activemq/bin/
 
 COPY docker-entrypoint.sh /opt/activemq/bin/entrypoint.sh.tmp
+# The following tr command deletes the carriage return character '\r', converting CRLF to LF.
 RUN tr -d '\r' < /opt/activemq/bin/entrypoint.sh.tmp > /opt/activemq/bin/docker-entrypoint.sh
 RUN chmod 755 /opt/activemq/bin/docker-entrypoint.sh
 

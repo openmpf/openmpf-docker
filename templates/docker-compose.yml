@@ -48,13 +48,13 @@ services:
     image: <registry>/<repository>/openmpf_active_mq:<image_tag>
     container_name: activemq
     build: ./active_mq
-    # Environment variable ACTIVEMQ_PROFILE is used to determine which
+    # Environment variable ACTIVE_MQ_PROFILE is used to determine which
     # configuration files are used at runtime. If it is set in the
     # environment, then that value will be used. If it is not set, or
     # it is empty, then the default value specified below will be used.
-    # The default value can be changed to any one of {default, test, custom}.
+    # The default value can be changed to any one of {default, test, production}.
     environment:
-        - ACTIVEMQ_PROFILE=${ACTIVEMQ_PROFILE:-default}
+        - ACTIVE_MQ_PROFILE=default
     restart: always
     ports:
       - "8161:8161"

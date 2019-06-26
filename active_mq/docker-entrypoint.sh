@@ -34,11 +34,11 @@ set -Ee -o pipefail -o xtrace
 
 cd /opt/activemq/conf
 # Put the appropriate activemq.xml file into place
-cp /opt/activemq/conf/activemq-$ACTIVEMQ_PROFILE.xml activemq.xml
+cp /opt/activemq/conf/activemq-$ACTIVE_MQ_PROFILE.xml activemq.xml
 
 # Put the appropriate env file in place
 cd /opt/activemq/bin
-cp env.$ACTIVEMQ_PROFILE env
+cp env.$ACTIVE_MQ_PROFILE env
 
 # This script from the webcenter/activemq image runs activemq under supervisord.
 /app/run.sh
