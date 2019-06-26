@@ -104,6 +104,17 @@ services:
     networks:
       - compose_overlay
 
+  east_text_detection:
+    image: <registry>/<repository>/openmpf_east_text_detection:<image_tag>
+    environment:
+      - WFM_USER=admin
+      - WFM_PASSWORD=mpfadm
+    volumes:
+      - shared_data:/opt/mpf/share
+    networks:
+      - compose_overlay
+    cpus: "2.0"
+
 volumes:
   shared_data:
   mysql_data:

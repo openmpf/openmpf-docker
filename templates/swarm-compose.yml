@@ -85,6 +85,21 @@ services:
     deploy:
       mode: global
 
+  east_text_detection:
+    image: <registry>/<repository>/openmpf_east_text_detection:<image_tag>
+    environment:
+      - WFM_USER=admin
+      - WFM_PASSWORD=mpfadm
+    volumes:
+      - shared_data:/opt/mpf/share
+    networks:
+      - swarm_overlay
+    deploy:
+      mode: global
+      resources:
+        limits:
+          cpus: "2.0"
+
 volumes:
   shared_data:
   mysql_data:
