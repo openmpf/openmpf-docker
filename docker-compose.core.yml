@@ -51,9 +51,9 @@ services:
           - node.role == manager
 
   activemq:
-    image: ${REGISTRY}openmpf_active_mq:${TAG}
+    image: ${REGISTRY}openmpf_activemq:${TAG}
     build:
-      context: ./active_mq
+      context: ./activemq
     environment:
       # Set which configuration files are used at runtime:
       - ACTIVE_MQ_PROFILE=${ACTIVE_MQ_PROFILE}
@@ -67,11 +67,11 @@ services:
     networks:
       - overlay
 
-  workflow_manager:
-    image: ${REGISTRY}openmpf_workflow_manager:${TAG}
+  workflow-manager:
+    image: ${REGISTRY}openmpf_workflow-manager:${TAG}
     build:
       context: ./openmpf_runtime
-      dockerfile: workflow_manager/Dockerfile
+      dockerfile: workflow-manager/Dockerfile
     depends_on:
       - mysql_database
       - redis
@@ -91,11 +91,11 @@ services:
         constraints:
           - node.role == manager
 
-  node_manager:
-    image: ${REGISTRY}openmpf_node_manager:${TAG}
+  node-manager:
+    image: ${REGISTRY}openmpf_node-manager:${TAG}
     build:
       context: ./openmpf_runtime
-      dockerfile: node_manager/Dockerfile
+      dockerfile: node-manager/Dockerfile
     volumes:
       - shared_data:/opt/mpf/share
     networks:

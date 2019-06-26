@@ -29,7 +29,7 @@
 version: '3.7'
 
 services:
-  workflow_manager:
+  workflow-manager:
     environment:
       - KEYSTORE_PASSWORD=${KEYSTORE_PASSWORD}
     ports:

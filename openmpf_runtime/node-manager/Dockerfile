@@ -110,7 +110,7 @@ ENV LD_LIBRARY_PATH /usr/local/nvidia/lib:/usr/local/nvidia/lib64
 # NOTE: This will change the most often so it should  be as far down in the Dockerfile as possible.
 
 # TODO: The more steps that can be kept the same (and in the same order) as the
-#   workflow_manager Dockerfile, the more docker can share the build steps
+#   workflow-manager Dockerfile, the more docker can share the build steps
 #   between the containers. All shared steps (installing java, copying files
 #   from openmpf_build) should be moved to the top of both Dockerfiles.
 
@@ -138,7 +138,7 @@ COPY build_artifacts/plugin-packages $MPF_HOME/share/components
 RUN mkdir $MPF_HOME/plugins && cd $MPF_HOME/plugins && \
     for file in $MPF_HOME/share/components/*.tar.gz; do tar xzf "$file"; done
 
-COPY node_manager/setup-python-component-venv.py /home/mpf
+COPY node-manager/setup-python-component-venv.py /home/mpf
 RUN dos2unix -q /home/mpf/setup-python-component-venv.py
 
 # Setup venv for Python components:
@@ -150,15 +150,15 @@ RUN for dir in $MPF_HOME/plugins/*; do /home/mpf/setup-python-component-venv.py 
 
 ENV ACTIVE_MQ_HOST=activemq
 ENV ACTIVE_MQ_BROKER_URI=failover://(tcp://$ACTIVE_MQ_HOST:61616)?jms.prefetchPolicy.all=0&startupMaxReconnectAttempts=1
-ENV MYSQL_HOST=mysql_database
-ENV THIS_MPF_NODE=node_manager
+ENV MYSQL_HOST=mysql-database
+ENV THIS_MPF_NODE=node-manager
 # JGROUPS_TCP_ADDRESS set in docker-entrypoint.sh
 ENV JGROUPS_TCP_PORT=7800
 ENV JGROUPS_FILE_PING_LOCATION=$MPF_HOME/share/nodes
 ENV no_proxy=localhost,$THIS_MPF_NODE
 ENV MPF_USER=root
 ENV MPF_LOG_PATH=$MPF_HOME/share/logs
-ENV MASTER_MPF_NODE=workflow_manager
+ENV MASTER_MPF_NODE=workflow-manager
 ENV MAIL=/var/spool/mail/mpf
 ENV PATH=$PATH:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin:$MPF_HOME/bin:/usr/bin/
 ENV HOME=/home/mpf
@@ -181,7 +181,7 @@ RUN echo "export JAVA_HOME=/usr" >> /etc/profile.d/mpf.sh; \
 # If any build steps change the data within the volume after it has been declared, those changes will be discarded.
 VOLUME $MPF_HOME/share
 
-COPY node_manager/docker-entrypoint.sh /home/mpf
+COPY node-manager/docker-entrypoint.sh /home/mpf
 RUN dos2unix -q /home/mpf/docker-entrypoint.sh
 ENTRYPOINT ["/home/mpf/docker-entrypoint.sh"]
 
