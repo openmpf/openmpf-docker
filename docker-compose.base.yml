@@ -24,72 +24,79 @@
 # limitations under the License.                                            #
 #############################################################################
 
-version: '3.3'
+# Use this file in conjunction with docker-compose.http.yml or
+# docker-compose.https.yml. Place them both in the same directory.
+
+version: '3.7'
+
+x-detection-component-base:
+  &detection-component-base
+  environment:
+    - WFM_USER=${WFM_USER}
+    - WFM_PASSWORD=${WFM_PASSWORD}
+  depends_on:
+    - workflow_manager
+  volumes:
+    - shared_data:/opt/mpf/share
+  networks:
+    - overlay
+
 services:
   mysql_database:
     image: mariadb:latest
     environment:
-      - MYSQL_ROOT_PASSWORD=password
-      - MYSQL_DATABASE=mpf
-      - MYSQL_USER=mpf
-      - MYSQL_PASSWORD=mpf
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - MYSQL_DATABASE=${MYSQL_DATABASE}
+      - MYSQL_USER=${MYSQL_USER}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+    # https://github.com/docker-library/mariadb/issues/113
     command: [
       '--wait_timeout=28800',
     ]
     volumes:
       - mysql_data:/var/lib/mysql
     networks:
-      - swarm_overlay
+      - overlay
     deploy:
       placement:
         constraints:
           - node.role == manager
 
   activemq:
-    image: <registry>/<repository>/openmpf_active_mq:<image_tag>
+    image: ${REGISTRY}openmpf_active_mq:${TAG}
     ports:
       - "8161:8161"
     networks:
-      - swarm_overlay
+      - overlay
 
   redis:
     image: redis:latest
     networks:
-      - swarm_overlay
-
-  workflow_manager:
-    image: <registry>/<repository>/openmpf_workflow_manager:<image_tag>
-    environment:
-      # The following line is needed to wait until the mySQL service is available:
-      - MYSQL_ROOT_PASSWORD=password
-      - KEYSTORE_PASSWORD=<keystore_password>
-    ports:
-      - "8080:8080"
-      - "8443:8443"
-    volumes:
-      - shared_data:/opt/mpf/share
-    networks:
-      - swarm_overlay
-    secrets: [https_keystore]
-    deploy:
-      placement:
-        constraints:
-          - node.role == manager
+      - overlay
 
   node_manager:
-    image: <registry>/<repository>/openmpf_node_manager:<image_tag>
+    image: ${REGISTRY}openmpf_node_manager:${TAG}
     volumes:
       - shared_data:/opt/mpf/share
     networks:
-      - swarm_overlay
+      - overlay
     deploy:
       mode: global
+
+  east_text_detection:
+    <<: *detection-component-base
+    image: ${REGISTRY}openmpf_east_text_detection:${TAG}
+    build:
+      context: ${OPENMPF_PROJECTS_PATH}/openmpf-components/python/EastTextDetection
+    deploy:
+      mode: global
+      resources:
+        limits:
+          cpus: "2.0"
 
 volumes:
   shared_data:
   mysql_data:
 
 networks:
-  swarm_overlay:
-
-secrets: { https_keystore: { file: <keystore_path> } } # One line to make easier for script to remove
+  overlay:

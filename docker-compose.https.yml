@@ -1,5 +1,3 @@
-#!/usr/bin/env bash
-
 #############################################################################
 # NOTICE                                                                    #
 #                                                                           #
@@ -26,32 +24,34 @@
 # limitations under the License.                                            #
 #############################################################################
 
-printUsage() {
-  echo "Usages:"
-  echo "docker-compose-cleanup.sh [--remove-images]"
-  exit -1
-}
+version: '3.7'
 
-if [ $# -gt 1 ]; then
-  printUsage
-fi
-
-################################################################################
-# Remove images                                                                #
-################################################################################
-
-if [ $# -eq 1 ]; then
-  if [ "$1" != "--remove-images" ]; then
-    printUsage
-  fi
-  set -o xtrace
-  docker-compose down --rmi all
-  exit
-fi
-
-################################################################################
-# Don't remove images                                                          #
-################################################################################
-
-set -o xtrace
-docker-compose down -v
+services:
+  workflow_manager:
+    image: ${REGISTRY}openmpf_workflow_manager:${TAG}
+    depends_on:
+      - mysql_database
+      - redis
+      - activemq
+    restart: always
+    environment:
+      # The following line is needed to wait until the mySQL service is available:
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - KEYSTORE_PASSWORD=${KEYSTORE_PASSWORD}
+    ports:
+      - "8080:8080"
+      - "8443:8443"
+    volumes:
+      - shared_data:/opt/mpf/share
+    networks:
+      - overlay
+    secrets: [https_keystore]
+    deploy:
+      placement:
+        constraints:
+          - node.role == manager
+          -
+# A secret will not be created unless at least one service uses it.
+secrets:
+  https_keystore:
+    file: ${KEYSTORE_PATH}

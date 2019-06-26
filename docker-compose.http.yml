@@ -24,89 +24,26 @@
 # limitations under the License.                                            #
 #############################################################################
 
-version: '2.3'
+version: '3.7'
+
 services:
-  mysql:
-    container_name: mysql_database
-    image: mariadb:latest
-    restart: always
-    environment:
-      - MYSQL_ROOT_PASSWORD=password
-      - MYSQL_DATABASE=mpf
-      - MYSQL_USER=mpf
-      - MYSQL_PASSWORD=mpf
-    # https://github.com/docker-library/mariadb/issues/113
-    command: [
-      '--wait_timeout=28800',
-    ]
-    volumes:
-      - mysql_data:/var/lib/mysql
-    networks:
-      - compose_overlay
-
-  active_mq:
-    image: <registry>/<repository>/openmpf_active_mq:<image_tag>
-    container_name: activemq
-    build: ./active_mq
-    restart: always
-    ports:
-      - "8161:8161"
-    networks:
-      - compose_overlay
-
-  redis:
-    container_name: redis
-    image: redis
-    restart: always
-    networks:
-      - compose_overlay
-
   workflow_manager:
-    image: <registry>/<repository>/openmpf_workflow_manager:<image_tag>
-    container_name: workflow_manager
-    build:
-      context: ./openmpf_runtime
-      dockerfile: workflow_manager/Dockerfile
+    image: ${REGISTRY}openmpf_workflow_manager:${TAG}
     depends_on:
-      - mysql
+      - mysql_database
       - redis
-      - active_mq
+      - activemq
     restart: always
     environment:
       # The following line is needed to wait until the mySQL service is available:
-      - MYSQL_ROOT_PASSWORD=password
-      - KEYSTORE_PASSWORD=<keystore_password>
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
     ports:
       - "8080:8080"
-      - "8443:8443"
-    volumes:
-      - shared_data:/opt/mpf/share
-      - <keystore_path>:/run/secrets/https_keystore:ro
-    networks:
-      - compose_overlay
-
-  node_manager:
-    image: <registry>/<repository>/openmpf_node_manager:<image_tag>
-    build:
-      context: ./openmpf_runtime
-      dockerfile: node_manager/Dockerfile
-    # Uncomment the following line once you have the NVIDIA docker runtime
-    #   installed if you want to make use of NVIDIA GPUs:
-    # runtime: nvidia
-    restart: always
-    # Uncomment the following lines to enable use of the node-manager status
-    #   page. You will also need to set mpf.node.status.page.enabled in the
-    #   node-manager properties file.
-    # ports:
-    #  - "8008:8008"
     volumes:
       - shared_data:/opt/mpf/share
     networks:
-      - compose_overlay
-
-volumes:
-  shared_data:
-  mysql_data:
-
-networks:
-  compose_overlay:
+      - overlay
+    deploy:
+      placement:
+        constraints:
+          - node.role == manager

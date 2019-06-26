@@ -224,27 +224,24 @@ Sometimes Maven will time out while trying to download dependencies within a
 Docker container.
 
 Next you need to generate the `docker-compose.yml` file. To enable HTTPS on the
-Workflow Manager, see [below](#optional-configure-https) for instructions on how
-to run the `docker-generate-compose-files.sh` script.
+Workflow Manager, see [below](#optional-configure-https).
 
-If you don't have access to a private Docker registry, then run:
+First, set the environment variables in `.env`. Leave the `KEYSTORE_` variables
+blank when configuring the Workflow Manager to use HTTP.
 
-- `./scripts/docker-generate-compose-files.sh`
+Run the following command to generate a stand-alone `docker-compose.yml` file:
 
-Otherwise, if you do have access to a private Docker registry, then run:
+- `docker-compose -f docker-compose.base.yml -f docker-compose.http.yml config > docker-compose.yml`
 
-- `./scripts/docker-generate-compose-files.sh <registry> [<repository>=openmpf] [<image-tag>=latest]`
+Optionally, you can make further customizations to the `docker-compose.yml` file by generating it with your own
+`docker-compose.override.yml` file as follows:
 
-Note that `repository` and `image-tag` are optional parameters and have a
-default value of `openmpf` and `latest`, respectively.
+- `docker-compose -f docker-compose.base.yml -f docker-compose.http.yml -f docker-compose.override.yml config > docker-compose.yml`
 
-Note that this command will also generate `swarm-compose.yml`, which you will
-use if you choose to follow the [Swarm Deployment Guide](SWARM.md).
-
-If you built the runtime images before, then run the following script to
+If you built the runtime images before, then run the following command to
 remove the old containers and volumes:
 
-- `./scripts/docker-compose-cleanup.sh`
+- `docker-compose down`
 
 Create the new runtime images:
 
@@ -323,7 +320,7 @@ If you would like to start from a clean slate the next time you run
 `docker-compose up`, as though you had never deployed OpenMPF before, then run
 the following command from within the `openmpf-docker` directory:
 
-- `./scripts/docker-compose-cleanup.sh`
+- `docker-compose down -v`
 
 This will remove all of the OpenMPF Docker containers, volumes, and networks.
 It does not remove the Docker images.
@@ -333,7 +330,30 @@ It does not remove the Docker images.
 To remove all of the OpenMPF Docker containers, volumes, networks, and images,
 then run the following command from within the `openmpf-docker` directory:
 
-- `./scripts/docker-compose-cleanup.sh --remove-images`
+- `docker-compose down -v --rmi all`
+
+### (Optional) Docker Swarm Deployment
+
+OpenMPF can be deployed in a distributed environment if you would like to take
+advantage of running the project, and scheduling jobs, across multiple physical
+or virtual machines. The simplest way to do this is to set up a Docker Swarm
+deployment. If you would like a walkthrough on how to do that, please see the
+[Swarm Deployment Guide](SWARM.md).
+
+### (Optional) Configure HTTPS
+
+The Workflow Manager web application can be configured to use HTTPS. To enable
+HTTPS you must set the `KEYSTORE_` variables in the `.env` file.
+
+When using a Docker Compose deployment, `KEYSTORE_PATH` is the path to the
+keystore on the host's file system. When using a Docker Swarm deployment,
+`KEYSTORE_PATH` is the path to the keystore on the swarm manager host's file
+system. The keystore only needs to be present on the swarm manager. The Java
+JKS and PKCS#12 keystore formats are supported.
+
+Run the following command to generate the stand-alone `docker-compose.yml` file:
+
+- `docker-compose -f docker-compose.base.yml -f docker-compose.https.yml config > docker-compose.yml`
 
 ### (Optional) Add GPU support with NVIDIA CUDA
 
@@ -348,48 +368,30 @@ NVIDIA Docker runtime. Follow
 [this](https://github.com/NVIDIA/nvidia-docker/blob/master/README.md)
 installation guide.
 
-Now that you have both of those installed, you can specify the `runtime: nvidia`
-flag for the Node Manager container. This can be done by uncommenting the flag
-in the [docker-compose.yml](docker-compose.yml) file.
+To get the nodes in your swarm cluster to use the NVIDIA Docker runtime, you
+will need to update the `/etc/docker/daemon.json` file on each node. If that
+file does not already exist, then create it. Add the following content:
+
+```
+{   
+    "default-runtime": "nvidia",
+    "runtimes": {
+        "nvidia": {
+            "path": "/usr/bin/nvidia-container-runtime",
+            "runtimeArgs": []
+        }
+    }
+}
+```
+
+This setting will affect every container running on the node, which, in general,
+should not cause any problems for containers that don't require a special
+runtime.
 
 After you launch OpenMPF with the NVIDIA runtime specified, you need to login
 and go to the Properties page under Configuration in the top menu bar, then set
 the `detection.cuda.device.id property` to 0, or the CUDA index of your GPU
 device.
-
-### (Optional) Docker Swarm Deployment
-
-OpenMPF can be deployed in a distributed environment if you would like to take
-advantage of running the project, and scheduling jobs, across multiple physical
-or virtual machines. The simplest way to do this is to set up a Docker Swarm
-deployment. If you would like a walkthrough on how to do that, please see the
-[Swarm Deployment Guide](SWARM.md).
-
-### (Optional) Configure HTTPS
-
-The Workflow Manager web application can be configured to use HTTPS. To enable
-HTTPS you must run `docker-generate-compose-files.sh` with additional arguments.
-
-If you don't have access to a private Docker registry, then run:
-
-- `./scripts/docker-generate-compose-files.sh -nr [<image-tag>=latest] <keystore-path> <keystore-password>`
-
-Note that `image-tag` is an optional parameter and has a default value of
-`latest`.
-
-Otherwise, if you do have access to a private Docker registry, then run:
-
-- `./scripts/docker-generate-compose-files.sh <registry> [<repository>=openmpf] [<image-tag>=latest] <keystore-path> <keystore-password>`
-
-Note that `repository` and `image-tag` are optional parameters and have a
-default value of `openmpf` and `latest`, respectively.
-
-When using a Docker Compose deployment, `<keystore-path>` is the path to the
-keystore on the host's file system. When using a Docker Swarm deployment,
-`<keystore-path>` is the path to the keystore on the swarm manager host's file
-system. The keystore only needs to be present on the swarm manager. The Java
-JKS and PKCS#12 keystore formats are supported.
-
 
 ## Project Website
 

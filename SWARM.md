@@ -145,17 +145,17 @@ range. For example, `8.8.8.0/24`.
 #### Docker Overlay Network
 
 Unless a subnet is specified for the application stack's network in
-`swarm-compose.yml`, Docker will automatically create an overlay network for
+`docker-compose.base.yml`, Docker will automatically create an overlay network for
 secure node-to-node communication when you run `docker stack deploy`. Similar to
 the ingress network issue described above, sometimes the subnet that Docker
 chooses conflicts with the subnet of the host machines running Docker.
 
 To prevent this, manually specify a subnet IP address range for the overlay
-network in `swarm-compose.yml` as follows:
+network in `docker-compose.base.yml` as follows:
 
 ```
 networks:
-  swarm_overlay:
+  overlay:
     driver: overlay
     ipam:
       config:
@@ -168,7 +168,7 @@ range. For example, `9.9.9.0/24`. Make sure this does not conflict with
 
 ### Deploy the Stack to the Swarm
 
-`docker stack deploy -c swarm-compose.yml openmpf --with-registry-auth`
+`docker stack deploy openmpf -c docker-compose.yml --with-registry-auth`
 
 The stack will likely take a long time to come up the first time you deploy it
 because if a container gets scheduled on a node where the image is not present
@@ -299,34 +299,3 @@ the following command from within the `openmpf-docker` directory:
 - `./scripts/docker-swarm-cleanup.sh --all-volumes --remove-shared-data`
 
 This does not remove the Docker images.
-
-### (Optional) Add GPU support with NVIDIA CUDA
-
-Refer to the steps listed in the [(Optional) Add GPU support with NVIDIA
-CUDA](README.md#optional-add-gpu-support-with-nvidia-cuda) section in the
-README. Those instructions are for a single-host Docker Compose deployment. All
-of the same steps apply to a Docker Swarm deployment with the exception of the
-steps involving the `runtime: nvidia` flag. This is because `swarm-compose.yml`
-supports a different Docker Compose file version than `docker-compose.yml`. That
-version does not support that flag.
-
-To address this, and to get the nodes in your swarm cluster to use the NVIDIA
-Docker runtime, you will need to update the `/etc/docker/daemon.json` file on
-each node. If that file does not already exist, then create it. Add the
-following content:
-
-```
-{   
-    "default-runtime": "nvidia",
-    "runtimes": {
-        "nvidia": {
-            "path": "/usr/bin/nvidia-container-runtime",
-            "runtimeArgs": []
-        }
-    }
-}
-```
-
-This setting will affect every container running on the node, which, in general,
-should not cause any problems for containers that don't require a special
-runtime.
