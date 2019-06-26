@@ -48,7 +48,7 @@ services:
   activemq:
     image: <registry>/<repository>/openmpf_active_mq:<image_tag>
     # ACTIVE_MQ_PROFILE is used to determine which configuration files are used
-    # at runtime. This repository supplies only the default configuration files.
+    # at runtime.
     environment:
         - ACTIVE_MQ_PROFILE=default
     ports:

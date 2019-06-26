@@ -49,7 +49,7 @@ services:
     container_name: activemq
     build: ./active_mq
     # ACTIVE_MQ_PROFILE is used to determine which configuration files are used
-    # at runtime. This repository supplies only the default configuration files.
+    # at runtime.
     environment:
         - ACTIVE_MQ_PROFILE=default
     restart: always
