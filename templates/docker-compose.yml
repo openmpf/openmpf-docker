@@ -48,6 +48,10 @@ services:
     image: <registry>/<repository>/openmpf_active_mq:<image_tag>
     container_name: activemq
     build: ./active_mq
+    # ACTIVE_MQ_PROFILE is used to determine which configuration files are used
+    # at runtime.
+    environment:
+        - ACTIVE_MQ_PROFILE=default
     restart: always
     ports:
       - "8161:8161"

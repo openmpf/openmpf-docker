@@ -26,13 +26,18 @@
 
 FROM webcenter/activemq
 
-# TODO: This approach to using sed is brittle:
-RUN sed -i '27s/.*/# ACTIVEMQ_OPTS_MEMORY="-Xms64M -Xmx1G"/' /opt/activemq/bin/env
+ENV ACTIVE_MQ_PROFILE=default
 
-COPY activemq.xml /opt/activemq/conf/
+COPY activemq-*.xml /opt/activemq/conf/
+COPY env.* /opt/activemq/bin/
 
-# TODO: This approach to using sed is brittle:
-RUN sed -i '52s/.*/log4j.appender.logfile.layout.ConversionPattern=%d %p [%t] %c - %m%n/' /opt/activemq/conf/log4j.properties
+COPY docker-entrypoint.sh /opt/activemq/bin/entrypoint.sh.tmp
+# The following tr command deletes the carriage return character '\r', converting CRLF to LF.
+RUN tr -d '\r' < /opt/activemq/bin/entrypoint.sh.tmp > /opt/activemq/bin/docker-entrypoint.sh
+RUN chmod 755 /opt/activemq/bin/docker-entrypoint.sh
+
+ENTRYPOINT ["/opt/activemq/bin/docker-entrypoint.sh"]
+
 
 ################################################################################
 # Labels                                                                       #

@@ -1,3 +1,5 @@
+#!/bin/bash
+
 #############################################################################
 # NOTICE                                                                    #
 #                                                                           #
@@ -18,82 +20,26 @@
 #    http://www.apache.org/licenses/LICENSE-2.0                             #
 #                                                                           #
 # Unless required by applicable law or agreed to in writing, software       #
-# distributed under the License is distributed on an "AS IS" BASIS,         #
+# distributed under the License is distributed don an "AS IS" BASIS,        #
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  #
 # See the License for the specific language governing permissions and       #
 # limitations under the License.                                            #
 #############################################################################
 
-version: '3.3'
-services:
-  mysql_database:
-    image: mariadb:latest
-    environment:
-      - MYSQL_ROOT_PASSWORD=password
-      - MYSQL_DATABASE=mpf
-      - MYSQL_USER=mpf
-      - MYSQL_PASSWORD=mpf
-    command: [
-      '--wait_timeout=28800',
-    ]
-    volumes:
-      - mysql_data:/var/lib/mysql
-    networks:
-      - swarm_overlay
-    deploy:
-      placement:
-        constraints:
-          - node.role == manager
+set -Ee -o pipefail -o xtrace
 
-  activemq:
-    image: <registry>/<repository>/openmpf_active_mq:<image_tag>
-    # ACTIVE_MQ_PROFILE is used to determine which configuration files are used
-    # at runtime.
-    environment:
-        - ACTIVE_MQ_PROFILE=default
-    ports:
-      - "8161:8161"
-    networks:
-      - swarm_overlay
+################################################################################
+# Custom Steps                                                                 #
+################################################################################
 
-  redis:
-    image: redis:latest
-    networks:
-      - swarm_overlay
+cd /opt/activemq/conf
+# Put the appropriate activemq.xml file into place
+cp /opt/activemq/conf/activemq-$ACTIVE_MQ_PROFILE.xml activemq.xml
 
-  workflow_manager:
-    image: <registry>/<repository>/openmpf_workflow_manager:<image_tag>
-    environment:
-      # The following line is needed to wait until the mySQL service is available:
-      - MYSQL_ROOT_PASSWORD=password
-      - KEYSTORE_PASSWORD=<keystore_password>
-    ports:
-      - "8080:8080"
-      - "8443:8443"
-    volumes:
-      - shared_data:/opt/mpf/share
-    networks:
-      - swarm_overlay
-    secrets: [https_keystore]
-    deploy:
-      placement:
-        constraints:
-          - node.role == manager
+# Put the appropriate env file in place
+cd /opt/activemq/bin
+cp env.$ACTIVE_MQ_PROFILE env
 
-  node_manager:
-    image: <registry>/<repository>/openmpf_node_manager:<image_tag>
-    volumes:
-      - shared_data:/opt/mpf/share
-    networks:
-      - swarm_overlay
-    deploy:
-      mode: global
+# This script from the webcenter/activemq image runs activemq under supervisord.
+/app/run.sh
 
-volumes:
-  shared_data:
-  mysql_data:
-
-networks:
-  swarm_overlay:
-
-secrets: { https_keystore: { file: <keystore_path> } } # One line to make easier for script to remove
