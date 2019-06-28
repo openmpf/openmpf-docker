@@ -36,7 +36,7 @@ comp_dir = sys.argv[1]
 json_file = open(comp_dir + "/descriptor/descriptor.json", "r")
 json_data = json.load(json_file)
 
-if json_data["sourceLanguage"] == "python":
+if "sourceLanguage" in json_data and json_data["sourceLanguage"] == "python":
     wheelhouse_dir = comp_dir + "/wheelhouse"
     venv_dir = comp_dir + "/venv"
 
