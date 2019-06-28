@@ -299,7 +299,8 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
 
                 // Generate compose file
                 def dockerComposeConfigCommand = 'OPENMPF_PROJECTS_PATH=' + openmpfProjectsPath +
-                        ' REGISTRY=' + remoteImageTagPrefix + ' docker-compose' +
+                        ' REGISTRY=' + remoteImageTagPrefix + ' TAG=' + imageTag +
+                        ' docker-compose' +
                         ' -f docker-compose.core.yml' +
                         ' -f docker-compose.http.yml' +
                         ' -f docker-compose.components.yml'
