@@ -164,14 +164,12 @@ For more information, refer to https://github.com/openmpf/openmpf-docker/blob/de
 
 
 if [ "$omitComposeFiles" = 0 ]; then
-  echo "Including docker-compose.yml and swarm-compose.yml."
+  echo "Including docker-compose.yml."
   echo
   if [ "$cleanImageNames" = 1 ]; then
     generateWithoutRegistry docker-compose.yml "$outDir/docker-compose.yml"
-    generateWithoutRegistry swarm-compose.yml "$outDir/swarm-compose.yml"
   else
     cp docker-compose.yml "$outDir"; removeBuildFields "$outDir/docker-compose.yml"
-    cp swarm-compose.yml "$outDir"; removeBuildFields "$outDir/swarm-compose.yml"
   fi
 fi
 
@@ -226,7 +224,7 @@ echo
 if [ "$omitComposeFiles" = 0 ] || [ "$cleanImageNames" = 0 ]; then
   echo "WARNING: Please practice caution when sharing this package with others:"
   if [ "$omitComposeFiles" = 0 ]; then
-    echo "- This package contains docker-compose.yml and swarm-compose.yml files that may contain password and private registry information."
+    echo "- This package contains a docker-compose.yml file that may contain password and other private information."
   fi
   if [ "$cleanImageNames" = 0 ]; then
     echo "- This package contains docker images with names that may contain private registry information."
