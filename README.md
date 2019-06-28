@@ -234,7 +234,7 @@ Run the following command to generate a stand-alone `docker-compose.yml` file:
 ```
 docker-compose \
    -f docker-compose.core.yml \
-   -f docker-compose.http.yml \ 
+   -f docker-compose.http.yml \
    -f docker-compose.components.yml \
    config > docker-compose.yml
 ```
@@ -245,7 +245,7 @@ by generating it with your own `docker-compose.custom.yml` file as follows:
 ```
 docker-compose \
    -f docker-compose.core.yml \
-   -f docker-compose.http.yml \ 
+   -f docker-compose.http.yml \
    -f docker-compose.components.yml \
    -f docker-compose.custom.yml \
    config > docker-compose.yml
@@ -369,7 +369,7 @@ Run the following command to generate the stand-alone `docker-compose.yml` file:
 ```
 docker-compose \
    -f docker-compose.core.yml \
-   -f docker-compose.https.yml \ 
+   -f docker-compose.https.yml \
    -f docker-compose.components.yml \
    config > docker-compose.yml
 ```

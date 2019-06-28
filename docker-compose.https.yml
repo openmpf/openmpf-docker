@@ -50,7 +50,7 @@ services:
       placement:
         constraints:
           - node.role == manager
-          -
+
 # A secret will not be created unless at least one service uses it.
 secrets:
   https_keystore:
