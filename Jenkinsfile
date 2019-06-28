@@ -304,8 +304,7 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                         ' -f docker-compose.components.yml'
 
                 if (buildCustomComponents) {
-                    dockerComposeConfigCommand += ' -f ' + openmpfProjectsPath + '/' + openmpfCustomComponentsSlug +
-                            '/docker-compose.custom-components.yml'
+                    dockerComposeConfigCommand += ' -f openmpf_custom_build/docker-compose.custom-components.yml'
                 }
 
                 if (applyCustomConfig) {
