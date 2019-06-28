@@ -148,7 +148,7 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
     def buildMySqlDataVolumeSuffix = 'mysql_data_' + currentBuild.projectName
     def buildMySqlDataVolume = 'openmpf_' + buildMySqlDataVolumeSuffix
 
-    def buildNetworkSuffix = 'compose_overlay_' + currentBuild.projectName
+    def buildNetworkSuffix = 'overlay_' + currentBuild.projectName
     def buildNetwork = 'openmpf_' + buildNetworkSuffix
 
     try {
@@ -297,9 +297,24 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                     buildPackageJson = buildPackageJson.substring(buildPackageJson.lastIndexOf("/") + 1)
                 }
 
-                // Generate compose files
-                sh './scripts/docker-generate-compose-files.sh ' + dockerRegistryHost + ':' +
-                        dockerRegistryPort + ' openmpf ' + imageTag
+                // Generate compose file
+                def dockerComposeConfigCommand = 'REGISTRY=' + remoteImageTagPrefix + ' docker-compose' +
+                        ' -f docker-compose.core.yml' +
+                        ' -f docker-compose.http.yml' +
+                        ' -f docker-compose.components.yml'
+
+                if (buildCustomComponents) {
+                    dockerComposeConfigCommand += ' -f ' + openmpfProjectsPath + '/' + openmpfCustomComponentsSlug +
+                            '/docker-compose.custom-components.yml'
+                }
+
+                if (applyCustomConfig) {
+                    dockerComposeConfigCommand += ' -f openmpf_custom_config/docker-compose.custom-config.yml'
+                }
+
+                dockerComposeConfigCommand += ' config > docker-compose.yml'
+
+                sh "${dockerComposeConfigCommand}"
 
                 // TODO: Attempt to pull images in separate stage so that they are not
                 // built from scratch on a clean Jenkins node.
@@ -395,13 +410,13 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                     }
                     when (buildOpenmpf && buildRuntimeImages && runMvnTests) { // if false, don't show this step in the Stage View UI
                         // Add extra test data volume
-                        sh 'sed \'/shared_data:\\/opt\\/mpf\\/share/a \\      - ' + extraTestDataPath + ':/mpfdata:ro\'' +
+                        sh 'sed \'/shared_data:\\/opt\\/mpf\\/share:rw/a \\    - ' + extraTestDataPath + ':/mpfdata:ro\'' +
                                 ' docker-compose.yml > docker-compose-test.yml'
 
                         // Update volume and network names
                         sh 'sed -i \'s/shared_data:/' + buildSharedDataVolumeSuffix + ':/g\' docker-compose-test.yml'
                         sh 'sed -i \'s/mysql_data:/' + buildMySqlDataVolumeSuffix + ':/g\' docker-compose-test.yml'
-                        sh 'sed -i \'s/compose_overlay/' + buildNetworkSuffix + '/g\' docker-compose-test.yml'
+                        sh 'sed -i \'s/overlay/' + buildNetworkSuffix + '/g\' docker-compose-test.yml'
 
                         // Run supporting containers in background.
                         sh 'docker-compose -f docker-compose-test.yml up -d' +
