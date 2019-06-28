@@ -392,15 +392,15 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                         echo 'SKIPPING BUILD OF RUNTIME IMAGES'
                     }
                     when (buildRuntimeImages) { // if false, don't show this step in the Stage View UI
+                        sh 'DOCKER_BUILDKIT=1 docker build openmpf_runtime ' +
+                                '--file openmpf_runtime/python_executor/Dockerfile ' +
+                                "--tag '${pythonExecutorImageName}'"
+                        
                         sh 'OPENMPF_PROJECTS_PATH=' + openmpfProjectsPath + ' docker-compose build' +
                                 ' --build-arg BUILD_IMAGE_NAME=' + buildImageName +
                                 ' --build-arg BUILD_DATE=' + buildDate +
                                 ' --build-arg BUILD_VERSION=' + imageTag +
                                 ' --build-arg BUILD_SHAS=\"' + buildShas + '\"'
-
-                        sh 'DOCKER_BUILDKIT=1 docker build openmpf_runtime ' +
-                                '--file openmpf_runtime/python_executor/Dockerfile ' +
-                                "--tag '${pythonExecutorImageName}'"
                     }
                 }
 
