@@ -52,6 +52,8 @@ services:
 
   activemq:
     image: ${REGISTRY}openmpf_active_mq:${TAG}
+    build:
+      context: ./active_mq
     environment:
       # Set which configuration files are used at runtime:
       - ACTIVE_MQ_PROFILE=${ACTIVE_MQ_PROFILE}
@@ -67,6 +69,9 @@ services:
 
   node_manager:
     image: ${REGISTRY}openmpf_node_manager:${TAG}
+    build:
+      context: ./openmpf_runtime
+      dockerfile: node_manager/Dockerfile
     volumes:
       - shared_data:/opt/mpf/share
     networks:

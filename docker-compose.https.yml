@@ -29,6 +29,9 @@ version: '3.7'
 services:
   workflow_manager:
     image: ${REGISTRY}openmpf_workflow_manager:${TAG}
+    build:
+      context: ./openmpf_runtime
+      dockerfile: workflow_manager/Dockerfile
     depends_on:
       - mysql_database
       - redis

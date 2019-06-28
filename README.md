@@ -254,9 +254,10 @@ docker-compose \
 If you built the runtime images before, then run the following command to
 remove the old containers and volumes:
 
-- `docker-compose down`
+- `docker-compose down -v`
 
-Create the new runtime images:
+Make sure that `OPENMPF_PROJECTS_PATH` is set correctly in `.env`, then run the
+following command to create the new runtime images:
 
 - `docker-compose build`
 
