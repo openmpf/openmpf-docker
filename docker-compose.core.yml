@@ -29,18 +29,6 @@
 
 version: '3.7'
 
-x-detection-component-base:
-  &detection-component-base
-  environment:
-    - WFM_USER=${WFM_USER}
-    - WFM_PASSWORD=${WFM_PASSWORD}
-  depends_on:
-    - workflow_manager
-  volumes:
-    - shared_data:/opt/mpf/share
-  networks:
-    - overlay
-
 services:
   mysql_database:
     image: mariadb:latest
@@ -64,6 +52,9 @@ services:
 
   activemq:
     image: ${REGISTRY}openmpf_active_mq:${TAG}
+    environment:
+      # Set which configuration files are used at runtime:
+      - ACTIVE_MQ_PROFILE=${ACTIVE_MQ_PROFILE}
     ports:
       - "8161:8161"
     networks:
@@ -82,17 +73,6 @@ services:
       - overlay
     deploy:
       mode: global
-
-  east_text_detection:
-    <<: *detection-component-base
-    image: ${REGISTRY}openmpf_east_text_detection:${TAG}
-    build:
-      context: ${OPENMPF_PROJECTS_PATH}/openmpf-components/python/EastTextDetection
-    deploy:
-      mode: global
-      resources:
-        limits:
-          cpus: "2.0"
 
 volumes:
   shared_data:

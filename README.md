@@ -231,12 +231,25 @@ blank when configuring the Workflow Manager to use HTTP.
 
 Run the following command to generate a stand-alone `docker-compose.yml` file:
 
-- `docker-compose -f docker-compose.base.yml -f docker-compose.http.yml config > docker-compose.yml`
+```
+docker-compose \
+   -f docker-compose.core.yml \
+   -f docker-compose.http.yml \ 
+   -f docker-compose.components.yml \
+   config > docker-compose.yml
+```
 
-Optionally, you can make further customizations to the `docker-compose.yml` file by generating it with your own
-`docker-compose.override.yml` file as follows:
+Optionally, you can make further customizations to the `docker-compose.yml` file
+by generating it with your own `docker-compose.custom.yml` file as follows:
 
-- `docker-compose -f docker-compose.base.yml -f docker-compose.http.yml -f docker-compose.override.yml config > docker-compose.yml`
+```
+docker-compose \
+   -f docker-compose.core.yml \
+   -f docker-compose.http.yml \ 
+   -f docker-compose.components.yml \
+   -f docker-compose.custom.yml \
+   config > docker-compose.yml
+```
 
 If you built the runtime images before, then run the following command to
 remove the old containers and volumes:
@@ -353,7 +366,13 @@ JKS and PKCS#12 keystore formats are supported.
 
 Run the following command to generate the stand-alone `docker-compose.yml` file:
 
-- `docker-compose -f docker-compose.base.yml -f docker-compose.https.yml config > docker-compose.yml`
+```
+docker-compose \
+   -f docker-compose.core.yml \
+   -f docker-compose.https.yml \ 
+   -f docker-compose.components.yml \
+   config > docker-compose.yml
+```
 
 ### (Optional) Add GPU support with NVIDIA CUDA
 

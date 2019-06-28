@@ -170,6 +170,7 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
         def buildContainerId
 
         def workflowManagerImageName = remoteImageTagPrefix + 'openmpf_workflow_manager:' + imageTag
+        def activeMqImageName = remoteImageTagPrefix + 'openmpf_active_mq:' + imageTag
         def pythonExecutorImageName = remoteImageTagPrefix + 'openmpf_python_executor:' + imageTag
 
         def openmpfGitHubUrl = 'https://github.com/openmpf'
@@ -455,6 +456,14 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                             ' --build-arg BUILD_VERSION=' + imageTag +
                             ' --build-arg BUILD_SHAS=\"' + buildShas + '\"' +
                             ' -t ' + workflowManagerImageName
+
+                    // Build and tag the new ActiveMQ image with the image tag used in the compose files.
+                    sh 'docker build openmpf_custom_config/active_mq' +
+                            ' --build-arg BUILD_IMAGE_NAME=' + activeMqImageName +
+                            ' --build-arg BUILD_DATE=' + buildDate +
+                            ' --build-arg BUILD_VERSION=' + imageTag +
+                            ' --build-arg BUILD_SHAS=\"' + buildShas + '\"' +
+                            ' -t ' + activeMqImageName
                 }
             }
 

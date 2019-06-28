@@ -24,34 +24,31 @@
 # limitations under the License.                                            #
 #############################################################################
 
+# Use this file in conjunction with docker-compose.http.yml or
+# docker-compose.https.yml. Place them both in the same directory.
+
 version: '3.7'
 
+x-detection-component-base:
+  &detection-component-base
+  environment:
+    - WFM_USER=${WFM_USER}
+    - WFM_PASSWORD=${WFM_PASSWORD}
+  depends_on:
+    - workflow_manager
+  volumes:
+    - shared_data:/opt/mpf/share
+  networks:
+    - overlay
+
 services:
-  workflow_manager:
-    image: ${REGISTRY}openmpf_workflow_manager:${TAG}
-    depends_on:
-      - mysql_database
-      - redis
-      - activemq
-    restart: always
-    environment:
-      # The following line is needed to wait until the mySQL service is available:
-      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
-      - KEYSTORE_PASSWORD=${KEYSTORE_PASSWORD}
-    ports:
-      - "8080:8080"
-      - "8443:8443"
-    volumes:
-      - shared_data:/opt/mpf/share
-    networks:
-      - overlay
-    secrets: [https_keystore]
+  east_text_detection:
+    <<: *detection-component-base
+    image: ${REGISTRY}openmpf_east_text_detection:${TAG}
+    build:
+      context: ${OPENMPF_PROJECTS_PATH}/openmpf-components/python/EastTextDetection
     deploy:
-      placement:
-        constraints:
-          - node.role == manager
-          -
-# A secret will not be created unless at least one service uses it.
-secrets:
-  https_keystore:
-    file: ${KEYSTORE_PATH}
+      mode: global
+      resources:
+        limits:
+          cpus: "2.0"

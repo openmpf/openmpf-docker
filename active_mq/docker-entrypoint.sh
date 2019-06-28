@@ -1,3 +1,5 @@
+#!/bin/bash
+
 #############################################################################
 # NOTICE                                                                    #
 #                                                                           #
@@ -18,40 +20,26 @@
 #    http://www.apache.org/licenses/LICENSE-2.0                             #
 #                                                                           #
 # Unless required by applicable law or agreed to in writing, software       #
-# distributed under the License is distributed on an "AS IS" BASIS,         #
+# distributed under the License is distributed don an "AS IS" BASIS,        #
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  #
 # See the License for the specific language governing permissions and       #
 # limitations under the License.                                            #
 #############################################################################
 
-version: '3.7'
+set -Ee -o pipefail -o xtrace
 
-services:
-  workflow_manager:
-    image: ${REGISTRY}openmpf_workflow_manager:${TAG}
-    depends_on:
-      - mysql_database
-      - redis
-      - activemq
-    restart: always
-    environment:
-      # The following line is needed to wait until the mySQL service is available:
-      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
-      - KEYSTORE_PASSWORD=${KEYSTORE_PASSWORD}
-    ports:
-      - "8080:8080"
-      - "8443:8443"
-    volumes:
-      - shared_data:/opt/mpf/share
-    networks:
-      - overlay
-    secrets: [https_keystore]
-    deploy:
-      placement:
-        constraints:
-          - node.role == manager
-          -
-# A secret will not be created unless at least one service uses it.
-secrets:
-  https_keystore:
-    file: ${KEYSTORE_PATH}
+################################################################################
+# Custom Steps                                                                 #
+################################################################################
+
+cd /opt/activemq/conf
+# Put the appropriate activemq.xml file into place
+cp /opt/activemq/conf/activemq-$ACTIVE_MQ_PROFILE.xml activemq.xml
+
+# Put the appropriate env file in place
+cd /opt/activemq/bin
+cp env.$ACTIVE_MQ_PROFILE env
+
+# This script from the webcenter/activemq image runs activemq under supervisord.
+/app/run.sh
+
