@@ -406,10 +406,6 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                                 ' --build-arg BUILD_TAG=' + imageTag +
                                 ' --build-arg BUILD_DATE=' + buildDate +
                                 ' --build-arg BUILD_SHAS=\"' + buildShas + '\"'
-
-                        // TODO: BUILD_TAG replaces BUILD_VERSION
-                        // TODO: Update all Dockerfiles that use BUILD_IMAGE_NAME to use BUILD_REGISTRY and BUILD_TAG ARGS
-                        // TODO: Update Python Executor image to use labels
                     }
                 }
 

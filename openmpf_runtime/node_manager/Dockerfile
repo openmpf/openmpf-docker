@@ -204,6 +204,7 @@ ENTRYPOINT ["/home/mpf/docker-entrypoint.sh"]
 
 ARG BUILD_DATE
 ARG BUILD_SHAS
+ARG BUILD_TAG
 
 # Clear inherited labels from CentOS 7.4.1708 base image.
 # TODO: Remove these when we start using a newer CentOS base image.
