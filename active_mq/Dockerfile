@@ -43,8 +43,8 @@ ENTRYPOINT ["/opt/activemq/bin/docker-entrypoint.sh"]
 # Labels                                                                       #
 ################################################################################
 
+ARG BUILD_TAG
 ARG BUILD_DATE
-ARG BUILD_VERSION
 ARG BUILD_SHAS
 
 # Set labels
@@ -56,4 +56,4 @@ LABEL org.label-schema.build-date=$BUILD_DATE \
       org.label-schema.vcs-ref=$BUILD_SHAS \
       org.label-schema.vcs-url="https://github.com/openmpf" \
       org.label-schema.vendor=MITRE \
-      org.label-schema.version=$BUILD_VERSION
+      org.label-schema.version=$BUILD_TAG
