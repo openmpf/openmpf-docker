@@ -24,8 +24,7 @@
 # limitations under the License.                                            #
 #############################################################################
 
-# Use this file in conjunction with docker-compose.http.yml or
-# docker-compose.https.yml. Place them both in the same directory.
+# Use this file in conjunction with docker-compose.core.yml.
 
 version: '3.7'
 

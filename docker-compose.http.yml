@@ -24,6 +24,8 @@
 # limitations under the License.                                            #
 #############################################################################
 
+# Use this file in conjunction with docker-compose.core.yml.
+
 version: '3.7'
 
 services:

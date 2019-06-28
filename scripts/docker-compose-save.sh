@@ -28,9 +28,6 @@
 
 set -Ee
 
-# TODO: Handle *.override.yml files (if they exist)
-# TODO: Copy docker-compose.base.yml and .env files
-
 printUsage() {
   echo "Usages:"
   echo "docker-compose-save.sh [--clean-image-names] [--omit-compose-files]"

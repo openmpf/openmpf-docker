@@ -145,13 +145,13 @@ range. For example, `8.8.8.0/24`.
 #### Docker Overlay Network
 
 Unless a subnet is specified for the application stack's network in
-`docker-compose.base.yml`, Docker will automatically create an overlay network for
+`docker-compose.core.yml`, Docker will automatically create an overlay network for
 secure node-to-node communication when you run `docker stack deploy`. Similar to
 the ingress network issue described above, sometimes the subnet that Docker
 chooses conflicts with the subnet of the host machines running Docker.
 
 To prevent this, manually specify a subnet IP address range for the overlay
-network in `docker-compose.base.yml` as follows:
+network in `docker-compose.core.yml` as follows:
 
 ```
 networks:

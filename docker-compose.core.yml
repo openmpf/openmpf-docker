@@ -25,7 +25,7 @@
 #############################################################################
 
 # Use this file in conjunction with docker-compose.http.yml or
-# docker-compose.https.yml. Place them both in the same directory.
+# docker-compose.https.yml.
 
 version: '3.7'
 
