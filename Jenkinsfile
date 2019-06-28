@@ -323,8 +323,9 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                 buildShas += ', ' + getBuildShasStr(coreRepos)
 
                 sh 'docker build openmpf_build/' +
+                        ' --build-arg BUILD_REGISTRY=' + remoteImageTagPrefix +
+                        ' --build-arg BUILD_TAG=' + imageTag +
                         ' --build-arg BUILD_DATE=' + buildDate +
-                        ' --build-arg BUILD_VERSION=' + imageTag +
                         ' --build-arg BUILD_SHAS=\"' + buildShas + '\"' +
                         ' -t ' + buildImageName
 
@@ -337,9 +338,9 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                     // Build the new build image for custom components using the original build image for open source
                     // components. This overwrites the original build image tag.
                     sh 'docker build openmpf_custom_build/' +
-                            ' --build-arg BUILD_IMAGE_NAME=' + buildImageName +
+                            ' --build-arg BUILD_REGISTRY=' + remoteImageTagPrefix +
+                            ' --build-arg BUILD_TAG=' + imageTag +
                             ' --build-arg BUILD_DATE=' + buildDate +
-                            ' --build-arg BUILD_VERSION=' + imageTag +
                             ' --build-arg BUILD_SHAS=\"' + buildShas + '\"' +
                             ' -t ' + buildImageName
                 }
@@ -392,15 +393,23 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                         echo 'SKIPPING BUILD OF RUNTIME IMAGES'
                     }
                     when (buildRuntimeImages) { // if false, don't show this step in the Stage View UI
-                        sh 'DOCKER_BUILDKIT=1 docker build openmpf_runtime ' +
-                                '--file openmpf_runtime/python_executor/Dockerfile ' +
-                                "--tag '${pythonExecutorImageName}'"
-                        
-                        sh 'OPENMPF_PROJECTS_PATH=' + openmpfProjectsPath + ' docker-compose build' +
-                                ' --build-arg BUILD_IMAGE_NAME=' + buildImageName +
+                        sh 'DOCKER_BUILDKIT=1 docker build openmpf_runtime' +
+                                ' --file openmpf_runtime/python_executor/Dockerfile ' +
+                                ' --build-arg BUILD_REGISTRY=' + remoteImageTagPrefix +
+                                ' --build-arg BUILD_TAG=' + imageTag +
                                 ' --build-arg BUILD_DATE=' + buildDate +
-                                ' --build-arg BUILD_VERSION=' + imageTag +
+                                ' --build-arg BUILD_SHAS=\"' + buildShas + '\"' +
+                                " -t '${pythonExecutorImageName}'"
+
+                        sh 'docker-compose build' +
+                                ' --build-arg BUILD_REGISTRY=' + remoteImageTagPrefix +
+                                ' --build-arg BUILD_TAG=' + imageTag +
+                                ' --build-arg BUILD_DATE=' + buildDate +
                                 ' --build-arg BUILD_SHAS=\"' + buildShas + '\"'
+
+                        // TODO: BUILD_TAG replaces BUILD_VERSION
+                        // TODO: Update all Dockerfiles that use BUILD_IMAGE_NAME to use BUILD_REGISTRY and BUILD_TAG ARGS
+                        // TODO: Update Python Executor image to use labels
                     }
                 }
 
@@ -466,17 +475,17 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                     // That way, we do not have to modify the compose files. This overwrites the tag that referred
                     // to the original Workflow Manager image without the custom config.
                     sh 'docker build openmpf_custom_config/workflow_manager' +
-                            ' --build-arg BUILD_IMAGE_NAME=' + workflowManagerImageName +
+                            ' --build-arg BUILD_REGISTRY=' + remoteImageTagPrefix +
+                            ' --build-arg BUILD_TAG=' + imageTag +
                             ' --build-arg BUILD_DATE=' + buildDate +
-                            ' --build-arg BUILD_VERSION=' + imageTag +
                             ' --build-arg BUILD_SHAS=\"' + buildShas + '\"' +
                             ' -t ' + workflowManagerImageName
 
                     // Build and tag the new ActiveMQ image with the image tag used in the compose files.
                     sh 'docker build openmpf_custom_config/active_mq' +
-                            ' --build-arg BUILD_IMAGE_NAME=' + activeMqImageName +
+                            ' --build-arg BUILD_REGISTRY=' + remoteImageTagPrefix +
+                            ' --build-arg BUILD_TAG=' + imageTag +
                             ' --build-arg BUILD_DATE=' + buildDate +
-                            ' --build-arg BUILD_VERSION=' + imageTag +
                             ' --build-arg BUILD_SHAS=\"' + buildShas + '\"' +
                             ' -t ' + activeMqImageName
                 }
