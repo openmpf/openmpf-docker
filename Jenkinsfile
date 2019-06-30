@@ -424,6 +424,11 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                         sh 'sed -i \'s/mysql_data:/' + buildMySqlDataVolumeSuffix + ':/g\' docker-compose-test.yml'
                         sh 'sed -i \'s/overlay/' + buildNetworkSuffix + '/g\' docker-compose-test.yml'
 
+                        // To prevent conflicts with other concurrent builds, don't expose any ports
+                        sh 'sed -i "/^.*ports:.*/d" docker-compose-test.yml'
+                        sh 'sed -i "/^.*published:.*/d" docker-compose-test.yml'
+                        sh 'sed -i "/^.*target:.*/d" docker-compose-test.yml'
+
                         // Run supporting containers in background.
                         sh 'docker-compose -f docker-compose-test.yml up -d' +
                                 ' --scale workflow_manager=0'
