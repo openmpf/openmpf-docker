@@ -302,7 +302,6 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                         ' REGISTRY=' + remoteImageTagPrefix + ' TAG=' + imageTag +
                         ' docker-compose' +
                         ' -f docker-compose.core.yml' +
-                        ' -f docker-compose.http.yml' +
                         ' -f docker-compose.components.yml'
 
                 if (buildCustomComponents) {
