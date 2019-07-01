@@ -67,6 +67,30 @@ services:
     networks:
       - overlay
 
+  workflow_manager:
+    image: ${REGISTRY}openmpf_workflow_manager:${TAG}
+    build:
+      context: ./openmpf_runtime
+      dockerfile: workflow_manager/Dockerfile
+    depends_on:
+      - mysql_database
+      - redis
+      - activemq
+    restart: always
+    environment:
+      # The following line is needed to wait until the mySQL service is available:
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+    ports:
+      - "8080:8080"
+    volumes:
+      - shared_data:/opt/mpf/share
+    networks:
+      - overlay
+    deploy:
+      placement:
+        constraints:
+          - node.role == manager
+
   node_manager:
     image: ${REGISTRY}openmpf_node_manager:${TAG}
     build:

@@ -227,16 +227,16 @@ Docker container.
 
 Next you need to generate the `docker-compose.yml` file.
 
-First, copy `env.tpl` to `.env` and set environment variables in `.env`. Leave
-the `KEYSTORE_` variables blank when configuring the Workflow Manager to use
-HTTP. To enable HTTPS, see [below](#optional-configure-https).
+First, copy `env.tpl` to `.env` and set environment variables in `.env`. 
+Make sure that `OPENMPF_PROJECTS_PATH` is set correctly. Leave the `KEYSTORE_`
+variables blank when configuring the Workflow Manager to use HTTP. To enable
+HTTPS, see [below](#optional-configure-https).
 
 Run the following command to generate a stand-alone `docker-compose.yml` file:
 
 ```
 docker-compose \
    -f docker-compose.core.yml \
-   -f docker-compose.http.yml \
    -f docker-compose.components.yml \
    config > docker-compose.yml
 ```
@@ -247,7 +247,6 @@ by generating it with your own `docker-compose.custom.yml` file as follows:
 ```
 docker-compose \
    -f docker-compose.core.yml \
-   -f docker-compose.http.yml \
    -f docker-compose.components.yml \
    -f docker-compose.custom.yml \
    config > docker-compose.yml
@@ -258,8 +257,7 @@ remove the old containers and volumes:
 
 - `docker-compose down -v`
 
-Make sure that `OPENMPF_PROJECTS_PATH` is set correctly in `.env`, then run the
-following command to create the new runtime images:
+Run the following command to create the new runtime images:
 
 - `docker-compose build`
 
