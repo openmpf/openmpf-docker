@@ -315,6 +315,7 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
 
                 dockerComposeConfigCommand += ' config > docker-compose.yml'
 
+                sh 'cp .env.tpl .env'
                 sh "${dockerComposeConfigCommand}"
 
                 // TODO: Attempt to pull images in separate stage so that they are not
