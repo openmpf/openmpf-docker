@@ -196,7 +196,7 @@ run on each node in the swarm cluster:
       mode: global
 ```
 
-For example, if you with to deploy a specific number of instances, then use the
+For example, if you wish to deploy a specific number of instances, then use the
 following instead:
 
 ```
@@ -206,9 +206,9 @@ following instead:
 ```
 
 The [docker-compose file
-schema](https://docs.docker.com/compose/compose-file/#deploy) offers many was to
-configure how services are deployed. Among others, you may be also interested in
-[resource limits and
+schema](https://docs.docker.com/compose/compose-file/#deploy) offers many ways
+to configure how services are deployed. Among others, you may be also
+interested in [resource limits and
 reservations](https://docs.docker.com/compose/compose-file/#resources).
 
 ### Deploy the Stack to the Swarm
