@@ -223,11 +223,12 @@ If that command does not output `BUILD SUCCESS` then you may try to run it again
 Sometimes Maven will time out while trying to download dependencies within a
 Docker container.
 
-Next you need to generate the `docker-compose.yml` file. To enable HTTPS on the
-Workflow Manager, see [below](#optional-configure-https).
+Next you need to generate the `docker-compose.yml` file.
 
-First, set the environment variables in `.env`. Leave the `KEYSTORE_` variables
-blank when configuring the Workflow Manager to use HTTP.
+First, copy `env.tpl` to `.env` and set environment variables in `.env`. Leave
+the `KEYSTORE_` variables blank when configuring the Workflow Manager to use
+HTTP. To enable HTTPS on the Workflow Manager, see
+[below](#optional-configure-https).
 
 Run the following command to generate a stand-alone `docker-compose.yml` file:
 
