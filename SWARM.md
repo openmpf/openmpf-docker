@@ -166,6 +166,51 @@ Replace `<overlay-subnet-cidr>` with an appropriate non-conflicting IP address
 range. For example, `9.9.9.0/24`. Make sure this does not conflict with
 `<ingress-subnet-cidr>`.
 
+### Modify docker-compose.yml
+
+Before proceeding, ensure that you've generated a `docker-compose.yml` file as
+explained in the [Generate
+docker-compose.yml](README.md#generate-docker-composeyml) section in the README.
+
+Note that by default both the Workflow Manager and mySQL containers have a
+`placement` constraint so that they are always deployed to the swarm manager
+node:
+
+```
+    deploy:
+      placement:
+        constraints:
+          - node.role == manager
+```
+
+The mySQL container must always run on the same node so that the same
+`openmpf_mysql_data` volume is used when the swarm is redeployed. The Workflow
+Manager container is run on the same node for efficiency. If you wish to change
+the node, then modify the `placement` constraints.
+
+By default, one instance of each detection component service is configured to
+run on each node in the swarm cluster:
+
+```
+    deploy:
+      mode: global
+```
+
+For example, if you with to deploy a specific number of instances, then use the
+following instead:
+
+```
+    deploy:
+      mode: replicated
+      replicas: 2
+```
+
+The [docker-compose file
+schema](https://docs.docker.com/compose/compose-file/#deploy) offers many was to
+configure how services are deployed. Among others, you may be also interested in
+[resource limits and
+reservations](https://docs.docker.com/compose/compose-file/#resources).
+
 ### Deploy the Stack to the Swarm
 
 `docker stack deploy openmpf -c docker-compose.yml --with-registry-auth`
@@ -176,13 +221,6 @@ then it needs to download the image from the Docker registry, which takes some
 time. This will be much faster later once the images are downloaded on the
 nodes. If the images are updated, only the changes are downloaded from the
 Docker registry.
-
-Note that by default both the Workflow Manager and mySQL containers have a
-`placement` constraint so that they are always deployed to the swarm manager
-node. The mySQL container must always run on the same node so that the same
-openmpf_mysql_data volume is used when the swarm is redeployed. The Workflow
-Manager container is run on the same node for efficiency. If you wish to change
-the node, then modify the `placement` constraints in `swarm-compose.yml`.
 
 #### Monitor the Swarm Services
 
