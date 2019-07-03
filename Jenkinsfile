@@ -148,7 +148,7 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
     def buildMySqlDataVolumeSuffix = 'mysql_data_' + currentBuild.projectName
     def buildMySqlDataVolume = 'openmpf_' + buildMySqlDataVolumeSuffix
 
-    def buildNetworkSuffix = 'compose_overlay_' + currentBuild.projectName
+    def buildNetworkSuffix = 'overlay_' + currentBuild.projectName
     def buildNetwork = 'openmpf_' + buildNetworkSuffix
 
     try {
@@ -297,9 +297,21 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                     buildPackageJson = buildPackageJson.substring(buildPackageJson.lastIndexOf("/") + 1)
                 }
 
-                // Generate compose files
-                sh './scripts/docker-generate-compose-files.sh ' + dockerRegistryHost + ':' +
-                        dockerRegistryPort + ' openmpf ' + imageTag
+                // Generate compose file
+                def dockerComposeConfigCommand = 'OPENMPF_PROJECTS_PATH=' + openmpfProjectsPath +
+                        ' REGISTRY=' + remoteImageTagPrefix + ' TAG=' + imageTag +
+                        ' docker-compose' +
+                        ' -f docker-compose.core.yml' +
+                        ' -f docker-compose.components.yml'
+
+                if (buildCustomComponents) {
+                    dockerComposeConfigCommand += ' -f openmpf_custom_build/docker-compose.custom-components.yml'
+                }
+
+                dockerComposeConfigCommand += ' config > docker-compose.yml'
+
+                sh 'cp .env.tpl .env'
+                sh "${dockerComposeConfigCommand}"
 
                 // TODO: Attempt to pull images in separate stage so that they are not
                 // built from scratch on a clean Jenkins node.
@@ -308,8 +320,9 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                 buildShas += ', ' + getBuildShasStr(coreRepos)
 
                 sh 'docker build openmpf_build/' +
+                        ' --build-arg BUILD_REGISTRY=' + remoteImageTagPrefix +
+                        ' --build-arg BUILD_TAG=' + imageTag +
                         ' --build-arg BUILD_DATE=' + buildDate +
-                        ' --build-arg BUILD_VERSION=' + imageTag +
                         ' --build-arg BUILD_SHAS=\"' + buildShas + '\"' +
                         ' -t ' + buildImageName
 
@@ -322,9 +335,9 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                     // Build the new build image for custom components using the original build image for open source
                     // components. This overwrites the original build image tag.
                     sh 'docker build openmpf_custom_build/' +
-                            ' --build-arg BUILD_IMAGE_NAME=' + buildImageName +
+                            ' --build-arg BUILD_REGISTRY=' + remoteImageTagPrefix +
+                            ' --build-arg BUILD_TAG=' + imageTag +
                             ' --build-arg BUILD_DATE=' + buildDate +
-                            ' --build-arg BUILD_VERSION=' + imageTag +
                             ' --build-arg BUILD_SHAS=\"' + buildShas + '\"' +
                             ' -t ' + buildImageName
                 }
@@ -377,15 +390,19 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                         echo 'SKIPPING BUILD OF RUNTIME IMAGES'
                     }
                     when (buildRuntimeImages) { // if false, don't show this step in the Stage View UI
-                        sh 'docker-compose build' +
-                                ' --build-arg BUILD_IMAGE_NAME=' + buildImageName +
+                        sh 'DOCKER_BUILDKIT=1 docker build openmpf_runtime' +
+                                ' --file openmpf_runtime/python_executor/Dockerfile ' +
+                                ' --build-arg BUILD_REGISTRY=' + remoteImageTagPrefix +
+                                ' --build-arg BUILD_TAG=' + imageTag +
                                 ' --build-arg BUILD_DATE=' + buildDate +
-                                ' --build-arg BUILD_VERSION=' + imageTag +
-                                ' --build-arg BUILD_SHAS=\"' + buildShas + '\"'
+                                ' --build-arg BUILD_SHAS=\"' + buildShas + '\"' +
+                                " -t '${pythonExecutorImageName}'"
 
-                        sh 'DOCKER_BUILDKIT=1 docker build openmpf_runtime ' +
-                                '--file openmpf_runtime/python_executor/Dockerfile ' +
-                                "--tag '${pythonExecutorImageName}'"
+                        sh 'docker-compose build' +
+                                ' --build-arg BUILD_REGISTRY=' + remoteImageTagPrefix +
+                                ' --build-arg BUILD_TAG=' + imageTag +
+                                ' --build-arg BUILD_DATE=' + buildDate +
+                                ' --build-arg BUILD_SHAS=\"' + buildShas + '\"'
                     }
                 }
 
@@ -395,13 +412,18 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                     }
                     when (buildOpenmpf && buildRuntimeImages && runMvnTests) { // if false, don't show this step in the Stage View UI
                         // Add extra test data volume
-                        sh 'sed \'/shared_data:\\/opt\\/mpf\\/share/a \\      - ' + extraTestDataPath + ':/mpfdata:ro\'' +
+                        sh 'sed \'/shared_data:\\/opt\\/mpf\\/share:rw/a \\    - ' + extraTestDataPath + ':/mpfdata:ro\'' +
                                 ' docker-compose.yml > docker-compose-test.yml'
 
                         // Update volume and network names
                         sh 'sed -i \'s/shared_data:/' + buildSharedDataVolumeSuffix + ':/g\' docker-compose-test.yml'
                         sh 'sed -i \'s/mysql_data:/' + buildMySqlDataVolumeSuffix + ':/g\' docker-compose-test.yml'
-                        sh 'sed -i \'s/compose_overlay/' + buildNetworkSuffix + '/g\' docker-compose-test.yml'
+                        sh 'sed -i \'s/overlay/' + buildNetworkSuffix + '/g\' docker-compose-test.yml'
+
+                        // To prevent conflicts with other concurrent builds, don't expose any ports
+                        sh 'sed -i "/^.*ports:.*/d" docker-compose-test.yml'
+                        sh 'sed -i "/^.*published:.*/d" docker-compose-test.yml'
+                        sh 'sed -i "/^.*target:.*/d" docker-compose-test.yml'
 
                         // Run supporting containers in background.
                         sh 'docker-compose -f docker-compose-test.yml up -d' +
@@ -451,17 +473,17 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                     // That way, we do not have to modify the compose files. This overwrites the tag that referred
                     // to the original Workflow Manager image without the custom config.
                     sh 'docker build openmpf_custom_config/workflow_manager' +
-                            ' --build-arg BUILD_IMAGE_NAME=' + workflowManagerImageName +
+                            ' --build-arg BUILD_REGISTRY=' + remoteImageTagPrefix +
+                            ' --build-arg BUILD_TAG=' + imageTag +
                             ' --build-arg BUILD_DATE=' + buildDate +
-                            ' --build-arg BUILD_VERSION=' + imageTag +
                             ' --build-arg BUILD_SHAS=\"' + buildShas + '\"' +
                             ' -t ' + workflowManagerImageName
 
                     // Build and tag the new ActiveMQ image with the image tag used in the compose files.
                     sh 'docker build openmpf_custom_config/active_mq' +
-                            ' --build-arg BUILD_IMAGE_NAME=' + activeMqImageName +
+                            ' --build-arg BUILD_REGISTRY=' + remoteImageTagPrefix +
+                            ' --build-arg BUILD_TAG=' + imageTag +
                             ' --build-arg BUILD_DATE=' + buildDate +
-                            ' --build-arg BUILD_VERSION=' + imageTag +
                             ' --build-arg BUILD_SHAS=\"' + buildShas + '\"' +
                             ' -t ' + activeMqImageName
                 }

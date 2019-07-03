@@ -1,5 +1,3 @@
-#!/usr/bin/env bash
-
 #############################################################################
 # NOTICE                                                                    #
 #                                                                           #
@@ -26,32 +24,30 @@
 # limitations under the License.                                            #
 #############################################################################
 
-printUsage() {
-  echo "Usages:"
-  echo "docker-compose-cleanup.sh [--remove-images]"
-  exit -1
-}
+# Use this file in conjunction with docker-compose.core.yml.
 
-if [ $# -gt 1 ]; then
-  printUsage
-fi
+version: '3.7'
 
-################################################################################
-# Remove images                                                                #
-################################################################################
+x-detection-component-base:
+  &detection-component-base
+  environment:
+    - WFM_USER=${WFM_USER}
+    - WFM_PASSWORD=${WFM_PASSWORD}
+  depends_on:
+    - workflow_manager
+  volumes:
+    - shared_data:/opt/mpf/share
+  networks:
+    - overlay
 
-if [ $# -eq 1 ]; then
-  if [ "$1" != "--remove-images" ]; then
-    printUsage
-  fi
-  set -o xtrace
-  docker-compose down --rmi all
-  exit
-fi
-
-################################################################################
-# Don't remove images                                                          #
-################################################################################
-
-set -o xtrace
-docker-compose down -v
+services:
+  east_text_detection:
+    <<: *detection-component-base
+    image: ${REGISTRY}openmpf_east_text_detection:${TAG}
+    build:
+      context: ${OPENMPF_PROJECTS_PATH}/openmpf-components/python/EastTextDetection
+    deploy:
+      mode: global
+      resources:
+        limits:
+          cpus: "2.0"

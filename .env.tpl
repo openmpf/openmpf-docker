@@ -24,36 +24,29 @@
 # limitations under the License.                                            #
 #############################################################################
 
-FROM webcenter/activemq
+COMPOSE_PROJECT_NAME=openmpf
 
-ENV ACTIVE_MQ_PROFILE=default
+# Relative path to the "openmpf-projects" repository.
+OPENMPF_PROJECTS_PATH=../openmpf-projects
 
-COPY activemq-*.xml /opt/activemq/conf/
-COPY env.* /opt/activemq/bin/
+# Takes the form: "<registry-host>:<registry-port>/<repository>/", where
+# <repository> is usually "openmpf". Make sure to include the "/" at the end.
+# Leave blank to use images on the local host or Docker Hub.
+REGISTRY=
 
-COPY docker-entrypoint.sh /opt/activemq/bin/entrypoint.sh.tmp
-# The following tr command deletes the carriage return character '\r', converting CRLF to LF.
-RUN tr -d '\r' < /opt/activemq/bin/entrypoint.sh.tmp > /opt/activemq/bin/docker-entrypoint.sh
-RUN chmod 755 /opt/activemq/bin/docker-entrypoint.sh
+TAG=latest
 
-ENTRYPOINT ["/opt/activemq/bin/docker-entrypoint.sh"]
+# MySQL
+MYSQL_ROOT_PASSWORD=password
+MYSQL_DATABASE=mpf
+MYSQL_USER=mpf
+MYSQL_PASSWORD=mpf
 
+WFM_USER=admin
+WFM_PASSWORD=mpfadm
 
-################################################################################
-# Labels                                                                       #
-################################################################################
+ACTIVE_MQ_PROFILE=default
 
-ARG BUILD_TAG
-ARG BUILD_DATE
-ARG BUILD_SHAS
-
-# Set labels
-LABEL org.label-schema.build-date=$BUILD_DATE \
-      org.label-schema.license="GPLv2" \
-      org.label-schema.name="OpenMPF ActiveMQ" \
-      org.label-schema.schema-version="1.0" \
-      org.label-schema.url="https://openmpf.github.io" \
-      org.label-schema.vcs-ref=$BUILD_SHAS \
-      org.label-schema.vcs-url="https://github.com/openmpf" \
-      org.label-schema.vendor="MITRE" \
-      org.label-schema.version=$BUILD_TAG
+# Set these if using "docker-compose.https.yml".
+KEYSTORE_PATH=
+KEYSTORE_PASSWORD=

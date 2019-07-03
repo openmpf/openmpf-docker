@@ -24,76 +24,19 @@
 # limitations under the License.                                            #
 #############################################################################
 
-version: '3.3'
+# Use this file in conjunction with docker-compose.core.yml.
+
+version: '3.7'
+
 services:
-  mysql_database:
-    image: mariadb:latest
-    environment:
-      - MYSQL_ROOT_PASSWORD=password
-      - MYSQL_DATABASE=mpf
-      - MYSQL_USER=mpf
-      - MYSQL_PASSWORD=mpf
-    command: [
-      '--wait_timeout=28800',
-    ]
-    volumes:
-      - mysql_data:/var/lib/mysql
-    networks:
-      - swarm_overlay
-    deploy:
-      placement:
-        constraints:
-          - node.role == manager
-
-  activemq:
-    image: <registry>/<repository>/openmpf_active_mq:<image_tag>
-    # ACTIVE_MQ_PROFILE is used to determine which configuration files are used
-    # at runtime.
-    environment:
-        - ACTIVE_MQ_PROFILE=default
-    ports:
-      - "8161:8161"
-    networks:
-      - swarm_overlay
-
-  redis:
-    image: redis:latest
-    networks:
-      - swarm_overlay
-
   workflow_manager:
-    image: <registry>/<repository>/openmpf_workflow_manager:<image_tag>
     environment:
-      # The following line is needed to wait until the mySQL service is available:
-      - MYSQL_ROOT_PASSWORD=password
-      - KEYSTORE_PASSWORD=<keystore_password>
+      - KEYSTORE_PASSWORD=${KEYSTORE_PASSWORD}
     ports:
-      - "8080:8080"
       - "8443:8443"
-    volumes:
-      - shared_data:/opt/mpf/share
-    networks:
-      - swarm_overlay
     secrets: [https_keystore]
-    deploy:
-      placement:
-        constraints:
-          - node.role == manager
 
-  node_manager:
-    image: <registry>/<repository>/openmpf_node_manager:<image_tag>
-    volumes:
-      - shared_data:/opt/mpf/share
-    networks:
-      - swarm_overlay
-    deploy:
-      mode: global
-
-volumes:
-  shared_data:
-  mysql_data:
-
-networks:
-  swarm_overlay:
-
-secrets: { https_keystore: { file: <keystore_path> } } # One line to make easier for script to remove
+# A secret will not be created unless at least one service uses it.
+secrets:
+  https_keystore:
+    file: ${KEYSTORE_PATH}
