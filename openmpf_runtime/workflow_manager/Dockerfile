@@ -128,6 +128,10 @@ RUN mkdir $MPF_HOME/plugins && cd $MPF_HOME/plugins && \
 
 COPY build_artifacts/workflow-manager.war /opt/apache-tomcat/webapps/workflow-manager.war
 
+# Extract war to allow contents to be modifiable via "docker config"
+RUN mkdir /opt/apache-tomcat/webapps/workflow-manager && \
+    cd /opt/apache-tomcat/webapps/workflow-manager && jar -xf ../workflow-manager.war
+
 COPY build_artifacts/ansible.tar /home/mpf/
 RUN cd /home/mpf && mkdir -p /home/mpf/openmpf-projects/openmpf/trunk && \
     tar -xzf ansible.tar -C /home/mpf/openmpf-projects/openmpf/trunk && \

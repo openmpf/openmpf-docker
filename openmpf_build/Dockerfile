@@ -299,6 +299,13 @@ RUN wget -nv -O /apps/source/config4cpp.tar.gz "http://www.config4star.org/downl
     cd dlib-18.18/dlib && mkdir build && cd build && cmake3 ../ && \
     cmake3 --build . --config Release && make install
 
+# ImageMagick6:
+RUN yum install -y http://rpms.remirepo.net/enterprise/remi-release-7.rpm && \
+    yum --enablerepo=remi install -y ImageMagick6 ImageMagick6-c++ \
+    ImageMagick6-c++-devel ImageMagick6-devel ImageMagick6-libs \
+    libgif libjpeg libpng libtiff zlib ghostscript && \
+    yum clean all && rm -rf /var/cache/yum/*
+
 # Leptonica 1.75.0:
 RUN wget -nv -O /apps/source/tesseract_sources/leptonica-1.75.0.tar.gz \
     "https://github.com/DanBloomberg/leptonica/archive/1.75.0.tar.gz" && \
@@ -324,10 +331,9 @@ RUN cd /apps/source/openalpr_sources && git clone https://github.com/openalpr/op
     make install -j && \
     ldconfig
 
-# ImageMagick6 :
-RUN yum install -y http://rpms.remirepo.net/enterprise/remi-release-7.rpm && \
-    yum --enablerepo=remi install -y ImageMagick6 ImageMagick6-c++ \
-    ImageMagick6-c++-devel ImageMagick6-devel ImageMagick6-libs && \
+# Install locales:
+RUN sed -i "/^override_install_lang/d" /etc/yum.conf && \
+    yum reinstall -y glibc-common && \
     yum clean all && rm -rf /var/cache/yum/*
 
 ################################################################################
@@ -384,9 +390,58 @@ RUN cd /apps/source/gtest_sources && git clone https://github.com/google/googlet
     make -j$(nproc) && make install && ldconfig
 
 ################################################################################
+# For Tests: Install yum Dependencies                                          #
+################################################################################
+
+RUN yum install -y git asciidoc rpm-build \
+    python2-devel PyYAML python-httplib2 python-jinja2 libtomcrypt \
+    python-paramiko python-six sshpass which mysql dos2unix ansible && \
+    yum clean all && rm -rf /var/cache/yum/*
+
+# TODO: For some reason this needs to be a separate step. I think it's because the
+#   mirror it choses for the other yum install does not have python-keyczar.
+#   This happens even if python-keyczar is the first thing in the list.
+RUN yum install -y python-keyczar && yum clean all
+
+# Update timeout for component deployment tests
+RUN echo 'gather_timeout = 60' >> /etc/ansible/ansible.cfg
+
+################################################################################
+# For Tests: Link ffserver and ffprobe                                         #
+################################################################################
+
+RUN ln -s /apps/install/bin/ffserver /usr/bin/ffserver && \
+    ln -s /apps/install/bin/ffprobe /usr/bin/ffprobe
+
+################################################################################
+# For Tests: Configure Environment Variables                                   #
+################################################################################
+
+ENV ACTIVE_MQ_HOST=activemq
+ENV ACTIVE_MQ_BROKER_URI=failover://(tcp://$ACTIVE_MQ_HOST:61616)?jms.prefetchPolicy.all=0&startupMaxReconnectAttempts=1
+ENV MYSQL_HOST=mysql_database
+ENV THIS_MPF_NODE=localhost
+# JGROUPS_TCP_ADDRESS set in docker-entrypoint-test.sh
+ENV JGROUPS_TCP_PORT=7800
+ENV JGROUPS_FILE_PING_LOCATION=$MPF_HOME/share/nodes
+ENV no_proxy=localhost
+ENV MPF_USER=mpf
+ENV MPF_LOG_PATH=$MPF_HOME/share/logs
+# Every child node-manager container is treated as a spare node.
+ENV CORE_MPF_NODES=
+ENV LD_LIBRARY_PATH=/usr/lib64:$MPF_HOME/lib
+ENV PATH=$PATH:$MPF_HOME/bin
+ENV TOMCAT_BASE_URL=http://$THIS_MPF_NODE:8181
+
+# The workflow manager must be added as an mpf-child so that plugin packages are
+# extracted at startup, which is necessary for component auto-registration.
+RUN echo '[mpf-child]' >> /etc/ansible/hosts; \
+    echo $THIS_MPF_NODE >> /etc/ansible/hosts;
+
+################################################################################
 # Prepare Entrypoint                                                           #
 ################################################################################
 
-COPY docker-entrypoint.sh /home/mpf
-RUN dos2unix -q /home/mpf/docker-entrypoint.sh
+COPY *.sh /home/mpf/
+RUN dos2unix -q /home/mpf/*.sh
 ENTRYPOINT ["/home/mpf/docker-entrypoint.sh"]
