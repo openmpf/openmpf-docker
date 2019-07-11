@@ -53,7 +53,7 @@ rm -rf $BUILD_ARTIFACTS_PATH/*
 # Copy the OpenMPF Repository                                                  #
 ################################################################################
 
-cp -R $SOURCE_CODE_PATH /home/mpf/openmpf-projects
+cp -R "$SOURCE_CODE_PATH" /home/mpf
 
 # Make sure the source code line endings are correct if copying the source from a Windows host.
 cd /home/mpf/openmpf-projects && find . -type f -exec dos2unix -q {} \;
