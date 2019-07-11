@@ -429,7 +429,7 @@ def gitCheckoutAndPull(String repo, String dir, String branch) {
 def gitCheckoutAndPullWithCredId(String repo, String credId, String dir, String branch) {
     if (!branch.isEmpty()) {
         def scmVars = checkout([$class: 'GitSCM',
-                  branches: [[name: '*/' + branch]],
+                  branches: [[name: branch]],
                   extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: dir]],
                   userRemoteConfigs: [[credentialsId: credId, url: repo]]])
 
