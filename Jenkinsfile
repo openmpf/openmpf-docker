@@ -417,12 +417,12 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                                 " -t '${cppBuildImageName}'"
 
                         sh 'DOCKER_BUILDKIT=1 docker build openmpf_runtime' +
-                                ' --file openmpf_runtime/cpp_component_build/Dockerfile ' +
+                                ' --file openmpf_runtime/cpp_executor/Dockerfile ' +
                                 ' --build-arg BUILD_REGISTRY=' + remoteImageTagPrefix +
                                 ' --build-arg BUILD_TAG=' + imageTag +
                                 ' --build-arg BUILD_DATE=' + buildDate +
                                 ' --build-arg BUILD_SHAS=\"' + buildShas + '\"' +
-                                " -t '${cppBuildImageName}'"
+                                " -t '${cppExecutorImageName}'"
 
                         sh 'docker-compose build' +
                                 ' --build-arg BUILD_REGISTRY=' + remoteImageTagPrefix +
