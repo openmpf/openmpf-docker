@@ -130,3 +130,6 @@ tar -cf - -C install --exclude="share" --exclude="plugins" . | gzip --no-name > 
 tar -cf - ansible | gzip --no-name > "$BUILD_ARTIFACTS_PATH/ansible.tar"
 
 cp -R ../mpf-component-build/plugin-packages "$BUILD_ARTIFACTS_PATH"
+
+cd /root
+tar -cf - mpf-sdk-install --exclude 'mpf-sdk-install/python' | gzip --no-name > "$BUILD_ARTIFACTS_PATH/mpf-sdk-install.tar.gz"

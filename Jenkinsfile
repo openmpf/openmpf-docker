@@ -172,6 +172,8 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
         def workflowManagerImageName = remoteImageTagPrefix + 'openmpf_workflow_manager:' + imageTag
         def activeMqImageName = remoteImageTagPrefix + 'openmpf_active_mq:' + imageTag
         def pythonExecutorImageName = remoteImageTagPrefix + 'openmpf_python_executor:' + imageTag
+        def cppBuildImageName = remoteImageTagPrefix + 'openmpf_cpp_component_build:' + imageTag
+        def cppExecutorImageName = remoteImageTagPrefix + 'openmpf_cpp_executor:' + imageTag
 
         def openmpfGitHubUrl = 'https://github.com/openmpf'
         def openmpfProjectsPath = 'openmpf_build/openmpf-projects'
@@ -308,6 +310,10 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                     dockerComposeConfigCommand += ' -f openmpf_custom_build/docker-compose.custom-components.yml'
                 }
 
+                if (runGTests) {
+                    dockerComposeConfigCommand += ' -f docker-compose.components.test.yml'
+                }
+
                 if (applyCustomConfig) {
                     dockerComposeConfigCommand += ' -f openmpf_custom_config/docker-compose.custom-config.yml'
                 }
@@ -401,6 +407,22 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                                 ' --build-arg BUILD_DATE=' + buildDate +
                                 ' --build-arg BUILD_SHAS=\"' + buildShas + '\"' +
                                 " -t '${pythonExecutorImageName}'"
+
+                        sh 'DOCKER_BUILDKIT=1 docker build openmpf_runtime' +
+                                ' --file openmpf_runtime/cpp_component_build/Dockerfile ' +
+                                ' --build-arg BUILD_REGISTRY=' + remoteImageTagPrefix +
+                                ' --build-arg BUILD_TAG=' + imageTag +
+                                ' --build-arg BUILD_DATE=' + buildDate +
+                                ' --build-arg BUILD_SHAS=\"' + buildShas + '\"' +
+                                " -t '${cppBuildImageName}'"
+
+                        sh 'DOCKER_BUILDKIT=1 docker build openmpf_runtime' +
+                                ' --file openmpf_runtime/cpp_build/Dockerfile ' +
+                                ' --build-arg BUILD_REGISTRY=' + remoteImageTagPrefix +
+                                ' --build-arg BUILD_TAG=' + imageTag +
+                                ' --build-arg BUILD_DATE=' + buildDate +
+                                ' --build-arg BUILD_SHAS=\"' + buildShas + '\"' +
+                                " -t '${cppBuildImageName}'"
 
                         sh 'docker-compose build' +
                                 ' --build-arg BUILD_REGISTRY=' + remoteImageTagPrefix +
@@ -502,6 +524,8 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                     sh 'docker push ' + buildImageName
                     sh 'docker-compose push'
                     sh "docker push '${pythonExecutorImageName}'"
+                    sh "docker push $cppBuildImageName"
+                    sh "docker push $cppExecutorImageName"
                 }
             }
 

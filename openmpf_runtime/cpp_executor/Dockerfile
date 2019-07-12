@@ -24,43 +24,39 @@
 # limitations under the License.                                            #
 #############################################################################
 
-# Use this file in conjunction with docker-compose.core.yml.
 
-version: '3.7'
+ARG BUILD_REGISTRY
+ARG BUILD_TAG=latest
 
-x-detection-component-base:
-  &detection-component-base
-  environment:
-    - WFM_USER=${WFM_USER}
-    - WFM_PASSWORD=${WFM_PASSWORD}
-  depends_on:
-    - workflow_manager
-  volumes:
-    - shared_data:/opt/mpf/share
-  networks:
-    - overlay
+FROM centos:7 as extract_tar
 
-services:
-  east_text_detection:
-    <<: *detection-component-base
-    image: ${REGISTRY}openmpf_east_text_detection:${TAG}
-    build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/python/EastTextDetection
-    deploy:
-      mode: global
-      resources:
-        limits:
-          cpus: "2.0"
+WORKDIR /root/install_files
 
-  ocv_face_detection:
-    <<: *detection-component-base
-    image: ${REGISTRY}openmpf_ocv_face_detection:${TAG}
-    build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/cpp/OcvFaceDetection
-    deploy:
-      mode: global
+COPY build_artifacts/install.tar .
 
-  tesseract_ocr_text_detection:
-    <<: *detection-component-base
-    image: ${REGISTRY}openmpf_tesseract_ocr_text_detection:${TAG}
-    build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/cpp/TesseractOCRTextDetection
-    deploy:
-      mode: global
+RUN tar -xf install.tar \
+        ./bin/amq_detection_component \
+        ./config/Log4cxxConfig.xml \
+        './lib/liblog4cxx*' './lib/libactivemq-cpp*' './lib/libQtCore*' './lib/libapr*' './lib/libXext*' \
+    && rm install.tar
+
+
+FROM centos:7
+
+ENV MPF_HOME /opt/mpf
+
+WORKDIR $MPF_HOME
+
+COPY --from=extract_tar /root/install_files/ $MPF_HOME
+
+ENV MPF_LOG_PATH $MPF_HOME/share/logs
+
+ENV PYTHONUNBUFFERED 1
+
+ENV BUILD_DIR /home/mpf/component_build
+
+ENV INSTALL_DIR $MPF_HOME/plugins/plugin
+
+COPY docker-executor-entrypoint.py /home/mpf/docker-entrypoint.py
+
+ENTRYPOINT ["python", "/home/mpf/docker-entrypoint.py"]

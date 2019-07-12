@@ -24,43 +24,40 @@
 # limitations under the License.                                            #
 #############################################################################
 
-# Use this file in conjunction with docker-compose.core.yml.
+ARG BUILD_REGISTRY
+ARG BUILD_TAG=latest
+FROM ${BUILD_REGISTRY}openmpf_build:${BUILD_TAG} as openmpf_build
 
-version: '3.7'
 
-x-detection-component-base:
-  &detection-component-base
-  environment:
-    - WFM_USER=${WFM_USER}
-    - WFM_PASSWORD=${WFM_PASSWORD}
-  depends_on:
-    - workflow_manager
-  volumes:
-    - shared_data:/opt/mpf/share
-  networks:
-    - overlay
+FROM centos:7
 
-services:
-  east_text_detection:
-    <<: *detection-component-base
-    image: ${REGISTRY}openmpf_east_text_detection:${TAG}
-    build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/python/EastTextDetection
-    deploy:
-      mode: global
-      resources:
-        limits:
-          cpus: "2.0"
+# The centos:7 image sets this yum property to en_US.utf8 which prevents other locales (including other Engish locales)
+# from being installed with GCC.
+RUN yum-config-manager --setopt=override_install_langs='' --save
 
-  ocv_face_detection:
-    <<: *detection-component-base
-    image: ${REGISTRY}openmpf_ocv_face_detection:${TAG}
-    build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/cpp/OcvFaceDetection
-    deploy:
-      mode: global
+RUN yum install -y epel-release \
+    && yum localinstall -y --nogpgcheck https://download1.rpmfusion.org/free/el/rpmfusion-free-release-7.noarch.rpm \
+                https://download1.rpmfusion.org/nonfree/el/rpmfusion-nonfree-release-7.noarch.rpm \
+    && yum install -y cmake3 make gcc gcc-c++ qt-devel log4cxx-devel boost-devel ffmpeg gtest-devel \
+    && yum clean all \
+    && rm -rf /var/cache/yum/*
 
-  tesseract_ocr_text_detection:
-    <<: *detection-component-base
-    image: ${REGISTRY}openmpf_tesseract_ocr_text_detection:${TAG}
-    build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/cpp/TesseractOCRTextDetection
-    deploy:
-      mode: global
+COPY --from=openmpf_build /opt/opencv-3.3.0 /opt/
+
+# Normally components' CMakeList.txt file includes include(../ComponentSetup.cmake) but since that is outside of the
+# components' build context we create it here.
+RUN mkdir -p /home/mpf && echo 'find_package(mpfCMakeHelpers REQUIRED)' > /home/mpf/ComponentSetup.cmake
+
+ADD build_artifacts/mpf-sdk-install.tar.gz /home/mpf/
+
+COPY cpp_component_build/scripts /home/mpf/scripts
+
+ENV PATH /home/mpf/scripts:$PATH
+
+ENV CMAKE_PREFIX_PATH /home/mpf/mpf-sdk-install/lib/cmake
+
+ENV BUILD_DIR /home/mpf/component_build
+
+ENV SRC_DIR /home/mpf/component_src
+
+WORKDIR $SRC_DIR
