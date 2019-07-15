@@ -233,8 +233,15 @@ Docker container.
 
 Run the following command from within the `openmpf-docker/openmpf_runtime`
 directory to create the OpenMPF Python component executor image:
-
 - `docker build . -f python_executor/Dockerfile -t openmpf_python_executor`
+
+Run the following command from within the `openmpf-docker/openmpf_runtime`
+directory to create the OpenMPF C++ component build image:
+- `docker build . -f cpp_component_build/Dockerfile -t openmpf_cpp_build`
+
+Run the following command from within the `openmpf-docker/openmpf_runtime`
+directory to create the OpenMPF C++ component executor image:
+- `docker build . -f cpp_executor/Dockerfile -t openmpf_cpp_executor`
 
 #### Generate docker-compose.yml
 
