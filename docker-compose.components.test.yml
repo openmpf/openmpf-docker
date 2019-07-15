@@ -33,7 +33,3 @@ services:
       args:
         RUN_TESTS: 'true'
 
-  tesseract_ocr_text_detection:
-    build:
-      args:
-        RUN_TESTS: 'true'
