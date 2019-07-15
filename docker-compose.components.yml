@@ -57,10 +57,3 @@ services:
     build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/cpp/OcvFaceDetection
     deploy:
       mode: global
-
-  tesseract_ocr_text_detection:
-    <<: *detection-component-base
-    image: ${REGISTRY}openmpf_tesseract_ocr_text_detection:${TAG}
-    build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/cpp/TesseractOCRTextDetection
-    deploy:
-      mode: global
