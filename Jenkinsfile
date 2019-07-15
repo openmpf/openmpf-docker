@@ -314,10 +314,6 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                     dockerComposeConfigCommand += ' -f docker-compose.components.test.yml'
                 }
 
-                if (applyCustomConfig) {
-                    dockerComposeConfigCommand += ' -f openmpf_custom_config/docker-compose.custom-config.yml'
-                }
-
                 dockerComposeConfigCommand += ' config > docker-compose.yml'
 
                 sh 'cp .env.tpl .env'
@@ -601,7 +597,7 @@ def gitCheckoutAndPull(url, dir, branch) {
 def gitCheckoutAndPullWithCredId(url, credId, dir, branch) {
     if (!branch.isEmpty()) {
         def scmVars = checkout([$class: 'GitSCM',
-                  branches: [[name: '*/' + branch]],
+                  branches: [[name: branch]],
                   extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: dir]],
                   userRemoteConfigs: [[credentialsId: credId, url: url]]])
 

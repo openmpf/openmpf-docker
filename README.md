@@ -167,6 +167,8 @@ Bash, which is part of [Git for Windows](https://gitforwindows.org/), or
 
 Note that this process can take 1.5 - 2 hours if you're starting from scratch.
 
+#### Setup
+
 Clone the [openmpf-docker repository](https://github.com/openmpf/openmpf-docker):
 
 - `git clone https://github.com/openmpf/openmpf-docker.git`
@@ -191,14 +193,18 @@ version number. Do not download Java SE 9 or 10.
 If you plan to develop and integrate your own component into OpenMPF, then
 please refer to the [Contribution Guide](CONTRIBUTING.md).
 
+#### Create the OpenMPF Build Image
+
 <span id="docker-build-command"></span>
-Run following command from within the `openmpf-docker` directory to create the
-OpenMPF build image:
+Run the following command from within the `openmpf-docker` directory to create
+the OpenMPF build image:
 
 - `docker build openmpf_build/ -t openmpf_build:latest`
 
 This image has not yet built OpenMPF, rather, it is an environment in which
 OpenMPF will be built in the next step.
+
+#### Generate the OpenMPF Build Artifacts
 
 Next, decide where you would like to store the Maven dependencies on your host
 system. On Linux systems, they are usually stored in `/home/<user>/.m2`. Create
@@ -223,14 +229,21 @@ If that command does not output `BUILD SUCCESS` then you may try to run it again
 Sometimes Maven will time out while trying to download dependencies within a
 Docker container.
 
-### Generate docker-compose.yml
+#### Build the OpenMPF Component Executor Docker Image
 
-Next you need to generate the `docker-compose.yml` file.
+Run the following command from within the `openmpf-docker/openmpf_runtime`
+directory to create the OpenMPF Python component executor image:
 
-First, copy `env.tpl` to `.env` and set environment variables in `.env`. 
-Make sure that `OPENMPF_PROJECTS_PATH` is set correctly. Leave the `KEYSTORE_`
-variables blank when configuring the Workflow Manager to use HTTP. To enable
-HTTPS, see [below](#optional-configure-https).
+- `docker build . -f python_executor/Dockerfile -t openmpf_python_executor`
+
+#### Generate docker-compose.yml
+
+From within the `openmpf-docker` directory, copy `env.tpl` to `.env` and set
+environment variables in `.env`. Make sure that `OPENMPF_PROJECTS_PATH` is
+set correctly. 
+
+Leave the `KEYSTORE_` variables in `.env`  blank when configuring the Workflow
+Manager to use HTTP. To enable HTTPS, see [below](#optional-configure-https).
 
 Run the following command to generate a stand-alone `docker-compose.yml` file:
 
@@ -252,6 +265,8 @@ docker-compose \
    config > docker-compose.yml
 ```
 
+#### Build the OpenMPF Runtime Docker Images
+
 If you built the runtime images before, then run the following command to
 remove the old containers and volumes:
 
@@ -267,8 +282,8 @@ Once the runtime images are built, you can run OpenMPF using:
 
 - `docker-compose up`
 
-Note that if you want to run more than one instance of a service type, you will
-need to use the `--scale` option. For example:
+Note that if you want to run more than one instance of a service type,
+you will need to use the `--scale` option. For example:
 
 - `docker-compose up --scale east_text_detection=2 other_service=3`
 

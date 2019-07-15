@@ -226,7 +226,7 @@ Docker registry.
 
 It may be helpful to run:
 
-- `watch -n 1 docker stack ps openmpf --no-trunc`
+- `watch -n 1 docker stack ps -f desired-state=running openmpf --no-trunc`
 
 The output will update every second. Watch the `CURRENT STATE` column. Once
 all of the service are `Running`, then the stack is ready for use. Press ctrl+c
