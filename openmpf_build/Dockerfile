@@ -137,111 +137,16 @@ RUN wget -nv -O /apps/source/cmake_sources/cmake-2.8.12.2.tar.gz \
     make install && ldconfig && ln -s /apps/install/bin/cmake /usr/local/bin/cmake
 
 ################################################################################
-# Build Audio and Video Codecs and FFmpeg                                      #
+# Build FFmpeg                                                                 #
 ################################################################################
-
-# TODO: FFmpeg comes with many decoders by default. It may not be necessary to
-#    build all or any of these encoders if we only need decoding functionality.
-
-# opencore-amr:
-RUN wget -nv -O /apps/source/ffmpeg_sources/opencore-amr-0.1.4.tar.gz \
-    "https://downloads.sf.net/project/opencore-amr/opencore-amr/opencore-amr-0.1.4.tar.gz" && \
-    cd /apps/source/ffmpeg_sources && tar xzf opencore-amr-0.1.4.tar.gz && \
-    cd opencore-amr-0.1.4 && autoreconf -fiv && \
-    ./configure --prefix="/apps/install" --enable-shared && \
-    make -j$(nproc) && make install && make distclean && ldconfig
-
-# libfdk_aac:
-RUN wget -nv -O /apps/source/ffmpeg_sources/fdk-aac-0.1.5.tar.gz \
-    "https://github.com/mstorsjo/fdk-aac/archive/v0.1.5.tar.gz" && \
-    cd /apps/source/ffmpeg_sources && tar xzf fdk-aac-0.1.5.tar.gz && \
-    cd fdk-aac-0.1.5 && autoreconf -fiv && ./configure --prefix="/apps/install" --enable-shared && \
-    make -j$(nproc) && make install && make distclean && ldconfig
-
-# libmp3lame:
-RUN wget -nv -O /apps/source/ffmpeg_sources/lame-3.99.5.tar.gz \
-    "http://downloads.sourceforge.net/project/lame/lame/3.99/lame-3.99.5.tar.gz" && \
-    cd /apps/source/ffmpeg_sources && tar xzf lame-3.99.5.tar.gz && cd lame-3.99.5 && \
-    ./configure --prefix="/apps/install" --bindir="/apps/install/bin" --enable-shared --enable-nasm && \
-    make -j$(nproc) && make install && make distclean && ldconfig
-
-# libogg:
-RUN wget -nv -O /apps/source/ffmpeg_sources/libogg-1.3.2.tar.gz \
-    "http://downloads.xiph.org/releases/ogg/libogg-1.3.2.tar.gz" && \
-    cd /apps/source/ffmpeg_sources && tar xzf libogg-1.3.2.tar.gz && \
-    cd libogg-1.3.2 && ./configure --prefix="/apps/install" --enable-shared && \
-    make -j$(nproc) && make install && make distclean && ldconfig
-
-# libopus:
-RUN wget -nv -O /apps/source/ffmpeg_sources/libopus-1.2.tar.gz \
-    "https://archive.mozilla.org/pub/opus/opus-1.2.tar.gz" && \
-    cd /apps/source/ffmpeg_sources && tar xzf libopus-1.2.tar.gz && \
-    cd opus-1.2 && autoreconf -fiv && ./configure --prefix="/apps/install" --enable-shared && \
-    make -j$(nproc) && make install && make distclean && ldconfig
-
-# libspeex:
-RUN wget -nv -O /apps/source/ffmpeg_sources/speex-1.2rc2.tar.gz \
-    "http://downloads.xiph.org/releases/speex/speex-1.2rc2.tar.gz" && \
-    cd /apps/source/ffmpeg_sources && tar xzf speex-1.2rc2.tar.gz && \
-    cd speex-1.2rc2 && LDFLAGS="-L/apps/install/lib" CPPFLAGS="-I/apps/install/include" \
-    ./configure --prefix="/apps/install" --enable-shared && make -j$(nproc) && make install && \
-    make distclean && ldconfig
-
-# libvorbis:
-RUN wget -nv -O /apps/source/ffmpeg_sources/libvorbis-1.3.5.tar.gz \
-    "http://downloads.xiph.org/releases/vorbis/libvorbis-1.3.5.tar.gz" && \
-    cd /apps/source/ffmpeg_sources && tar xzf libvorbis-1.3.5.tar.gz && \
-    cd libvorbis-1.3.5 && LDFLAGS="-L/apps/install/lib" CPPFLAGS="-I/apps/install/include" \
-    ./configure --prefix="/apps/install" --with-ogg="/apps/install" --enable-shared && \
-    make -j$(nproc) && make install && make distclean && ldconfig
-
-# libtheora:
-RUN wget -nv -O /apps/source/ffmpeg_sources/libtheora-1.1.1.tar.gz \
-    "http://downloads.xiph.org/releases/theora/libtheora-1.1.1.tar.gz" && \
-    cd /apps/source/ffmpeg_sources && tar xzf libtheora-1.1.1.tar.gz && \
-    cd libtheora-1.1.1 && ./configure --prefix="/apps/install" \
-    --with-ogg="/apps/install" --enable-shared && make -j$(nproc) && make install && \
-    make  distclean && ldconfig
-
-# libvpx:
-RUN wget -nv -O /apps/source/ffmpeg_sources/v1.6.1.tar.gz \
-    "https://codeload.github.com/webmproject/libvpx/tar.gz/v1.6.1" && \
-    cd /apps/source/ffmpeg_sources && tar xzf v1.6.1.tar.gz && cd libvpx-1.6.1 && \
-    ./configure --prefix="/apps/install" --enable-shared --enable-vp8 \
-    --enable-vp9 --enable-pic --disable-debug --disable-examples --disable-docs \
-    --as=yasm && make -j$(nproc) && make install && make distclean && ldconfig
-
-# libx264:
-RUN wget -nv -O /apps/source/ffmpeg_sources/x264-snapshot-20170226-2245-stable.tar.bz2 \
-    "http://download.videolan.org/pub/videolan/x264/snapshots/x264-snapshot-20170226-2245-stable.tar.bz2" && \
-    cd /apps/source/ffmpeg_sources && tar xvjf x264-snapshot-20170226-2245-stable.tar.bz2 && \
-    cd x264-snapshot-20170226-2245-stable && PKG_CONFIG_PATH="/apps/install/lib/pkgconfig" \
-    ./configure --prefix="/apps/install" --bindir="/apps/install" --enable-shared --disable-cli && \
-    make -j$(nproc) && make install && make distclean && ldconfig
-
-# libx265:
-RUN wget -nv -O /apps/source/ffmpeg_sources/x265_2.3.tar.gz \
-    "https://download.videolan.org/pub/videolan/x265/x265_2.3.tar.gz" && \
-    cd /apps/source/ffmpeg_sources && tar xzf x265_2.3.tar.gz && cd x265_2.3/build/linux && \
-    MAKEFLAGS="-j" ./multilib.sh && cd 8bit && cmake ../../../source -DEXTRA_LIB="x265_main10.a;x265_main12.a" \
-    -DEXTRA_LINK_FLAGS=-L. -DLINKED_10BIT=ON -DLINKED_12BIT=ON -DCMAKE_INSTALL_PREFIX="/apps/install" && \
-    make install && make clean && cd ../10bit && make clean && cd ../12bit && make clean && ldconfig
-
-# xvidcore:
-RUN wget -nv -O /apps/source/ffmpeg_sources/xvidcore-1.3.4.tar.gz \
-    "http://downloads.xvid.org/downloads/xvidcore-1.3.4.tar.gz" && \
-    cd /apps/source/ffmpeg_sources && tar zxf xvidcore-1.3.4.tar.gz && \
-    cd xvidcore/build/generic && ./configure --prefix="/apps/install" && \
-    make -j$(nproc) && make install && make distclean && ldconfig
 
 # FFmpeg 3.3.3:
 RUN cd /apps/source/ffmpeg_sources && git clone https://git.ffmpeg.org/ffmpeg.git ffmpeg && \
-    cd ffmpeg && git checkout release/3.3 && PKG_CONFIG_PATH="/apps/install/lib/pkgconfig" \
+    cd ffmpeg && git checkout release/3.3 
+    
+RUN cd /apps/source/ffmpeg_sources/ffmpeg && PKG_CONFIG_PATH="/apps/install/lib/pkgconfig" \
     ./configure --bindir="/apps/install/bin" --disable-libsoxr --enable-avresample \
-    --enable-gpl --enable-libopencore-amrnb --enable-libopencore-amrwb \
-    --enable-libfdk_aac --enable-libmp3lame --enable-libopus --enable-libspeex \
-    --enable-libtheora --enable-libvorbis --enable-libvpx --enable-libx264 \
-    --enable-libx265 --enable-libxvid --enable-nonfree --enable-openssl \
+    --enable-openssl \
     --enable-shared --enable-version3 --extra-cflags="-I/apps/install/include" \
     --extra-ldflags="-L/apps/install/lib" --extra-libs=-ldl --prefix="/apps/install" && \
     make -j$(nproc) && make install && make distclean && ln -s /apps/install/bin/ffmpeg /usr/bin/ffmpeg && \
