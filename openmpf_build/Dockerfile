@@ -110,7 +110,6 @@ RUN wget -nv -O /apps/bin/apache/apache-tomcat-8.5.41.tar.gz \
         /opt/apache-tomcat/conf/context.xml && \
     rm -rf /opt/apache-tomcat/webapps/examples/ && \
     rm -rf /opt/apache-tomcat/webapps/docs/ && \
-    rm -rf /opt/apache-tomcat/webapps/host-manager/ && \
     rm -rf /opt/apache-tomcat/webapps/ROOT/
 
 ################################################################################
