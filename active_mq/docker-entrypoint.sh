@@ -1,3 +1,5 @@
+#!/bin/bash
+
 #############################################################################
 # NOTICE                                                                    #
 #                                                                           #
@@ -18,42 +20,26 @@
 #    http://www.apache.org/licenses/LICENSE-2.0                             #
 #                                                                           #
 # Unless required by applicable law or agreed to in writing, software       #
-# distributed under the License is distributed on an "AS IS" BASIS,         #
+# distributed under the License is distributed don an "AS IS" BASIS,        #
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  #
 # See the License for the specific language governing permissions and       #
 # limitations under the License.                                            #
 #############################################################################
 
-FROM webcenter/activemq
-
-ENV ACTIVE_MQ_PROFILE=default
-
-COPY activemq-*.xml /opt/activemq/conf/
-COPY env.* /opt/activemq/bin/
-
-COPY docker-entrypoint.sh /opt/activemq/bin/entrypoint.sh.tmp
-# The following tr command deletes the carriage return character '\r', converting CRLF to LF.
-RUN tr -d '\r' < /opt/activemq/bin/entrypoint.sh.tmp > /opt/activemq/bin/docker-entrypoint.sh
-RUN chmod 755 /opt/activemq/bin/docker-entrypoint.sh
-
-ENTRYPOINT ["/opt/activemq/bin/docker-entrypoint.sh"]
-
+set -Ee -o pipefail -o xtrace
 
 ################################################################################
-# Labels                                                                       #
+# Custom Steps                                                                 #
 ################################################################################
 
-ARG BUILD_TAG
-ARG BUILD_DATE
-ARG BUILD_SHAS
+cd /opt/activemq/conf
+# Put the appropriate activemq.xml file into place
+cp /opt/activemq/conf/activemq-$ACTIVE_MQ_PROFILE.xml activemq.xml
 
-# Set labels
-LABEL org.label-schema.build-date=$BUILD_DATE \
-      org.label-schema.license="GPLv2" \
-      org.label-schema.name="OpenMPF ActiveMQ" \
-      org.label-schema.schema-version="1.0" \
-      org.label-schema.url="https://openmpf.github.io" \
-      org.label-schema.vcs-ref=$BUILD_SHAS \
-      org.label-schema.vcs-url="https://github.com/openmpf" \
-      org.label-schema.vendor="MITRE" \
-      org.label-schema.version=$BUILD_TAG
+# Put the appropriate env file in place
+cd /opt/activemq/bin
+cp env.$ACTIVE_MQ_PROFILE env
+
+# This script from the webcenter/activemq image runs activemq under supervisord.
+/app/run.sh
+

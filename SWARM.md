@@ -145,17 +145,17 @@ range. For example, `8.8.8.0/24`.
 #### Docker Overlay Network
 
 Unless a subnet is specified for the application stack's network in
-`swarm-compose.yml`, Docker will automatically create an overlay network for
+`docker-compose.core.yml`, Docker will automatically create an overlay network for
 secure node-to-node communication when you run `docker stack deploy`. Similar to
 the ingress network issue described above, sometimes the subnet that Docker
 chooses conflicts with the subnet of the host machines running Docker.
 
 To prevent this, manually specify a subnet IP address range for the overlay
-network in `swarm-compose.yml` as follows:
+network in `docker-compose.core.yml` as follows:
 
 ```
 networks:
-  swarm_overlay:
+  overlay:
     driver: overlay
     ipam:
       config:
@@ -166,9 +166,54 @@ Replace `<overlay-subnet-cidr>` with an appropriate non-conflicting IP address
 range. For example, `9.9.9.0/24`. Make sure this does not conflict with
 `<ingress-subnet-cidr>`.
 
+### Modify docker-compose.yml
+
+Before proceeding, ensure that you've generated a `docker-compose.yml` file as
+explained in the [Generate
+docker-compose.yml](README.md#generate-docker-composeyml) section in the README.
+
+Note that by default both the Workflow Manager and mySQL containers have a
+`placement` constraint so that they are always deployed to the swarm manager
+node:
+
+```
+    deploy:
+      placement:
+        constraints:
+          - node.role == manager
+```
+
+The mySQL container must always run on the same node so that the same
+`openmpf_mysql_data` volume is used when the swarm is redeployed. The Workflow
+Manager container is run on the same node for efficiency. If you wish to change
+the node, then modify the `placement` constraints.
+
+By default, one instance of each detection component service is configured to
+run on each node in the swarm cluster:
+
+```
+    deploy:
+      mode: global
+```
+
+For example, if you wish to deploy a specific number of instances, then use the
+following instead:
+
+```
+    deploy:
+      mode: replicated
+      replicas: 2
+```
+
+The [docker-compose file
+schema](https://docs.docker.com/compose/compose-file/#deploy) offers many ways
+to configure how services are deployed. Among others, you may be also
+interested in [resource limits and
+reservations](https://docs.docker.com/compose/compose-file/#resources).
+
 ### Deploy the Stack to the Swarm
 
-`docker stack deploy -c swarm-compose.yml openmpf --with-registry-auth`
+`docker stack deploy openmpf -c docker-compose.yml --with-registry-auth`
 
 The stack will likely take a long time to come up the first time you deploy it
 because if a container gets scheduled on a node where the image is not present
@@ -177,18 +222,11 @@ time. This will be much faster later once the images are downloaded on the
 nodes. If the images are updated, only the changes are downloaded from the
 Docker registry.
 
-Note that by default both the Workflow Manager and mySQL containers have a
-`placement` constraint so that they are always deployed to the swarm manager
-node. The mySQL container must always run on the same node so that the same
-openmpf_mysql_data volume is used when the swarm is redeployed. The Workflow
-Manager container is run on the same node for efficiency. If you wish to change
-the node, then modify the `placement` constraints in `swarm-compose.yml`.
-
 #### Monitor the Swarm Services
 
 It may be helpful to run:
 
-- `watch -n 1 docker stack ps openmpf --no-trunc`
+- `watch -n 1 docker stack ps -f desired-state=running openmpf --no-trunc`
 
 The output will update every second. Watch the `CURRENT STATE` column. Once
 all of the service are `Running`, then the stack is ready for use. Press ctrl+c
@@ -299,34 +337,3 @@ the following command from within the `openmpf-docker` directory:
 - `./scripts/docker-swarm-cleanup.sh --all-volumes --remove-shared-data`
 
 This does not remove the Docker images.
-
-### (Optional) Add GPU support with NVIDIA CUDA
-
-Refer to the steps listed in the [(Optional) Add GPU support with NVIDIA
-CUDA](README.md#optional-add-gpu-support-with-nvidia-cuda) section in the
-README. Those instructions are for a single-host Docker Compose deployment. All
-of the same steps apply to a Docker Swarm deployment with the exception of the
-steps involving the `runtime: nvidia` flag. This is because `swarm-compose.yml`
-supports a different Docker Compose file version than `docker-compose.yml`. That
-version does not support that flag.
-
-To address this, and to get the nodes in your swarm cluster to use the NVIDIA
-Docker runtime, you will need to update the `/etc/docker/daemon.json` file on
-each node. If that file does not already exist, then create it. Add the
-following content:
-
-```
-{   
-    "default-runtime": "nvidia",
-    "runtimes": {
-        "nvidia": {
-            "path": "/usr/bin/nvidia-container-runtime",
-            "runtimeArgs": []
-        }
-    }
-}
-```
-
-This setting will affect every container running on the node, which, in general,
-should not cause any problems for containers that don't require a special
-runtime.

@@ -14,7 +14,8 @@ install.tar
 *.bak
 
 # generated files
-/docker-compose.yml
-/docker-compose-test.yml
-/swarm-compose.yml
-/openmpf-docker-images*
+docker-compose.yml
+docker-compose-test.yml
+swarm-compose.yml
+openmpf-docker-images*
+.env

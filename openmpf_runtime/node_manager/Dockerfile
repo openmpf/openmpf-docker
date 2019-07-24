@@ -24,8 +24,9 @@
 # limitations under the License.                                            #
 #############################################################################
 
-ARG BUILD_IMAGE_NAME=openmpf_build:latest
-FROM $BUILD_IMAGE_NAME as openmpf_build
+ARG BUILD_REGISTRY
+ARG BUILD_TAG=latest
+FROM ${BUILD_REGISTRY}openmpf_build:${BUILD_TAG} as openmpf_build
 
 # TODO: A new container can be made to include only a JRE and executables needed.
 FROM centos:7.4.1708
@@ -148,7 +149,7 @@ RUN for dir in $MPF_HOME/plugins/*; do /home/mpf/setup-python-component-venv.py 
 ################################################################################
 
 ENV ACTIVE_MQ_HOST=activemq
-ENV ACTIVE_MQ_BROKER_URI=failover://(tcp://$ACTIVE_MQ_HOST:61616)?jms.prefetchPolicy.all=1&startupMaxReconnectAttempts=1
+ENV ACTIVE_MQ_BROKER_URI=failover://(tcp://$ACTIVE_MQ_HOST:61616)?jms.prefetchPolicy.all=0&startupMaxReconnectAttempts=1
 ENV MYSQL_HOST=mysql_database
 ENV THIS_MPF_NODE=node_manager
 # JGROUPS_TCP_ADDRESS set in docker-entrypoint.sh
@@ -189,8 +190,8 @@ ENTRYPOINT ["/home/mpf/docker-entrypoint.sh"]
 ################################################################################
 
 ARG BUILD_DATE
-ARG BUILD_VERSION
 ARG BUILD_SHAS
+ARG BUILD_TAG
 
 # Clear inherited labels from CentOS 7.4.1708 base image.
 # TODO: Remove these when we start using a newer CentOS base image.
@@ -207,5 +208,5 @@ LABEL org.label-schema.build-date=$BUILD_DATE \
       org.label-schema.url="https://openmpf.github.io" \
       org.label-schema.vcs-ref=$BUILD_SHAS \
       org.label-schema.vcs-url="https://github.com/openmpf" \
-      org.label-schema.vendor=MITRE \
-      org.label-schema.version=$BUILD_VERSION
+      org.label-schema.vendor="MITRE" \
+      org.label-schema.version=$BUILD_TAG
