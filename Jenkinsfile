@@ -443,23 +443,23 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                 }
 
             } finally {
-                if (buildContainerId != null) {
-                    sh 'docker container rm -f ' + buildContainerId
+                // if (buildContainerId != null) {
+                //     sh 'docker container rm -f ' + buildContainerId
 
-                    if (runMvnTests) {
+                //     if (runMvnTests) {
 
-                        if (fileExists('docker-compose-test.yml')) {
-                            sh 'docker-compose -f docker-compose-test.yml rm -svf || true'
-                            sh 'sleep 10' // give previous command some time
-                        }
+                //         if (fileExists('docker-compose-test.yml')) {
+                //             sh 'docker-compose -f docker-compose-test.yml rm -svf || true'
+                //             sh 'sleep 10' // give previous command some time
+                //         }
 
-                        sh 'docker volume rm -f ' + buildMySqlDataVolume // preserve openmpf_shared_data for post-run analysis
-                        removeDockerNetwork(buildNetwork)
-                    }
+                //         sh 'docker volume rm -f ' + buildMySqlDataVolume // preserve openmpf_shared_data for post-run analysis
+                //         removeDockerNetwork(buildNetwork)
+                //     }
 
-                    // Remove dangling <none> images.
-                    sh 'docker image prune -f'
-                }
+                //     // Remove dangling <none> images.
+                //     sh 'docker image prune -f'
+                // }
             }
 
             stage('Apply custom config') {
@@ -489,17 +489,17 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                 }
             }
 
-            stage('Push runtime images') {
-                if (!pushRuntimeImages) {
-                    echo 'SKIPPING PUSH OF RUNTIME IMAGES'
-                }
-                when (pushRuntimeImages) { // if false, don't show this step in the Stage View UI
-                    // Pushing multiple tags is cheap, as all the layers are reused.
-                    sh 'docker push ' + buildImageName
-                    sh 'docker-compose push'
-                    sh "docker push '${pythonExecutorImageName}'"
-                }
-            }
+            // stage('Push runtime images') {
+            //     if (!pushRuntimeImages) {
+            //         echo 'SKIPPING PUSH OF RUNTIME IMAGES'
+            //     }
+            //     when (pushRuntimeImages) { // if false, don't show this step in the Stage View UI
+            //         // Pushing multiple tags is cheap, as all the layers are reused.
+            //         sh 'docker push ' + buildImageName
+            //         sh 'docker-compose push'
+            //         sh "docker push '${pythonExecutorImageName}'"
+            //     }
+            // }
 
         } // end docker.withRegistry()
     } catch (Exception e) {
