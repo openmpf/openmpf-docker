@@ -63,7 +63,7 @@ RUN yum install -y git python-pip python-devel python-setuptools file \
     python-setuptools-devel gcc gcc-c++ make autoconf automake \
     libtool yasm nasm bzip2 cmake3 numpy perl-File-Find-Rule which \
     libffi-devel openssl-devel apr apr-util apr-util-ldap log4cxx \
-    log4cxx-devel qt qt-devel qt-x11 boost boost-devel wget dos2unix && \
+    log4cxx-devel qt qt-devel qt-x11 boost boost-devel wget dos2unix ffmpeg && \
     yum clean all && rm -rf /var/cache/yum/*
 
 # Install Python dependencies:
@@ -135,22 +135,6 @@ RUN wget -nv -O /apps/source/cmake_sources/cmake-2.8.12.2.tar.gz \
     cd /apps/source/cmake_sources && tar xzf cmake-2.8.12.2.tar.gz && \
     cd cmake-2.8.12.2 && chmod +x * && ./configure --prefix=/apps/install && make -j && \
     make install && ldconfig && ln -s /apps/install/bin/cmake /usr/local/bin/cmake
-
-################################################################################
-# Build FFmpeg                                                                 #
-################################################################################
-
-# FFmpeg 3.3.3:
-RUN cd /apps/source/ffmpeg_sources && git clone https://git.ffmpeg.org/ffmpeg.git ffmpeg && \
-    cd ffmpeg && git checkout release/3.3 
-    
-RUN cd /apps/source/ffmpeg_sources/ffmpeg && PKG_CONFIG_PATH="/apps/install/lib/pkgconfig" \
-    ./configure --bindir="/apps/install/bin" --disable-libsoxr --enable-avresample \
-    --enable-openssl \
-    --enable-shared --enable-version3 --extra-cflags="-I/apps/install/include" \
-    --extra-ldflags="-L/apps/install/lib" --extra-libs=-ldl --prefix="/apps/install" && \
-    make -j$(nproc) && make install && make distclean && ln -s /apps/install/bin/ffmpeg /usr/bin/ffmpeg && \
-    ldconfig
 
 ################################################################################
 # Build Google Protocol Buffers                                                #
@@ -374,4 +358,7 @@ LABEL org.label-schema.build-date=$BUILD_DATE \
       org.label-schema.vcs-ref=$BUILD_SHAS \
       org.label-schema.vcs-url="https://github.com/openmpf" \
       org.label-schema.vendor="MITRE" \
-      org.label-schema.version=$BUILD_TAG
+      org.label-schema.version=$BUILD_TAG \
+      org.label-schema.vendor=MITRE \
+      org.label-schema.version=$BUILD_VERSION
+
