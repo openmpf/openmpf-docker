@@ -156,7 +156,7 @@ find . -path  \*\failsafe-reports\*.xml -exec cp {} "$BUILD_ARTIFACTS_PATH/repor
 
 # Set file ownership
 uid=$(stat -c %u "$BUILD_ARTIFACTS_PATH")
-chown -R "$uid:$uid $BUILD_ARTIFACTS_PATH"
+chown -R "$uid:$uid" "$BUILD_ARTIFACTS_PATH"
 
 set +o xtrace
 # Exit now if any tests failed
