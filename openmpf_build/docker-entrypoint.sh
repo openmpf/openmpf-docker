@@ -42,6 +42,9 @@ BUILD_ARTIFACTS_PATH=/mnt/build_artifacts
 # Use "docker run --env BUILD_PACKAGE_JSON=openmpf-some-other-package.json" option
 BUILD_PACKAGE_JSON=${BUILD_PACKAGE_JSON:=openmpf-open-source-package.json}
 
+echo ">> UID" # DEBUG
+stat -c %u /mnt/build_artifacts # DEBUG
+
 # Start with a clean slate
 rm -rf "$BUILD_ARTIFACTS_PATH"/*
 
