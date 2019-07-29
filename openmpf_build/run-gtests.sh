@@ -53,6 +53,7 @@ cd /home/mpf/openmpf-projects/openmpf/mpf-component-build
 mkdir -p "$BUILD_ARTIFACTS_PATH/reports/gtest-reports"
 find . -name *junit.xml -exec cp {} "$BUILD_ARTIFACTS_PATH/reports/gtest-reports" \;
 
+# Set file ownership
 uid=$("stat -c %u $BUILD_ARTIFACTS_PATH")
 chown -R "$uid:$uid $BUILD_ARTIFACTS_PATH"
 
