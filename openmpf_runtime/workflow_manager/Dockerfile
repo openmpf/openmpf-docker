@@ -87,6 +87,7 @@ COPY --from=openmpf_build /apps/install/bin/ffmpeg /apps/install/bin/ffprobe \
 COPY --from=openmpf_build /etc/ld.so.conf.d/ /etc/ld.so.conf.d/
 COPY --from=openmpf_build /opt/apache-tomcat/ /opt/apache-tomcat/
 RUN rm -rf /opt/apache-tomcat/webapps/manager/
+RUN rm -rf /opt/apache-tomcat/webapps/host-manager/
 
 # Link FFmpeg:
 RUN ln -s $MPF_HOME/bin/ffmpeg /usr/bin/ffmpeg && \
