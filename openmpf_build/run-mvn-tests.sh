@@ -155,7 +155,7 @@ mkdir -p "$BUILD_ARTIFACTS_PATH/reports/failsafe-reports"
 find . -path  \*\failsafe-reports\*.xml -exec cp {} "$BUILD_ARTIFACTS_PATH/reports/failsafe-reports" \;
 
 # Set file ownership
-uid=$("stat -c %u $BUILD_ARTIFACTS_PATH")
+uid=$(stat -c %u "$BUILD_ARTIFACTS_PATH")
 chown -R "$uid:$uid $BUILD_ARTIFACTS_PATH"
 
 set +o xtrace
