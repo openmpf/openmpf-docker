@@ -63,7 +63,8 @@ RUN yum install -y git python-pip python-devel python-setuptools file \
     python-setuptools-devel gcc gcc-c++ make autoconf automake \
     libtool yasm nasm bzip2 cmake3 numpy perl-File-Find-Rule which \
     libffi-devel openssl-devel apr apr-util apr-util-ldap log4cxx \
-    log4cxx-devel qt qt-devel qt-x11 boost boost-devel wget dos2unix ffmpeg && \
+    log4cxx-devel qt qt-devel qt-x11 boost boost-devel wget dos2unix \
+    ffmpeg ffmpeg-devel && \
     yum clean all && rm -rf /var/cache/yum/*
 
 # Install Python dependencies:
