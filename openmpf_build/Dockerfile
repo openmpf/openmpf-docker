@@ -39,9 +39,6 @@ RUN useradd -u 376 -U -d /home/mpf -ms /bin/bash -G wheel -p mpf mpf
 # Set up yum repo:
 RUN yum install -y epel-release deltarpm && yum clean all
 RUN yum-config-manager --setopt=override_install_langs='' --save && \
-    rpm --import http://li.nux.ro/download/nux/RPM-GPG-KEY-nux.ro && \
-    rpm -Uvh http://li.nux.ro/download/nux/dextop/el7/x86_64/nux-dextop-release-0-5.el7.nux.noarch.rpm && \
-    yum install -y epel-release deltarpm && \
     yum localinstall -y --nogpgcheck https://download1.rpmfusion.org/free/el/rpmfusion-free-release-7.noarch.rpm \
         https://download1.rpmfusion.org/nonfree/el/rpmfusion-nonfree-release-7.noarch.rpm
 
