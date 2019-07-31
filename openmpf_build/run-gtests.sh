@@ -53,6 +53,9 @@ cd /home/mpf/openmpf-projects/openmpf/mpf-component-build
 mkdir -p "$BUILD_ARTIFACTS_PATH/reports/gtest-reports"
 find . -name *junit.xml -exec cp {} "$BUILD_ARTIFACTS_PATH/reports/gtest-reports" \;
 
+# Set file ownership
+chown -R --reference="$BUILD_ARTIFACTS_PATH" "$BUILD_ARTIFACTS_PATH"
+
 set +o xtrace
 # Exit now if any tests failed
 if [ "$gTestsFailed" -eq 0 ]; then
