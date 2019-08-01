@@ -117,8 +117,8 @@ ENV LD_LIBRARY_PATH /usr/local/nvidia/lib:/usr/local/nvidia/lib64
 # TODO: Trim the fat from the copies.
 
 # Copy files from the build image:
-COPY --from=openmpf_build /apps/install/bin/ffmpeg /apps/install/bin/ffprobe \
-     /apps/install/bin/ffserver $MPF_HOME/bin/
+COPY --from=openmpf_build /usr/bin/ffmpeg /usr/bin/ffprobe \
+     /usr/bin/ffserver $MPF_HOME/bin/
 COPY --from=openmpf_build /etc/ld.so.conf.d/ /etc/ld.so.conf.d/
 COPY --from=openmpf_build /etc/profile.d/mpf.sh /etc/profile.d/mpf.sh
 
