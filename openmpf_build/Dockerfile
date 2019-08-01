@@ -300,13 +300,6 @@ RUN yum install -y python-keyczar && yum clean all
 RUN echo 'gather_timeout = 60' >> /etc/ansible/ansible.cfg
 
 ################################################################################
-# For Tests: Link ffserver and ffprobe                                         #
-################################################################################
-
-RUN ln -s /apps/install/bin/ffserver /usr/bin/ffserver && \
-    ln -s /apps/install/bin/ffprobe /usr/bin/ffprobe
-
-################################################################################
 # For Tests: Configure Environment Variables                                   #
 ################################################################################
 
