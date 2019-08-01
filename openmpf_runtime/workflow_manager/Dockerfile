@@ -37,9 +37,6 @@ FROM centos:7.4.1708
 
 ENV MPF_HOME=/opt/mpf
 
-# Do this right away so that we fail fast if the user doesn't provide the JDK:
-COPY --from=openmpf_build /apps/bin/jdk-*-linux-x64.rpm /apps/bin/
-
 # Create the "mpf" user:
 RUN useradd -u 376 -U -d /home/mpf -ms /bin/bash -G wheel -p mpf mpf
 
@@ -50,22 +47,12 @@ RUN yum install -y epel-release deltarpm && yum clean all
 RUN yum update -y && yum clean all
 
 ################################################################################
-# Install Oracle JDK                                                           #
+# Install OpenJDK JRE                                                          #
 ################################################################################
 
-# Install Oracle JDK:
-RUN yum -y localinstall --nogpgcheck /apps/bin/jdk-*-linux-x64.rpm && \
-    alternatives --install /usr/bin/java java /usr/java/jdk*/jre/bin/java 20000 && \
-    alternatives --install /usr/bin/jar jar /usr/java/jdk*/bin/jar 20000 && \
-    alternatives --install /usr/bin/javac javac /usr/java/jdk*/bin/javac 20000 && \
-    alternatives --install /usr/bin/javaws javaws /usr/java/jdk*/jre/bin/javaws 20000 && \
-    alternatives --set java /usr/java/jdk*/jre/bin/java && \
-    alternatives --set javaws /usr/java/jdk*/jre/bin/javaws && \
-    alternatives --set javac /usr/java/jdk*/bin/javac && \
-    alternatives --set jar /usr/java/jdk*/bin/jar; \
-    alternatives --install /usr/bin/jar jar /usr/java/jdk*/bin/jar 20000 && \
-    alternatives --set jar /usr/java/jdk*/bin/jar; \
-    rm /apps/bin/jdk-*-linux-x64.rpm
+# Install OpenJDK JRE only:
+RUN yum -y install java-11-openjdk && \
+    alternatives --install /usr/bin/java java /usr/lib/jvm/jre-11/bin/java 20000
 
 ################################################################################
 # Install yum Dependencies                                                     #
@@ -99,6 +86,8 @@ COPY --from=openmpf_build /apps/install/bin/ffmpeg /apps/install/bin/ffprobe \
      /apps/install/bin/ffserver $MPF_HOME/bin/
 COPY --from=openmpf_build /etc/ld.so.conf.d/ /etc/ld.so.conf.d/
 COPY --from=openmpf_build /opt/apache-tomcat/ /opt/apache-tomcat/
+RUN rm -rf /opt/apache-tomcat/webapps/manager/
+RUN rm -rf /opt/apache-tomcat/webapps/host-manager/
 
 # Link FFmpeg:
 RUN ln -s $MPF_HOME/bin/ffmpeg /usr/bin/ffmpeg && \
@@ -115,6 +104,12 @@ RUN mkdir $MPF_HOME/plugins && cd $MPF_HOME/plugins && \
     for file in $MPF_HOME/share/components/*.tar.gz; do tar xzf "$file"; done
 
 COPY build_artifacts/workflow-manager.war /opt/apache-tomcat/webapps/workflow-manager.war
+
+# Configure Tomcat cache size:
+# https://stackoverflow.com/questions/26893297/tomcat-8-throwing-org-apache-catalina-webresources-cache-getresource-unable-to
+RUN sed -i '24s/.*/    <WatchedResource>$\{catalina\.ba\se\}\/conf\/web.xml<\/WatchedResource>\n    <Resources cachingAllowed="true" cacheMaxSize="100000" \/>/' \
+    /opt/apache-tomcat/conf/context.xml
+
 
 # TODO: Choose a better path than /home/mpf/openmpf-projects/openmpf/trunk/ansible on a production container.
 # For example: ${env:MPF_HOME}/manage/ansible/roles/child
@@ -141,6 +136,7 @@ ENV MPF_LOG_PATH=$MPF_HOME/share/logs
 ENV CORE_MPF_NODES=
 ENV LD_LIBRARY_PATH=/usr/lib64:$MPF_HOME/lib
 ENV PATH=$PATH:$MPF_HOME/bin
+ENV JAVA_HOME=/usr
 
 # The workflow manager must be added as an mpf-child so that plugin packages are
 # extracted at startup, which is necessary for component auto-registration.

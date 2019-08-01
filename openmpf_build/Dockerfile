@@ -33,9 +33,6 @@ WORKDIR /home/mpf
 # Initial Setup                                                                #
 ################################################################################
 
-# Do this right away so that we fail fast if the user doesn't provide the JDK:
-COPY jdk-*-linux-x64.rpm /apps/bin/
-
 # Create the "mpf" user:
 RUN useradd -u 376 -U -d /home/mpf -ms /bin/bash -G wheel -p mpf mpf
 
@@ -77,21 +74,22 @@ RUN pip install --upgrade pip && pip install --upgrade setuptools && \
 RUN cd /home/mpf && easy_install -U cffi
 
 ################################################################################
-# Install Oracle JDK                                                           #
+# Install OpenJDK                                                              #
 ################################################################################
 
-# Install Oracle JDK:
-RUN yum -y localinstall --nogpgcheck /apps/bin/jdk-*-linux-x64.rpm && \
-    alternatives --install /usr/bin/java java /usr/java/jdk*/jre/bin/java 20000 && \
-    alternatives --install /usr/bin/jar jar /usr/java/jdk*/bin/jar 20000 && \
-    alternatives --install /usr/bin/javac javac /usr/java/jdk*/bin/javac 20000 && \
-    alternatives --install /usr/bin/javaws javaws /usr/java/jdk*/jre/bin/javaws 20000 && \
-    alternatives --set java /usr/java/jdk*/jre/bin/java && \
-    alternatives --set javaws /usr/java/jdk*/jre/bin/javaws && \
-    alternatives --set javac /usr/java/jdk*/bin/javac && \
-    alternatives --set jar /usr/java/jdk*/bin/jar; \
-    alternatives --install /usr/bin/jar jar /usr/java/jdk*/bin/jar 20000 && \
-    alternatives --set jar /usr/java/jdk*/bin/jar
+# Install OpenJDK:
+ENV JAVA_HOME=/usr/lib/jvm/java-11
+RUN yum -y install java-11-openjdk-devel && \
+    alternatives --install /usr/bin/java java $JAVA_HOME/jre/bin/java 20000 && \
+    alternatives --install /usr/bin/jar jar $JAVA_HOME/bin/jar 20000 && \
+    alternatives --install /usr/bin/javac javac $JAVA_HOME/bin/javac 20000 && \
+    alternatives --install /usr/bin/javaws javaws $JAVA_HOME/jre/bin/javaws 20000 && \
+    alternatives --set java $JAVA_HOME/jre/bin/java && \
+    alternatives --set javaws $JAVA_HOME/jre/bin/javaws && \
+    alternatives --set javac $JAVA_HOME/bin/javac && \
+    alternatives --set jar $JAVA_HOME/bin/jar; \
+    alternatives --install /usr/bin/jar jar $JAVA_HOME/bin/jar 20000 && \
+    alternatives --set jar $JAVA_HOME/bin/jar
 
 # TODO: Pipe all tars into extract command:
 #  wget -qO- your_link_here | tar xvz -C /target/directory
@@ -100,17 +98,19 @@ RUN yum -y localinstall --nogpgcheck /apps/bin/jdk-*-linux-x64.rpm && \
 # Install Apache Tomcat                                                        #
 ################################################################################
 
-# Apache Tomcat 7.0.72:
-RUN wget -nv -O /apps/bin/apache/apache-tomcat-7.0.72.tar.gz \
-    "http://archive.apache.org/dist/tomcat/tomcat-7/v7.0.72/bin/apache-tomcat-7.0.72.tar.gz" && \
-    cd /apps/bin/apache && tar xzf apache-tomcat-7.0.72.tar.gz && \
+# Apache Tomcat 8.5.41:
+RUN wget -nv -O /apps/bin/apache/apache-tomcat-8.5.41.tar.gz \
+    "http://archive.apache.org/dist/tomcat/tomcat-8/v8.5.41/bin/apache-tomcat-8.5.41.tar.gz" && \
+    cd /apps/bin/apache && tar xzf apache-tomcat-8.5.41.tar.gz && \
     mkdir -p /usr/share/apache-tomcat && \
-    cp -Rf /apps/bin/apache/apache-tomcat-7.0.72/* /usr/share/apache-tomcat/ && \
+    cp -Rf /apps/bin/apache/apache-tomcat-8.5.41/* /usr/share/apache-tomcat/ && \
     chown -R mpf /usr/share/apache-tomcat && chmod -R 755 /usr/share/apache-tomcat && \
     ln -s /usr/share/apache-tomcat /opt/apache-tomcat && \
-    perl -i -p0e 's/<!--\n    <Manager pathname="" \/>\n      -->.*?/<!-- -->\n    <Manager pathname="" \/>/s' \
+    perl -i -p0e 's/<!--\n    <Manager pathname="" \/>\n    -->/<Manager pathname="" \/>/s' \
         /opt/apache-tomcat/conf/context.xml && \
-    rm -rf /opt/apache-tomcat/webapps/*
+    rm -rf /opt/apache-tomcat/webapps/examples/ && \
+    rm -rf /opt/apache-tomcat/webapps/docs/ && \
+    rm -rf /opt/apache-tomcat/webapps/ROOT/
 
 ################################################################################
 # Install Apache Maven                                                         #

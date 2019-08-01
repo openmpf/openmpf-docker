@@ -45,9 +45,6 @@ FROM centos:7.4.1708
 
 ENV MPF_HOME=/opt/mpf
 
-# Do this right away so that we fail fast if the user doesn't provide the JDK:
-COPY --from=openmpf_build /apps/bin/jdk-*-linux-x64.rpm /apps/bin/
-
 # Create the "mpf" user:
 RUN useradd -u 376 -U -d /home/mpf -ms /bin/bash -G wheel -p mpf mpf
 
@@ -58,21 +55,12 @@ RUN yum install -y epel-release deltarpm && yum clean all
 RUN yum update -y && yum clean all
 
 ################################################################################
-# Install Oracle JDK                                                           #
+# Install OpenJDK JRE                                                          #
 ################################################################################
 
-# Install Oracle JDK:
-RUN yum -y localinstall --nogpgcheck /apps/bin/jdk-*-linux-x64.rpm && \
-    alternatives --install /usr/bin/java java /usr/java/jdk*/jre/bin/java 20000 && \
-    alternatives --install /usr/bin/jar jar /usr/java/jdk*/bin/jar 20000 && \
-    alternatives --install /usr/bin/javac javac /usr/java/jdk*/bin/javac 20000 && \
-    alternatives --install /usr/bin/javaws javaws /usr/java/jdk*/jre/bin/javaws 20000 && \
-    alternatives --set java /usr/java/jdk*/jre/bin/java && \
-    alternatives --set javaws /usr/java/jdk*/jre/bin/javaws && \
-    alternatives --set javac /usr/java/jdk*/bin/javac && \
-    alternatives --set jar /usr/java/jdk*/bin/jar; \
-    alternatives --install /usr/bin/jar jar /usr/java/jdk*/bin/jar 20000 && \
-    alternatives --set jar /usr/java/jdk*/bin/jar
+# Install OpenJDK JRE only:
+RUN yum -y install java-11-openjdk && \
+    alternatives --install /usr/bin/java java /usr/lib/jvm/jre-11/bin/java 20000
 
 ################################################################################
 # Install yum Dependencies                                                     #
@@ -173,7 +161,6 @@ ENV MPF_LOG_PATH=$MPF_HOME/share/logs
 ENV MASTER_MPF_NODE=workflow_manager
 ENV MAIL=/var/spool/mail/mpf
 ENV PATH=$PATH:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin:$MPF_HOME/bin:/usr/bin/
-ENV JAVA_HOME=/usr/bin/java
 ENV HOME=/home/mpf
 ENV LOGNAME=mpf
 

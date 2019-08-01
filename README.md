@@ -182,14 +182,6 @@ system:
   - `git checkout <branch or commit>`
   - `git submodule update --init`
 
-Download the most recent Oracle Java SE JDK 8 64-bit Linux RPM from
-[here](http://www.oracle.com/technetwork/java/javase/downloads/index.html). If
-it's not listed there, check
-[here](http://www.oracle.com/technetwork/java/javase/downloads/java-archive-javase8-2177648.html).
-Place the file in the `openmpf_build` directory. The file should be named
-`jdk-8u144-linux-x64.rpm`, or something similar where "8u144" is a different
-version number. Do not download Java SE 9 or 10.
-
 If you plan to develop and integrate your own component into OpenMPF, then
 please refer to the [Contribution Guide](CONTRIBUTING.md).
 

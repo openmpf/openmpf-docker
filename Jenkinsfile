@@ -287,9 +287,6 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
         docker.withRegistry('http://' + dockerRegistryHostAndPort, dockerRegistryCredId) {
 
             stage('Build base image') {
-                // Copy JDK into place
-                sh 'cp -u /data/openmpf/jdk-*-linux-x64.rpm openmpf_build'
-
                 // Copy *package.json into place
                 if (buildPackageJson.contains("/")) {
                     sh 'cp ' + buildPackageJson + ' ' + openmpfProjectsPath +

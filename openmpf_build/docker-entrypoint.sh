@@ -107,7 +107,7 @@ parallelism=$(($(nproc) / 2))
 cd /home/mpf/openmpf-projects/openmpf
 mvn install \
   -DskipTests -Dmaven.test.skip=true -DskipITs \
-  -Dmaven.tomcat.skip=true \
+  -Dcargo.maven.skip=true \
   -Dcomponents.build.package.json="/home/mpf/openmpf-projects/openmpf/trunk/jenkins/scripts/config_files/$BUILD_PACKAGE_JSON" \
   -Dstartup.auto.registration.skip=false \
   -Dcomponents.build.dir=/home/mpf/openmpf-projects/openmpf/mpf-component-build \
