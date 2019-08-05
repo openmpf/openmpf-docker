@@ -30,7 +30,7 @@
 version: '3.7'
 
 services:
-  mysql_database:
+  mysql-database:
     image: mariadb:latest
     environment:
       - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
@@ -73,7 +73,7 @@ services:
       context: ./openmpf_runtime
       dockerfile: workflow-manager/Dockerfile
     depends_on:
-      - mysql_database
+      - mysql-database
       - redis
       - activemq
     restart: always
