@@ -171,7 +171,7 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
 
         def workflowManagerImageName = remoteImageTagPrefix + 'openmpf_workflow-manager:' + imageTag
         def activeMqImageName = remoteImageTagPrefix + 'openmpf_activemq:' + imageTag
-        def pythonExecutorImageName = remoteImageTagPrefix + 'openmpf_python_executor:' + imageTag
+        def pythonExecutorImageName = remoteImageTagPrefix + 'openmpf_python-executor:' + imageTag
 
         def openmpfGitHubUrl = 'https://github.com/openmpf'
         def openmpfProjectsPath = 'openmpf_build/openmpf-projects'
@@ -388,7 +388,7 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                     }
                     when (buildRuntimeImages) { // if false, don't show this step in the Stage View UI
                         sh 'DOCKER_BUILDKIT=1 docker build openmpf_runtime' +
-                                ' --file openmpf_runtime/python_executor/Dockerfile ' +
+                                ' --file openmpf_runtime/python-executor/Dockerfile ' +
                                 ' --build-arg BUILD_REGISTRY=' + remoteImageTagPrefix +
                                 ' --build-arg BUILD_TAG=' + imageTag +
                                 ' --build-arg BUILD_DATE=' + buildDate +
