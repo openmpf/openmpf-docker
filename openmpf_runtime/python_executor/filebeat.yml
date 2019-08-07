@@ -12,6 +12,5 @@ filebeat:
   inputs:
     - type: log
       paths:
-        # catalina.out and other tomcat logs are also fed into here
-        - ${MPF_HOME}/share/logs/workflow_manager/log/workflow-manager.log
-      document_type: tomcat_log
+        - ${MPF_LOG_PATH}/${THIS_MPF_NODE}/log/${COMPONENT_LOG_NAME}
+      document_type: python_component_log

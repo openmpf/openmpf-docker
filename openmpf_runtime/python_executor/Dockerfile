@@ -33,7 +33,7 @@ ENV COMPONENT_VIRTUALENV $MPF_HOME/plugins/plugin/venv
 
 RUN yum install -y epel-release \
     # libSM and libXrender packages are required for opencv-python
-    && yum install -y python-pip libSM libXrender \
+    && yum install -y python-pip libSM libXrender initscripts \
     && yum clean all \
     && rm -rf /var/cache/yum/*
 
@@ -85,6 +85,16 @@ ENV MPF_LOG_PATH $MPF_HOME/share/logs
 # print()'ed messsages from docker-entrypoint.py were not being shown at the right time.
 # Only applies to stdin, stdout and stderr
 ENV PYTHONUNBUFFERED 1
+
+################################################################################
+# Set up logging                                                               #
+################################################################################
+RUN curl -L -O https://artifacts.elastic.co/downloads/beats/filebeat/filebeat-7.3.0-x86_64.rpm && \
+    yum -y localinstall --nogpgcheck filebeat-7.3.0-x86_64.rpm
+
+COPY python_executor/filebeat.yml /etc/filebeat/filebeat.yml
+COPY logstash-beats.crt /etc/pki/tls/certs/logstash-beats.crt
+
 
 COPY python_executor/scripts /home/mpf/scripts
 COPY python_executor/docker-entrypoint.py /home/mpf/
