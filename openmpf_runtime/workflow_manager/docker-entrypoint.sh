@@ -198,6 +198,8 @@ echo "ActiveMQ is up"
 
 set -o xtrace
 
+# Start streaming logs to logstash
 /etc/init.d/filebeat start
+
 # Run Tomcat (as root user)
 /opt/apache-tomcat/bin/catalina.sh run

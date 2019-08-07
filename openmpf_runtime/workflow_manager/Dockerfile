@@ -59,7 +59,7 @@ RUN yum -y install java-11-openjdk && \
 ################################################################################
 
 RUN yum install -y git asciidoc rpm-build \
-    python2-devel PyYAML python-httplib2 python-jinja2 libtomcrypt \
+    python2-devel PyYAML python-httplib2 python-jinja2 libtomcrypt initscripts \
     python-paramiko python-six sshpass which mysql dos2unix ansible && \
     yum clean all && rm -rf /var/cache/yum/*
 
@@ -150,10 +150,7 @@ RUN curl -L -O https://artifacts.elastic.co/downloads/beats/filebeat/filebeat-7.
     yum -y localinstall --nogpgcheck filebeat-7.3.0-x86_64.rpm
 
 COPY workflow_manager/filebeat.yml /etc/filebeat/filebeat.yml
-COPY workflow_manager/logstash-beats.crt /etc/pki/tls/certs/logstash-beats.crt
-
-#TODO probably move this to the top
-RUN yum install -y initscripts
+COPY logstash-beats.crt /etc/pki/tls/certs/logstash-beats.crt
 
 ################################################################################
 # Prepare Entrypoint                                                           #

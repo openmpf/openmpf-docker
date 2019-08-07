@@ -30,7 +30,7 @@ VOLUME $MPF_HOME/share
 
 ENV MAX_MAP_COUNT 262144
 
-COPY logstash.conf /etc/logstash/conf.d/tomcat8.conf
+COPY logstash.conf /etc/logstash/conf.d/logstash.conf
 
 ################################################################################
 # Labels                                                                       #

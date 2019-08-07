@@ -66,7 +66,7 @@ RUN yum -y install java-11-openjdk && \
 # Install yum Dependencies                                                     #
 ################################################################################
 
-RUN yum install -y log4cxx libdc1394 unzip libjpeg-turbo libpng \
+RUN yum install -y log4cxx libdc1394 unzip libjpeg-turbo libpng initscripts \
     libtiff jasper-libs gtk2 atk pango gdk-pixbuf2 cairo fontconfig gstreamer \
     gstreamer-plugins-base libv4l mesa-libGLU libSM libICE qt-x11 python-pip \
     python-virtualenv initscripts sudo dos2unix ghostscript && \
@@ -143,6 +143,16 @@ RUN dos2unix -q /home/mpf/setup-python-component-venv.py
 
 # Setup venv for Python components:
 RUN for dir in $MPF_HOME/plugins/*; do /home/mpf/setup-python-component-venv.py "$dir"; done
+
+################################################################################
+# Set up logging                                                               #
+################################################################################
+RUN curl -L -O https://artifacts.elastic.co/downloads/beats/filebeat/filebeat-7.3.0-x86_64.rpm && \
+    yum -y localinstall --nogpgcheck filebeat-7.3.0-x86_64.rpm
+
+COPY node_manager/filebeat.yml /etc/filebeat/filebeat.yml
+COPY logstash-beats.crt /etc/pki/tls/certs/logstash-beats.crt
+
 
 ################################################################################
 # Configure Environment Variables                                              #

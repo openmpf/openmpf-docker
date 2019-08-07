@@ -36,6 +36,9 @@ rm -f $MPF_HOME/share/nodes/MPF_Channel/*${HOSTNAME}-NodeManager.list
 echo "export THIS_MPF_NODE=${THIS_MPF_NODE}_id_${HOSTNAME}" >> /etc/profile.d/mpf.sh
 echo "export JGROUPS_TCP_ADDRESS=${HOSTNAME}" >> /etc/profile.d/mpf.sh
 
+# Start streaming logs to logstash
+/etc/init.d/filebeat start
+
 # Run node-manager (as root user)
 $MPF_HOME/libexec/node-manager start
 
