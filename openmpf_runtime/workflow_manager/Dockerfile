@@ -144,6 +144,18 @@ RUN echo '[mpf-child]' >> /etc/ansible/hosts; \
     echo $THIS_MPF_NODE >> /etc/ansible/hosts;
 
 ################################################################################
+# Set up logging                                                               #
+################################################################################
+RUN curl -L -O https://artifacts.elastic.co/downloads/beats/filebeat/filebeat-7.3.0-x86_64.rpm && \
+    yum -y localinstall --nogpgcheck filebeat-7.3.0-x86_64.rpm
+
+COPY workflow_manager/filebeat.yml /etc/filebeat/filebeat.yml
+COPY workflow_manager/logstash-beats.crt /etc/pki/tls/certs/logstash-beats.crt
+
+#TODO probably move this to the top
+RUN yum install -y initscripts
+
+################################################################################
 # Prepare Entrypoint                                                           #
 ################################################################################
 

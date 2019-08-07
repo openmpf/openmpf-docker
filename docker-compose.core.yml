@@ -67,6 +67,17 @@ services:
     networks:
       - overlay
 
+  elk:
+    image: ${REGISTRY}openmpf_elk:${TAG}
+    build:
+      context: ./elk
+    ports:
+      - "5601:5601"
+      - "9200:9200"
+      - "5044:5044"
+    networks:
+      - overlay
+
   workflow_manager:
     image: ${REGISTRY}openmpf_workflow_manager:${TAG}
     build:

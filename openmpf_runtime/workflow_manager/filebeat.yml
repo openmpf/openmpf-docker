@@ -1,0 +1,16 @@
+output:
+  logstash:
+    enabled: true
+    hosts:
+      - elk:5044
+    ssl:
+      certificate_authorities:
+        - /etc/pki/tls/certs/logstash-beats.crt
+    timeout: 15
+
+filebeat:
+  inputs:
+    -
+      paths:
+        - ${MPF_HOME}/share/logs/workflow_manager/log/workflow-manager.log
+      document_type: tomcat_log

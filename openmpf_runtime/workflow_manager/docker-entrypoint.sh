@@ -198,5 +198,6 @@ echo "ActiveMQ is up"
 
 set -o xtrace
 
+/etc/init.d/filebeat start
 # Run Tomcat (as root user)
 /opt/apache-tomcat/bin/catalina.sh run
