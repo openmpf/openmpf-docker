@@ -86,8 +86,8 @@ ENV MPF_LOG_PATH $MPF_HOME/share/logs
 # Only applies to stdin, stdout and stderr
 ENV PYTHONUNBUFFERED 1
 
-COPY python_executor/scripts /home/mpf/scripts
-COPY python_executor/docker-entrypoint.py /home/mpf/
+COPY python-executor/scripts /home/mpf/scripts
+COPY python-executor/docker-entrypoint.py /home/mpf/
 
 # Command used when this Dockerfile is extended by component's Dockerfile
 ONBUILD ENTRYPOINT ["python", "/home/mpf/docker-entrypoint.py"]

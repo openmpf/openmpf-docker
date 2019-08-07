@@ -34,16 +34,16 @@ x-detection-component-base:
     - WFM_USER=${WFM_USER}
     - WFM_PASSWORD=${WFM_PASSWORD}
   depends_on:
-    - workflow_manager
+    - workflow-manager
   volumes:
     - shared_data:/opt/mpf/share
   networks:
     - overlay
 
 services:
-  east_text_detection:
+  east-text-detection:
     <<: *detection-component-base
-    image: ${REGISTRY}openmpf_east_text_detection:${TAG}
+    image: ${REGISTRY}openmpf_east-text-detection:${TAG}
     build:
       context: ${OPENMPF_PROJECTS_PATH}/openmpf-components/python/EastTextDetection
     deploy:

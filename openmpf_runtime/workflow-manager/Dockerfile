@@ -75,7 +75,7 @@ RUN yum install -y python-keyczar && yum clean all
 # NOTE: This will change the most often so it should  be as far down in the Dockerfile as possible.
 
 # TODO: The more steps that can be kept the same (and in the same order) as the
-#   node_manager Dockerfile, the more docker can share the build steps
+#   node-manager Dockerfile, the more docker can share the build steps
 #   between the containers. All shared steps (installing java, copying files
 #   from openmpf_build) should be moved to the top of both Dockerfiles.
 
@@ -124,8 +124,8 @@ RUN cd /home/mpf && mkdir -p /home/mpf/openmpf-projects/openmpf/trunk && \
 
 ENV ACTIVE_MQ_HOST=activemq
 ENV ACTIVE_MQ_BROKER_URI=failover://(tcp://$ACTIVE_MQ_HOST:61616)?jms.prefetchPolicy.all=0&startupMaxReconnectAttempts=1
-ENV MYSQL_HOST=mysql_database
-ENV THIS_MPF_NODE=workflow_manager
+ENV MYSQL_HOST=mysql-database
+ENV THIS_MPF_NODE=workflow-manager
 # JGROUPS_TCP_ADDRESS set in docker-entrypoint.sh
 ENV JGROUPS_TCP_PORT=7800
 ENV JGROUPS_FILE_PING_LOCATION=$MPF_HOME/share/nodes
@@ -152,7 +152,7 @@ VOLUME $MPF_HOME/share
 
 EXPOSE 8080 8443
 
-COPY workflow_manager/docker-entrypoint.sh /home/mpf
+COPY workflow-manager/docker-entrypoint.sh /home/mpf
 RUN dos2unix -q /home/mpf/docker-entrypoint.sh
 ENTRYPOINT ["/home/mpf/docker-entrypoint.sh"]
 

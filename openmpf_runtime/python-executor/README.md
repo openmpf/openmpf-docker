@@ -15,29 +15,29 @@ You have two options:
 
 1\. Create a Dockerfile in your Python component project.
   - Do this if you need to install custom dependencies in the image to run your component.
-  - This Dockerfile extends from the base `openmpf_python_executor` image.
+  - This Dockerfile extends from the base `openmpf_python-executor` image.
   - This approach will pull in your component source code via the Docker build context
     with a `COPY` command when you run `docker build …`.
   - This approach will install your component in the image at build time.
     In the end you will have a Docker image for your component.
 
-2\. Use the base `openmpf_python_executor` image without your own Dockerfile.
+2\. Use the base `openmpf_python-executor` image without your own Dockerfile.
   - This is a simpler option if you don’t need to install custom dependencies.
   - This approach will pull in your component source from a bind mount
     that you must specify when you execute `docker run …`.
   - This approach will install your component in the container as part of the Docker entry point at runtime.
     Your code only ever exists in the container. This approach will not generate a Docker image for your component.
-  - You can think of the `openmpf_python_executor` image as a tool that you use to build and run your code.
+  - You can think of the `openmpf_python-executor` image as a tool that you use to build and run your code.
 
 Each approach installs your component the same way,
 but the former does it at build time and the latter does it at runtime.
 
 
-How to build the `openmpf_python_executor` base image
+How to build the `openmpf_python-executor` base image
 ======================================================
 ```bash
 cd /path/to/openmpf-docker/openmpf_runtime
-docker build . -f python_executor/Dockerfile -t openmpf_python_executor
+docker build . -f python-executor/Dockerfile -t openmpf_python-executor
 ```
 
 
@@ -70,7 +70,7 @@ PythonOcvComponent
 
 The minimal Dockerfile is:
 ```dockerfile
-FROM openmpf_python_executor:latest
+FROM openmpf_python-executor:latest
 
 COPY . /home/mpf/component_src/
 
@@ -81,7 +81,7 @@ However, it is recommended that you set up your environment and install any depe
 `COPY . /home/mpf/component_src/` command. Putting steps before `COPY` allows you to avoid re-running those commands
 every time you modify your source code. For example:
 ```dockerfile
-FROM openmpf_python_executor:latest
+FROM openmpf_python-executor:latest
 
 # Replace with your actual dependencies
 RUN "$COMPONENT_VIRTUALENV/bin/pip" install --no-cache-dir 'opencv-python>=3.3' 'tensorflow'
@@ -131,14 +131,14 @@ docker run --rm -it \
     -e WFM_PASSWORD=mpf_adm \
     -e COMPONENT_LOG_NAME=<component_log_name> \
     -v "<component_path>:/home/mpf/component_src:ro" \
-    openmpf_python_executor
+    openmpf_python-executor
 ```
 
 
 How to use this image with a non-Docker deployment of OpenMPF
 ----------------------------------------------
 Additional command line arguments need to be added to the `docker run ...` command in order to use
-`openmpf_python_executor` with a non-Docker deployment.
+`openmpf_python-executor` with a non-Docker deployment.
 
 If you are using your own Dockerfile, to start your component run the following command replacing
 `<activemq_hostname>`, `<wfm_base_url>`, and `<component_name>` with appropriate values.
@@ -179,5 +179,5 @@ docker run --rm -it \
     -v "<component_path>:/home/mpf/component_src:ro" \
     -v "$MPF_HOME/share/remote-media:$MPF_HOME/share/remote-media" \
     -v "$MPF_HOME/share:/opt/mpf/share" \
-    openmpf_python_executor
+    openmpf_python-executor
 ```
