@@ -242,7 +242,7 @@ replicas does not come up, then there is a problem. Press ctrl+c when done.
 
 To monitor the log of the Workflow Manager, run:
 
-- `docker service logs --follow openmpf_workflow_manager`
+- `docker service logs --follow openmpf_workflow-manager`
 
 Press ctrl+c when done.
 

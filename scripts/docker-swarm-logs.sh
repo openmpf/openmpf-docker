@@ -93,7 +93,7 @@ trap finally EXIT
 docker run -d --rm --entrypoint bash -v openmpf_shared_data:/data --name openmpf_helper redis -c "sleep infinity" > /dev/null
 
 if [ "$nodeManagerLogs" = 1 ]; then
-    findNameOption="-name 'node_manager_id_*'"
+    findNameOption="-name 'node-manager_id_*'"
 fi
 
 logDirs=()

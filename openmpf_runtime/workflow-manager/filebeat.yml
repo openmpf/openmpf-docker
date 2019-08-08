@@ -12,6 +12,6 @@ filebeat:
   inputs:
     - type: log
       paths:
-        # this should find all component log files and the node-manager log files
-        - "${MPF_HOME}/share/logs/node_manager_id_2265aadf3297/log/*.log"
-      document_type: nodemanger_log
+        # catalina.out and other tomcat logs are also fed into here
+        - ${MPF_HOME}/share/logs/workflow-manager/log/workflow-manager.log
+      document_type: tomcat_log

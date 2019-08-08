@@ -28,16 +28,8 @@ ARG BUILD_REGISTRY
 ARG BUILD_TAG=latest
 FROM ${BUILD_REGISTRY}openmpf_build:${BUILD_TAG} as openmpf_build
 
-# TODO: A new container can be made to include only a JRE and executables needed.
+# TODO: A new container can be made to include only the WAR file and a JRE.
 FROM centos:7.4.1708
-
-# Child node needs:
-#  - node-manager JAR
-#  - component libraries
-#  - plugins directory from tar.gz
-#  - update data and config
-
-#  NOTE: Components are automatically registered when Tomcat starts the workflow manager container.
 
 ################################################################################
 # Initial Setup                                                                #
@@ -66,42 +58,15 @@ RUN yum -y install java-11-openjdk && \
 # Install yum Dependencies                                                     #
 ################################################################################
 
-RUN yum install -y log4cxx libdc1394 unzip libjpeg-turbo libpng initscripts \
-    libtiff jasper-libs gtk2 atk pango gdk-pixbuf2 cairo fontconfig gstreamer \
-    gstreamer-plugins-base libv4l mesa-libGLU libSM libICE qt-x11 python-pip \
-    python-virtualenv initscripts sudo dos2unix ghostscript && \
+RUN yum install -y git asciidoc rpm-build \
+    python2-devel PyYAML python-httplib2 python-jinja2 libtomcrypt initscripts \
+    python-paramiko python-six sshpass which mysql dos2unix ansible && \
     yum clean all && rm -rf /var/cache/yum/*
 
-################################################################################
-# Install Component-Specific Dependencies                                      #
-################################################################################
-
-# ImageMagick6:
-RUN yum install -y http://rpms.remirepo.net/enterprise/remi-release-7.rpm && \
-    yum --enablerepo=remi install -y ImageMagick6 ImageMagick6-c++ \
-    ImageMagick6-c++-devel ImageMagick6-devel ImageMagick6-libs && \
-    yum clean all && rm -rf /var/cache/yum/*
-
-# Install locales:
-RUN sed -i "/^override_install_lang/d" /etc/yum.conf && \
-    yum reinstall -y glibc-common && \
-    yum clean all && rm -rf /var/cache/yum/*
-
-################################################################################
-# NVIDIA CUDA runtime setup                                                    #
-################################################################################
-
-ENV CUDA_VERSION 9.1.85
-
-# nvidia-docker 1.0
-LABEL com.nvidia.volumes.needed="nvidia_driver"
-LABEL com.nvidia.cuda.version="${CUDA_VERSION}"
-
-RUN echo "/usr/local/nvidia/lib" >> /etc/ld.so.conf.d/nvidia.conf && \
-    echo "/usr/local/nvidia/lib64" >> /etc/ld.so.conf.d/nvidia.conf
-
-ENV PATH /usr/local/nvidia/bin:/usr/local/cuda/bin:${PATH}
-ENV LD_LIBRARY_PATH /usr/local/nvidia/lib:/usr/local/nvidia/lib64
+# TODO: For some reason this needs to be a separate step. I think it's because the
+#   mirror it choses for the other yum install does not have python-keyczar.
+#   This happens even if python-keyczar is the first thing in the list.
+RUN yum install -y python-keyczar && yum clean all
 
 ################################################################################
 # Copy Files                                                                   #
@@ -110,7 +75,7 @@ ENV LD_LIBRARY_PATH /usr/local/nvidia/lib:/usr/local/nvidia/lib64
 # NOTE: This will change the most often so it should  be as far down in the Dockerfile as possible.
 
 # TODO: The more steps that can be kept the same (and in the same order) as the
-#   workflow_manager Dockerfile, the more docker can share the build steps
+#   node-manager Dockerfile, the more docker can share the build steps
 #   between the containers. All shared steps (installing java, copying files
 #   from openmpf_build) should be moved to the top of both Dockerfiles.
 
@@ -120,7 +85,9 @@ ENV LD_LIBRARY_PATH /usr/local/nvidia/lib:/usr/local/nvidia/lib64
 COPY --from=openmpf_build /apps/install/bin/ffmpeg /apps/install/bin/ffprobe \
      /apps/install/bin/ffserver $MPF_HOME/bin/
 COPY --from=openmpf_build /etc/ld.so.conf.d/ /etc/ld.so.conf.d/
-COPY --from=openmpf_build /etc/profile.d/mpf.sh /etc/profile.d/mpf.sh
+COPY --from=openmpf_build /opt/apache-tomcat/ /opt/apache-tomcat/
+RUN rm -rf /opt/apache-tomcat/webapps/manager/
+RUN rm -rf /opt/apache-tomcat/webapps/host-manager/
 
 # Link FFmpeg:
 RUN ln -s $MPF_HOME/bin/ffmpeg /usr/bin/ffmpeg && \
@@ -130,29 +97,26 @@ RUN ln -s $MPF_HOME/bin/ffmpeg /usr/bin/ffmpeg && \
 COPY build_artifacts/install.tar /home/mpf/
 RUN cd /home/mpf && tar -xzf install.tar -C $MPF_HOME && rm install.tar
 
-RUN cp $MPF_HOME/libexec/node-manager /etc/init.d/
-
 COPY build_artifacts/plugin-packages $MPF_HOME/share/components
 
 # Extract components:
 RUN mkdir $MPF_HOME/plugins && cd $MPF_HOME/plugins && \
     for file in $MPF_HOME/share/components/*.tar.gz; do tar xzf "$file"; done
 
-COPY node_manager/setup-python-component-venv.py /home/mpf
-RUN dos2unix -q /home/mpf/setup-python-component-venv.py
+COPY build_artifacts/workflow-manager.war /opt/apache-tomcat/webapps/workflow-manager.war
 
-# Setup venv for Python components:
-RUN for dir in $MPF_HOME/plugins/*; do /home/mpf/setup-python-component-venv.py "$dir"; done
+# Configure Tomcat cache size:
+# https://stackoverflow.com/questions/26893297/tomcat-8-throwing-org-apache-catalina-webresources-cache-getresource-unable-to
+RUN sed -i '24s/.*/    <WatchedResource>$\{catalina\.ba\se\}\/conf\/web.xml<\/WatchedResource>\n    <Resources cachingAllowed="true" cacheMaxSize="100000" \/>/' \
+    /opt/apache-tomcat/conf/context.xml
 
-################################################################################
-# Set up logging                                                               #
-################################################################################
-RUN curl -L -O https://artifacts.elastic.co/downloads/beats/filebeat/filebeat-7.3.0-x86_64.rpm && \
-    yum -y localinstall --nogpgcheck filebeat-7.3.0-x86_64.rpm
 
-COPY node_manager/filebeat.yml /etc/filebeat/filebeat.yml
-COPY logstash-beats.crt /etc/pki/tls/certs/logstash-beats.crt
-
+# TODO: Choose a better path than /home/mpf/openmpf-projects/openmpf/trunk/ansible on a production container.
+# For example: ${env:MPF_HOME}/manage/ansible/roles/child
+COPY build_artifacts/ansible.tar /home/mpf/
+RUN cd /home/mpf && mkdir -p /home/mpf/openmpf-projects/openmpf/trunk && \
+    tar -xzf ansible.tar -C /home/mpf/openmpf-projects/openmpf/trunk && \
+    rm ansible.tar
 
 ################################################################################
 # Configure Environment Variables                                              #
@@ -160,29 +124,33 @@ COPY logstash-beats.crt /etc/pki/tls/certs/logstash-beats.crt
 
 ENV ACTIVE_MQ_HOST=activemq
 ENV ACTIVE_MQ_BROKER_URI=failover://(tcp://$ACTIVE_MQ_HOST:61616)?jms.prefetchPolicy.all=0&startupMaxReconnectAttempts=1
-ENV MYSQL_HOST=mysql_database
-ENV THIS_MPF_NODE=node_manager
+ENV MYSQL_HOST=mysql-database
+ENV THIS_MPF_NODE=workflow-manager
 # JGROUPS_TCP_ADDRESS set in docker-entrypoint.sh
 ENV JGROUPS_TCP_PORT=7800
 ENV JGROUPS_FILE_PING_LOCATION=$MPF_HOME/share/nodes
-ENV no_proxy=localhost,$THIS_MPF_NODE
-ENV MPF_USER=root
+ENV no_proxy=localhost
+ENV MPF_USER=mpf
 ENV MPF_LOG_PATH=$MPF_HOME/share/logs
-ENV MASTER_MPF_NODE=workflow_manager
-ENV MAIL=/var/spool/mail/mpf
-ENV PATH=$PATH:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin:$MPF_HOME/bin:/usr/bin/
-ENV HOME=/home/mpf
-ENV LOGNAME=mpf
+# Every child node-manager container is treated as a spare node.
+ENV CORE_MPF_NODES=
+ENV LD_LIBRARY_PATH=/usr/lib64:$MPF_HOME/lib
+ENV PATH=$PATH:$MPF_HOME/bin
+ENV JAVA_HOME=/usr
 
-# TODO: This shouldn't be needed, but for some reason the node-manager script is
-#   not able to see the ENV variables:
-RUN echo "export JAVA_HOME=/usr" >> /etc/profile.d/mpf.sh; \
-    echo "export MPF_HOME=$MPF_HOME" >> /etc/profile.d/mpf.sh; \
-    echo "export USER=root" >> /etc/profile.d/mpf.sh; \
-    echo "export THIS_MPF_NODE=$THIS_MPF_NODE" >> /etc/profile.d/mpf.sh; \
-    echo "export MASTER_MPF_NODE=$MASTER_MPF_NODE" >> /etc/profile.d/mpf.sh; \
-    echo "export MPF_LOG_PATH=$MPF_LOG_PATH" >> /etc/profile.d/mpf.sh; \
-    echo "export JGROUPS_FILE_PING_LOCATION=$JGROUPS_FILE_PING_LOCATION" >> /etc/profile.d/mpf.sh
+# The workflow manager must be added as an mpf-child so that plugin packages are
+# extracted at startup, which is necessary for component auto-registration.
+RUN echo '[mpf-child]' >> /etc/ansible/hosts; \
+    echo $THIS_MPF_NODE >> /etc/ansible/hosts;
+
+################################################################################
+# Set up logging                                                               #
+################################################################################
+RUN curl -L -O https://artifacts.elastic.co/downloads/beats/filebeat/filebeat-7.3.0-x86_64.rpm && \
+    yum -y localinstall --nogpgcheck filebeat-7.3.0-x86_64.rpm
+
+COPY workflow-manager/filebeat.yml /etc/filebeat/filebeat.yml
+COPY logstash-beats.crt /etc/pki/tls/certs/logstash-beats.crt
 
 ################################################################################
 # Prepare Entrypoint                                                           #
@@ -191,7 +159,9 @@ RUN echo "export JAVA_HOME=/usr" >> /etc/profile.d/mpf.sh; \
 # If any build steps change the data within the volume after it has been declared, those changes will be discarded.
 VOLUME $MPF_HOME/share
 
-COPY node_manager/docker-entrypoint.sh /home/mpf
+EXPOSE 8080 8443
+
+COPY workflow-manager/docker-entrypoint.sh /home/mpf
 RUN dos2unix -q /home/mpf/docker-entrypoint.sh
 ENTRYPOINT ["/home/mpf/docker-entrypoint.sh"]
 
@@ -213,7 +183,7 @@ LABEL build-date= \
 # Set labels
 LABEL org.label-schema.build-date=$BUILD_DATE \
       org.label-schema.license="Mixed" \
-      org.label-schema.name="OpenMPF Node Manager with Components" \
+      org.label-schema.name="OpenMPF Workflow Manager" \
       org.label-schema.schema-version="1.0" \
       org.label-schema.url="https://openmpf.github.io" \
       org.label-schema.vcs-ref=$BUILD_SHAS \

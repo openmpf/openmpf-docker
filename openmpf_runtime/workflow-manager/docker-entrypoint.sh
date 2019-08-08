@@ -53,14 +53,14 @@ updateOrAddProperty() {
 rm -f $MPF_HOME/share/nodes/MPF_Channel/*-MPF-MasterNode.list
 
 # NOTE: Docker assigns each Node Manager container a hostname that is a 12-digit
-# hash. For each container, we set THIS_MPF_NODE="node_manager_id_<hash>".
+# hash. For each container, we set THIS_MPF_NODE="node-manager_id_<hash>".
 
 # In a swarm deployment, containers are not persisted, so each stack deployment
 # results in new Node Manager containers with new hostnames, meaning that we
 # cannot meaningfully reuse the previous service configuration.
 
 # Remove nodeManagerConfig.xml so that it can be regenerated.
-if grep -q "node_manager_id_*" "$MPF_HOME/share/data/nodeManagerConfig.xml"; then
+if grep -q "node-manager_id_*" "$MPF_HOME/share/data/nodeManagerConfig.xml"; then
   rm "$MPF_HOME/share/data/nodeManagerConfig.xml"
 fi
 

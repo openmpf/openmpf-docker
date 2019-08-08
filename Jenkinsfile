@@ -169,9 +169,9 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
         def buildImageName = remoteImageTagPrefix + 'openmpf_build:' + imageTag
         def buildContainerId
 
-        def workflowManagerImageName = remoteImageTagPrefix + 'openmpf_workflow_manager:' + imageTag
-        def activeMqImageName = remoteImageTagPrefix + 'openmpf_active_mq:' + imageTag
-        def pythonExecutorImageName = remoteImageTagPrefix + 'openmpf_python_executor:' + imageTag
+        def workflowManagerImageName = remoteImageTagPrefix + 'openmpf_workflow-manager:' + imageTag
+        def activeMqImageName = remoteImageTagPrefix + 'openmpf_activemq:' + imageTag
+        def pythonExecutorImageName = remoteImageTagPrefix + 'openmpf_python-executor:' + imageTag
 
         def openmpfGitHubUrl = 'https://github.com/openmpf'
         def openmpfProjectsPath = 'openmpf_build/openmpf-projects'
@@ -388,7 +388,7 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                     }
                     when (buildRuntimeImages) { // if false, don't show this step in the Stage View UI
                         sh 'DOCKER_BUILDKIT=1 docker build openmpf_runtime' +
-                                ' --file openmpf_runtime/python_executor/Dockerfile ' +
+                                ' --file openmpf_runtime/python-executor/Dockerfile ' +
                                 ' --build-arg BUILD_REGISTRY=' + remoteImageTagPrefix +
                                 ' --build-arg BUILD_TAG=' + imageTag +
                                 ' --build-arg BUILD_DATE=' + buildDate +
@@ -424,7 +424,7 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
 
                         // Run supporting containers in background.
                         sh 'docker-compose -f docker-compose-test.yml up -d' +
-                                ' --scale workflow_manager=0'
+                                ' --scale workflow-manager=0'
 
                         mvnTestsRetval = sh(script: 'docker exec' +
                                 ' -e EXTRA_MVN_OPTIONS=\"' + mvnTestOptions + '\" ' +
@@ -469,7 +469,7 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                     // Build and tag the new Workflow Manager image with the image tag used in the compose files.
                     // That way, we do not have to modify the compose files. This overwrites the tag that referred
                     // to the original Workflow Manager image without the custom config.
-                    sh 'docker build openmpf_custom_config/workflow_manager' +
+                    sh 'docker build openmpf_custom_config/workflow-manager' +
                             ' --build-arg BUILD_REGISTRY=' + remoteImageTagPrefix +
                             ' --build-arg BUILD_TAG=' + imageTag +
                             ' --build-arg BUILD_DATE=' + buildDate +
@@ -477,7 +477,7 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                             ' -t ' + workflowManagerImageName
 
                     // Build and tag the new ActiveMQ image with the image tag used in the compose files.
-                    sh 'docker build openmpf_custom_config/active_mq' +
+                    sh 'docker build openmpf_custom_config/activemq' +
                             ' --build-arg BUILD_REGISTRY=' + remoteImageTagPrefix +
                             ' --build-arg BUILD_TAG=' + imageTag +
                             ' --build-arg BUILD_DATE=' + buildDate +
