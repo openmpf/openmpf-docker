@@ -24,88 +24,18 @@
 # limitations under the License.                                            #
 #############################################################################
 
-# Use this file in conjunction with docker-compose.http.yml or
-# docker-compose.https.yml.
+# Use this file in conjunction with docker-compose.core.yml.
 
 version: '3.7'
 
 services:
-  mysql-database:
-    image: mariadb:latest
-    environment:
-      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
-      - MYSQL_DATABASE=${MYSQL_DATABASE}
-      - MYSQL_USER=${MYSQL_USER}
-      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
-    # https://github.com/docker-library/mariadb/issues/113
-    command: [
-      '--wait_timeout=28800',
-    ]
-    volumes:
-      - mysql_data:/var/lib/mysql
-    networks:
-      - overlay
-    deploy:
-      placement:
-        constraints:
-          - node.role == manager
-
-  activemq:
-    image: ${REGISTRY}openmpf_activemq:${TAG}
+  elk:
+    image: ${REGISTRY}openmpf_elk:${TAG}
     build:
-      context: ./activemq
-    environment:
-      # Set which configuration files are used at runtime:
-      - ACTIVE_MQ_PROFILE=${ACTIVE_MQ_PROFILE}
+      context: ./elk
     ports:
-      - "8161:8161"
+      - "5601:5601"
+      - "9200:9200"
+      - "5044:5044"
     networks:
       - overlay
-
-  redis:
-    image: redis:latest
-    networks:
-      - overlay
-
-  workflow-manager:
-    image: ${REGISTRY}openmpf_workflow-manager:${TAG}
-    build:
-      context: ./openmpf_runtime
-      dockerfile: workflow-manager/Dockerfile
-    depends_on:
-      - mysql-database
-      - redis
-      - activemq
-    restart: always
-    environment:
-      # The following line is needed to wait until the mySQL service is available:
-      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
-    ports:
-      - "8080:8080"
-    volumes:
-      - shared_data:/opt/mpf/share
-    networks:
-      - overlay
-    deploy:
-      placement:
-        constraints:
-          - node.role == manager
-
-  node-manager:
-    image: ${REGISTRY}openmpf_node-manager:${TAG}
-    build:
-      context: ./openmpf_runtime
-      dockerfile: node-manager/Dockerfile
-    volumes:
-      - shared_data:/opt/mpf/share
-    networks:
-      - overlay
-    deploy:
-      mode: global
-
-volumes:
-  shared_data:
-  mysql_data:
-
-networks:
-  overlay:
