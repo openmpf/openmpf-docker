@@ -13,5 +13,5 @@ filebeat:
     - type: log
       paths:
         # this should find all component log files and the node-manager log files
-        - "${MPF_LOG_PATH}/${THIS_MPF_NODE}_id_${HOSTNAME}/log/*.log"
+        - "${MPF_LOG_PATH}/${THIS_MPF_NODE}/log/*.log"
       document_type: nodemanger_log
