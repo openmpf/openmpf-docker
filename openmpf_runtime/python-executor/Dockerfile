@@ -90,7 +90,7 @@ ENV SRC_DIR /home/mpf/component_src
 
 WORKDIR $SRC_DIR
 
-COPY python_executor/scripts /home/mpf/scripts
+COPY python-executor/scripts /home/mpf/scripts
 
 ENV PATH $COMPONENT_VIRTUALENV/bin:/home/mpf/scripts:$PATH
 
