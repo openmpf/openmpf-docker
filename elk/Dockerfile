@@ -26,11 +26,10 @@
 
 FROM  sebp/elk
 
-VOLUME $MPF_HOME/share
-
 ENV MAX_MAP_COUNT 262144
 
-COPY logstash.conf /etc/logstash/conf.d/logstash.conf
+# Override existing conf file with custom file
+COPY logstash.conf /etc/logstash/conf.d/02-beats-input.conf
 
 ################################################################################
 # Labels                                                                       #
