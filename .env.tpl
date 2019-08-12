@@ -50,3 +50,6 @@ ACTIVE_MQ_PROFILE=default
 # Set these if using "docker-compose.https.yml".
 KEYSTORE_PATH=
 KEYSTORE_PASSWORD=
+
+# Enable ELK for aggregated logging
+ELK_ENABLED=false

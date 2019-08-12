@@ -77,8 +77,10 @@ def main():
         node_name = '{}_id_{}'.format(component_name, os.getenv('HOSTNAME'))
     log_dir = os.path.join(base_log_path, node_name, 'log')
 
-    # Start streaming logs to logstash
-    /etc/init.d/filebeat start
+    # Start streaming logs to logstash, if enabled
+    filebeat_enabled = os.getenv('FILEBEAT_ENABLED')
+    if filebeat_enabled == 'true':
+        subprocess.Popen(('/etc/init.d/filebeat', 'start'))
 
     executor_proc = start_executor(descriptor, mpf_home, activemq_host, node_name)
     tail_proc = tail_log(log_dir, component_log_name, executor_proc.pid)

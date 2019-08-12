@@ -33,6 +33,7 @@ x-detection-component-base:
   environment:
     - WFM_USER=${WFM_USER}
     - WFM_PASSWORD=${WFM_PASSWORD}
+    - FILEBEAT_ENABLED=${ELK_ENABLED}
   depends_on:
     - workflow-manager
   volumes:

@@ -80,6 +80,7 @@ services:
     environment:
       # The following line is needed to wait until the mySQL service is available:
       - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - FILEBEAT_ENABLED=${ELK_ENABLED}
     ports:
       - "8080:8080"
     volumes:
@@ -96,6 +97,8 @@ services:
     build:
       context: ./openmpf_runtime
       dockerfile: node-manager/Dockerfile
+    environment:
+      - FILEBEAT_ENABLED=${ELK_ENABLED}
     volumes:
       - shared_data:/opt/mpf/share
     networks:

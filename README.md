@@ -257,18 +257,6 @@ docker-compose \
    config > docker-compose.yml
 ```
 
-You may also want to include an ELK stack for aggregated logging across the 
-containers. To do this, add the `docker-compose.elk.yml` to your config command.
-
-```
-docker-compose \
-   -f docker-compose.core.yml \
-   -f docker-compose.components.yml \
-   -f docker-compose.elk.yml \
-   config > docker-compose.yml
-```
-
-
 #### Build the OpenMPF Runtime Docker Images
 
 If you built the runtime images before, then run the following command to
@@ -396,6 +384,20 @@ docker-compose \
    -f docker-compose.core.yml \
    -f docker-compose.https.yml \
    -f docker-compose.components.yml \
+   config > docker-compose.yml
+```
+
+### (Optional) Enable ELK stack
+
+You may also want to include an ELK stack for aggregated logging across the 
+containers. To do this, set the ELK_ENABLED variable in your `.env` file to "true", 
+and add the `docker-compose.elk.yml` to your config command.
+
+```
+docker-compose \
+   -f docker-compose.core.yml \
+   -f docker-compose.components.yml \
+   -f docker-compose.elk.yml \
    config > docker-compose.yml
 ```
 
