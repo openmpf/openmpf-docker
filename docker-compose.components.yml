@@ -51,9 +51,9 @@ services:
         limits:
           cpus: "2.0"
 
-  ocv_face_detection:
+  ocv-face-detection:
     <<: *detection-component-base
-    image: ${REGISTRY}openmpf_ocv_face_detection:${TAG}
+    image: ${REGISTRY}openmpf_ocv-face-detection:${TAG}
     build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/cpp/OcvFaceDetection
     deploy:
       mode: global

@@ -50,7 +50,7 @@ RUN mkdir -p /home/mpf && echo 'find_package(mpfCMakeHelpers REQUIRED)' > /home/
 
 ADD build_artifacts/mpf-sdk-install.tar.gz /home/mpf/
 
-COPY cpp_component_build/scripts /home/mpf/scripts
+COPY cpp-component-build/scripts /home/mpf/scripts
 
 ENV PATH /home/mpf/scripts:$PATH
 
@@ -61,3 +61,14 @@ ENV BUILD_DIR /home/mpf/component_build
 ENV SRC_DIR /home/mpf/component_src
 
 WORKDIR $SRC_DIR
+
+
+LABEL org.label-schema.build-date=$BUILD_DATE \
+      org.label-schema.license="Apache 2.0" \
+      org.label-schema.name="OpenMPF C++ Component Builder" \
+      org.label-schema.schema-version="1.0" \
+      org.label-schema.url="https://openmpf.github.io" \
+      org.label-schema.vcs-ref=$BUILD_SHAS \
+      org.label-schema.vcs-url="https://github.com/openmpf" \
+      org.label-schema.vendor="MITRE" \
+      org.label-schema.version=$BUILD_TAG

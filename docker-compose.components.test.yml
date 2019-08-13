@@ -28,7 +28,7 @@
 version: '3.7'
 
 services:
-  ocv_face_detection:
+  ocv-face-detection:
     build:
       args:
         RUN_TESTS: 'true'

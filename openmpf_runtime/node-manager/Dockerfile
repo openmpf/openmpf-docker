@@ -127,8 +127,8 @@ RUN ln -s $MPF_HOME/bin/ffmpeg /usr/bin/ffmpeg && \
     ln -s $MPF_HOME/bin/ffserver /usr/bin/ffserver && \
     ln -s $MPF_HOME/bin/ffprobe /usr/bin/ffprobe
 
-COPY build_artifacts/install.tar /home/mpf/
-RUN cd /home/mpf && tar -xzf install.tar -C $MPF_HOME && rm install.tar
+COPY build_artifacts/install.tar.gz /home/mpf/
+RUN cd /home/mpf && tar -xzf install.tar.gz -C $MPF_HOME && rm install.tar.gz
 
 RUN cp $MPF_HOME/libexec/node-manager /etc/init.d/
 

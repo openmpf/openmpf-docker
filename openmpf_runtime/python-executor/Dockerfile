@@ -42,9 +42,9 @@ RUN pip install --no-cache-dir --upgrade pip virtualenv \
     && virtualenv "$COMPONENT_VIRTUALENV"
 
 WORKDIR /root/install_files
-COPY build_artifacts/install.tar .
+COPY build_artifacts/install.tar.gz .
 
-RUN tar -xf install.tar \
+RUN tar -xf install.tar.gz \
         # Python component SDK wheels
         ./python/wheelhouse \
         # Component executor binary
@@ -53,7 +53,7 @@ RUN tar -xf install.tar \
         ./config/Log4cxxConfig.xml \
         # Libraries required for component executor
         './lib/liblog4cxx*' './lib/libactivemq-cpp*' './lib/libQtCore*' './lib/libapr*' './lib/libXext*' \
-    && rm install.tar \
+    && rm install.tar.gz \
     # Install MPF .whl files here so that only the expanded contents of the whl file are present in final image.
     && "$COMPONENT_VIRTUALENV/bin/pip" --no-cache-dir install python/wheelhouse/* \
     && rm -rf python

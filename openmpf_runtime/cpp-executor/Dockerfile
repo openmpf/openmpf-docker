@@ -32,13 +32,13 @@ FROM centos:7 as extract_tar
 
 WORKDIR /root/install_files
 
-COPY build_artifacts/install.tar .
+COPY build_artifacts/install.tar.gz .
 
-RUN tar -xf install.tar \
+RUN tar -xf install.tar.gz \
         ./bin/amq_detection_component \
         ./config/Log4cxxConfig.xml \
         './lib/liblog4cxx*' './lib/libactivemq-cpp*' './lib/libQtCore*' './lib/libapr*' './lib/libXext*' \
-    && rm install.tar
+    && rm install.tar.gz
 
 
 FROM centos:7
@@ -60,3 +60,14 @@ ENV INSTALL_DIR $MPF_HOME/plugins/plugin
 COPY docker-executor-entrypoint.py /home/mpf/docker-entrypoint.py
 
 ENTRYPOINT ["python", "/home/mpf/docker-entrypoint.py"]
+
+
+LABEL org.label-schema.build-date=$BUILD_DATE \
+      org.label-schema.license="Apache 2.0" \
+      org.label-schema.name="OpenMPF C++ Component Executor" \
+      org.label-schema.schema-version="1.0" \
+      org.label-schema.url="https://openmpf.github.io" \
+      org.label-schema.vcs-ref=$BUILD_SHAS \
+      org.label-schema.vcs-url="https://github.com/openmpf" \
+      org.label-schema.vendor="MITRE" \
+      org.label-schema.version=$BUILD_TAG

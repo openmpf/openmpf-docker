@@ -172,8 +172,8 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
         def workflowManagerImageName = remoteImageTagPrefix + 'openmpf_workflow-manager:' + imageTag
         def activeMqImageName = remoteImageTagPrefix + 'openmpf_activemq:' + imageTag
         def pythonExecutorImageName = remoteImageTagPrefix + 'openmpf_python-executor:' + imageTag
-        def cppBuildImageName = remoteImageTagPrefix + 'openmpf_cpp_component_build:' + imageTag
-        def cppExecutorImageName = remoteImageTagPrefix + 'openmpf_cpp_executor:' + imageTag
+        def cppBuildImageName = remoteImageTagPrefix + 'openmpf_cpp-component-build:' + imageTag
+        def cppExecutorImageName = remoteImageTagPrefix + 'openmpf_cpp-executor:' + imageTag
 
         def openmpfGitHubUrl = 'https://github.com/openmpf'
         def openmpfProjectsPath = 'openmpf_build/openmpf-projects'
@@ -517,8 +517,8 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                     sh 'docker push ' + buildImageName
                     sh 'docker-compose push'
                     sh "docker push '${pythonExecutorImageName}'"
-                    sh "docker push $cppBuildImageName"
-                    sh "docker push $cppExecutorImageName"
+                    sh "docker push '${cppBuildImageName}'"
+                    sh "docker push '${cppExecutorImageName}'"
                 }
             }
 

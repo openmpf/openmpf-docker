@@ -78,21 +78,9 @@ RUN cd /home/mpf && easy_install -U cffi
 ################################################################################
 
 # Install OpenJDK:
+RUN yum -y install java-11-openjdk-devel
 ENV JAVA_HOME=/usr/lib/jvm/java-11
-RUN yum -y install java-11-openjdk-devel && \
-    alternatives --install /usr/bin/java java $JAVA_HOME/jre/bin/java 20000 && \
-    alternatives --install /usr/bin/jar jar $JAVA_HOME/bin/jar 20000 && \
-    alternatives --install /usr/bin/javac javac $JAVA_HOME/bin/javac 20000 && \
-    alternatives --install /usr/bin/javaws javaws $JAVA_HOME/jre/bin/javaws 20000 && \
-    alternatives --set java $JAVA_HOME/jre/bin/java && \
-    alternatives --set javaws $JAVA_HOME/jre/bin/javaws && \
-    alternatives --set javac $JAVA_HOME/bin/javac && \
-    alternatives --set jar $JAVA_HOME/bin/jar; \
-    alternatives --install /usr/bin/jar jar $JAVA_HOME/bin/jar 20000 && \
-    alternatives --set jar $JAVA_HOME/bin/jar
 
-# TODO: Pipe all tars into extract command:
-#  wget -qO- your_link_here | tar xvz -C /target/directory
 
 ################################################################################
 # Install Apache Tomcat                                                        #
