@@ -57,6 +57,7 @@ services:
     environment:
       # Set which configuration files are used at runtime:
       - ACTIVE_MQ_PROFILE=${ACTIVE_MQ_PROFILE}
+      - FILEBEAT_ENABLED=${ELK_ENABLED}
     ports:
       - "8161:8161"
     networks:

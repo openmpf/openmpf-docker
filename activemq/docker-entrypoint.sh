@@ -40,6 +40,12 @@ cp /opt/activemq/conf/activemq-$ACTIVE_MQ_PROFILE.xml activemq.xml
 cd /opt/activemq/bin
 cp env.$ACTIVE_MQ_PROFILE env
 
+# Start streaming logs to logstash, if enabled
+if [ "$FILEBEAT_ENABLED" = true ]
+then
+  /etc/init.d/filebeat start
+fi
+
 # This script from the webcenter/activemq image runs activemq under supervisord.
 /app/run.sh
 

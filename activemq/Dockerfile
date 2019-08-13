@@ -38,6 +38,14 @@ RUN chmod 755 /opt/activemq/bin/docker-entrypoint.sh
 
 ENTRYPOINT ["/opt/activemq/bin/docker-entrypoint.sh"]
 
+################################################################################
+# Set up logging                                                               #
+################################################################################
+RUN curl -L -O https://artifacts.elastic.co/downloads/beats/filebeat/filebeat-7.3.0-amd64.deb && \
+    dpkg -i filebeat-7.3.0-amd64.deb
+
+COPY filebeat.yml /etc/filebeat/filebeat.yml
+COPY logstash-beats.crt /etc/pki/tls/certs/logstash-beats.crt
 
 ################################################################################
 # Labels                                                                       #

@@ -1,0 +1,17 @@
+output:
+  logstash:
+    enabled: true
+    hosts:
+      - elk:5044
+    ssl:
+      certificate_authorities:
+        - /etc/pki/tls/certs/logstash-beats.crt
+    timeout: 15
+
+filebeat:
+  inputs:
+    - type: log
+      paths:
+        # activemq.log and audit.log are here
+        - /var/log/activemq/*.log
+      document_type: activemq_log
