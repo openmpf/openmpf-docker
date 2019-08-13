@@ -73,10 +73,6 @@ RUN pip install --upgrade pip && pip install --upgrade setuptools && \
 # Install C Foreign Function Interface (CFFI):
 RUN cd /home/mpf && easy_install -U cffi
 
-################################################################################
-# Install OpenJDK                                                              #
-################################################################################
-
 # Install OpenJDK:
 RUN yum -y install java-11-openjdk-devel
 ENV JAVA_HOME=/usr/lib/jvm/java-11

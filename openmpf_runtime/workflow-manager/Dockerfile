@@ -51,8 +51,7 @@ RUN yum update -y && yum clean all
 ################################################################################
 
 # Install OpenJDK JRE only:
-RUN yum -y install java-11-openjdk && \
-    alternatives --install /usr/bin/java java /usr/lib/jvm/jre-11/bin/java 20000
+RUN yum -y install java-11-openjdk
 
 ################################################################################
 # Install yum Dependencies                                                     #
@@ -136,7 +135,7 @@ ENV MPF_LOG_PATH=$MPF_HOME/share/logs
 ENV CORE_MPF_NODES=
 ENV LD_LIBRARY_PATH=/usr/lib64:$MPF_HOME/lib
 ENV PATH=$PATH:$MPF_HOME/bin
-ENV JAVA_HOME=/usr
+ENV JAVA_HOME=/usr/lib/jvm/jre-11
 
 # The workflow manager must be added as an mpf-child so that plugin packages are
 # extracted at startup, which is necessary for component auto-registration.

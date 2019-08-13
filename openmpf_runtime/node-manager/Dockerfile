@@ -59,8 +59,7 @@ RUN yum update -y && yum clean all
 ################################################################################
 
 # Install OpenJDK JRE only:
-RUN yum -y install java-11-openjdk && \
-    alternatives --install /usr/bin/java java /usr/lib/jvm/jre-11/bin/java 20000
+RUN yum -y install java-11-openjdk
 
 ################################################################################
 # Install yum Dependencies                                                     #
@@ -166,7 +165,7 @@ ENV LOGNAME=mpf
 
 # TODO: This shouldn't be needed, but for some reason the node-manager script is
 #   not able to see the ENV variables:
-RUN echo "export JAVA_HOME=/usr" >> /etc/profile.d/mpf.sh; \
+RUN echo "export JAVA_HOME=/usr/lib/jvm/jre-11" >> /etc/profile.d/mpf.sh; \
     echo "export MPF_HOME=$MPF_HOME" >> /etc/profile.d/mpf.sh; \
     echo "export USER=root" >> /etc/profile.d/mpf.sh; \
     echo "export THIS_MPF_NODE=$THIS_MPF_NODE" >> /etc/profile.d/mpf.sh; \
