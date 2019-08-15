@@ -459,7 +459,7 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
 
             } finally {
                 if (buildContainerId != null) {
-                    sh 'docker container rm -f ' + buildContainerId
+//                    sh 'docker container rm -f ' + buildContainerId
 
                     if (runMvnTests) {
 
