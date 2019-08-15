@@ -105,7 +105,7 @@ parallelism=$(($(nproc) / 2))
 
 # Perform build. Exit now if build failed.
 cd /home/mpf/openmpf-projects/openmpf
-mvn clean install \
+mvn install \
   -DskipTests -Dmaven.test.skip=true -DskipITs \
   -Dcargo.maven.skip=true \
   -Dcomponents.build.package.json="/home/mpf/openmpf-projects/openmpf/trunk/jenkins/scripts/config_files/$BUILD_PACKAGE_JSON" \
