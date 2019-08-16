@@ -142,15 +142,16 @@ node(jenkinsNodes) {
 wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color in Jenkins console
     def buildException
 
+    def buildId = "${currentBuild.projectName}_${currentBuild.number}"
     // Rename the named volumes and networks to be unique to this Jenkins build pipeline
-    def buildSharedDataVolumeSuffix = 'shared_data_' + currentBuild.projectName
-    def buildSharedDataVolume = 'openmpf_' + buildSharedDataVolumeSuffix
+    def buildSharedDataVolumeSuffix = "shared_data_$buildId"
+    def buildSharedDataVolume = "openmpf_$buildSharedDataVolumeSuffix"
 
-    def buildMySqlDataVolumeSuffix = 'mysql_data_' + currentBuild.projectName
-    def buildMySqlDataVolume = 'openmpf_' + buildMySqlDataVolumeSuffix
+    def buildMySqlDataVolumeSuffix = "mysql_data_$buildId"
+    def buildMySqlDataVolume = "openmpf_$buildMySqlDataVolumeSuffix"
 
-    def buildNetworkSuffix = 'overlay_' + currentBuild.projectName
-    def buildNetwork = 'openmpf_' + buildNetworkSuffix
+    def buildNetworkSuffix = "overlay_$buildId"
+    def buildNetwork = "openmpf_$buildNetworkSuffix"
 
     try {
         buildDate = getTimestamp()
