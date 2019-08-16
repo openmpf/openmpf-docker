@@ -356,7 +356,7 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                         def mvnTestArgs = '';
                         if (runMvnTests) {
                             mvnTestArgs = """--mount type=volume,source=$buildSharedDataVolume,target=/home/mpf/openmpf-projects/openmpf/trunk/install/share \\
-                            --mount type=bind,source=$extraTestDataPath,target=target=/mpfdata,readonly \\
+                            --mount type=bind,source=$extraTestDataPath,target=/mpfdata,readonly \\
                             --network=$buildNetwork"""
                         }
 
