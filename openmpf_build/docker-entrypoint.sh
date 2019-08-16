@@ -51,6 +51,10 @@ rm -rf "$BUILD_ARTIFACTS_PATH"/*
 
 cp -R "$SOURCE_CODE_PATH" /home/mpf
 
+# Clean out any previous non-docker builds.
+cd /home/mpf/openmpf-projects/openmpf
+mvn clean
+
 # This directory will only exist at this point if OpenMPF was also built outside of Docker on the same machine.
 # In this case, we don't want to use the generated files from the non-Docker build.
 # We can't just delete the entire install directory because the share directory gets mounted when running system tests
