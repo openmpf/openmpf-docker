@@ -45,6 +45,7 @@ def buildOpenmpf = env.getProperty("build_openmpf").toBoolean()
 def runGTests = env.getProperty("run_gtests").toBoolean()
 def runMvnTests = env.getProperty("run_mvn_tests").toBoolean()
 def mvnTestOptions = env.getProperty("mvn_test_options")
+def mvnHome = env.getProperty("mvn_home") ?: "/home/jenkins/.m2"
 def buildRuntimeImages = env.getProperty("build_runtime_images").toBoolean()
 def pushRuntimeImages = env.getProperty("push_runtime_images").toBoolean()
 def pollReposAndEndBuild = env.getProperty("poll_repos_and_end_build")?.toBoolean() ?: false
@@ -352,15 +353,24 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                             sh 'docker network create ' + buildNetwork
                         }
 
+                        def mvnTestArgs = '';
+                        if (runMvnTests) {
+                            mvnTestArgs = """
+                            --mount type=volume,source=$buildSharedDataVolume,target=/home/mpf/openmpf-projects/openmpf/trunk/install/share \\
+                            --mount type=bind,source=$extraTestDataPath,target=target=/mpfdata,readonly \\
+                            --network=$buildNetwork"""
+                        }
+
                         // Run container as daemon in background.
-                        buildContainerId = sh(script: 'docker run --rm --entrypoint sleep -t -d ' +
-                                '--mount type=bind,source=/home/jenkins/.m2,target=/root/.m2 ' +
-                                '--mount type=bind,source="$(pwd)"/openmpf_runtime/build_artifacts,target=/mnt/build_artifacts ' +
-                                '--mount type=bind,source="$(pwd)"/openmpf_build/openmpf-projects,target=/mnt/openmpf-projects ' +
-                                (runMvnTests ? '--mount type=volume,source=' + buildSharedDataVolume +  ',target=/home/mpf/openmpf-projects/openmpf/trunk/install/share ' : '') +
-                                (runMvnTests ? '--mount type=bind,source=' + extraTestDataPath + ',target=/mpfdata,readonly ' : '') +
-                                (runMvnTests ? '--network=' + buildNetwork +  ' ' : '') +
-                                buildImageName + ' infinity', returnStdout: true).trim()
+                        buildContainerId = sh(script: """
+                        docker run --rm --entrypoint sleep -t -d \\
+                            --mount type=bind,source=$mvnHome,target=/root/.m2 \\
+                            --mount type=bind,source="\$(pwd)"/openmpf_runtime/build_artifacts,target=/mnt/build_artifacts \\
+                            --mount type=bind,source="\$(pwd)"/openmpf_build/openmpf-projects,target=/mnt/openmpf-projects \\
+                            $mvnTestArgs \\
+                            $buildImageName infinity
+                        """, returnStdout: true).trim()
+
 
                         sh 'docker exec ' +
                                 '-e BUILD_PACKAGE_JSON=' + buildPackageJson + ' ' +
