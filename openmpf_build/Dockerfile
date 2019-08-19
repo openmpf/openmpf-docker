@@ -61,7 +61,7 @@ RUN touch /etc/ld.so.conf.d/mpf-x86_64.conf && \
     ldconfig
 
 # Install build tools:
-RUN yum install -y git python-pip python-devel python-setuptools file \
+RUN yum install -y java-11-openjdk-devel git python-pip python-devel python-setuptools file \
     python-setuptools-devel gcc gcc-c++ make autoconf automake \
     libtool yasm nasm bzip2 cmake3 numpy perl-File-Find-Rule which \
     libffi-devel openssl-devel apr apr-util apr-util-ldap log4cxx \
@@ -69,17 +69,14 @@ RUN yum install -y git python-pip python-devel python-setuptools file \
     ffmpeg ffmpeg-devel && \
     yum clean all && rm -rf /var/cache/yum/*
 
+ENV JAVA_HOME=/usr/lib/jvm/java-11
+
 # Install Python dependencies:
 RUN pip install --upgrade pip && pip install --upgrade setuptools && \
     pip install wheel virtualenv
 
 # Install C Foreign Function Interface (CFFI):
 RUN cd /home/mpf && easy_install -U cffi
-
-# Install OpenJDK:
-RUN yum -y install java-11-openjdk-devel
-ENV JAVA_HOME=/usr/lib/jvm/java-11
-
 
 ################################################################################
 # Install Apache Tomcat                                                        #
