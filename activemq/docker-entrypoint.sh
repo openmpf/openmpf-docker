@@ -41,7 +41,7 @@ cd /opt/activemq/bin
 cp env.$ACTIVE_MQ_PROFILE env
 
 # Start streaming logs to logstash, if enabled
-if [ "$FILEBEAT_ENABLED" = true ]
+if [ "$ENABLE_FILEBEAT" = true ]
 then
   /etc/init.d/filebeat start
 fi

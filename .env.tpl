@@ -52,4 +52,4 @@ KEYSTORE_PATH=
 KEYSTORE_PASSWORD=
 
 # Enable ELK for aggregated logging
-ELK_ENABLED=false
+ENABLE_ELK=false

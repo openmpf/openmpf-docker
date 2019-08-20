@@ -37,7 +37,7 @@ echo "export THIS_MPF_NODE=${THIS_MPF_NODE}_id_${HOSTNAME}" >> /etc/profile.d/mp
 echo "export JGROUPS_TCP_ADDRESS=${HOSTNAME}" >> /etc/profile.d/mpf.sh
 
 # Start streaming logs to logstash, if enabled
-if [ "$FILEBEAT_ENABLED" = true ]
+if [ "$ENABLE_FILEBEAT" = true ]
 then
   /etc/init.d/filebeat start
 fi

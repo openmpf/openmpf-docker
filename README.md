@@ -390,7 +390,7 @@ docker-compose \
 ### (Optional) Enable ELK stack
 
 You may also want to include an ELK stack for aggregated logging across the 
-containers. To do this, set the ELK_ENABLED variable in your `.env` file to "true", 
+containers. To do this, set the ENABLE_ELK variable in your `.env` file to "true", 
 and add the `docker-compose.elk.yml` to your config command.
 
 ```

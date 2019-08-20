@@ -78,7 +78,7 @@ def main():
     log_dir = os.path.join(base_log_path, node_name, 'log')
 
     # Start streaming logs to logstash, if enabled
-    filebeat_enabled = os.getenv('FILEBEAT_ENABLED')
+    filebeat_enabled = os.getenv('ENABLE_FILEBEAT')
     if filebeat_enabled == 'true':
         subprocess.Popen(('/etc/init.d/filebeat', 'start'))
 

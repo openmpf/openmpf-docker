@@ -199,7 +199,7 @@ echo "ActiveMQ is up"
 set -o xtrace
 
 # Start streaming logs to logstash, if enabled
-if [ "$FILEBEAT_ENABLED" = true ]
+if [ "$ENABLE_FILEBEAT" = true ]
 then
   /etc/init.d/filebeat start
 fi
