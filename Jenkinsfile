@@ -156,10 +156,6 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
     try {
         buildDate = getTimestamp()
 
-        // Clean up last run
-        sh 'docker volume rm -f ' + buildSharedDataVolume + ' ' + buildMySqlDataVolume
-        removeDockerNetwork(buildNetwork)
-
         // Revert changes made to files by a previous Jenkins build
         if (fileExists('.git')) {
             sh 'git reset --hard HEAD'
@@ -532,6 +528,9 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
     } catch (Exception e) {
         buildException = e
     }
+
+    sh "docker volume rm -f '$buildSharedDataVolume' '$buildMySqlDataVolume'"
+    removeDockerNetwork(buildNetwork)
 
     def buildStatus
     if (isAborted()) {

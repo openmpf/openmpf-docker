@@ -55,16 +55,6 @@ cp -R "$SOURCE_CODE_PATH" /home/mpf
 cd /home/mpf/openmpf-projects/openmpf
 mvn clean
 
-# This directory will only exist at this point if OpenMPF was also built outside of Docker on the same machine.
-# In this case, we don't want to use the generated files from the non-Docker build.
-# We can't just delete the entire install directory because the share directory gets mounted when running system tests
-# and you can't delete a directory that is mounted.
-installDir="/home/mpf/openmpf-projects/openmpf/trunk/install"
-if [ -d "$installDir" ]; then
-  cd "$installDir"
-  ls | grep --invert-match '^share$' | xargs rm -rf ||:
-  rm -rf share/* ||:
-fi
 
 # Make sure the source code line endings are correct if copying the source from a Windows host.
 cd /home/mpf/openmpf-projects && find . -type f -exec dos2unix -q {} \;
