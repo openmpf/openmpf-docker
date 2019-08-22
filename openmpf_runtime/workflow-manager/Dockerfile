@@ -51,8 +51,7 @@ RUN yum update -y && yum clean all
 ################################################################################
 
 # Install OpenJDK JRE only:
-RUN yum -y install java-11-openjdk && \
-    alternatives --install /usr/bin/java java /usr/lib/jvm/jre-11/bin/java 20000
+RUN yum -y install java-11-openjdk
 
 ################################################################################
 # Install yum Dependencies                                                     #
@@ -94,8 +93,8 @@ RUN ln -s $MPF_HOME/bin/ffmpeg /usr/bin/ffmpeg && \
     ln -s $MPF_HOME/bin/ffserver /usr/bin/ffserver && \
     ln -s $MPF_HOME/bin/ffprobe /usr/bin/ffprobe
 
-COPY build_artifacts/install.tar /home/mpf/
-RUN cd /home/mpf && tar -xzf install.tar -C $MPF_HOME && rm install.tar
+COPY build_artifacts/install.tar.gz /home/mpf/
+RUN cd /home/mpf && tar -xzf install.tar.gz -C $MPF_HOME && rm install.tar.gz
 
 COPY build_artifacts/plugin-packages $MPF_HOME/share/components
 
@@ -113,10 +112,10 @@ RUN sed -i '24s/.*/    <WatchedResource>$\{catalina\.ba\se\}\/conf\/web.xml<\/Wa
 
 # TODO: Choose a better path than /home/mpf/openmpf-projects/openmpf/trunk/ansible on a production container.
 # For example: ${env:MPF_HOME}/manage/ansible/roles/child
-COPY build_artifacts/ansible.tar /home/mpf/
+COPY build_artifacts/ansible.tar.gz /home/mpf/
 RUN cd /home/mpf && mkdir -p /home/mpf/openmpf-projects/openmpf/trunk && \
-    tar -xzf ansible.tar -C /home/mpf/openmpf-projects/openmpf/trunk && \
-    rm ansible.tar
+    tar -xzf ansible.tar.gz -C /home/mpf/openmpf-projects/openmpf/trunk && \
+    rm ansible.tar.gz
 
 ################################################################################
 # Configure Environment Variables                                              #
@@ -136,7 +135,7 @@ ENV MPF_LOG_PATH=$MPF_HOME/share/logs
 ENV CORE_MPF_NODES=
 ENV LD_LIBRARY_PATH=/usr/lib64:$MPF_HOME/lib
 ENV PATH=$PATH:$MPF_HOME/bin
-ENV JAVA_HOME=/usr
+ENV JAVA_HOME=/usr/lib/jvm/jre-11
 
 # The workflow manager must be added as an mpf-child so that plugin packages are
 # extracted at startup, which is necessary for component auto-registration.

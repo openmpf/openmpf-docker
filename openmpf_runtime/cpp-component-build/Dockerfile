@@ -24,29 +24,51 @@
 # limitations under the License.                                            #
 #############################################################################
 
-# Use this file in conjunction with docker-compose.core.yml.
+ARG BUILD_REGISTRY
+ARG BUILD_TAG=latest
+FROM ${BUILD_REGISTRY}openmpf_build:${BUILD_TAG} as openmpf_build
 
-version: '3.7'
 
-x-detection-component-base:
-  &detection-component-base
-  environment:
-    - WFM_USER=${WFM_USER}
-    - WFM_PASSWORD=${WFM_PASSWORD}
-  depends_on:
-    - workflow-manager
-  volumes:
-    - shared_data:/opt/mpf/share
-  networks:
-    - overlay
+FROM centos:7
 
-services:
-  east-text-detection:
-    <<: *detection-component-base
-    image: ${REGISTRY}openmpf_east-text-detection:${TAG}
-    build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/python/EastTextDetection
-    deploy:
-      mode: global
-      resources:
-        limits:
-          cpus: "2.0"
+# The centos:7 image sets this yum property to en_US.utf8 which prevents other locales (including other Engish locales)
+# from being installed with GCC.
+RUN yum-config-manager --setopt=override_install_langs='' --save
+
+RUN yum install -y epel-release \
+    && yum localinstall -y --nogpgcheck https://download1.rpmfusion.org/free/el/rpmfusion-free-release-7.noarch.rpm \
+                https://download1.rpmfusion.org/nonfree/el/rpmfusion-nonfree-release-7.noarch.rpm \
+    && yum install -y cmake3 make gcc gcc-c++ qt-devel log4cxx-devel boost-devel ffmpeg gtest-devel \
+    && yum clean all \
+    && rm -rf /var/cache/yum/*
+
+COPY --from=openmpf_build /opt/opencv-3.3.0 /opt/
+
+# Normally components' CMakeList.txt file includes include(../ComponentSetup.cmake) but since that is outside of the
+# components' build context we create it here.
+RUN mkdir -p /home/mpf && echo 'find_package(mpfCMakeHelpers REQUIRED)' > /home/mpf/ComponentSetup.cmake
+
+ADD build_artifacts/mpf-sdk-install.tar.gz /home/mpf/
+
+COPY cpp-component-build/scripts /home/mpf/scripts
+
+ENV PATH /home/mpf/scripts:$PATH
+
+ENV CMAKE_PREFIX_PATH /home/mpf/mpf-sdk-install/lib/cmake
+
+ENV BUILD_DIR /home/mpf/component_build
+
+ENV SRC_DIR /home/mpf/component_src
+
+WORKDIR $SRC_DIR
+
+
+LABEL org.label-schema.build-date=$BUILD_DATE \
+      org.label-schema.license="Apache 2.0" \
+      org.label-schema.name="OpenMPF C++ Component Builder" \
+      org.label-schema.schema-version="1.0" \
+      org.label-schema.url="https://openmpf.github.io" \
+      org.label-schema.vcs-ref=$BUILD_SHAS \
+      org.label-schema.vcs-url="https://github.com/openmpf" \
+      org.label-schema.vendor="MITRE" \
+      org.label-schema.version=$BUILD_TAG

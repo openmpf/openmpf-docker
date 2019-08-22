@@ -185,14 +185,20 @@ def start_executor(descriptor, mpf_home, activemq_host, node_name):
     amq_detection_component_path = os.path.join(mpf_home, 'bin/amq_detection_component')
     activemq_broker_uri = 'failover://(tcp://{}:61616)?jms.prefetchPolicy.all=0&startupMaxReconnectAttempts=1'\
                           .format(activemq_host)
-    batch_lib = descriptor['batchLibrary']
     algorithm_name = descriptor['algorithm']['name'].upper()
     queue_name = 'MPF.DETECTION_{}_REQUEST'.format(algorithm_name)
+    language = descriptor['sourceLanguage']
 
-    executor_command = (amq_detection_component_path, activemq_broker_uri, batch_lib, queue_name, 'python')
+    executor_env = get_executor_env_vars(mpf_home, descriptor, node_name)
+    batch_lib = expand_env_vars(descriptor['batchLibrary'], executor_env)
+    if language == 'c++':
+        # Set to standard location for Docker plugins
+        batch_lib = replace_component_name_in_path(batch_lib, descriptor['componentName'])
+
+    executor_command = (amq_detection_component_path, activemq_broker_uri, batch_lib, queue_name, language)
     print('Starting component executor with command:', format_command_list(executor_command))
     executor_proc = subprocess.Popen(executor_command,
-                                     env=get_executor_env_vars(mpf_home, descriptor, node_name),
+                                     env=executor_env,
                                      cwd=os.path.join(mpf_home, 'plugins/plugin'),
                                      stdin=subprocess.PIPE)
 
@@ -261,7 +267,13 @@ def get_executor_env_vars(mpf_home, descriptor, node_name):
             executor_env[var_name] = var_value
 
     mpf_lib_path = os.path.join(mpf_home, 'lib')
-    executor_env['LD_LIBRARY_PATH'] = executor_env.get('LD_LIBRARY_PATH', '') + ':' + mpf_lib_path
+
+    ld_lib_path = executor_env.get('LD_LIBRARY_PATH', '')
+    if ld_lib_path:
+        ld_lib_path += ':'
+        ld_lib_path = replace_component_name_in_path(ld_lib_path, descriptor['componentName'])
+
+    executor_env['LD_LIBRARY_PATH'] = ld_lib_path + mpf_lib_path
     return executor_env
 
 
@@ -271,6 +283,12 @@ def expand_env_vars(raw_str, env):
     defaults = collections.defaultdict(str)
     # In the call to substitute the keyword arguments (**env) take precedence.
     return string.Template(raw_str).substitute(defaults, **env)
+
+
+
+def replace_component_name_in_path(path, component_name):
+    return path.replace('/plugins/' + component_name + '/', '/plugins/plugin/')
+
 
 def format_command_list(command):
     # Makes sure any arguments with spaces are quoted.

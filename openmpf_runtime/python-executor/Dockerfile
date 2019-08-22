@@ -42,9 +42,9 @@ RUN pip install --no-cache-dir --upgrade pip virtualenv \
     && virtualenv "$COMPONENT_VIRTUALENV"
 
 WORKDIR /root/install_files
-COPY build_artifacts/install.tar .
+COPY build_artifacts/install.tar.gz .
 
-RUN tar -xf install.tar \
+RUN tar -xf install.tar.gz \
         # Python component SDK wheels
         ./python/wheelhouse \
         # Component executor binary
@@ -53,7 +53,7 @@ RUN tar -xf install.tar \
         ./config/Log4cxxConfig.xml \
         # Libraries required for component executor
         './lib/liblog4cxx*' './lib/libactivemq-cpp*' './lib/libQtCore*' './lib/libapr*' './lib/libXext*' \
-    && rm install.tar \
+    && rm install.tar.gz \
     # Install MPF .whl files here so that only the expanded contents of the whl file are present in final image.
     && "$COMPONENT_VIRTUALENV/bin/pip" --no-cache-dir install python/wheelhouse/* \
     && rm -rf python
@@ -86,8 +86,15 @@ ENV MPF_LOG_PATH $MPF_HOME/share/logs
 # Only applies to stdin, stdout and stderr
 ENV PYTHONUNBUFFERED 1
 
+ENV SRC_DIR /home/mpf/component_src
+
+WORKDIR $SRC_DIR
+
 COPY python-executor/scripts /home/mpf/scripts
-COPY python-executor/docker-entrypoint.py /home/mpf/
+
+ENV PATH $COMPONENT_VIRTUALENV/bin:/home/mpf/scripts:$PATH
+
+COPY docker-executor-entrypoint.py /home/mpf/docker-entrypoint.py
 
 # Command used when this Dockerfile is extended by component's Dockerfile
 ONBUILD ENTRYPOINT ["python", "/home/mpf/docker-entrypoint.py"]

@@ -59,8 +59,7 @@ RUN yum update -y && yum clean all
 ################################################################################
 
 # Install OpenJDK JRE only:
-RUN yum -y install java-11-openjdk && \
-    alternatives --install /usr/bin/java java /usr/lib/jvm/jre-11/bin/java 20000
+RUN yum -y install java-11-openjdk
 
 ################################################################################
 # Install yum Dependencies                                                     #
@@ -127,8 +126,8 @@ RUN ln -s $MPF_HOME/bin/ffmpeg /usr/bin/ffmpeg && \
     ln -s $MPF_HOME/bin/ffserver /usr/bin/ffserver && \
     ln -s $MPF_HOME/bin/ffprobe /usr/bin/ffprobe
 
-COPY build_artifacts/install.tar /home/mpf/
-RUN cd /home/mpf && tar -xzf install.tar -C $MPF_HOME && rm install.tar
+COPY build_artifacts/install.tar.gz /home/mpf/
+RUN cd /home/mpf && tar -xzf install.tar.gz -C $MPF_HOME && rm install.tar.gz
 
 RUN cp $MPF_HOME/libexec/node-manager /etc/init.d/
 
@@ -166,7 +165,7 @@ ENV LOGNAME=mpf
 
 # TODO: This shouldn't be needed, but for some reason the node-manager script is
 #   not able to see the ENV variables:
-RUN echo "export JAVA_HOME=/usr" >> /etc/profile.d/mpf.sh; \
+RUN echo "export JAVA_HOME=/usr/lib/jvm/jre-11" >> /etc/profile.d/mpf.sh; \
     echo "export MPF_HOME=$MPF_HOME" >> /etc/profile.d/mpf.sh; \
     echo "export USER=root" >> /etc/profile.d/mpf.sh; \
     echo "export THIS_MPF_NODE=$THIS_MPF_NODE" >> /etc/profile.d/mpf.sh; \

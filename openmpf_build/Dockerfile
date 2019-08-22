@@ -61,7 +61,7 @@ RUN touch /etc/ld.so.conf.d/mpf-x86_64.conf && \
     ldconfig
 
 # Install build tools:
-RUN yum install -y git python-pip python-devel python-setuptools file \
+RUN yum install -y java-11-openjdk-devel git python-pip python-devel python-setuptools file \
     python-setuptools-devel gcc gcc-c++ make autoconf automake \
     libtool yasm nasm bzip2 cmake3 numpy perl-File-Find-Rule which \
     libffi-devel openssl-devel apr apr-util apr-util-ldap log4cxx \
@@ -69,33 +69,14 @@ RUN yum install -y git python-pip python-devel python-setuptools file \
     ffmpeg ffmpeg-devel && \
     yum clean all && rm -rf /var/cache/yum/*
 
+ENV JAVA_HOME=/usr/lib/jvm/java-11
+
 # Install Python dependencies:
 RUN pip install --upgrade pip && pip install --upgrade setuptools && \
     pip install wheel virtualenv
 
 # Install C Foreign Function Interface (CFFI):
 RUN cd /home/mpf && easy_install -U cffi
-
-################################################################################
-# Install OpenJDK                                                              #
-################################################################################
-
-# Install OpenJDK:
-ENV JAVA_HOME=/usr/lib/jvm/java-11
-RUN yum -y install java-11-openjdk-devel && \
-    alternatives --install /usr/bin/java java $JAVA_HOME/jre/bin/java 20000 && \
-    alternatives --install /usr/bin/jar jar $JAVA_HOME/bin/jar 20000 && \
-    alternatives --install /usr/bin/javac javac $JAVA_HOME/bin/javac 20000 && \
-    alternatives --install /usr/bin/javaws javaws $JAVA_HOME/jre/bin/javaws 20000 && \
-    alternatives --set java $JAVA_HOME/jre/bin/java && \
-    alternatives --set javaws $JAVA_HOME/jre/bin/javaws && \
-    alternatives --set javac $JAVA_HOME/bin/javac && \
-    alternatives --set jar $JAVA_HOME/bin/jar; \
-    alternatives --install /usr/bin/jar jar $JAVA_HOME/bin/jar 20000 && \
-    alternatives --set jar $JAVA_HOME/bin/jar
-
-# TODO: Pipe all tars into extract command:
-#  wget -qO- your_link_here | tar xvz -C /target/directory
 
 ################################################################################
 # Install Apache Tomcat                                                        #
