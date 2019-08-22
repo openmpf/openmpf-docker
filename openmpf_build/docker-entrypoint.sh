@@ -51,8 +51,10 @@ rm -rf "$BUILD_ARTIFACTS_PATH"/*
 
 cp -R "$SOURCE_CODE_PATH" /home/mpf
 
-# Clean out any previous non-docker builds.
 cd /home/mpf/openmpf-projects/openmpf
+# Clean out any previous non-docker builds.
+# When this command runs during a Jenkins build, the /home/mpf/openmpf-projects/openmpf/install/share directory will
+# not be removed because that is where a volume is bind mounted (this is the desired behavior).
 mvn clean
 
 
