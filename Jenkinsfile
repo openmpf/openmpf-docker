@@ -305,6 +305,10 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                     dockerComposeConfigCommand += ' -f openmpf_custom_build/docker-compose.custom-components.yml'
                 }
 
+                if (runMvnTests) {
+                    dockerComposeConfigCommand += ' -f docker-compose.integration-tests.yml'
+                }
+
                 dockerComposeConfigCommand += ' config > docker-compose.yml'
 
                 sh 'cp .env.tpl .env'
