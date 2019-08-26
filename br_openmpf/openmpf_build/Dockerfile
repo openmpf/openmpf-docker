@@ -8,13 +8,17 @@ ARG BUILD_TAG=latest
 
 FROM centos:7
 
+# The centos:7 image sets this yum property to en_US.utf8 which prevents other locales (including other Engish locales)
+# from being installed with GCC.
+RUN yum-config-manager --setopt=override_install_langs='' --save
 
+
+# Remember to change CMakeLists.txt search location (/apps/install) in mpf-protobufs
 RUN yum install -y epel-release \
     && yum localinstall -y --nogpgcheck https://download1.rpmfusion.org/free/el/rpmfusion-free-release-7.noarch.rpm \
                 https://download1.rpmfusion.org/nonfree/el/rpmfusion-nonfree-release-7.noarch.rpm \
-    && yum install -y cmake3 make gcc gcc-c++ qt-devel log4cxx-devel boost-devel ffmpeg java-1.8.0-openjdk-devel \
-            # Remember to change CMakeLists.txt search location (/apps/install) in mpf-protobufs
-            python-pip python-devel activemq-cpp-devel protobuf-static protobuf-devel \
+    && yum install -y cmake3 make gcc gcc-c++ qt-devel log4cxx-devel boost-devel ffmpeg ffmpeg-devel \
+                java-11-openjdk-devel python-pip python-devel activemq-cpp-devel protobuf-static protobuf-devel \
     && yum clean all \
     && rm -rf /var/cache/yum/* \
     && pip install --upgrade --no-cache-dir pip \
@@ -78,15 +82,23 @@ COPY openmpf-python-component-sdk  /home/mpf/openmpf-projects/openmpf-python-com
 
 COPY openmpf-java-component-sdk  /home/mpf/openmpf-projects/openmpf-java-component-sdk
 
+# TODO: See if this can be converted to use ARG variable, this strategy is
+#    very brittle because it's based on line number:
+RUN sed -i '37s/.*/              p:hostName="redis"/' \
+    /home/mpf/openmpf-projects/openmpf/trunk/workflow-manager/src/main/resources/applicationContext-redis.xml
+
+
 
 
 WORKDIR /home/mpf/openmpf-projects/openmpf
 
 ENV LD_LIBRARY_PATH=/apps/install/lib
 
-RUN --mount=type=cache,target=/root/.m2 mvn install \
+ENV MPF_HOME /opt/mpf
+
+RUN --mount=type=cache,target=/root/.m2 mvn package \
   -DskipTests -Dmaven.test.skip=true -DskipITs \
-  -Dmaven.tomcat.skip=true \
+  -Dcargo.maven.skip=true \
   -Dcomponents.build.components="" \
   -Dstartup.auto.registration.skip=false \
   -Dcomponents.build.dir=/home/mpf/openmpf-projects/openmpf/mpf-component-build \
