@@ -51,16 +51,12 @@ rm -rf "$BUILD_ARTIFACTS_PATH"/*
 
 cp -R "$SOURCE_CODE_PATH" /home/mpf
 
-# This directory will only exist at this point if OpenMPF was also built outside of Docker on the same machine.
-# In this case, we don't want to use the generated files from the non-Docker build.
-# We can't just delete the entire install directory because the share directory gets mounted when running system tests
-# and you can't delete a directory that is mounted.
-installDir="/home/mpf/openmpf-projects/openmpf/trunk/install"
-if [ -d "$installDir" ]; then
-  cd "$installDir"
-  ls | grep --invert-match '^share$' | xargs rm -rf ||:
-  rm -rf share/* ||:
-fi
+cd /home/mpf/openmpf-projects/openmpf
+# Clean out any previous non-docker builds.
+# When this command runs during a Jenkins build, the /home/mpf/openmpf-projects/openmpf/install/share directory will
+# not be removed because that is where a volume is bind mounted (this is the desired behavior).
+mvn clean
+
 
 # Make sure the source code line endings are correct if copying the source from a Windows host.
 cd /home/mpf/openmpf-projects && find . -type f -exec dos2unix -q {} \;
@@ -107,7 +103,7 @@ parallelism=$(($(nproc) / 2))
 cd /home/mpf/openmpf-projects/openmpf
 mvn install \
   -DskipTests -Dmaven.test.skip=true -DskipITs \
-  -Dmaven.tomcat.skip=true \
+  -Dcargo.maven.skip=true \
   -Dcomponents.build.package.json="/home/mpf/openmpf-projects/openmpf/trunk/jenkins/scripts/config_files/$BUILD_PACKAGE_JSON" \
   -Dstartup.auto.registration.skip=false \
   -Dcomponents.build.dir=/home/mpf/openmpf-projects/openmpf/mpf-component-build \
@@ -126,12 +122,10 @@ cp workflow-manager/target/workflow-manager.war "$BUILD_ARTIFACTS_PATH"
 
 # Exclude the share directory since it can't be extracted to the share volume.
 # Docker cannot extract tars, or mv files to, volumes when the container is being created.
-tar -cf - -C install --exclude="share" --exclude="plugins" . | gzip --no-name > "$BUILD_ARTIFACTS_PATH/install.tar"
-tar -cf - ansible | gzip --no-name > "$BUILD_ARTIFACTS_PATH/ansible.tar"
+tar -cf - -C install --exclude="share" --exclude="plugins" . | gzip --no-name > "$BUILD_ARTIFACTS_PATH/install.tar.gz"
+tar -cf - ansible | gzip --no-name > "$BUILD_ARTIFACTS_PATH/ansible.tar.gz"
 
 cp -R ../mpf-component-build/plugin-packages "$BUILD_ARTIFACTS_PATH"
 
 cd /root
 tar -cf - mpf-sdk-install --exclude 'mpf-sdk-install/python' | gzip --no-name > "$BUILD_ARTIFACTS_PATH/mpf-sdk-install.tar.gz"
-
-

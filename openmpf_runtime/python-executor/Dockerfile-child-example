@@ -24,19 +24,13 @@
 # limitations under the License.                                            #
 #############################################################################
 
-# Use this file in conjunction with docker-compose.core.yml.
+FROM openmpf_python-executor:latest
 
-version: '3.7'
+# Manually install packages before COPY so they don't need to be re-installed every time the source code changes.
+RUN "$COMPONENT_VIRTUALENV/bin/pip" install --no-cache-dir 'opencv-python>=3.3'
 
-services:
-  workflow-manager:
-    environment:
-      - KEYSTORE_PASSWORD=${KEYSTORE_PASSWORD}
-    ports:
-      - "8443:8443"
-    secrets: [https_keystore]
+COPY . /home/mpf/component_src/
 
-# A secret will not be created unless at least one service uses it.
-secrets:
-  https_keystore:
-    file: ${KEYSTORE_PATH}
+RUN /home/mpf/scripts/install-component.sh
+
+ENV COMPONENT_LOG_NAME python-ocv-test.log

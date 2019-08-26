@@ -82,7 +82,7 @@ if [ ! -z "$volumeIds" ]; then
   echo "Removing openmpf volumes:"
   docker volume rm -f $volumeIds;
 else
-  echo "No openmpf volumes found."
+  echo "No openmpf_mysql_data volume found."
 fi
 echo
 exit

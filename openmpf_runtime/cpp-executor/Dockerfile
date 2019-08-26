@@ -24,13 +24,50 @@
 # limitations under the License.                                            #
 #############################################################################
 
-FROM openmpf_python_executor:latest
 
-# Manually install packages before COPY so they don't need to be re-installed every time the source code changes.
-RUN "$COMPONENT_VIRTUALENV/bin/pip" install --no-cache-dir 'opencv-python>=3.3'
+ARG BUILD_REGISTRY
+ARG BUILD_TAG=latest
 
-COPY . /home/mpf/component_src/
+FROM centos:7 as extract_tar
 
-RUN /home/mpf/scripts/install-component.sh
+WORKDIR /root/install_files
 
-ENV COMPONENT_LOG_NAME python-ocv-test.log
+COPY build_artifacts/install.tar.gz .
+
+RUN tar -xf install.tar.gz \
+        ./bin/amq_detection_component \
+        ./config/Log4cxxConfig.xml \
+        './lib/liblog4cxx*' './lib/libactivemq-cpp*' './lib/libQtCore*' './lib/libapr*' './lib/libXext*' \
+    && rm install.tar.gz
+
+
+FROM centos:7
+
+ENV MPF_HOME /opt/mpf
+
+WORKDIR $MPF_HOME
+
+COPY --from=extract_tar /root/install_files/ $MPF_HOME
+
+ENV MPF_LOG_PATH $MPF_HOME/share/logs
+
+ENV PYTHONUNBUFFERED 1
+
+ENV BUILD_DIR /home/mpf/component_build
+
+ENV INSTALL_DIR $MPF_HOME/plugins/plugin
+
+COPY docker-executor-entrypoint.py /home/mpf/docker-entrypoint.py
+
+ENTRYPOINT ["python", "/home/mpf/docker-entrypoint.py"]
+
+
+LABEL org.label-schema.build-date=$BUILD_DATE \
+      org.label-schema.license="Apache 2.0" \
+      org.label-schema.name="OpenMPF C++ Component Executor" \
+      org.label-schema.schema-version="1.0" \
+      org.label-schema.url="https://openmpf.github.io" \
+      org.label-schema.vcs-ref=$BUILD_SHAS \
+      org.label-schema.vcs-url="https://github.com/openmpf" \
+      org.label-schema.vendor="MITRE" \
+      org.label-schema.version=$BUILD_TAG

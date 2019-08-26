@@ -1,3 +1,4 @@
+#! /bin/bash
 #############################################################################
 # NOTICE                                                                    #
 #                                                                           #
@@ -24,19 +25,13 @@
 # limitations under the License.                                            #
 #############################################################################
 
-# Use this file in conjunction with docker-compose.core.yml.
+set -e
+set -x
 
-version: '3.7'
+src_dir="${SRC_DIR:-/home/mpf/component_src}"
+build_dir="${BUILD_DIR:-/home/mpf/component_build}"
 
-services:
-  workflow-manager:
-    environment:
-      - KEYSTORE_PASSWORD=${KEYSTORE_PASSWORD}
-    ports:
-      - "8443:8443"
-    secrets: [https_keystore]
-
-# A secret will not be created unless at least one service uses it.
-secrets:
-  https_keystore:
-    file: ${KEYSTORE_PATH}
+mkdir -p "$build_dir" \
+    && cd "$build_dir" \
+    && cmake3 "$src_dir" \
+    && make -j "$(nproc)"
