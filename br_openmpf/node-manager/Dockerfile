@@ -1,5 +1,10 @@
 FROM br-openmpf-build as openmpf-build
 
+
+RUN mkdir -p /plugins && cd /plugins \
+    && for package in /home/mpf/openmpf-projects/openmpf/mpf-component-build/plugin-packages/*.tar.gz; do \
+            tar xf "$package" & done && wait
+
 FROM centos:7
 
 # The centos:7 image sets this yum property to en_US.utf8 which prevents other locales (including other Engish locales)
@@ -18,6 +23,7 @@ COPY --from=openmpf-build /home/mpf/openmpf-projects/openmpf/trunk/install $MPF_
 
 RUN ln --symbolic $MPF_HOME/libexec/node-manager /etc/init.d/node-manager
 
+COPY --from=openmpf-build /plugins $MPF_HOME/plugins
 
 ENV ACTIVE_MQ_HOST=activemq
 ENV ACTIVE_MQ_BROKER_URI="failover://(tcp://$ACTIVE_MQ_HOST:61616)?jms.prefetchPolicy.all=0&startupMaxReconnectAttempts=1"

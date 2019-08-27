@@ -69,18 +69,21 @@ RUN cd /opt \
 #COPY --from=br_mpf_mvn /root/.m2 /root/.m2
 
 
-WORKDIR /home/mpf/openmpf-projects
+#WORKDIR /home/mpf/openmpf-projects
+#
+#
+#COPY openmpf /home/mpf/openmpf-projects/openmpf
+#
+#COPY openmpf-build-tools /home/mpf/openmpf-projects/openmpf-build-tools
+#
+#COPY openmpf-cpp-component-sdk  /home/mpf/openmpf-projects/openmpf-cpp-component-sdk
+#
+#COPY openmpf-python-component-sdk  /home/mpf/openmpf-projects/openmpf-python-component-sdk
+#
+#COPY openmpf-java-component-sdk  /home/mpf/openmpf-projects/openmpf-java-component-sdk
 
+COPY .  /home/mpf/openmpf-projects
 
-COPY openmpf /home/mpf/openmpf-projects/openmpf
-
-COPY openmpf-build-tools /home/mpf/openmpf-projects/openmpf-build-tools
-
-COPY openmpf-cpp-component-sdk  /home/mpf/openmpf-projects/openmpf-cpp-component-sdk
-
-COPY openmpf-python-component-sdk  /home/mpf/openmpf-projects/openmpf-python-component-sdk
-
-COPY openmpf-java-component-sdk  /home/mpf/openmpf-projects/openmpf-java-component-sdk
 
 # TODO: See if this can be converted to use ARG variable, this strategy is
 #    very brittle because it's based on line number:
@@ -99,7 +102,7 @@ ENV MPF_HOME /opt/mpf
 RUN --mount=type=cache,target=/root/.m2 mvn package \
   -DskipTests -Dmaven.test.skip=true -DskipITs \
   -Dcargo.maven.skip=true \
-  -Dcomponents.build.components="" \
+  -Dcomponents.build.components='openmpf-components/cpp/CaffeDetection:openmpf-components/cpp/OcvFaceDetection' \
   -Dstartup.auto.registration.skip=false \
   -Dcomponents.build.dir=/home/mpf/openmpf-projects/openmpf/mpf-component-build \
   -Dcomponents.build.parallel.builds="$(nproc)" \
