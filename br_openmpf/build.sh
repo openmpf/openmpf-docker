@@ -9,7 +9,7 @@ echo '=== OpenMPF Build ==='
 docker build -f openmpf_build/Dockerfile /home/mpf/openmpf-projects \
   -t br-openmpf-build
 
-#sleep 2
+#sleep 5
 
 echo '=== Workflow Manager ==='
 docker build workflow-manager -t br-workflow-manager

@@ -3,6 +3,26 @@
 set -e
 set -x
 
+updateOrAddProperty() {
+  file="$1"
+  key="$2"
+  value="$3"
+
+  if grep -q "^$key=" "$file"; then
+    sed -i "/$key=/s/=.*/=$value/" "$file"
+  else
+    echo "$key=$value" >> "$file"
+  fi
+}
+
+
+mkdir -p "$MPF_HOME/share/config"
+
+mpfCustomPropertiesFile="$MPF_HOME/share/config/mpf-custom.properties"
+
+updateOrAddProperty "$mpfCustomPropertiesFile" "node.auto.config.enabled" "true"
+updateOrAddProperty "$mpfCustomPropertiesFile" "node.auto.unconfig.enabled" "true"
+
 
 set +o xtrace
 

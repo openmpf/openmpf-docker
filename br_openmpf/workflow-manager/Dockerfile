@@ -7,8 +7,6 @@ FROM centos:7
 # from being installed with GCC.
 RUN yum-config-manager --setopt=override_install_langs='' --save
 
-#RUN yum install -y java-11-openjdk ffmpeg mysql-community-client \
-#    && yum clean all && rm -rf /var/cache/yum/*
 
 # TODO: Find better way to check if mysql is ready so that we don't have to install mysql
 RUN yum localinstall -y --nogpgcheck https://download1.rpmfusion.org/free/el/rpmfusion-free-release-7.noarch.rpm \
@@ -32,12 +30,13 @@ RUN cd /opt \
 
 
 
-COPY --from=openmpf-build /home/mpf/openmpf-projects/openmpf/trunk/workflow-manager/target/workflow-manager \
-    /opt/apache-tomcat/webapps/workflow-manager
+
+COPY --from=openmpf-build /build-artifacts/workflow-manager /opt/apache-tomcat/webapps/workflow-manager
 
 ENV MPF_HOME /opt/mpf
 
-#COPY --from=openmpf-build /home/mpf/openmpf-projects/openmpf/trunk/install $MPF_HOME
+COPY --from=openmpf-build /build-artifacts/descriptors $MPF_HOME/plugins
+
 
 ENV ACTIVE_MQ_HOST=activemq
 ENV ACTIVE_MQ_BROKER_URI="failover://(tcp://$ACTIVE_MQ_HOST:61616)?jms.prefetchPolicy.all=0&startupMaxReconnectAttempts=1"
@@ -56,6 +55,13 @@ ENV LD_LIBRARY_PATH=/usr/lib64:/opt/apache-tomcat/webapps/workflow-manager/WEB-I
 ENV PATH=$PATH:$MPF_HOME/bin
 ENV JAVA_HOME=/usr/lib/jvm/jre-11
 ENV CATALINA_OPTS "-Dtransport.guarantee='NONE' -Dweb.rest.protocol='http'"
+
+# The workflow manager must be added as an mpf-child so that plugin packages are
+# extracted at startup, which is necessary for component auto-registration.
+RUN mkdir -p /etc/ansible \
+    && echo '[mpf-child]' >> /etc/ansible/hosts \
+    && echo $THIS_MPF_NODE >> /etc/ansible/hosts
+
 
 
 EXPOSE 8080 8443

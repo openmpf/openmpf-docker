@@ -85,24 +85,20 @@ RUN cd /opt \
 COPY .  /home/mpf/openmpf-projects
 
 
+
+WORKDIR /home/mpf/openmpf-projects/openmpf
+
+
 # TODO: See if this can be converted to use ARG variable, this strategy is
 #    very brittle because it's based on line number:
 RUN sed -i '37s/.*/              p:hostName="redis"/' \
     /home/mpf/openmpf-projects/openmpf/trunk/workflow-manager/src/main/resources/applicationContext-redis.xml
 
-
-
-
-WORKDIR /home/mpf/openmpf-projects/openmpf
-
-ENV LD_LIBRARY_PATH=/apps/install/lib
-
-ENV MPF_HOME /opt/mpf
-
 RUN --mount=type=cache,target=/root/.m2 mvn package \
   -DskipTests -Dmaven.test.skip=true -DskipITs \
   -Dcargo.maven.skip=true \
   -Dcomponents.build.components='openmpf-components/cpp/CaffeDetection:openmpf-components/cpp/OcvFaceDetection' \
+#  -Dcomponents.build.components='' \
   -Dstartup.auto.registration.skip=false \
   -Dcomponents.build.dir=/home/mpf/openmpf-projects/openmpf/mpf-component-build \
   -Dcomponents.build.parallel.builds="$(nproc)" \
@@ -110,3 +106,30 @@ RUN --mount=type=cache,target=/root/.m2 mvn package \
   -DgitBranch='test' \
   -DgitShortId='123' \
   -DjenkinsBuildNumber=1
+
+
+WORKDIR /build-artifacts
+
+RUN ln -s /home/mpf/openmpf-projects/openmpf/trunk/workflow-manager/target/workflow-manager \
+          /build-artifacts/workflow-manager
+
+# Use nullglob to avoid entering for loop when no matches.
+RUN shopt -s nullglob \
+    && mkdir -p /build-artifacts/plugins \
+    && cd /build-artifacts/plugins \
+    && for package in /home/mpf/openmpf-projects/openmpf/mpf-component-build/plugin-packages/*.tar.gz; do \
+            tar xf "$package" & done && wait
+
+
+
+RUN shopt -s nullglob \
+    && mkdir -p /build-artifacts/descriptors \
+    && cd /build-artifacts/descriptors \
+    && plugins_dir=/build-artifacts/plugins \
+    && for full_path in "$plugins_dir"/*/descriptor/descriptor.json; do \
+            rel_path=$(realpath --relative-to="$plugins_dir" "$full_path") \
+            && mkdir -p "$(dirname "$rel_path")" \
+            && cp "$full_path" "$rel_path"; \
+       done
+
+
