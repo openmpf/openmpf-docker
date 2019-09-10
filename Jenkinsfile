@@ -51,7 +51,7 @@ def pollReposAndEndBuild = env.getProperty("poll_repos_and_end_build")?.toBoolea
 
 def dockerRegistryHost = env.getProperty("docker_registry_host")
 def dockerRegistryPort = env.getProperty("docker_registry_port")
-def dockerRegistryPath = env.getProperty("docker_registry_path")
+def dockerRegistryPath = env.getProperty("docker_registry_path") ?: "/openmpf"
 def dockerRegistryCredId = env.getProperty("docker_registry_cred_id")
 def jenkinsNodes = env.getProperty("jenkins_nodes")
 def extraTestDataPath = env.getProperty("extra_test_data_path")
@@ -178,8 +178,6 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
             if (!dockerRegistryPath.endsWith("/")) {
                 remoteImageTagPrefix += "/"
             }
-        } else {
-            remoteImageTagPrefix += '/openmpf/'
         }
 
         println "dockerRegistryHostAndPort: " + dockerRegistryHostAndPort
