@@ -166,24 +166,24 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
 
         def dockerRegistryHostAndPort = dockerRegistryHost
         if (dockerRegistryPort) {
-            dockerRegistryHostAndPort + ':' + dockerRegistryPort
+            dockerRegistryHostAndPort += ':' + dockerRegistryPort
         }
 
         def remoteImageTagPrefix = dockerRegistryHostAndPort
         if (dockerRegistryPath) {
             if (!dockerRegistryPath.startsWith("/")) {
-                remoteImageTagPrefix + "/"
+                remoteImageTagPrefix += "/"
             }
-            remoteImageTagPrefix + dockerRegistryPath
+            remoteImageTagPrefix += dockerRegistryPath
             if (!dockerRegistryPath.endsWith("/")) {
-                remoteImageTagPrefix + "/"
+                remoteImageTagPrefix += "/"
             }
         } else {
-            dockerRegistryPath + '/openmpf/'
+            remoteImageTagPrefix += '/openmpf/'
         }
 
         println "dockerRegistryHostAndPort: " + dockerRegistryHostAndPort
-        println "dockerRegistryPath: " + dockerRegistryPath
+        println "remoteImageTagPrefix: " + remoteImageTagPrefix
 
         sh 'exit 7' // DEBUG
 
