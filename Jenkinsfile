@@ -183,6 +183,10 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
         println "dockerRegistryHostAndPort: " + dockerRegistryHostAndPort
         println "remoteImageTagPrefix: " + remoteImageTagPrefix
 
+        docker.withRegistry('http://' + dockerRegistryHostAndPort, dockerRegistryCredId) {
+            sh 'docker push ' + remoteImageTagPrefix + 'redis:deleteme-jenkins-test-2'
+        }
+
         sh 'exit 7' // DEBUG
 
 
