@@ -185,7 +185,7 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
         println "dockerRegistryHostAndPort: " + dockerRegistryHostAndPort
         println "dockerRegistryPath: " + dockerRegistryPath
 
-        exit(7) // DEBUG
+        System.exit(7) // DEBUG
 
 
         def buildImageName = remoteImageTagPrefix + 'openmpf_build:' + imageTag
