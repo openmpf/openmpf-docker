@@ -144,9 +144,9 @@ RUN --mount=type=cache,target=/root/.m2 \
   && mvn package \
   -DskipTests -Dmaven.test.skip=true -DskipITs \
   -Dcargo.maven.skip=true \
-#  -Dcomponents.build.search.paths='/home/mpf/openmpf-projects/openmpf-components/cpp' \
+  -Dcomponents.build.search.paths='/home/mpf/openmpf-projects' \
 #  -Dcomponents.build.components='CaffeDetection:OcvFaceDetection:DarknetDetection:SceneChangeDetection:DlibFaceDetection:OalprLicensePlateTextDetection' \
-  -Dcomponents.build.components='/home/mpf/openmpf-projects/openmpf-components/java:/home/mpf/openmpf-projects/openmpf-components/cpp' \
+  -Dcomponents.build.components='openmpf-components/java:openmpf-components/cpp:openmpf-contrib-components' \
 #  -Dcomponents.build.components='TesseractOCRTextDetection' \
   -Dstartup.auto.registration.skip=false \
   -Dcomponents.build.dir=/home/mpf/openmpf-projects/openmpf/mpf-component-build \
