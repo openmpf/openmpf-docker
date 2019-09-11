@@ -126,10 +126,7 @@ RUN mkdir -p /tmp/oalpr \
 
 
 
-
-
 COPY .  /home/mpf/openmpf-projects
-
 
 
 WORKDIR /home/mpf/openmpf-projects/openmpf
@@ -140,12 +137,16 @@ WORKDIR /home/mpf/openmpf-projects/openmpf
 RUN sed -i '37s/.*/              p:hostName="redis"/' \
     /home/mpf/openmpf-projects/openmpf/trunk/workflow-manager/src/main/resources/applicationContext-redis.xml
 
-RUN --mount=type=cache,target=/root/.m2 mvn package \
+RUN --mount=type=cache,target=/root/.m2 \
+  if [ ! -e /root/.m2/repository/edu/cmu/sphinx ]; then \
+       tar xzf /home/mpf/openmpf-projects/openmpf-build-tools/mpf-maven-deps.tar.gz -C /root/.m2/repository/; \
+  fi \
+  && mvn package \
   -DskipTests -Dmaven.test.skip=true -DskipITs \
   -Dcargo.maven.skip=true \
 #  -Dcomponents.build.search.paths='/home/mpf/openmpf-projects/openmpf-components/cpp' \
 #  -Dcomponents.build.components='CaffeDetection:OcvFaceDetection:DarknetDetection:SceneChangeDetection:DlibFaceDetection:OalprLicensePlateTextDetection' \
-  -Dcomponents.build.components='/home/mpf/openmpf-projects/openmpf-components/cpp' \
+  -Dcomponents.build.components='/home/mpf/openmpf-projects/openmpf-components/java:/home/mpf/openmpf-projects/openmpf-components/cpp' \
 #  -Dcomponents.build.components='TesseractOCRTextDetection' \
   -Dstartup.auto.registration.skip=false \
   -Dcomponents.build.dir=/home/mpf/openmpf-projects/openmpf/mpf-component-build \
