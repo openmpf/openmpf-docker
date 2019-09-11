@@ -14,7 +14,7 @@ RUN yum localinstall -y --nogpgcheck https://download1.rpmfusion.org/free/el/rpm
 
 ENV MPF_HOME /opt/mpf
 
-COPY --from=openmpf-build /home/mpf/openmpf-projects/openmpf/trunk/install $MPF_HOME
+COPY --from=openmpf-build /build-artifacts/install $MPF_HOME
 
 RUN ln --symbolic $MPF_HOME/libexec/node-manager /etc/init.d/node-manager
 

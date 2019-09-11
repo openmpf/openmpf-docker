@@ -159,8 +159,10 @@ RUN --mount=type=cache,target=/root/.m2 \
 
 WORKDIR /build-artifacts
 
-RUN ln -s /home/mpf/openmpf-projects/openmpf/trunk/workflow-manager/target/workflow-manager \
-          /build-artifacts/workflow-manager
+RUN ln --symbolic /home/mpf/openmpf-projects/openmpf/trunk/workflow-manager/target/workflow-manager \
+                  /build-artifacts/workflow-manager
+RUN ln --symbolic /home/mpf/openmpf-projects/openmpf/trunk/install \
+                  /build-artifacts/install
 
 # Use nullglob to avoid entering for loop when no matches.
 RUN shopt -s nullglob \
