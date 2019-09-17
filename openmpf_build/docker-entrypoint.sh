@@ -128,4 +128,7 @@ tar -cf - ansible | gzip --no-name > "$BUILD_ARTIFACTS_PATH/ansible.tar.gz"
 cp -R ../mpf-component-build/plugin-packages "$BUILD_ARTIFACTS_PATH"
 
 cd /root
-tar -cf - mpf-sdk-install --exclude 'mpf-sdk-install/python' | gzip --no-name > "$BUILD_ARTIFACTS_PATH/mpf-sdk-install.tar.gz"
+# Set --mtime so that an indentical mpf-sdk-install.tar.gz file is created in if the source code hasn't changed.
+# This allows the openmpf_cpp-component-build image to use the build cache preventing the component images from having
+# to be rebuilt when the source code hasn't changed.
+tar --mtime='UTC 2019-01-01' -cf - mpf-sdk-install --exclude 'mpf-sdk-install/python' | gzip --no-name > "$BUILD_ARTIFACTS_PATH/mpf-sdk-install.tar.gz"

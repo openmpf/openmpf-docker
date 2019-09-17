@@ -179,7 +179,7 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                 remoteImageTagPrefix += "/"
             }
         }
-        
+
         def buildImageName = remoteImageTagPrefix + 'openmpf_build:' + imageTag
         def buildContainerId
 
@@ -319,6 +319,10 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
 
                 if (buildCustomComponents) {
                     dockerComposeConfigCommand += ' -f openmpf_custom_build/docker-compose.custom-components.yml'
+                }
+
+                if (runGTests) {
+                    dockerComposeConfigCommand += ' -f docker-compose.components.test.yml'
                 }
 
                 dockerComposeConfigCommand += ' config > docker-compose.yml'
@@ -485,9 +489,6 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                         sh 'docker volume rm -f ' + buildMySqlDataVolume // preserve openmpf_shared_data for post-run analysis
                         removeDockerNetwork(buildNetwork)
                     }
-
-                    // Remove dangling <none> images.
-                    sh 'docker image prune -f'
                 }
             }
 
@@ -536,6 +537,10 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
     } catch (Exception e) {
         buildException = e
     }
+
+    // Remove dangling <none> images that are more than 2 weeks old.
+    sh 'docker image prune --force --filter "until=336h"'
+    sh 'docker builder prune --force --keep-storage=80GB'
 
     def buildStatus
     if (isAborted()) {

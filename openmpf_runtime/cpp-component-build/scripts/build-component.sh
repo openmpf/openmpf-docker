@@ -33,5 +33,5 @@ build_dir="${BUILD_DIR:-/home/mpf/component_build}"
 
 mkdir -p "$build_dir" \
     && cd "$build_dir" \
-    && cmake3 "$src_dir" \
+    && cmake3 -DCMAKE_BUILD_TYPE=Release "$src_dir" \
     && make -j "$(nproc)"
