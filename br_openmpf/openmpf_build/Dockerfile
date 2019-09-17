@@ -5,7 +5,7 @@ ARG BUILD_REGISTRY
 ARG BUILD_TAG=latest
 
 
-FROM centos:7
+FROM centos:7 as openmpf_build
 
 # The centos:7 image sets this yum property to en_US.utf8 which prevents other locales (including other Engish locales)
 # from being installed with GCC.
@@ -129,6 +129,9 @@ RUN mkdir -p /tmp/oalpr \
 COPY .  /home/mpf/openmpf-projects
 
 
+
+ENV MPF_HOME /home/mpf/openmpf-projects/openmpf/trunk/install
+
 WORKDIR /home/mpf/openmpf-projects/openmpf
 
 
@@ -137,7 +140,7 @@ WORKDIR /home/mpf/openmpf-projects/openmpf
 RUN sed -i '37s/.*/              p:hostName="redis"/' \
     /home/mpf/openmpf-projects/openmpf/trunk/workflow-manager/src/main/resources/applicationContext-redis.xml
 
-RUN --mount=type=cache,target=/root/.m2 \
+RUN --mount=type=cache,target=/root/.m2/repository,id=mvn_cache \
   if [ ! -e /root/.m2/repository/edu/cmu/sphinx ]; then \
        tar xzf /home/mpf/openmpf-projects/openmpf-build-tools/mpf-maven-deps.tar.gz -C /root/.m2/repository/; \
   fi \
@@ -154,7 +157,7 @@ RUN --mount=type=cache,target=/root/.m2 \
   -Dcomponents.build.make.jobs="$(nproc)" \
   -DgitBranch='test' \
   -DgitShortId='123' \
-  -DjenkinsBuildNumber=1
+  -DjenkinsBuildNumber=2
 
 
 WORKDIR /build-artifacts

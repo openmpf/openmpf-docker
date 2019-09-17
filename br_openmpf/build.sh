@@ -19,4 +19,9 @@ echo '=== Node Manager ==='
 docker build node-manager -t br-node-manager
 
 
+echo '=== Integration Tests ==='
+
+docker build integration-tests -t br-integration-tests
+
+
 # docker run --rm -it --network br_openmpf_overlay -v br_openmpf_shared_data:/opt/mpf/share -e WFM_USER=admin -e WFM_PASSWORD=mpfadm fdc72491382923aa47
