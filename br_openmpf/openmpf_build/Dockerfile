@@ -12,7 +12,6 @@ FROM centos:7 as openmpf_build
 RUN yum-config-manager --setopt=override_install_langs='' --save
 
 
-# Remember to change CMakeLists.txt search location (/apps/install) in mpf-protobufs
 RUN yum install -y epel-release \
     && yum localinstall -y --nogpgcheck https://download1.rpmfusion.org/free/el/rpmfusion-free-release-7.noarch.rpm \
                 https://download1.rpmfusion.org/nonfree/el/rpmfusion-nonfree-release-7.noarch.rpm \
@@ -22,6 +21,9 @@ RUN yum install -y epel-release \
             java-11-openjdk-devel python-pip python-devel activemq-cpp-devel protobuf-static protobuf-devel \
             # dlib dependencies
             bzip2 \
+            # integration test dependencies
+            # TODO: move to integration tests Dockerfile
+            perl mysql ansible \
     && yum clean all \
     && rm -rf /var/cache/yum/* \
     && pip install --upgrade --no-cache-dir pip \
@@ -141,23 +143,42 @@ RUN sed -i '37s/.*/              p:hostName="redis"/' \
     /home/mpf/openmpf-projects/openmpf/trunk/workflow-manager/src/main/resources/applicationContext-redis.xml
 
 RUN --mount=type=cache,target=/root/.m2/repository,id=mvn_cache \
-  if [ ! -e /root/.m2/repository/edu/cmu/sphinx ]; then \
+    if [ ! -e /root/.m2/repository/edu/cmu/sphinx ]; then \
        tar xzf /home/mpf/openmpf-projects/openmpf-build-tools/mpf-maven-deps.tar.gz -C /root/.m2/repository/; \
-  fi \
-  && mvn package \
-  -DskipTests -Dmaven.test.skip=true -DskipITs \
-  -Dcargo.maven.skip=true \
-  -Dcomponents.build.search.paths='/home/mpf/openmpf-projects' \
+    fi \
+    && mvn package \
+        -DskipTests -Dmaven.test.skip=true -DskipITs \
+        -Dcargo.maven.skip=true \
+        -Dcomponents.build.search.paths='/home/mpf/openmpf-projects' \
 #  -Dcomponents.build.components='CaffeDetection:OcvFaceDetection:DarknetDetection:SceneChangeDetection:DlibFaceDetection:OalprLicensePlateTextDetection' \
-  -Dcomponents.build.components='openmpf-components/java:openmpf-components/cpp:openmpf-contrib-components' \
+        -Dcomponents.build.components='openmpf-components/java:openmpf-components/cpp:openmpf-contrib-components' \
 #  -Dcomponents.build.components='TesseractOCRTextDetection' \
-  -Dstartup.auto.registration.skip=false \
-  -Dcomponents.build.dir=/home/mpf/openmpf-projects/openmpf/mpf-component-build \
-  -Dcomponents.build.parallel.builds="$(nproc)" \
-  -Dcomponents.build.make.jobs="$(nproc)" \
-  -DgitBranch='test' \
-  -DgitShortId='123' \
-  -DjenkinsBuildNumber=2
+        -Dstartup.auto.registration.skip=false \
+#        -Dcomponents.build.dir=/home/mpf/openmpf-projects/openmpf/mpf-component-build \
+        -Dcomponents.build.parallel.builds="$(nproc)" \
+        -Dcomponents.build.make.jobs="$(nproc)" \
+        -DgitBranch='test' \
+        -DgitShortId='123' \
+        -DjenkinsBuildNumber=2 \
+    # Use nullglob to avoid entering for loop when no matches.
+    && shopt -s nullglob \
+    && mkdir -p /build-artifacts/plugins \
+    && cd /build-artifacts/plugins \
+    # Extract packages here so that child Dockerfiles don't need to use a separate stage just to extract packages.
+    && for package in /root/mpf-component-build/plugin-packages/*.tar.gz; do \
+            tar xf "$package" & done && wait \
+    # Descriptors only...
+    && mkdir -p /build-artifacts/descriptors \
+    && cd /build-artifacts/descriptors \
+    && plugins_dir=/build-artifacts/plugins \
+    && for full_path in "$plugins_dir"/*/descriptor/descriptor.json; do \
+            rel_path=$(realpath --relative-to="$plugins_dir" "$full_path") \
+            && mkdir -p "$(dirname "$rel_path")" \
+            && cp "$full_path" "$rel_path"; \
+       done \
+    && rm -r /root/mpf-component-build
+
+
 
 
 WORKDIR /build-artifacts
@@ -167,23 +188,5 @@ RUN ln --symbolic /home/mpf/openmpf-projects/openmpf/trunk/workflow-manager/targ
 RUN ln --symbolic /home/mpf/openmpf-projects/openmpf/trunk/install \
                   /build-artifacts/install
 
-# Use nullglob to avoid entering for loop when no matches.
-RUN shopt -s nullglob \
-    && mkdir -p /build-artifacts/plugins \
-    && cd /build-artifacts/plugins \
-    && for package in /home/mpf/openmpf-projects/openmpf/mpf-component-build/plugin-packages/*.tar.gz; do \
-            tar xf "$package" & done && wait
-
-
-
-RUN shopt -s nullglob \
-    && mkdir -p /build-artifacts/descriptors \
-    && cd /build-artifacts/descriptors \
-    && plugins_dir=/build-artifacts/plugins \
-    && for full_path in "$plugins_dir"/*/descriptor/descriptor.json; do \
-            rel_path=$(realpath --relative-to="$plugins_dir" "$full_path") \
-            && mkdir -p "$(dirname "$rel_path")" \
-            && cp "$full_path" "$rel_path"; \
-       done
 
 
