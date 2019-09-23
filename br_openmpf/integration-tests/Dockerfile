@@ -1,6 +1,8 @@
 # syntax=docker/dockerfile:experimental
 
 
+#########################
+# Separate stage so we don't have to re-download Tomcat when openmpf-build changes
 FROM centos:7 as get_tomcat
 RUN cd /opt \
     && curl -SL 'http://archive.apache.org/dist/tomcat/tomcat-8/v8.5.41/bin/apache-tomcat-8.5.41.tar.gz' \
@@ -8,12 +10,17 @@ RUN cd /opt \
     && ln --symbolic /opt/apache-tomcat-8.5.41 /opt/apache-tomcat \
     && rm -rf /opt/apache-tomcat/webapps/examples/ \
     && rm -rf /opt/apache-tomcat/webapps/docs/ \
-    && rm -rf /opt/apache-tomcat/webapps/ROOT/
+    && rm -rf /opt/apache-tomcat/webapps/ROOT/ \
+    # Configure Tomcat cache size:
+    # https://stackoverflow.com/questions/26893297/tomcat-8-throwing-org-apache-catalina-webresources-cache-getresource-unable-to
+    && sed -i '24s/.*/    <WatchedResource>$\{catalina\.ba\se\}\/conf\/web.xml<\/WatchedResource>\n    <Resources cachingAllowed="true" cacheMaxSize="100000" \/>/' \
+        /opt/apache-tomcat/conf/context.xml
+
 
 
 
 #########################
-# Separate stage so we don't have to re-donwload maven dependencies when openmpf-build changes
+# Separate stage so we don't have to re-download maven dependencies when openmpf-build changes
 FROM centos:7 as get_mvn_dependencies
 
 RUN yum install -y java-11-openjdk \
@@ -33,6 +40,14 @@ RUN mvn dependency:get -Dartifact=org.codehaus.cargo:cargo-core-container-tomcat
 RUN mvn dependency:get -Dartifact=org.apache.maven.surefire:surefire-junit47:2.22.1
 
 
+FROM centos:7 as get_wait_for_it
+RUN mkdir /scripts \
+    && curl --location https://raw.githubusercontent.com/vishnubob/wait-for-it/master/wait-for-it.sh \
+        > /scripts/wait-for-it.sh \
+    && chmod +x /scripts/wait-for-it.sh
+
+
+
 
 ################################
 FROM br-openmpf-build as openmpf-build
@@ -47,15 +62,9 @@ RUN --mount=type=cache,target=/mnt/mvn,id=mvn_cache \
 COPY --from=get_tomcat /opt/apache-tomcat-8.5.41 /opt/apache-tomcat-8.5.41
 RUN ln --symbolic /opt/apache-tomcat-8.5.41 /opt/apache-tomcat
 
-# perl not in get_tomcat stage
-RUN perl -i -p0e 's/<!--\n    <Manager pathname="" \/>\n    -->/<Manager pathname="" \/>/s' \
-               /opt/apache-tomcat/conf/context.xml \
-    # Configure Tomcat cache size:
-    # https://stackoverflow.com/questions/26893297/tomcat-8-throwing-org-apache-catalina-webresources-cache-getresource-unable-to
-    && sed -i '24s/.*/    <WatchedResource>$\{catalina\.ba\se\}\/conf\/web.xml<\/WatchedResource>\n    <Resources cachingAllowed="true" cacheMaxSize="100000" \/>/' \
-        /opt/apache-tomcat/conf/context.xml
-
 COPY --from=get_mvn_dependencies /root/.m2/repository /root/.m2/repository
+
+COPY --from=get_wait_for_it /scripts/wait-for-it.sh /scripts/wait-for-it.sh
 
 ENV THIS_MPF_NODE=workflow-manager
 RUN mkdir -p /etc/ansible \
@@ -88,8 +97,7 @@ ENV JAVA_HOME=/usr/lib/jvm/jre-11
 ENV CATALINA_OPTS "-Dtransport.guarantee='NONE' -Dweb.rest.protocol='http'"
 
 
-
-
 COPY docker-entrypoint.sh /home/mpf/docker-entrypoint.sh
+
 ENTRYPOINT ["/home/mpf/docker-entrypoint.sh"]
 
