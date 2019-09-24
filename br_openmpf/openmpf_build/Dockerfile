@@ -137,11 +137,6 @@ ENV MPF_HOME /home/mpf/openmpf-projects/openmpf/trunk/install
 WORKDIR /home/mpf/openmpf-projects/openmpf
 
 
-# TODO: See if this can be converted to use ARG variable, this strategy is
-#    very brittle because it's based on line number:
-RUN sed -i '37s/.*/              p:hostName="redis"/' \
-    /home/mpf/openmpf-projects/openmpf/trunk/workflow-manager/src/main/resources/applicationContext-redis.xml
-
 RUN --mount=type=cache,target=/root/.m2/repository,id=mvn_cache \
     if [ ! -e /root/.m2/repository/edu/cmu/sphinx ]; then \
        tar xzf /home/mpf/openmpf-projects/openmpf-build-tools/mpf-maven-deps.tar.gz -C /root/.m2/repository/; \
