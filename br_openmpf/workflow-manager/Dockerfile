@@ -52,7 +52,6 @@ ENV MPF_USER=root
 ENV MPF_LOG_PATH=$MPF_HOME/share/logs
 # Every child node-manager container is treated as a spare node.
 ENV CORE_MPF_NODES=''
-#ENV LD_LIBRARY_PATH=/usr/lib64:$MPF_HOME/lib
 ENV LD_LIBRARY_PATH=/usr/lib64:/opt/apache-tomcat/webapps/workflow-manager/WEB-INF/classes
 ENV PATH=$PATH:$MPF_HOME/bin
 ENV JAVA_HOME=/usr/lib/jvm/jre-11

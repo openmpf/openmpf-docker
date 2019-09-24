@@ -35,9 +35,9 @@ RUN cd /opt \
 
 RUN mvn dependency:get -Dartifact=org.apache.maven.plugins:maven-surefire-plugin:2.22.1
 RUN mvn dependency:get -Dartifact=org.apache.maven.surefire:surefire-junit4:2.22.1
+RUN mvn dependency:get -Dartifact=org.apache.maven.surefire:surefire-junit47:2.22.1
 RUN mvn dependency:get -Dartifact=org.codehaus.cargo:cargo-maven2-plugin:1.4.8
 RUN mvn dependency:get -Dartifact=org.codehaus.cargo:cargo-core-container-tomcat:1.4.8
-RUN mvn dependency:get -Dartifact=org.apache.maven.surefire:surefire-junit47:2.22.1
 
 
 FROM centos:7 as get_wait_for_it

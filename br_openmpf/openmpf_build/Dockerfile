@@ -150,11 +150,8 @@ RUN --mount=type=cache,target=/root/.m2/repository,id=mvn_cache \
         -DskipTests -Dmaven.test.skip=true -DskipITs \
         -Dcargo.maven.skip=true \
         -Dcomponents.build.search.paths='/home/mpf/openmpf-projects' \
-#  -Dcomponents.build.components='CaffeDetection:OcvFaceDetection:DarknetDetection:SceneChangeDetection:DlibFaceDetection:OalprLicensePlateTextDetection' \
         -Dcomponents.build.components='openmpf-components/java:openmpf-components/cpp:openmpf-contrib-components' \
-#  -Dcomponents.build.components='TesseractOCRTextDetection' \
         -Dstartup.auto.registration.skip=false \
-#        -Dcomponents.build.dir=/home/mpf/openmpf-projects/openmpf/mpf-component-build \
         -Dcomponents.build.parallel.builds="$(nproc)" \
         -Dcomponents.build.make.jobs="$(nproc)" \
         -DgitBranch='test' \
@@ -167,7 +164,7 @@ RUN --mount=type=cache,target=/root/.m2/repository,id=mvn_cache \
     # Extract packages here so that child Dockerfiles don't need to use a separate stage just to extract packages.
     && for package in /root/mpf-component-build/plugin-packages/*.tar.gz; do \
             tar xf "$package" & done && wait \
-    # Descriptors only...
+    # Descriptors only
     && mkdir -p /build-artifacts/descriptors \
     && cd /build-artifacts/descriptors \
     && plugins_dir=/build-artifacts/plugins \
@@ -177,8 +174,6 @@ RUN --mount=type=cache,target=/root/.m2/repository,id=mvn_cache \
             && cp "$full_path" "$rel_path"; \
        done \
     && rm -r /root/mpf-component-build
-
-
 
 
 WORKDIR /build-artifacts
