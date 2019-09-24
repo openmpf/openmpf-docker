@@ -49,5 +49,4 @@ echo "ActiveMQ is up"
 set -o xtrace
 
 
-
-/opt/apache-tomcat/bin/catalina.sh run
+exec /opt/apache-tomcat/bin/catalina.sh run

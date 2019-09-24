@@ -16,8 +16,6 @@ ENV MPF_HOME /opt/mpf
 
 COPY --from=openmpf-build /build-artifacts/install $MPF_HOME
 
-RUN ln --symbolic $MPF_HOME/libexec/node-manager /etc/init.d/node-manager
-
 COPY --from=openmpf-build /build-artifacts/plugins $MPF_HOME/plugins
 
 ENV ACTIVE_MQ_HOST=activemq

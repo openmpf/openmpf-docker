@@ -29,15 +29,10 @@
 set -Ee -o pipefail -o xtrace
 
 # Cleanup
-rm -f $MPF_HOME/share/nodes/MPF_Channel/*${HOSTNAME}-NodeManager.list
+rm -f "$MPF_HOME"/share/nodes/MPF_Channel/*"${HOSTNAME}"-NodeManager.list
 
-# Setup
 # NOTE: $HOSTNAME is not known until runtime.
-echo "export THIS_MPF_NODE=${THIS_MPF_NODE}_id_${HOSTNAME}" >> /etc/profile.d/mpf.sh
-echo "export JGROUPS_TCP_ADDRESS=${HOSTNAME}" >> /etc/profile.d/mpf.sh
+export THIS_MPF_NODE="${THIS_MPF_NODE}_id_${HOSTNAME}"
+export JGROUPS_TCP_ADDRESS="$HOSTNAME"
 
-# Run node-manager (as root user)
-$MPF_HOME/libexec/node-manager start
-
-touch ${MPF_LOG_PATH}/${THIS_MPF_NODE}_id_${HOSTNAME}/log/node-manager.log
-tail -f ${MPF_LOG_PATH}/${THIS_MPF_NODE}_id_${HOSTNAME}/log/node-manager.log
+exec java -jar "$MPF_HOME/jars/mpf-nodemanager-4.1.0.jar"
