@@ -82,6 +82,8 @@ mvn verify \
 mavenRetVal=$?
 
 
+rm -rf /test-reports/*
+
 mkdir -p /test-reports/surefire-reports
 find . -path '*/surefire-reports/*.xml' -exec cp {} /test-reports/surefire-reports \;
 
@@ -89,11 +91,19 @@ mkdir -p /test-reports/failsafe-reports
 find . -path '*/failsafe-reports/*.xml' -exec cp {} /test-reports/failsafe-reports \;
 
 
-if [ "$mavenRetVal" -eq 0 ]; then
-    echo 'DETECTED MAVEN TESTS PASSED'
-else
+# Maven doesn't exit with error when tests in certain Maven modules fail.
+python /scripts/check-test-reports.py /test-reports
+check_reports_ret_val=$?
+
+if [ "$mavenRetVal" -ne 0 ]; then
     echo 'DETECTED MAVEN TEST FAILURE(S)'
+    exit "$mavenRetVal"
 fi
 
-exit "$mavenRetVal"
+if [ "$check_reports_ret_val" -ne 0 ]; then
+    echo 'DETECTED MAVEN TEST FAILURE(S)'
+    exit "$check_reports_ret_val"
+fi
+
+echo 'DETECTED MAVEN TESTS PASSED'
 

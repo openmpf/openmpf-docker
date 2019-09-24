@@ -71,7 +71,6 @@ RUN mkdir -p /etc/ansible \
     && echo '[mpf-child]' >> /etc/ansible/hosts \
     && echo $THIS_MPF_NODE >> /etc/ansible/hosts
 
-ENV TOMCAT_BASE_URL=http://$THIS_MPF_NODE:8181
 
 ENV MPF_HOME /opt/mpf
 
@@ -95,8 +94,10 @@ ENV LD_LIBRARY_PATH=/usr/lib64:/opt/apache-tomcat/webapps/workflow-manager/WEB-I
 ENV PATH=$PATH:$MPF_HOME/bin
 ENV JAVA_HOME=/usr/lib/jvm/jre-11
 ENV CATALINA_OPTS "-Dtransport.guarantee='NONE' -Dweb.rest.protocol='http'"
+ENV TOMCAT_BASE_URL=http://localhost:8181
 
 
+COPY check-test-reports.py /scripts/check-test-reports.py
 COPY docker-entrypoint.sh /home/mpf/docker-entrypoint.sh
 
 ENTRYPOINT ["/home/mpf/docker-entrypoint.sh"]

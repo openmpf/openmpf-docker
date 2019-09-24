@@ -72,6 +72,7 @@ services:
       - mysql-database
       - redis
       - activemq
+      - node-manager
     environment:
       # The following line is needed to wait until the mySQL service is available:
       - MYSQL_ROOT_PASSWORD=password
