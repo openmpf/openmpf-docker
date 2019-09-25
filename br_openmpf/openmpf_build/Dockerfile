@@ -19,6 +19,7 @@ RUN yum install -y epel-release \
             # OpenMPF dependencies
             cmake3 make gcc gcc-c++ qt-devel log4cxx-devel boost-devel ffmpeg ffmpeg-devel \
             java-11-openjdk-devel python-pip python-devel activemq-cpp-devel protobuf-static protobuf-devel \
+            gtest-devel \
             # dlib dependencies
             bzip2 \
             # integration test dependencies
@@ -68,7 +69,7 @@ RUN mkdir -p /apps/source/opencv_sources \
 
 RUN cd /opt \
     && curl --location 'https://archive.apache.org/dist/maven/maven-3/3.3.3/binaries/apache-maven-3.3.3-bin.tar.gz' \
-    | tar --extract --gzip \
+        | tar --extract --gzip \
     && ln --symbolic /opt/apache-maven-3.3.3/bin/mvn /usr/local/bin
 
 
@@ -85,7 +86,7 @@ RUN mkdir -p /apps/source/dlib-sources \
 RUN yum install -y http://rpms.remirepo.net/enterprise/remi-release-7.rpm \
     && yum --enablerepo=remi install -y ImageMagick6 ImageMagick6-c++ \
          ImageMagick6-c++-devel ImageMagick6-devel ImageMagick6-libs \
-         libgif libjpeg libpng libtiff zlib \
+         libgif libjpeg libpng libtiff zlib ghostscript \
     && yum clean all \
     && rm -rf /var/cache/yum/*
 
@@ -128,7 +129,7 @@ RUN mkdir -p /tmp/oalpr \
 
 
 
-COPY .  /home/mpf/openmpf-projects
+COPY . /home/mpf/openmpf-projects
 
 
 
@@ -136,12 +137,14 @@ ENV MPF_HOME /home/mpf/openmpf-projects/openmpf/trunk/install
 
 WORKDIR /home/mpf/openmpf-projects/openmpf
 
+ARG RUN_TESTS=false
 
 RUN --mount=type=cache,target=/root/.m2/repository,id=mvn_cache \
+    set -e; \
     if [ ! -e /root/.m2/repository/edu/cmu/sphinx ]; then \
-       tar xzf /home/mpf/openmpf-projects/openmpf-build-tools/mpf-maven-deps.tar.gz -C /root/.m2/repository/; \
-    fi \
-    && mvn package \
+        tar xzf /home/mpf/openmpf-projects/openmpf-build-tools/mpf-maven-deps.tar.gz -C /root/.m2/repository/; \
+    fi; \
+    mvn package \
         -DskipTests -Dmaven.test.skip=true -DskipITs \
         -Dcargo.maven.skip=true \
         -Dcomponents.build.search.paths='/home/mpf/openmpf-projects' \
@@ -151,24 +154,37 @@ RUN --mount=type=cache,target=/root/.m2/repository,id=mvn_cache \
         -Dcomponents.build.make.jobs="$(nproc)" \
         -DgitBranch='test' \
         -DgitShortId='123' \
-        -DjenkinsBuildNumber=2 \
-    # Use nullglob to avoid entering for loop when no matches.
-    && shopt -s nullglob \
-    && mkdir -p /build-artifacts/plugins \
-    && cd /build-artifacts/plugins \
+        -DjenkinsBuildNumber=2; \
+    # Use nullglob to avoid entering for loop when no glob matches.
+    # Use globstar to enable ** globs.
+    shopt -s nullglob globstar; \
+    if [ "${RUN_TESTS,,}" = true ]; then \
+        cd /root/mpf-component-build; \
+        # find . -path '*/test/*Test' -print0 | xargs --null -r -I{} sh -c 'cd $(dirname {}) && ./$(basename {})'; \
+        for test_executable in **/test/*Test; do \
+            cd "$(dirname "$test_executable")"; \
+            ./"$(basename "$test_executable")"; \
+            cd /root/mpf-component-build; \
+        done; \
+    fi; \
+    mkdir -p /build-artifacts/plugins; \
+    cd /build-artifacts/plugins; \
     # Extract packages here so that child Dockerfiles don't need to use a separate stage just to extract packages.
-    && for package in /root/mpf-component-build/plugin-packages/*.tar.gz; do \
-            tar xf "$package" & done && wait \
+    for package in /root/mpf-component-build/plugin-packages/*.tar.gz; do \
+        tar xf "$package" & \
+    done; \
+    wait; \
     # Descriptors only
-    && mkdir -p /build-artifacts/descriptors \
-    && cd /build-artifacts/descriptors \
-    && plugins_dir=/build-artifacts/plugins \
-    && for full_path in "$plugins_dir"/*/descriptor/descriptor.json; do \
-            rel_path=$(realpath --relative-to="$plugins_dir" "$full_path") \
-            && mkdir -p "$(dirname "$rel_path")" \
-            && cp "$full_path" "$rel_path"; \
-       done \
-    && rm -r /root/mpf-component-build
+    mkdir -p /build-artifacts/descriptors; \
+    cd /build-artifacts/descriptors; \
+    plugins_dir=/build-artifacts/plugins; \
+    for full_path in "$plugins_dir"/*/descriptor/descriptor.json; do \
+        rel_path="$(realpath --relative-to="$plugins_dir" "$full_path")"; \
+        mkdir -p "$(dirname "$rel_path")"; \
+        cp "$full_path" "$rel_path"; \
+    done; \
+    rm -rf /root/mpf-component-build;
+
 
 
 WORKDIR /build-artifacts

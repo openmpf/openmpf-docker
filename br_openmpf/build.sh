@@ -6,8 +6,8 @@ cd /home/mpf/openmpf-docker/br_openmpf
 
 echo '=== OpenMPF Build ==='
 
-docker build -f openmpf_build/Dockerfile /home/mpf/openmpf-projects \
-  -t br-openmpf-build
+docker build -f openmpf_build/Dockerfile /home/mpf/openmpf-projects --build-arg RUN_TESTS=true \
+  -t br-openmpf-build --progress plain
 
 #sleep 5
 
