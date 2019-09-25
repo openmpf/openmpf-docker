@@ -2,14 +2,16 @@ FROM br-openmpf-build as openmpf-build
 
 FROM centos:7
 
-# The centos:7 image sets this yum property to en_US.utf8 which prevents other locales (including other Engish locales)
-# from being installed with GCC.
-RUN yum-config-manager --setopt=override_install_langs='' --save
+SHELL ["/bin/bash", "-o", "errexit", "-o", "pipefail", "-c"]
 
-RUN yum localinstall -y --nogpgcheck https://download1.rpmfusion.org/free/el/rpmfusion-free-release-7.noarch.rpm \
-            https://download1.rpmfusion.org/nonfree/el/rpmfusion-nonfree-release-7.noarch.rpm \
-    && yum install -y java-11-openjdk ffmpeg \
-    && yum clean all && rm -rf /var/cache/yum/*
+# Change config because the centos:7 image sets this yum property to en_US.utf8 which prevents other locales
+# (including other Engish locales) from being installed with GCC.
+RUN yum-config-manager --setopt=override_install_langs='' --save; \
+    yum install --assumeyes --nogpgcheck https://download1.rpmfusion.org/free/el/rpmfusion-free-release-7.noarch.rpm \
+            https://download1.rpmfusion.org/nonfree/el/rpmfusion-nonfree-release-7.noarch.rpm; \
+    yum install --assumeyes java-11-openjdk ffmpeg; \
+    yum clean all; \
+    rm -rf /var/cache/yum/*;
 
 
 ENV MPF_HOME /opt/mpf
@@ -39,5 +41,5 @@ ENV JAVA_HOME=/usr/lib/jvm/jre-11
 
 
 
-COPY docker-entrypoint.sh /home/mpf/docker-entrypoint.sh
-ENTRYPOINT ["/home/mpf/docker-entrypoint.sh"]
+COPY docker-entrypoint.sh /scripts/docker-entrypoint.sh
+ENTRYPOINT ["/scripts/docker-entrypoint.sh"]

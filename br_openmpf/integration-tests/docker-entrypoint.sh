@@ -1,19 +1,20 @@
 #!/usr/bin/bash
 
-set -Ee -o pipefail -o xtrace
+set -o errexit -o pipefail -o xtrace
 
 updateOrAddProperty() {
     file="$1"
     key="$2"
     value="$3"
 
-    if grep -q "^$key=" "$file"; then
-        sed -i "/$key=/s/=.*/=$value/" "$file"
+    if grep --quiet "^$key=" "$file"; then
+        sed --in-place "/$key=/s/=.*/=$value/" "$file"
     else
         echo "$key=$value" >> "$file"
     fi
 }
-mkdir -p "$MPF_HOME/share/config"
+
+mkdir --parents "$MPF_HOME/share/config"
 
 mpfCustomPropertiesFile="$MPF_HOME/share/config/mpf-custom.properties"
 
@@ -24,9 +25,9 @@ updateOrAddProperty "$mpfCustomPropertiesFile" "node.auto.unconfig.enabled" "tru
 cd /home/mpf/openmpf-projects/openmpf
 
 # Move test sample data into a location that's accessible by all of the nodes.
-mkdir -p "$MPF_HOME/share/samples"
-cp -r trunk/mpf-system-tests/src/test/resources/samples/* "$MPF_HOME/share/samples"
-cp -r trunk/workflow-manager/src/test/resources/samples/* "$MPF_HOME/share/samples"
+mkdir "$MPF_HOME/share/samples"
+cp --recursive trunk/mpf-system-tests/src/test/resources/samples/* "$MPF_HOME/share/samples"
+cp --recursive trunk/workflow-manager/src/test/resources/samples/* "$MPF_HOME/share/samples"
 
 
 echo 'Waiting for MySQL to become available ...'
@@ -45,7 +46,7 @@ echo 'Redis is up'
 
 # Wait for ActiveMQ service.
 echo 'Waiting for ActiveMQ to become available ...'
-until curl -I "$ACTIVE_MQ_HOST:8161" >> /dev/null 2>&1; do
+until curl --head "$ACTIVE_MQ_HOST:8161" >> /dev/null 2>&1; do
     echo 'ActiveMQ is unavailable. Sleeping.'
     sleep 5
 done
@@ -70,12 +71,12 @@ mvn verify \
 mavenRetVal=$?
 
 
-rm -rf /test-reports/*
+rm --recursive --force /test-reports/*
 
-mkdir -p /test-reports/surefire-reports
+mkdir --parents /test-reports/surefire-reports
 find . -path '*/surefire-reports/*.xml' -exec cp {} /test-reports/surefire-reports \;
 
-mkdir -p /test-reports/failsafe-reports
+mkdir /test-reports/failsafe-reports
 find . -path '*/failsafe-reports/*.xml' -exec cp {} /test-reports/failsafe-reports \;
 
 

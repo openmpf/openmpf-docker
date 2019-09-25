@@ -1,21 +1,20 @@
 #!/bin/bash
 
-set -e
-set -x
+set -o errexit -o pipefail -o xtrace
 
 updateOrAddProperty() {
     file="$1"
     key="$2"
     value="$3"
-    if grep -q "^$key=" "$file"; then
-        sed -i "/$key=/s/=.*/=$value/" "$file"
+    if grep --quiet "^$key=" "$file"; then
+        sed --in-place "/$key=/s/=.*/=$value/" "$file"
     else
         echo "$key=$value" >> "$file"
     fi
 }
 
 
-mkdir -p "$MPF_HOME/share/config"
+mkdir --parents "$MPF_HOME/share/config"
 
 mpfCustomPropertiesFile="$MPF_HOME/share/config/mpf-custom.properties"
 
@@ -40,7 +39,7 @@ echo 'Redis is up'
 
 # Wait for ActiveMQ service.
 echo 'Waiting for ActiveMQ to become available ...'
-until curl -I "$ACTIVE_MQ_HOST:8161" >> /dev/null 2>&1; do
+until curl --head "$ACTIVE_MQ_HOST:8161" >> /dev/null 2>&1; do
     echo 'ActiveMQ is unavailable. Sleeping.'
     sleep 5
 done

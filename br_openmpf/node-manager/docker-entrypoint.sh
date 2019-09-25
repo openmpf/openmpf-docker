@@ -26,10 +26,10 @@
 # limitations under the License.                                            #
 #############################################################################
 
-set -Ee -o pipefail -o xtrace
+set -o errexit -o pipefail -o xtrace
 
 # Cleanup
-rm -f "$MPF_HOME"/share/nodes/MPF_Channel/*"${HOSTNAME}"-NodeManager.list
+rm --force "$MPF_HOME"/share/nodes/MPF_Channel/*"${HOSTNAME}"-NodeManager.list
 
 # NOTE: $HOSTNAME is not known until runtime.
 export THIS_MPF_NODE="${THIS_MPF_NODE}_id_${HOSTNAME}"

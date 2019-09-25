@@ -3,32 +3,32 @@ FROM br-openmpf-build as openmpf-build
 
 FROM centos:7
 
-# The centos:7 image sets this yum property to en_US.utf8 which prevents other locales (including other Engish locales)
-# from being installed with GCC.
-RUN yum-config-manager --setopt=override_install_langs='' --save
+SHELL ["/bin/bash", "-o", "errexit", "-o", "pipefail", "-c"]
+
+# Change config because the centos:7 image sets this yum property to en_US.utf8 which prevents other locales
+# (including other Engish locales) from being installed with GCC.
+RUN yum-config-manager --setopt=override_install_langs='' --save; \
+    yum install --assumeyes --nogpgcheck https://download1.rpmfusion.org/free/el/rpmfusion-free-release-7.noarch.rpm \
+            https://download1.rpmfusion.org/nonfree/el/rpmfusion-nonfree-release-7.noarch.rpm; \
+    yum install --assumeyes java-11-openjdk ffmpeg; \
+    yum clean all; \
+    rm -rf /var/cache/yum/*;
 
 
-RUN yum localinstall -y --nogpgcheck https://download1.rpmfusion.org/free/el/rpmfusion-free-release-7.noarch.rpm \
-            https://download1.rpmfusion.org/nonfree/el/rpmfusion-nonfree-release-7.noarch.rpm \
-    && yum install -y java-11-openjdk ffmpeg \
-    && yum clean all && rm -rf /var/cache/yum/*
+RUN mkdir /scripts; \
+    curl --location https://raw.githubusercontent.com/vishnubob/wait-for-it/master/wait-for-it.sh \
+        > /scripts/wait-for-it.sh; \
+    chmod +x /scripts/wait-for-it.sh;
 
 
-RUN mkdir /scripts \
-    && curl --location https://raw.githubusercontent.com/vishnubob/wait-for-it/master/wait-for-it.sh \
-        > /scripts/wait-for-it.sh \
-    && chmod +x /scripts/wait-for-it.sh
-
-
-RUN cd /opt \
-    && curl -SL 'http://archive.apache.org/dist/tomcat/tomcat-8/v8.5.41/bin/apache-tomcat-8.5.41.tar.gz' \
-        | tar --extract --gzip \
-    && ln --symbolic /opt/apache-tomcat-8.5.41 /opt/apache-tomcat \
-    && rm -rf /opt/apache-tomcat/webapps/* \
+RUN curl --location 'http://archive.apache.org/dist/tomcat/tomcat-8/v8.5.41/bin/apache-tomcat-8.5.41.tar.gz' \
+        | tar --extract --gzip --directory /opt; \
+    ln --symbolic /opt/apache-tomcat-8.5.41 /opt/apache-tomcat; \
+    rm --recursive /opt/apache-tomcat/webapps/*; \
     # Configure Tomcat cache size:
     # https://stackoverflow.com/questions/26893297/tomcat-8-throwing-org-apache-catalina-webresources-cache-getresource-unable-to
-    && sed -i '24s/.*/    <WatchedResource>$\{catalina\.ba\se\}\/conf\/web.xml<\/WatchedResource>\n    <Resources cachingAllowed="true" cacheMaxSize="100000" \/>/' \
-        /opt/apache-tomcat/conf/context.xml
+    sed --in-place '24s/.*/    <WatchedResource>$\{catalina\.ba\se\}\/conf\/web.xml<\/WatchedResource>\n    <Resources cachingAllowed="true" cacheMaxSize="100000" \/>/' \
+        /opt/apache-tomcat/conf/context.xml;
 
 
 
@@ -60,14 +60,14 @@ ENV CATALINA_OPTS "-Dtransport.guarantee='NONE' -Dweb.rest.protocol='http'"
 
 # The workflow manager must be added as an mpf-child so that plugin packages are
 # extracted at startup, which is necessary for component auto-registration.
-RUN mkdir -p /etc/ansible \
-    && echo '[mpf-child]' >> /etc/ansible/hosts \
-    && echo $THIS_MPF_NODE >> /etc/ansible/hosts
+RUN mkdir /etc/ansible; \
+    echo '[mpf-child]' >> /etc/ansible/hosts; \
+    echo $THIS_MPF_NODE >> /etc/ansible/hosts;
 
 
 
 EXPOSE 8080 8443
 
-COPY docker-entrypoint.sh /home/mpf/docker-entrypoint.sh
+COPY docker-entrypoint.sh /scripts/docker-entrypoint.sh
 
-ENTRYPOINT ["/home/mpf/docker-entrypoint.sh"]
+ENTRYPOINT ["/scripts/docker-entrypoint.sh"]
