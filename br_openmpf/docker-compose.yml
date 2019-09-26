@@ -97,6 +97,22 @@ services:
     deploy:
       mode: global
 
+  east-text-detection:
+    image: br-east-text-detection:latest
+#    build:
+#      context: /home/mpf/openmpf-projects/openmpf-components/python/EastTextDetection
+    depends_on:
+      - workflow-manager
+    environment:
+      WFM_PASSWORD: mpfadm
+      WFM_USER: admin
+    networks:
+      overlay: {}
+    volumes:
+      - shared_data:/opt/mpf/share:rw
+
+
+
 volumes:
   shared_data:
   mysql_data:
