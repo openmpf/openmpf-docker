@@ -67,7 +67,7 @@ services:
 
   workflow-manager:
     image: br-workflow-manager
-    build: workflow-manager
+#    build: workflow-manager
     depends_on:
       - mysql-database
       - redis
@@ -89,7 +89,7 @@ services:
 
   node-manager:
     image: br-node-manager
-    build: node-manager
+#    build: node-manager
     volumes:
       - shared_data:/opt/mpf/share
     networks:
@@ -107,7 +107,19 @@ services:
       WFM_PASSWORD: mpfadm
       WFM_USER: admin
     networks:
-      overlay: {}
+      - overlay
+    volumes:
+      - shared_data:/opt/mpf/share:rw
+
+  ocv-face-detection:
+    image: br-ocv-face-detection:latest
+    depends_on:
+      - workflow-manager
+    environment:
+      WFM_PASSWORD: mpfadm
+      WFM_USER: admin
+    networks:
+      - overlay
     volumes:
       - shared_data:/opt/mpf/share:rw
 

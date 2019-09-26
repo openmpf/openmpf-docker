@@ -27,28 +27,10 @@
 
 set -o errexit -o pipefail -o xtrace
 
-mkdir --parents "$MPF_HOME/plugins/plugin"
+src_dir="${SRC_DIR:-/home/mpf/component_src}"
+build_dir="${BUILD_DIR:-/home/mpf/component_build}"
 
-if [ -e /home/mpf/component_src/setup.py ]; then
-    echo 'Installing setuptools plugin'
-    cp --recursive /home/mpf/component_src/plugin-files/* "$MPF_HOME/plugins/plugin/"
-
-
-    if [ -d /home/mpf/component_src/plugin-files/wheelhouse ]; then
-        "$COMPONENT_VIRTUALENV/bin/pip" install \
-            --find-links /home/mpf/component_src/plugin-files/wheelhouse \
-            --no-cache-dir /home/mpf/component_src
-    else
-        "$COMPONENT_VIRTUALENV/bin/pip" install \
-            --no-cache-dir /home/mpf/component_src
-    fi
-elif [ -e /home/mpf/component_src/descriptor/descriptor.json ]; then
-    echo 'Installing basic component'
-    cp --recursive /home/mpf/component_src/* "$MPF_HOME/plugins/plugin"
-else
-    echo 'ERROR: Expected either /home/mpf/component_src/setup.py or'\
-         '/home/mpf/component_src/descriptor/descriptor.json to exist.' \
-         'Did you forget to COPY or bind mount your component source code?'
-    exit 3
-fi
-
+mkdir --parents "$build_dir"
+cd "$build_dir"
+cmake3 "$src_dir"
+make --jobs "$(nproc)"

@@ -32,6 +32,7 @@ RUN --mount=type=bind,from=openmpf-build,source=/build-artifacts/install/python,
 # Use mount and cp shell command because docker COPY resolves symlinks which will end up duplicate copies the libraries.
 RUN --mount=type=bind,from=openmpf-build,source=/build-artifacts/install/lib,target=/tmp/mpf-libs \
     cd /tmp/mpf-libs; \
+    # component executor binary's dependencies
     cp --preserve=links --no-dereference liblog4cxx* libactivemq-cpp* libQtCore* libapr* libXext* \
         /usr/lib64;
 

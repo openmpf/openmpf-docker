@@ -40,7 +40,8 @@ RUN mkdir /tmp/opencv; \
     cd opencv-3.3.0; \
     mkdir build; \
     cd build; \
-    cmake3 -DCMAKE_BUILD_TYPE=Release -DWITH_GSTREAMER:BOOL="0" -DWITH_OPENMP:BOOL="1" \
+    cmake3 -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX:PATH="/opt/opencv-3.3.0" \
+        -DWITH_GSTREAMER:BOOL="0" -DWITH_OPENMP:BOOL="1" \
         -DBUILD_opencv_apps:BOOL="0" -DWITH_OPENCLAMDBLAS:BOOL="0" \
         -DWITH_CUDA:BOOL="0" -DCLAMDFFT_ROOT_DIR:PATH="CLAMDFFT_ROOT_DIR-NOTFOUND" \
         -DBUILD_opencv_aruco:BOOL="0" -DWITH_WEBP:BOOL="0" \
@@ -53,7 +54,8 @@ RUN mkdir /tmp/opencv; \
         -DBUILD_opencv_ts:BOOL="0" -DWITH_MATLAB:BOOL="0" -DWITH_OPENCL:BOOL="0" \
         -DWITH_PVAPI:BOOL="0" -DENABLE_CXX11:BOOL="1" ..; \
     make --jobs "$(nproc)" install; \
-    ldconfig; \
+    ln --symbolic /opt/opencv-3.3.0/include/opencv2 /usr/local/include/opencv2; \
+    ln --symbolic /opt/opencv-3.3.0/include/opencv /usr/local/include/opencv; \
     rm --recursive /tmp/opencv
 
 
@@ -134,7 +136,8 @@ RUN --mount=type=cache,target=/root/.m2/repository,id=mvn_cache \
         -DskipTests -Dmaven.test.skip=true -DskipITs \
         -Dcargo.maven.skip=true \
         -Dcomponents.build.search.paths='/home/mpf/openmpf-projects' \
-        -Dcomponents.build.components='openmpf-components/java:openmpf-components/cpp:openmpf-contrib-components' \
+#        -Dcomponents.build.components='openmpf-components/java:openmpf-components/cpp:openmpf-contrib-components' \
+        -Dcomponents.build.components='openmpf-components/java:openmpf-contrib-components' \
         -Dstartup.auto.registration.skip=false \
         -Dcomponents.build.parallel.builds="$(nproc)" \
         -Dcomponents.build.make.jobs="$(nproc)" \
@@ -176,9 +179,11 @@ RUN --mount=type=cache,target=/root/.m2/repository,id=mvn_cache \
 WORKDIR /build-artifacts
 
 RUN ln --symbolic /home/mpf/openmpf-projects/openmpf/trunk/workflow-manager/target/workflow-manager \
-                  /build-artifacts/workflow-manager
-RUN ln --symbolic /home/mpf/openmpf-projects/openmpf/trunk/install \
-                  /build-artifacts/install
+                  /build-artifacts/workflow-manager; \
+    ln --symbolic /home/mpf/openmpf-projects/openmpf/trunk/install \
+                  /build-artifacts/install; \
+    ln --symbolic /root/mpf-sdk-install \
+                  /build-artifacts/mpf-sdk-install;
 
 
 
