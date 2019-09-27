@@ -14,6 +14,9 @@ updateOrAddProperty() {
     fi
 }
 
+python -u /scripts/descriptor-receiver.py &
+descriptor_receiver_pid=$!
+
 mkdir --parents "$MPF_HOME/share/config"
 
 mpfCustomPropertiesFile="$MPF_HOME/share/config/mpf-custom.properties"
@@ -70,6 +73,7 @@ mvn verify \
 
 mavenRetVal=$?
 
+kill "$descriptor_receiver_pid"
 
 rm --recursive --force /test-reports/*
 

@@ -99,6 +99,17 @@ services:
     deploy:
       mode: global
 
+  ocv-face-detection:
+    image: br-ocv-face-detection:latest
+    environment:
+      WFM_PASSWORD: mpfadm
+      WFM_USER: admin
+    networks:
+      - overlay
+    volumes:
+      - shared_data:/opt/mpf/share:rw
+
+
 volumes:
   shared_data:
   mysql_data:

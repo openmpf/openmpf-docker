@@ -6,8 +6,8 @@ cd /home/mpf/openmpf-docker/br_openmpf
 
 echo '=== OpenMPF Build ==='
 
-export RUN_TESTS=true
-#export RUN_TESTS=false
+#export RUN_TESTS=true
+export RUN_TESTS=false
 
 docker build -f openmpf_build/Dockerfile /home/mpf/openmpf-projects --build-arg RUN_TESTS \
   -t br-openmpf-build

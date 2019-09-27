@@ -41,6 +41,7 @@ import string
 import subprocess
 import sys
 import time
+import traceback
 import urllib2
 
 
@@ -164,7 +165,6 @@ def post_descriptor(descriptor_path, url, headers, ssl_ctx):
 
 
 def handle_registration_error(http_error):
-    import traceback
     traceback.print_exc()
     print(file=sys.stderr)
 

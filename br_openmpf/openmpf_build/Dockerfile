@@ -135,9 +135,11 @@ RUN --mount=type=cache,target=/root/.m2/repository,id=mvn_cache \
     mvn package \
         -DskipTests -Dmaven.test.skip=true -DskipITs \
         -Dcargo.maven.skip=true \
-        -Dcomponents.build.search.paths='/home/mpf/openmpf-projects' \
+#        -Dcomponents.build.search.paths='/home/mpf/openmpf-projects' \
 #        -Dcomponents.build.components='openmpf-components/java:openmpf-components/cpp:openmpf-contrib-components' \
-        -Dcomponents.build.components='openmpf-components/java:openmpf-contrib-components' \
+#        -Dcomponents.build.components='openmpf-components/java:openmpf-contrib-components' \
+        -Dcomponents.build.search.paths='/home/mpf/openmpf-projects:/home/mpf/openmpf-projects/openmpf-components/cpp' \
+        -Dcomponents.build.components='openmpf-components/java:openmpf-contrib-components:CaffeDetection:DarknetDetection:DlibFaceDetection:OalprLicensePlateTextDetection:SceneChangeDetection:TesseractOCRTextDetection' \
         -Dstartup.auto.registration.skip=false \
         -Dcomponents.build.parallel.builds="$(nproc)" \
         -Dcomponents.build.make.jobs="$(nproc)" \
