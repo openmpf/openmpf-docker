@@ -21,9 +21,11 @@ RUN yum-config-manager --setopt=override_install_langs='' --save; \
             gtest-devel \
             # dlib dependencies
             bzip2 \
+            # OALPR dependencies
+            libjpeg-devel libpng-devel libtiff-devel zlib \
             # integration test dependencies
-            # TODO: move to integration tests Dockerfile
-            perl mysql ansible; \
+            # TODO: move to integration tests Dockerfile or disable ansible tests
+            ansible; \
     yum clean all; \
     rm --recursive --force /var/cache/yum/*; \
     pip install --upgrade --no-cache-dir pip wheel; \
@@ -72,16 +74,8 @@ RUN mkdir --parents /apps/source/dlib-sources; \
         | tar --extract --bzip2 --directory /apps/source/dlib-sources;
 
 
-# TesseractOCR
 
-RUN yum install -y http://rpms.remirepo.net/enterprise/remi-release-7.rpm; \
-    yum --enablerepo=remi install -y ImageMagick6 ImageMagick6-c++ \
-         ImageMagick6-c++-devel ImageMagick6-devel ImageMagick6-libs \
-         libgif libjpeg libpng libtiff zlib ghostscript; \
-    yum clean all; \
-    rm --recursive /var/cache/yum/*;
-
-# TesseractOCR and Oalpr
+# Oalpr
 
 RUN mkdir /tmp/leptonica; \
     cd /tmp/leptonica; \
@@ -139,7 +133,7 @@ RUN --mount=type=cache,target=/root/.m2/repository,id=mvn_cache \
 #        -Dcomponents.build.components='openmpf-components/java:openmpf-components/cpp:openmpf-contrib-components' \
 #        -Dcomponents.build.components='openmpf-components/java:openmpf-contrib-components' \
         -Dcomponents.build.search.paths='/home/mpf/openmpf-projects:/home/mpf/openmpf-projects/openmpf-components/cpp' \
-        -Dcomponents.build.components='openmpf-components/java:openmpf-contrib-components:CaffeDetection:DarknetDetection:DlibFaceDetection:OalprLicensePlateTextDetection:SceneChangeDetection:TesseractOCRTextDetection' \
+        -Dcomponents.build.components='openmpf-components/java:openmpf-contrib-components:CaffeDetection:DarknetDetection:DlibFaceDetection:OalprLicensePlateTextDetection:SceneChangeDetection' \
         -Dstartup.auto.registration.skip=false \
         -Dcomponents.build.parallel.builds="$(nproc)" \
         -Dcomponents.build.make.jobs="$(nproc)" \

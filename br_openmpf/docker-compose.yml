@@ -123,7 +123,15 @@ services:
     volumes:
       - shared_data:/opt/mpf/share:rw
 
-
+  tesseract-ocr-text-detection:
+    image: br-tesseract-ocr-detection:latest
+    environment:
+      WFM_PASSWORD: mpfadm
+      WFM_USER: admin
+    networks:
+      - overlay
+    volumes:
+      - shared_data:/opt/mpf/share:rw
 
 volumes:
   shared_data:

@@ -6,8 +6,8 @@ cd /home/mpf/openmpf-docker/br_openmpf
 
 echo '=== OpenMPF Build ==='
 
-#export RUN_TESTS=true
-export RUN_TESTS=false
+export RUN_TESTS=true
+#export RUN_TESTS=false
 
 docker build -f openmpf_build/Dockerfile /home/mpf/openmpf-projects --build-arg RUN_TESTS \
   -t br-openmpf-build
@@ -43,3 +43,7 @@ docker build components -f components/cpp-executor/Dockerfile -t br-cpp-executor
 echo '=== OcvFace ==='
 docker build /home/mpf/openmpf-projects/openmpf-components/cpp/OcvFaceDetection --build-arg RUN_TESTS \
     -t br-ocv-face-detection
+
+echo '=== Tesseract ==='
+docker build /home/mpf/openmpf-projects/openmpf-components/cpp/TesseractOCRTextDetection --build-arg RUN_TESTS \
+    -t br-tesseract-ocr-detection
