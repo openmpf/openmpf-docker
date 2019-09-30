@@ -1,8 +1,9 @@
 #! /usr/bin/bash
 
 set -x
-
 set -e
+
+export RUN_TESTS=true
 ./build.sh
 
 docker-compose -f docker-compose-test.yml up --exit-code-from workflow-manager

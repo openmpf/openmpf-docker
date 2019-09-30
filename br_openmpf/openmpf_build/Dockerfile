@@ -126,6 +126,8 @@ RUN --mount=type=cache,target=/root/.m2/repository,id=mvn_cache \
         tar --extract --file /home/mpf/openmpf-projects/openmpf-build-tools/mpf-maven-deps.tar.gz \
             --directory /root/.m2/repository/; \
     fi; \
+    cp trunk/workflow-manager/src/main/resources/properties/mpf-private-example.properties \
+        trunk/workflow-manager/src/main/resources/properties/mpf-private.properties; \
     mvn package \
         -DskipTests -Dmaven.test.skip=true -DskipITs \
         -Dcargo.maven.skip=true \
@@ -174,8 +176,8 @@ RUN --mount=type=cache,target=/root/.m2/repository,id=mvn_cache \
 
 WORKDIR /build-artifacts
 
-RUN ln --symbolic /home/mpf/openmpf-projects/openmpf/trunk/workflow-manager/target/workflow-manager \
-                  /build-artifacts/workflow-manager; \
+RUN ln --symbolic /home/mpf/openmpf-projects/openmpf/trunk/workflow-manager/target/workflow-manager.war \
+                  /build-artifacts/workflow-manager.war; \
     ln --symbolic /home/mpf/openmpf-projects/openmpf/trunk/install \
                   /build-artifacts/install; \
     ln --symbolic /root/mpf-sdk-install \

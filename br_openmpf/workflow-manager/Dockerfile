@@ -10,7 +10,7 @@ SHELL ["/bin/bash", "-o", "errexit", "-o", "pipefail", "-c"]
 RUN yum-config-manager --setopt=override_install_langs='' --save; \
     yum install --assumeyes --nogpgcheck https://download1.rpmfusion.org/free/el/rpmfusion-free-release-7.noarch.rpm \
             https://download1.rpmfusion.org/nonfree/el/rpmfusion-nonfree-release-7.noarch.rpm; \
-    yum install --assumeyes java-11-openjdk ffmpeg; \
+    yum install --assumeyes java-11-openjdk ffmpeg tomcat-native; \
     yum clean all; \
     rm -rf /var/cache/yum/*;
 
@@ -31,9 +31,7 @@ RUN curl --location 'http://archive.apache.org/dist/tomcat/tomcat-8/v8.5.41/bin/
         /opt/apache-tomcat/conf/context.xml;
 
 
-
-
-COPY --from=openmpf-build /build-artifacts/workflow-manager /opt/apache-tomcat/webapps/workflow-manager
+COPY --from=openmpf-build /build-artifacts/workflow-manager.war /opt/apache-tomcat/webapps/
 
 ENV MPF_HOME /opt/mpf
 
@@ -56,14 +54,12 @@ ENV CORE_MPF_NODES=''
 ENV LD_LIBRARY_PATH=/usr/lib64:/opt/apache-tomcat/webapps/workflow-manager/WEB-INF/classes
 ENV PATH=$PATH:$MPF_HOME/bin
 ENV JAVA_HOME=/usr/lib/jvm/jre-11
-ENV CATALINA_OPTS "-Dtransport.guarantee='NONE' -Dweb.rest.protocol='http'"
 
 # The workflow manager must be added as an mpf-child so that plugin packages are
 # extracted at startup, which is necessary for component auto-registration.
 RUN mkdir /etc/ansible; \
     echo '[mpf-child]' >> /etc/ansible/hosts; \
     echo $THIS_MPF_NODE >> /etc/ansible/hosts;
-
 
 
 EXPOSE 8080 8443

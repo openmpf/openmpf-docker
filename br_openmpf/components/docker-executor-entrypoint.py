@@ -132,8 +132,8 @@ def post_descriptor_with_retry(descriptor_path, url, headers, ssl_ctx):
             if err.code != 404:
                 raise
             print('Registration failed due to "{}". This is either because Tomcat has started, but the '
-                  'Workflow Manager is still deploying or because the wrong URL was used for the WFM_BASE_URL '
-                  'environment variable. Registration will be re-attempted in 5 seconds.'.format(err))
+                  'Workflow Manager is still deploying or because the wrong URL was used for the WFM_BASE_URL(={}) '
+                  'environment variable. Registration will be re-attempted in 5 seconds.'.format(err, url))
 
         except urllib2.URLError as err:
             reason = err.reason
@@ -152,8 +152,8 @@ def post_descriptor_with_retry(descriptor_path, url, headers, ssl_ctx):
             if not should_retry_after_delay:
                 raise
             print('Registration failed due to "{}". This is either because the Workflow Manager is still starting or '
-                  'because the wrong URL was used for the WFM_BASE_URL environment variable. Registration will '
-                  'be re-attempted in 5 seconds.'.format(reason.strerror))
+                  'because the wrong URL was used for the WFM_BASE_URL(={}) environment variable. Registration will '
+                  'be re-attempted in 5 seconds.'.format(reason.strerror, url))
         time.sleep(5)
 
 
