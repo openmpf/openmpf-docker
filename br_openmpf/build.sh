@@ -5,8 +5,8 @@ set -x
 cd /home/mpf/openmpf-docker/br_openmpf
 
 
-#export RUN_TESTS=${RUN_TESTS:-false}
-export RUN_TESTS=${RUN_TESTS:-true}
+export RUN_TESTS=${RUN_TESTS:-false}
+#export RUN_TESTS=${RUN_TESTS:-true}
 
 
 echo '=== OpenMPF Build ==='

@@ -24,10 +24,11 @@ RUN yum install --assumeyes --nogpgcheck epel-release \
     virtualenv "$COMPONENT_VIRTUALENV";
 
 
-# Use mount so the .whl files don't end up in image
-RUN --mount=type=bind,from=openmpf-build,source=/build-artifacts/install/python,target=/tmp/python \
-    "$COMPONENT_VIRTUALENV/bin/pip" install --no-cache-dir --no-index --find-links /tmp/python/wheelhouse \
-            /tmp/python/wheelhouse/*
+# Use mount so the source files don't end up in image
+RUN --mount=type=bind,from=openmpf-build,source=/home/mpf/openmpf-projects/openmpf-python-component-sdk/detection,target=/tmp/python \
+    "$COMPONENT_VIRTUALENV/bin/pip" install --no-cache-dir /tmp/python/api /tmp/python/component_util; \
+    "$COMPONENT_VIRTUALENV/bin/python" /tmp/python/component_util/tests/__main__.py;
+
 
 # Use mount and cp shell command because docker COPY resolves symlinks which will end up duplicate copies the libraries.
 RUN --mount=type=bind,from=openmpf-build,source=/build-artifacts/install/lib,target=/tmp/mpf-libs \
