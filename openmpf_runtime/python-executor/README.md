@@ -84,7 +84,7 @@ every time you modify your source code. For example:
 FROM openmpf_python-executor:latest
 
 # Replace with your actual dependencies
-RUN "$COMPONENT_VIRTUALENV/bin/pip" install --no-cache-dir 'opencv-python>=3.3' 'tensorflow'
+RUN "$COMPONENT_VIRTUALENV/bin/pip" install --no-cache-dir 'opencv-python>=3.4.7' 'tensorflow'
 
 COPY . /home/mpf/component_src/
 
