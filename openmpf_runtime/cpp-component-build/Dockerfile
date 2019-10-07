@@ -42,7 +42,7 @@ RUN yum install -y epel-release \
     && yum clean all \
     && rm -rf /var/cache/yum/*
 
-COPY --from=openmpf_build /opt/opencv-3.3.0 /opt/
+COPY --from=openmpf_build /opt/opencv-3.4.7 /opt/
 
 # Normally components' CMakeList.txt file includes include(../ComponentSetup.cmake) but since that is outside of the
 # components' build context we create it here.

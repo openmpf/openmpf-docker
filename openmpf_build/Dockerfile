@@ -136,15 +136,15 @@ RUN wget -nv -O /apps/source/google_sources/protobuf-2.5.0.tar.gz \
 # Build OpenCV                                                                 #
 ################################################################################
 
-# OpenCV 3.3.0:
+# OpenCV 3.4.7:
 RUN cd /apps/source/opencv_sources && git clone https://github.com/opencv/opencv.git && \
-    cd opencv && git checkout 3.3.0 && mkdir release && cd release && \
+    cd opencv && git checkout 3.4.7 && mkdir release && cd release && \
     PKG_CONFIG_PATH="/apps/install/lib/pkgconfig" cmake3 \
     -DCMAKE_BUILD_TYPE=Release -DWITH_GSTREAMER:BOOL="0" -DWITH_OPENMP:BOOL="1" \
     -DBUILD_opencv_apps:BOOL="0" -DWITH_OPENCLAMDBLAS:BOOL="0" \
     -DWITH_CUDA:BOOL="0" -DCLAMDFFT_ROOT_DIR:PATH="CLAMDFFT_ROOT_DIR-NOTFOUND" \
     -DBUILD_opencv_aruco:BOOL="0" \
-    -DCMAKE_INSTALL_PREFIX:PATH="/apps/install/opencv3.3.0" -DWITH_WEBP:BOOL="0" \
+    -DCMAKE_INSTALL_PREFIX:PATH="/apps/install/opencv3.4.7" -DWITH_WEBP:BOOL="0" \
     -DBZIP2_LIBRARIES:FILEPATH="BZIP2_LIBRARIES-NOTFOUND" \
     -DWITH_GIGEAPI:BOOL="0" -DWITH_JPEG:BOOL="1" -DWITH_CUFFT:BOOL="0" \
     -DWITH_IPP:BOOL="0" -DWITH_V4L:BOOL="1" -DWITH_GDAL:BOOL="0" \
@@ -154,11 +154,11 @@ RUN cd /apps/source/opencv_sources && git clone https://github.com/opencv/opencv
     -DBUILD_opencv_ts:BOOL="0" -DWITH_MATLAB:BOOL="0" -DWITH_OPENCL:BOOL="0" \
     -DWITH_PVAPI:BOOL="0" -DENABLE_CXX11:BOOL=“1” .. && \
     make -j$(nproc) && make install && \
-    sh -c 'echo "/apps/install/opencv3.3.0/lib" >> /etc/ld.so.conf.d/mpf-x86_64.conf' && \
-    ln -sf /apps/install/opencv3.3.0 /opt/opencv-3.3.0 && \
-    ln -sf /apps/install/opencv3.3.0/include/opencv2 /usr/local/include/opencv2 && \
-    ln -sf /apps/install/opencv3.3.0/include/opencv /usr/local/include/opencv && \
-    ldconfig && export OpenCV_DIR=/opt/opencv-3.3.0/share/OpenCV
+    sh -c 'echo "/apps/install/opencv3.4.7/lib" >> /etc/ld.so.conf.d/mpf-x86_64.conf' && \
+    ln -sf /apps/install/opencv3.4.7 /opt/opencv-3.4.7 && \
+    ln -sf /apps/install/opencv3.4.7/include/opencv2 /usr/local/include/opencv2 && \
+    ln -sf /apps/install/opencv3.4.7/include/opencv /usr/local/include/opencv && \
+    ldconfig && export OpenCV_DIR=/opt/opencv-3.4.7/share/OpenCV
 
 ################################################################################
 # Build Component-Specific Dependencies                                        #
@@ -171,6 +171,13 @@ RUN wget -nv -O /apps/source/config4cpp.tar.gz "http://www.config4star.org/downl
     "http://dlib.net/files/dlib-18.18.tar.bz2" && tar xvjf dlib-18.18.tar.bz2 && \
     cd dlib-18.18/dlib && mkdir build && cd build && cmake3 ../ && \
     cmake3 --build . --config Release && make install
+
+# ImageMagick6:
+RUN yum install -y http://rpms.remirepo.net/enterprise/remi-release-7.rpm && \
+    yum --enablerepo=remi install -y ImageMagick6 ImageMagick6-c++ \
+    ImageMagick6-c++-devel ImageMagick6-devel ImageMagick6-libs \
+    libgif libjpeg libpng libtiff zlib ghostscript && \
+    yum clean all && rm -rf /var/cache/yum/*
 
 # Leptonica 1.75.0:
 RUN wget -nv -O /apps/source/tesseract_sources/leptonica-1.75.0.tar.gz \
@@ -196,12 +203,6 @@ RUN cd /apps/source/openalpr_sources && git clone https://github.com/openalpr/op
     -D CMAKE_INSTALL_PREFIX:PATH=/usr/local -D WITH_DAEMON=OFF .. && \
     make install -j && \
     ldconfig
-
-# ImageMagick6:
-RUN yum install -y http://rpms.remirepo.net/enterprise/remi-release-7.rpm && \
-    yum --enablerepo=remi install -y ImageMagick6 ImageMagick6-c++ \
-    ImageMagick6-c++-devel ImageMagick6-devel ImageMagick6-libs && \
-    yum clean all && rm -rf /var/cache/yum/*
 
 # Install locales:
 RUN sed -i "/^override_install_lang/d" /etc/yum.conf && \

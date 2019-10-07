@@ -46,11 +46,13 @@ def runGTests = env.getProperty("run_gtests").toBoolean()
 def runMvnTests = env.getProperty("run_mvn_tests").toBoolean()
 def mvnTestOptions = env.getProperty("mvn_test_options")
 def buildRuntimeImages = env.getProperty("build_runtime_images").toBoolean()
+def buildNoCache = env.getProperty("build_no_cache").toBoolean() ?: false
 def pushRuntimeImages = env.getProperty("push_runtime_images").toBoolean()
 def pollReposAndEndBuild = env.getProperty("poll_repos_and_end_build")?.toBoolean() ?: false
 
 def dockerRegistryHost = env.getProperty("docker_registry_host")
 def dockerRegistryPort = env.getProperty("docker_registry_port")
+def dockerRegistryPath = env.getProperty("docker_registry_path") ?: "/openmpf"
 def dockerRegistryCredId = env.getProperty("docker_registry_cred_id")
 def jenkinsNodes = env.getProperty("jenkins_nodes")
 def extraTestDataPath = env.getProperty("extra_test_data_path")
@@ -163,9 +165,22 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
             sh 'git reset --hard HEAD'
         }
 
-        def dockerRegistryHostAndPort = dockerRegistryHost + ':' + dockerRegistryPort
-        def remoteImageTagPrefix = dockerRegistryHostAndPort + '/openmpf/'
+        def dockerRegistryHostAndPort = dockerRegistryHost
+        if (dockerRegistryPort) {
+            dockerRegistryHostAndPort += ':' + dockerRegistryPort
+        }
 
+        def remoteImageTagPrefix = dockerRegistryHostAndPort
+        if (dockerRegistryPath) {
+            if (!dockerRegistryPath.startsWith("/")) {
+                remoteImageTagPrefix += "/"
+            }
+            remoteImageTagPrefix += dockerRegistryPath
+            if (!dockerRegistryPath.endsWith("/")) {
+                remoteImageTagPrefix += "/"
+            }
+        }
+        
         def buildImageName = remoteImageTagPrefix + 'openmpf_build:' + imageTag
         def buildContainerId
 
@@ -319,6 +334,7 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                 buildShas += ', ' + getBuildShasStr(coreRepos)
 
                 sh 'docker build openmpf_build/' +
+                        (buildNoCache ? ' --no-cache' : '' ) +
                         ' --build-arg BUILD_REGISTRY=' + remoteImageTagPrefix +
                         ' --build-arg BUILD_TAG=' + imageTag +
                         ' --build-arg BUILD_DATE=' + buildDate +
@@ -334,6 +350,7 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                     // Build the new build image for custom components using the original build image for open source
                     // components. This overwrites the original build image tag.
                     sh 'docker build openmpf_custom_build/' +
+                            (buildNoCache ? ' --no-cache' : '' ) +
                             ' --build-arg BUILD_REGISTRY=' + remoteImageTagPrefix +
                             ' --build-arg BUILD_TAG=' + imageTag +
                             ' --build-arg BUILD_DATE=' + buildDate +
@@ -391,6 +408,7 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                     when (buildRuntimeImages) { // if false, don't show this step in the Stage View UI
                         sh 'DOCKER_BUILDKIT=1 docker build openmpf_runtime' +
                                 ' --file openmpf_runtime/python-executor/Dockerfile ' +
+                                (buildNoCache ? ' --no-cache' : '' ) +
                                 ' --build-arg BUILD_REGISTRY=' + remoteImageTagPrefix +
                                 ' --build-arg BUILD_TAG=' + imageTag +
                                 ' --build-arg BUILD_DATE=' + buildDate +
@@ -399,6 +417,7 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
 
                         sh 'DOCKER_BUILDKIT=1 docker build openmpf_runtime' +
                                 ' --file openmpf_runtime/cpp-component-build/Dockerfile ' +
+                                (buildNoCache ? ' --no-cache' : '' ) +
                                 ' --build-arg BUILD_REGISTRY=' + remoteImageTagPrefix +
                                 ' --build-arg BUILD_TAG=' + imageTag +
                                 ' --build-arg BUILD_DATE=' + buildDate +
@@ -407,6 +426,7 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
 
                         sh 'DOCKER_BUILDKIT=1 docker build openmpf_runtime' +
                                 ' --file openmpf_runtime/cpp-executor/Dockerfile ' +
+                                (buildNoCache ? ' --no-cache' : '' ) +
                                 ' --build-arg BUILD_REGISTRY=' + remoteImageTagPrefix +
                                 ' --build-arg BUILD_TAG=' + imageTag +
                                 ' --build-arg BUILD_DATE=' + buildDate +
@@ -414,6 +434,7 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                                 " -t '${cppExecutorImageName}'"
 
                         sh 'docker-compose build' +
+                                (buildNoCache ? ' --no-cache' : '' ) +
                                 ' --build-arg BUILD_REGISTRY=' + remoteImageTagPrefix +
                                 ' --build-arg BUILD_TAG=' + imageTag +
                                 ' --build-arg BUILD_DATE=' + buildDate +
@@ -488,6 +509,7 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                     // That way, we do not have to modify the compose files. This overwrites the tag that referred
                     // to the original Workflow Manager image without the custom config.
                     sh 'docker build openmpf_custom_config/workflow-manager' +
+                            (buildNoCache ? ' --no-cache' : '' ) +
                             ' --build-arg BUILD_REGISTRY=' + remoteImageTagPrefix +
                             ' --build-arg BUILD_TAG=' + imageTag +
                             ' --build-arg BUILD_DATE=' + buildDate +
@@ -496,6 +518,7 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
 
                     // Build and tag the new ActiveMQ image with the image tag used in the compose files.
                     sh 'docker build openmpf_custom_config/activemq' +
+                            (buildNoCache ? ' --no-cache' : '' ) +
                             ' --build-arg BUILD_REGISTRY=' + remoteImageTagPrefix +
                             ' --build-arg BUILD_TAG=' + imageTag +
                             ' --build-arg BUILD_DATE=' + buildDate +
