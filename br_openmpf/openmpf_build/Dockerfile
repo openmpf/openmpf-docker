@@ -37,12 +37,12 @@ ENV JAVA_HOME=/etc/alternatives/java_sdk
 
 RUN mkdir /tmp/opencv; \
     cd  /tmp/opencv; \
-    curl --location 'https://github.com/opencv/opencv/archive/3.3.0.tar.gz' \
+    curl --location 'https://github.com/opencv/opencv/archive/3.4.7.tar.gz' \
         | tar --extract --gzip; \
-    cd opencv-3.3.0; \
+    cd opencv-3.4.7; \
     mkdir build; \
     cd build; \
-    cmake3 -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX:PATH="/opt/opencv-3.3.0" \
+    cmake3 -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX:PATH="/opt/opencv-3.4.7" \
         -DWITH_GSTREAMER:BOOL="0" -DWITH_OPENMP:BOOL="1" \
         -DBUILD_opencv_apps:BOOL="0" -DWITH_OPENCLAMDBLAS:BOOL="0" \
         -DWITH_CUDA:BOOL="0" -DCLAMDFFT_ROOT_DIR:PATH="CLAMDFFT_ROOT_DIR-NOTFOUND" \
@@ -56,8 +56,8 @@ RUN mkdir /tmp/opencv; \
         -DBUILD_opencv_ts:BOOL="0" -DWITH_MATLAB:BOOL="0" -DWITH_OPENCL:BOOL="0" \
         -DWITH_PVAPI:BOOL="0" -DENABLE_CXX11:BOOL="1" ..; \
     make --jobs "$(nproc)" install; \
-    ln --symbolic /opt/opencv-3.3.0/include/opencv2 /usr/local/include/opencv2; \
-    ln --symbolic /opt/opencv-3.3.0/include/opencv /usr/local/include/opencv; \
+    ln --symbolic /opt/opencv-3.4.7/include/opencv2 /usr/local/include/opencv2; \
+    ln --symbolic /opt/opencv-3.4.7/include/opencv /usr/local/include/opencv; \
     rm --recursive /tmp/opencv
 
 

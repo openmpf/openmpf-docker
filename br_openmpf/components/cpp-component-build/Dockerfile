@@ -15,7 +15,7 @@ RUN yum-config-manager --setopt=override_install_langs='' --save; \
     yum clean all; \
     rm --recursive /var/cache/yum/*;
 
-COPY --from=openmpf-build /opt/opencv-3.3.0 /opt/
+COPY --from=openmpf-build /opt/opencv-3.4.7 /opt/opencv-3.4.7
 
 # Normally components' CMakeList.txt file includes include(../ComponentSetup.cmake) but since that is outside of the
 # components' build context we create it here.
