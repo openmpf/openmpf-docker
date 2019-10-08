@@ -46,7 +46,7 @@ def runGTests = env.getProperty("run_gtests").toBoolean()
 def runMvnTests = env.getProperty("run_mvn_tests").toBoolean()
 def mvnTestOptions = env.getProperty("mvn_test_options")
 def buildRuntimeImages = env.getProperty("build_runtime_images").toBoolean()
-def buildNoCache = env.getProperty("build_no_cache").toBoolean() ?: false
+def buildNoCache = env.getProperty("build_no_cache")?.toBoolean() ?: false
 def pushRuntimeImages = env.getProperty("push_runtime_images").toBoolean()
 def pollReposAndEndBuild = env.getProperty("poll_repos_and_end_build")?.toBoolean() ?: false
 
