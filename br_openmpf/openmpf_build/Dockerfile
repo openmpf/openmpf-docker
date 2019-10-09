@@ -1,8 +1,30 @@
 # syntax=docker/dockerfile:experimental
 
+#############################################################################
+# NOTICE                                                                    #
+#                                                                           #
+# This software (or technical data) was produced for the U.S. Government    #
+# under contract, and is subject to the Rights in Data-General Clause       #
+# 52.227-14, Alt. IV (DEC 2007).                                            #
+#                                                                           #
+# Copyright 2019 The MITRE Corporation. All Rights Reserved.                #
+#############################################################################
 
-ARG BUILD_REGISTRY
-ARG BUILD_TAG=latest
+#############################################################################
+# Copyright 2019 The MITRE Corporation                                      #
+#                                                                           #
+# Licensed under the Apache License, Version 2.0 (the "License");           #
+# you may not use this file except in compliance with the License.          #
+# You may obtain a copy of the License at                                   #
+#                                                                           #
+#    http://www.apache.org/licenses/LICENSE-2.0                             #
+#                                                                           #
+# Unless required by applicable law or agreed to in writing, software       #
+# distributed under the License is distributed on an "AS IS" BASIS,         #
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  #
+# See the License for the specific language governing permissions and       #
+# limitations under the License.                                            #
+#############################################################################
 
 
 FROM centos:7 as openmpf-build
@@ -22,10 +44,7 @@ RUN yum-config-manager --setopt=override_install_langs='' --save; \
             # dlib dependencies
             bzip2 \
             # OALPR dependencies
-            libjpeg-devel libpng-devel libtiff-devel zlib \
-            # integration test dependencies
-            # TODO: move to integration tests Dockerfile or disable ansible tests
-            ansible; \
+            libjpeg-devel libpng-devel libtiff-devel zlib; \
     yum clean all; \
     rm --recursive --force /var/cache/yum/*; \
     pip install --upgrade --no-cache-dir pip wheel; \
@@ -139,15 +158,14 @@ RUN --mount=type=cache,target=/root/.m2/repository,id=mvn_cache \
         -Dstartup.auto.registration.skip=false \
         -Dcomponents.build.parallel.builds="$(nproc)" \
         -Dcomponents.build.make.jobs="$(nproc)" \
-        -DgitBranch='test' \
-        -DgitShortId='123' \
-        -DjenkinsBuildNumber=2; \
+        -DgitBranch='' \
+        -DgitShortId='' \
+        -DjenkinsBuildNumber=1; \
     # Use nullglob to avoid entering for loop when no glob matches.
     # Use globstar to enable ** globs.
     shopt -s nullglob globstar; \
     if [ "${RUN_TESTS,,}" = true ]; then \
         cd /root/mpf-component-build; \
-        # find . -path '*/test/*Test' -print0 | xargs --null -r -I{} sh -c 'cd $(dirname {}) && ./$(basename {})'; \
         for test_executable in **/test/*Test; do \
             cd "$(dirname "$test_executable")"; \
             ./"$(basename "$test_executable")"; \
@@ -173,7 +191,6 @@ RUN --mount=type=cache,target=/root/.m2/repository,id=mvn_cache \
     rm --recursive /root/mpf-component-build;
 
 
-
 WORKDIR /build-artifacts
 
 RUN ln --symbolic /home/mpf/openmpf-projects/openmpf/trunk/workflow-manager/target/workflow-manager.war \
@@ -184,4 +201,16 @@ RUN ln --symbolic /home/mpf/openmpf-projects/openmpf/trunk/workflow-manager/targ
                   /build-artifacts/mpf-sdk-install;
 
 
+ARG BUILD_DATE
+ARG BUILD_SHAS
+ARG BUILD_TAG
 
+LABEL org.label-schema.build-date=$BUILD_DATE \
+      org.label-schema.license="Mixed" \
+      org.label-schema.name="OpenMPF Build Environment" \
+      org.label-schema.schema-version="1.0" \
+      org.label-schema.url="https://openmpf.github.io" \
+      org.label-schema.vcs-ref=$BUILD_SHAS \
+      org.label-schema.vcs-url="https://github.com/openmpf/openmpf-projects" \
+      org.label-schema.vendor="MITRE" \
+      org.label-schema.version=$BUILD_TAG

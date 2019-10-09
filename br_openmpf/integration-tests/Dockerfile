@@ -62,9 +62,6 @@ COPY --from=download-dependencies /root/.m2/repository /root/.m2/repository
 COPY --from=download-dependencies /scripts/wait-for-it.sh /scripts/wait-for-it.sh
 
 ENV THIS_MPF_NODE=workflow-manager
-RUN echo '[mpf-child]' >> /etc/ansible/hosts; \
-    echo $THIS_MPF_NODE >> /etc/ansible/hosts
-
 
 ENV MPF_HOME /opt/mpf
 
