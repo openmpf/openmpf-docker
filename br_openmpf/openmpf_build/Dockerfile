@@ -139,22 +139,26 @@ ENV MPF_HOME /home/mpf/openmpf-projects/openmpf/trunk/install
 WORKDIR /home/mpf/openmpf-projects/openmpf
 
 ARG RUN_TESTS=false
+ARG BUILD_PACKAGE_JSON=/home/mpf/openmpf-projects/openmpf/trunk/jenkins/scripts/config_files/openmpf-open-source-package.json
 
 RUN --mount=type=cache,target=/root/.m2/repository,id=mvn_cache \
+    # Copy to shell variable so that parameter expansion works
+    build_package_json="$BUILD_PACKAGE_JSON"; \
+    if [ "${build_package_json:0:1}" != '/' ]; then \
+        build_package_json="/home/mpf/openmpf-projects/openmpf/trunk/jenkins/scripts/config_files/$build_package_json"; \
+    fi; \
+
     if [ ! -e /root/.m2/repository/edu/cmu/sphinx ]; then \
         tar --extract --file /home/mpf/openmpf-projects/openmpf-build-tools/mpf-maven-deps.tar.gz \
             --directory /root/.m2/repository/; \
     fi; \
+
     cp trunk/workflow-manager/src/main/resources/properties/mpf-private-example.properties \
         trunk/workflow-manager/src/main/resources/properties/mpf-private.properties; \
     mvn package \
         -DskipTests -Dmaven.test.skip=true -DskipITs \
         -Dcargo.maven.skip=true \
-#        -Dcomponents.build.search.paths='/home/mpf/openmpf-projects' \
-#        -Dcomponents.build.components='openmpf-components/java:openmpf-components/cpp:openmpf-contrib-components' \
-#        -Dcomponents.build.components='openmpf-components/java:openmpf-contrib-components' \
-        -Dcomponents.build.search.paths='/home/mpf/openmpf-projects:/home/mpf/openmpf-projects/openmpf-components/cpp' \
-        -Dcomponents.build.components='openmpf-components/java:openmpf-contrib-components:CaffeDetection:DarknetDetection:DlibFaceDetection:OalprLicensePlateTextDetection:SceneChangeDetection' \
+        -Dcomponents.build.package.json="$build_package_json" \
         -Dstartup.auto.registration.skip=false \
         -Dcomponents.build.parallel.builds="$(nproc)" \
         -Dcomponents.build.make.jobs="$(nproc)" \
