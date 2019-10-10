@@ -60,7 +60,7 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
             cd ../openmpf-components
             git checkout 'origin/$openmpfComponentsBranch'
 
-            cd ../openmpf-contrib-component
+            cd ../openmpf-contrib-components
             git checkout 'origin/$openmpfContribComponentsBranch'
 
             cd ../openmpf-cpp-component-sdk
