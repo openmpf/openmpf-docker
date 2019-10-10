@@ -1,3 +1,5 @@
+#! /bin/bash
+
 #############################################################################
 # NOTICE                                                                    #
 #                                                                           #
@@ -24,43 +26,12 @@
 # limitations under the License.                                            #
 #############################################################################
 
-# Use this file in conjunction with docker-compose.core.yml.
+set -o errexit -o pipefail -o xtrace
 
-version: '3.7'
+src_dir="${SRC_DIR:-/home/mpf/component_src}"
+build_dir="${BUILD_DIR:-/home/mpf/component_build}"
 
-x-detection-component-base:
-  &detection-component-base
-  environment:
-    - WFM_USER=${WFM_USER}
-    - WFM_PASSWORD=${WFM_PASSWORD}
-  depends_on:
-    - workflow-manager
-  volumes:
-    - shared_data:/opt/mpf/share
-  networks:
-    - overlay
-
-services:
-  east-text-detection:
-    <<: *detection-component-base
-    image: ${REGISTRY}openmpf_east_text_detection:${TAG}
-    build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/python/EastTextDetection
-    deploy:
-      mode: global
-      resources:
-        limits:
-          cpus: "2.0"
-
-  ocv-face-detection:
-    <<: *detection-component-base
-    image: ${REGISTRY}openmpf_ocv_face_detection:${TAG}
-    build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/cpp/OcvFaceDetection
-    deploy:
-      mode: global
-
-  tesseract-ocr-text-detection:
-    <<: *detection-component-base
-    image: ${REGISTRY}openmpf_tesseract_ocr_text_detection:${TAG}
-    build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/cpp/TesseractOCRTextDetection
-    deploy:
-      mode: global
+mkdir --parents "$build_dir"
+cd "$build_dir"
+cmake3 "$src_dir"
+make --jobs "$(nproc)"

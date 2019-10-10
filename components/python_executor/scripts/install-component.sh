@@ -1,3 +1,5 @@
+#! /bin/bash
+
 #############################################################################
 # NOTICE                                                                    #
 #                                                                           #
@@ -24,43 +26,30 @@
 # limitations under the License.                                            #
 #############################################################################
 
-# Use this file in conjunction with docker-compose.core.yml.
+set -o errexit -o pipefail -o xtrace
 
-version: '3.7'
+mkdir --parents "$MPF_HOME/plugins/plugin"
 
-x-detection-component-base:
-  &detection-component-base
-  environment:
-    - WFM_USER=${WFM_USER}
-    - WFM_PASSWORD=${WFM_PASSWORD}
-  depends_on:
-    - workflow-manager
-  volumes:
-    - shared_data:/opt/mpf/share
-  networks:
-    - overlay
+if [ -e /home/mpf/component_src/setup.py ]; then
+    echo 'Installing setuptools plugin'
+    cp --recursive /home/mpf/component_src/plugin-files/* "$MPF_HOME/plugins/plugin/"
 
-services:
-  east-text-detection:
-    <<: *detection-component-base
-    image: ${REGISTRY}openmpf_east_text_detection:${TAG}
-    build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/python/EastTextDetection
-    deploy:
-      mode: global
-      resources:
-        limits:
-          cpus: "2.0"
 
-  ocv-face-detection:
-    <<: *detection-component-base
-    image: ${REGISTRY}openmpf_ocv_face_detection:${TAG}
-    build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/cpp/OcvFaceDetection
-    deploy:
-      mode: global
+    if [ -d /home/mpf/component_src/plugin-files/wheelhouse ]; then
+        "$COMPONENT_VIRTUALENV/bin/pip" install \
+            --find-links /home/mpf/component_src/plugin-files/wheelhouse \
+            --no-cache-dir /home/mpf/component_src
+    else
+        "$COMPONENT_VIRTUALENV/bin/pip" install \
+            --no-cache-dir /home/mpf/component_src
+    fi
+elif [ -e /home/mpf/component_src/descriptor/descriptor.json ]; then
+    echo 'Installing basic component'
+    cp --recursive /home/mpf/component_src/* "$MPF_HOME/plugins/plugin"
+else
+    echo 'ERROR: Expected either /home/mpf/component_src/setup.py or'\
+         '/home/mpf/component_src/descriptor/descriptor.json to exist.' \
+         'Did you forget to COPY or bind mount your component source code?'
+    exit 3
+fi
 
-  tesseract-ocr-text-detection:
-    <<: *detection-component-base
-    image: ${REGISTRY}openmpf_tesseract_ocr_text_detection:${TAG}
-    build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/cpp/TesseractOCRTextDetection
-    deploy:
-      mode: global

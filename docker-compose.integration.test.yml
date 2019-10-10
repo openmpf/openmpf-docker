@@ -33,10 +33,10 @@ services:
   mysql-database:
     image: mariadb:latest
     environment:
-      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
-      - MYSQL_DATABASE=${MYSQL_DATABASE}
-      - MYSQL_USER=${MYSQL_USER}
-      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+      - MYSQL_ROOT_PASSWORD=password
+      - MYSQL_DATABASE=mpf
+      - MYSQL_USER=mpf
+      - MYSQL_PASSWORD=mpf
     # https://github.com/docker-library/mariadb/issues/113
     command: [
       '--wait_timeout=28800',
@@ -51,12 +51,10 @@ services:
           - node.role == manager
 
   activemq:
-    image: ${REGISTRY}openmpf_activemq:${TAG}
-    build:
-      context: ./activemq
+    image: openmpf_activemq
     environment:
       # Set which configuration files are used at runtime:
-      - ACTIVE_MQ_PROFILE=${ACTIVE_MQ_PROFILE}
+      - ACTIVE_MQ_PROFILE=default
     ports:
       - "8161:8161"
     networks:
@@ -68,20 +66,22 @@ services:
       - overlay
 
   workflow-manager:
-    image: ${REGISTRY}openmpf_workflow_manager:${TAG}
-    build: workflow_manager
+    image: openmpf_integration_tests
+    build: integration_tests
     depends_on:
       - mysql-database
       - redis
       - activemq
-    restart: always
+      - node-manager
     environment:
       # The following line is needed to wait until the mySQL service is available:
-      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - MYSQL_ROOT_PASSWORD=password
     ports:
       - "8080:8080"
     volumes:
+#      - shared_data:/home/mpf/openmpf-projects/openmpf/trunk/install/share
       - shared_data:/opt/mpf/share
+      - /home/mpf/temp/test-reports:/test-reports
     networks:
       - overlay
     deploy:
@@ -90,15 +90,35 @@ services:
           - node.role == manager
 
   node-manager:
-    image: ${REGISTRY}openmpf_node_manager:${TAG}
-    build:
-      context: node_manager
+    image: openmpf_node_manager
+    build: node_manager
     volumes:
       - shared_data:/opt/mpf/share
     networks:
       - overlay
     deploy:
       mode: global
+
+  ocv-face-detection:
+    image: openmpf_ocv_face_detection
+    environment:
+      WFM_PASSWORD: mpfadm
+      WFM_USER: admin
+    networks:
+      - overlay
+    volumes:
+      - shared_data:/opt/mpf/share:rw
+
+  tesseract-ocr-text-detection:
+    image: openmpf_tesseract_ocr_text_detection
+    environment:
+      WFM_PASSWORD: mpfadm
+      WFM_USER: admin
+    networks:
+      - overlay
+    volumes:
+      - shared_data:/opt/mpf/share:rw
+
 
 volumes:
   shared_data:

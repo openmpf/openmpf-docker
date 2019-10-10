@@ -1,3 +1,5 @@
+#! /usr/bin/env python
+
 #############################################################################
 # NOTICE                                                                    #
 #                                                                           #
@@ -24,43 +26,52 @@
 # limitations under the License.                                            #
 #############################################################################
 
-# Use this file in conjunction with docker-compose.core.yml.
 
-version: '3.7'
+from __future__ import print_function, division
 
-x-detection-component-base:
-  &detection-component-base
-  environment:
-    - WFM_USER=${WFM_USER}
-    - WFM_PASSWORD=${WFM_PASSWORD}
-  depends_on:
-    - workflow-manager
-  volumes:
-    - shared_data:/opt/mpf/share
-  networks:
-    - overlay
+import BaseHTTPServer
+import json
+import os
 
-services:
-  east-text-detection:
-    <<: *detection-component-base
-    image: ${REGISTRY}openmpf_east_text_detection:${TAG}
-    build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/python/EastTextDetection
-    deploy:
-      mode: global
-      resources:
-        limits:
-          cpus: "2.0"
+def main():
+    server = BaseHTTPServer.HTTPServer(('', 8080), RequestHandler)
+    server.serve_forever()
 
-  ocv-face-detection:
-    <<: *detection-component-base
-    image: ${REGISTRY}openmpf_ocv_face_detection:${TAG}
-    build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/cpp/OcvFaceDetection
-    deploy:
-      mode: global
 
-  tesseract-ocr-text-detection:
-    <<: *detection-component-base
-    image: ${REGISTRY}openmpf_tesseract_ocr_text_detection:${TAG}
-    build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/cpp/TesseractOCRTextDetection
-    deploy:
-      mode: global
+class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
+    error_content_type = 'application/json'
+    error_message_format = '{"message": "%(message)s"}'
+
+    def do_POST(self):
+        try:
+            content_len = int(self.headers.getheader('Content-Length'))
+            post_body = self.rfile.read(content_len)
+            descriptor = json.loads(post_body)
+            component_name = descriptor['componentName']
+        except (ValueError, KeyError):
+            self.send_error(400, 'Failed to parse component descriptor.')
+            raise
+
+        print('Received descriptor for', component_name)
+
+        descriptor_dir = os.path.join(os.getenv('MPF_HOME', '/opt/mpf'), 'plugins', component_name, 'descriptor')
+
+        if not os.path.exists(descriptor_dir):
+            os.makedirs(descriptor_dir)
+
+        descriptor_path = os.path.join(descriptor_dir, 'descriptor.json')
+        if os.path.exists(descriptor_path):
+            print('Replacing descriptor at:', descriptor_path)
+        else:
+            print('Saving descriptor at:', descriptor_path)
+
+        with open(descriptor_path, 'w') as f:
+            f.write(post_body)
+
+        self.send_response(200)
+        self.end_headers()
+        self.wfile.write('{"message": "Descriptor stored."}')
+
+
+if __name__ == '__main__':
+    main()

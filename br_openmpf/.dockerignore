@@ -1,8 +1,0 @@
-**/target
-**/.idea
-**/.git
-**/cmake-build*
-**/build
-**/*.iml
-**/openmpf/trunk/install
-

@@ -1,3 +1,5 @@
+# syntax=docker/dockerfile:experimental
+
 #############################################################################
 # NOTICE                                                                    #
 #                                                                           #
@@ -24,319 +26,195 @@
 # limitations under the License.                                            #
 #############################################################################
 
-FROM centos:7.4.1708 as openmpf_build
-WORKDIR /home/mpf
 
-# TODO: "&&" remove source code after building libs.
+FROM centos:7 as openmpf_build
 
-################################################################################
-# Initial Setup                                                                #
-################################################################################
+SHELL ["/bin/bash", "-o", "errexit", "-o", "pipefail", "-c"]
 
-# Create the "mpf" user:
-RUN useradd -u 376 -U -d /home/mpf -ms /bin/bash -G wheel -p mpf mpf
+# Change config because the centos:7 image sets this yum property to en_US.utf8 which prevents other locales
+# (including other Engish locales) from being installed with GCC.
+RUN yum-config-manager --setopt=override_install_langs='' --save; \
+    yum install --assumeyes epel-release https://download1.rpmfusion.org/free/el/rpmfusion-free-release-7.noarch.rpm \
+            https://download1.rpmfusion.org/nonfree/el/rpmfusion-nonfree-release-7.noarch.rpm; \
+    yum install --assumeyes \
+            # OpenMPF dependencies
+            cmake3 make gcc gcc-c++ qt-devel log4cxx-devel boost-devel ffmpeg ffmpeg-devel \
+            java-11-openjdk-devel python-pip python-devel activemq-cpp-devel protobuf-static protobuf-devel \
+            gtest-devel \
+            # dlib dependencies
+            bzip2 \
+            # OALPR dependencies
+            libjpeg-devel libpng-devel libtiff-devel zlib; \
+    yum clean all; \
+    rm --recursive --force /var/cache/yum/*; \
+    pip install --upgrade --no-cache-dir pip wheel; \
+    # For protobuf maven plugin
+    ln --symbolic /usr/bin/protoc /usr/local/bin/protoc;
 
-# Set up yum repo:
-RUN yum install -y epel-release deltarpm && \
-    yum localinstall -y --nogpgcheck https://download1.rpmfusion.org/free/el/rpmfusion-free-release-7.noarch.rpm \
-        https://download1.rpmfusion.org/nonfree/el/rpmfusion-nonfree-release-7.noarch.rpm && \
-    yum update -y && yum clean all
+ENV JAVA_HOME=/etc/alternatives/java_sdk
 
-ENV MPF_HOME=/home/mpf/openmpf-projects/openmpf/trunk/install
 
-# Create directories for sources:
-RUN mkdir -p /apps/install/lib && mkdir -p /apps/bin/apache && \
-    mkdir -p /apps/source/cmake_sources && \
-    mkdir /apps/source/apache_sources && mkdir /apps/source/google_sources && \
-    mkdir /apps/source/opencv_sources && mkdir /apps/source/ffmpeg_sources && \
-    mkdir /apps/source/dlib-sources && mkdir /apps/source/openalpr_sources && \
-    mkdir /apps/source/tesseract_sources && \
-    chown -R mpf /apps && chmod -R 755 /apps
+RUN mkdir /tmp/opencv; \
+    cd  /tmp/opencv; \
+    curl --location 'https://github.com/opencv/opencv/archive/3.4.7.tar.gz' \
+        | tar --extract --gzip; \
+    cd opencv-3.4.7; \
+    mkdir build; \
+    cd build; \
+    cmake3 -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX:PATH="/opt/opencv-3.4.7" \
+        -DWITH_GSTREAMER:BOOL="0" -DWITH_OPENMP:BOOL="1" \
+        -DBUILD_opencv_apps:BOOL="0" -DWITH_OPENCLAMDBLAS:BOOL="0" \
+        -DWITH_CUDA:BOOL="0" -DCLAMDFFT_ROOT_DIR:PATH="CLAMDFFT_ROOT_DIR-NOTFOUND" \
+        -DBUILD_opencv_aruco:BOOL="0" -DWITH_WEBP:BOOL="0" \
+        -DBZIP2_LIBRARIES:FILEPATH="BZIP2_LIBRARIES-NOTFOUND" \
+        -DWITH_GIGEAPI:BOOL="0" -DWITH_JPEG:BOOL="1" -DWITH_CUFFT:BOOL="0" \
+        -DWITH_IPP:BOOL="0" -DWITH_V4L:BOOL="1" -DWITH_GDAL:BOOL="0" \
+        -DWITH_OPENCLAMDFFT:BOOL="0" -DWITH_GPHOTO2:BOOL="0" -DWITH_VTK:BOOL="0" \
+        -DWITH_GTK_2_X:BOOL="0" -DBUILD_opencv_world:BOOL="0" -DWITH_TIFF:BOOL="1" \
+        -DWITH_1394:BOOL="0" -DWITH_EIGEN:BOOL="0" -DWITH_LIBV4L:BOOL="0" \
+        -DBUILD_opencv_ts:BOOL="0" -DWITH_MATLAB:BOOL="0" -DWITH_OPENCL:BOOL="0" \
+        -DWITH_PVAPI:BOOL="0" -DENABLE_CXX11:BOOL="1" ..; \
+    make --jobs "$(nproc)" install; \
+    ln --symbolic /opt/opencv-3.4.7/include/opencv2 /usr/local/include/opencv2; \
+    ln --symbolic /opt/opencv-3.4.7/include/opencv /usr/local/include/opencv; \
+    rm --recursive /tmp/opencv
 
-# Create the OpenMPF ldconfig file:
-# Add /apps/install/lib to the OpenMPF ldconfig file:
-# Update the shared library cache:
-RUN touch /etc/ld.so.conf.d/mpf-x86_64.conf && \
-    sh -c 'echo "/apps/install/lib" >> /etc/ld.so.conf.d/mpf-x86_64.conf' && \
-    ldconfig
 
-# Install build tools:
-RUN yum install -y java-11-openjdk-devel git python-pip python-devel python-setuptools file \
-    python-setuptools-devel gcc gcc-c++ make autoconf automake \
-    libtool yasm nasm bzip2 cmake3 numpy perl-File-Find-Rule which \
-    libffi-devel openssl-devel apr apr-util apr-util-ldap log4cxx \
-    log4cxx-devel qt qt-devel qt-x11 boost boost-devel wget dos2unix \
-    ffmpeg ffmpeg-devel && \
-    yum clean all && rm -rf /var/cache/yum/*
 
-ENV JAVA_HOME=/usr/lib/jvm/java-11
+RUN curl --location 'https://archive.apache.org/dist/maven/maven-3/3.3.3/binaries/apache-maven-3.3.3-bin.tar.gz' \
+        | tar --extract --gzip --directory /opt; \
+    ln --symbolic /opt/apache-maven-3.3.3/bin/mvn /usr/local/bin;
 
-# Install Python dependencies:
-RUN pip install --upgrade pip && pip install --upgrade setuptools && \
-    pip install wheel virtualenv
 
-# Install C Foreign Function Interface (CFFI):
-RUN cd /home/mpf && easy_install -U cffi
-
-################################################################################
-# Install Apache Tomcat                                                        #
-################################################################################
-
-# Apache Tomcat 8.5.41:
-RUN wget -nv -O /apps/bin/apache/apache-tomcat-8.5.41.tar.gz \
-    "http://archive.apache.org/dist/tomcat/tomcat-8/v8.5.41/bin/apache-tomcat-8.5.41.tar.gz" && \
-    cd /apps/bin/apache && tar xzf apache-tomcat-8.5.41.tar.gz && \
-    mkdir -p /usr/share/apache-tomcat && \
-    cp -Rf /apps/bin/apache/apache-tomcat-8.5.41/* /usr/share/apache-tomcat/ && \
-    chown -R mpf /usr/share/apache-tomcat && chmod -R 755 /usr/share/apache-tomcat && \
-    ln -s /usr/share/apache-tomcat /opt/apache-tomcat && \
-    perl -i -p0e 's/<!--\n    <Manager pathname="" \/>\n    -->/<Manager pathname="" \/>/s' \
-        /opt/apache-tomcat/conf/context.xml && \
-    rm -rf /opt/apache-tomcat/webapps/examples/ && \
-    rm -rf /opt/apache-tomcat/webapps/docs/ && \
-    rm -rf /opt/apache-tomcat/webapps/ROOT/
-
-################################################################################
-# Install Apache Maven                                                         #
-################################################################################
-
-# Apache Maven 3.3.3:
-RUN wget -nv -O /apps/bin/apache/apache-maven-3.3.3-bin.tar.gz \
-    "https://archive.apache.org/dist/maven/maven-3/3.3.3/binaries/apache-maven-3.3.3-bin.tar.gz" && \
-    cd /apps/bin/apache && tar xzf apache-maven-3.3.3-bin.tar.gz && \
-    mkdir /opt/apache-maven && cp -Rf /apps/bin/apache/apache-maven-3.3.3/* /opt/apache-maven/ && \
-    chown -R mpf /opt/apache-maven && \
-    alternatives --install "/usr/bin/mvn" "mvn" "/opt/apache-maven/bin/mvn" 0 && \
-    alternatives --set mvn /opt/apache-maven/bin/mvn
-
-################################################################################
-# Install CMake                                                                #
-################################################################################
-
-# cmake 2.8.12.2:
-RUN wget -nv -O /apps/source/cmake_sources/cmake-2.8.12.2.tar.gz \
-    "https://cmake.org/files/v2.8/cmake-2.8.12.2.tar.gz" && \
-    cd /apps/source/cmake_sources && tar xzf cmake-2.8.12.2.tar.gz && \
-    cd cmake-2.8.12.2 && chmod +x * && ./configure --prefix=/apps/install && make -j && \
-    make install && ldconfig && ln -s /apps/install/bin/cmake /usr/local/bin/cmake
-
-################################################################################
-# Build Google Protocol Buffers                                                #
-################################################################################
-
-# Google protocol buffers 2.5.0:
-RUN wget -nv -O /apps/source/google_sources/protobuf-2.5.0.tar.gz \
-    "https://github.com/google/protobuf/releases/download/v2.5.0/protobuf-2.5.0.tar.gz" && \
-    cd /apps/source/google_sources && tar xzf protobuf-2.5.0.tar.gz && cd protobuf-2.5.0 && \
-    ./configure --prefix=/apps/install && make -j8 && make install && make distclean && \
-    ldconfig && ln -s /apps/install/bin/protoc /usr/local/bin/protoc && \
-    ln -sf /usr/lib64/libuuid.so.1.3.0 /usr/lib64/libuuid.so
-
-################################################################################
-# Build OpenCV                                                                 #
-################################################################################
-
-# OpenCV 3.4.7:
-RUN cd /apps/source/opencv_sources && git clone https://github.com/opencv/opencv.git && \
-    cd opencv && git checkout 3.4.7 && mkdir release && cd release && \
-    PKG_CONFIG_PATH="/apps/install/lib/pkgconfig" cmake3 \
-    -DCMAKE_BUILD_TYPE=Release -DWITH_GSTREAMER:BOOL="0" -DWITH_OPENMP:BOOL="1" \
-    -DBUILD_opencv_apps:BOOL="0" -DWITH_OPENCLAMDBLAS:BOOL="0" \
-    -DWITH_CUDA:BOOL="0" -DCLAMDFFT_ROOT_DIR:PATH="CLAMDFFT_ROOT_DIR-NOTFOUND" \
-    -DBUILD_opencv_aruco:BOOL="0" \
-    -DCMAKE_INSTALL_PREFIX:PATH="/apps/install/opencv3.4.7" -DWITH_WEBP:BOOL="0" \
-    -DBZIP2_LIBRARIES:FILEPATH="BZIP2_LIBRARIES-NOTFOUND" \
-    -DWITH_GIGEAPI:BOOL="0" -DWITH_JPEG:BOOL="1" -DWITH_CUFFT:BOOL="0" \
-    -DWITH_IPP:BOOL="0" -DWITH_V4L:BOOL="1" -DWITH_GDAL:BOOL="0" \
-    -DWITH_OPENCLAMDFFT:BOOL="0" -DWITH_GPHOTO2:BOOL="0" -DWITH_VTK:BOOL="0" \
-    -DWITH_GTK_2_X:BOOL="0" -DBUILD_opencv_world:BOOL="0" -DWITH_TIFF:BOOL="1" \
-    -DWITH_1394:BOOL="0" -DWITH_EIGEN:BOOL="0" -DWITH_LIBV4L:BOOL="0" \
-    -DBUILD_opencv_ts:BOOL="0" -DWITH_MATLAB:BOOL="0" -DWITH_OPENCL:BOOL="0" \
-    -DWITH_PVAPI:BOOL="0" -DENABLE_CXX11:BOOL=“1” .. && \
-    make -j$(nproc) && make install && \
-    sh -c 'echo "/apps/install/opencv3.4.7/lib" >> /etc/ld.so.conf.d/mpf-x86_64.conf' && \
-    ln -sf /apps/install/opencv3.4.7 /opt/opencv-3.4.7 && \
-    ln -sf /apps/install/opencv3.4.7/include/opencv2 /usr/local/include/opencv2 && \
-    ln -sf /apps/install/opencv3.4.7/include/opencv /usr/local/include/opencv && \
-    ldconfig && export OpenCV_DIR=/opt/opencv-3.4.7/share/OpenCV
-
-################################################################################
-# Build Component-Specific Dependencies                                        #
-################################################################################
 
 # dlib
-RUN wget -nv -O /apps/source/config4cpp.tar.gz "http://www.config4star.org/download/config4cpp.tar.gz" && \
-    cd /apps/source && tar xvzf config4cpp.tar.gz && cd config4cpp && make && \
-    cd /apps/source/dlib-sources && wget -nv -O /apps/source/dlib-sources/dlib-18.18.tar.bz2 \
-    "http://dlib.net/files/dlib-18.18.tar.bz2" && tar xvjf dlib-18.18.tar.bz2 && \
-    cd dlib-18.18/dlib && mkdir build && cd build && cmake3 ../ && \
-    cmake3 --build . --config Release && make install
+RUN mkdir --parents /apps/source/dlib-sources; \
+    curl --location 'http://dlib.net/files/dlib-18.18.tar.bz2' \
+        | tar --extract --bzip2 --directory /apps/source/dlib-sources;
 
-# ImageMagick6:
-RUN yum install -y http://rpms.remirepo.net/enterprise/remi-release-7.rpm && \
-    yum --enablerepo=remi install -y ImageMagick6 ImageMagick6-c++ \
-    ImageMagick6-c++-devel ImageMagick6-devel ImageMagick6-libs \
-    libgif libjpeg libpng libtiff zlib ghostscript && \
-    yum clean all && rm -rf /var/cache/yum/*
 
-# Leptonica 1.75.0:
-RUN wget -nv -O /apps/source/tesseract_sources/leptonica-1.75.0.tar.gz \
-    "https://github.com/DanBloomberg/leptonica/archive/1.75.0.tar.gz" && \
-    cd /apps/source/tesseract_sources &&  tar xvzf leptonica-1.75.0.tar.gz && \
-    cd /apps/source/tesseract_sources/leptonica-1.75.0 && mkdir build && cd build && \
-    cmake3 -DCMAKE_INSTALL_PREFIX:PATH=/usr/local .. && make install && \
-    ldconfig
 
-# Tesseract 4.0.0:
-RUN wget -nv -O /apps/source/tesseract_sources/tesseract-4.0.0.tar.gz \
-    "https://github.com/tesseract-ocr/tesseract/archive/4.0.0.tar.gz" && \
-    cd /apps/source/tesseract_sources && tar xzf tesseract-4.0.0.tar.gz && \
-    mkdir /apps/source/tesseract_sources/tesseract-4.0.0/build && cd /apps/source/tesseract_sources/tesseract-4.0.0/build && \
-    PKG_CONFIG_PATH=/usr/local/lib/pkgconfig cmake3 -DCMAKE_INSTALL_PREFIX:PATH=/usr/local .. && make install && \
-    ldconfig
+# Oalpr
 
-# OpenALPR 2.3.0:
-RUN cd /apps/source/openalpr_sources && git clone https://github.com/openalpr/openalpr.git && \
-    cd openalpr && git checkout 6ead2fb8f72ac1929a2e04912c5795af0bf37761 && \
-    mkdir src/build && cd src/build && \
-    cmake3 -D CMAKE_CXX_STANDARD=11 -D CMAKE_CXX_STANDARD_REQUIRED=ON -D Leptonica_LIB=/usr/local/lib/libleptonica.so \
-    -D CMAKE_INSTALL_PREFIX:PATH=/usr/local -D WITH_DAEMON=OFF .. && \
-    make install -j && \
-    ldconfig
+RUN mkdir /tmp/leptonica; \
+    cd /tmp/leptonica; \
+    curl --location 'https://github.com/DanBloomberg/leptonica/archive/1.75.0.tar.gz' \
+        | tar --extract --gzip; \
+    mkdir leptonica-1.75.0/build; \
+    cd leptonica-1.75.0/build; \
+    cmake3 -DCMAKE_INSTALL_PREFIX:PATH=/usr/local ..; \
+    make install --jobs "$(nproc)"; \
+    rm --recursive /tmp/leptonica;
 
-# Install locales:
-RUN sed -i "/^override_install_lang/d" /etc/yum.conf && \
-    yum reinstall -y glibc-common && \
-    yum clean all && rm -rf /var/cache/yum/*
 
-################################################################################
-# Build ActiveMQ                                                               #
-################################################################################
+RUN mkdir /tmp/tesseract; \
+    cd /tmp/tesseract; \
+    curl --location 'https://github.com/tesseract-ocr/tesseract/archive/4.0.0.tar.gz' \
+        | tar --extract --gzip; \
+    mkdir tesseract-4.0.0/build; \
+    cd tesseract-4.0.0/build; \
+    PKG_CONFIG_PATH=/usr/local/lib/pkgconfig cmake3 -DCMAKE_INSTALL_PREFIX:PATH=/usr/local ..; \
+    make install --jobs "$(nproc)"; \
+    rm --recursive /tmp/tesseract;
 
-# Apache Portable Runtime (APR) 1.5.2:
-RUN wget -nv -O /apps/source/apache_sources/apr-1.5.2.tar.gz \
-    "http://archive.apache.org/dist/apr/apr-1.5.2.tar.gz" && \
-    cd /apps/source/apache_sources && tar -zxvf apr-1.5.2.tar.gz && \
-    cd /apps/source/apache_sources/apr-1.5.2 && ./configure --prefix=/apps/install && \
-    make -j8 && make install && make distclean && ldconfig
 
-# apr-util 1.5.4:
-RUN wget -nv -O /apps/source/apache_sources/apr-util-1.5.4.tar.gz \
-    "http://archive.apache.org/dist/apr/apr-util-1.5.4.tar.gz" && \
-    cd /apps/source/apache_sources && tar -xzvf apr-util-1.5.4.tar.gz && \
-    cd /apps/source/apache_sources/apr-util-1.5.4 && \
-    ./configure --with-apr=/apps/install --prefix=/apps/install && \
-    make -j8 && make install && make distclean && ldconfig
+RUN mkdir /tmp/oalpr; \
+    cd /tmp/oalpr; \
+    curl --location 'https://github.com/openalpr/openalpr/archive/6ead2fb8f72ac1929a2e04912c5795af0bf37761.tar.gz' \
+        | tar --extract --gzip; \
+    cd openalpr-6ead2fb8f72ac1929a2e04912c5795af0bf37761/src; \
+    mkdir build; \
+    cd build; \
+    cmake3 -DCMAKE_CXX_STANDARD=11 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DWITH_DAEMON=OFF \
+           -DCMAKE_INSTALL_PREFIX:PATH=/usr/local -DLeptonica_LIB=/usr/local/lib/libleptonica.so ..; \
+    make install -j "$(nproc)"; \
+    rm --recursive /tmp/oalpr;
 
-# Activemqcpp 3.9.0:
-RUN wget -nv -O /apps/source/apache_sources/activemq-cpp-library-3.9.0-src.tar.gz \
-    "https://archive.apache.org/dist/activemq/activemq-cpp/3.9.0/activemq-cpp-library-3.9.0-src.tar.gz" && \
-    cd /apps/source/apache_sources && tar zxf activemq-cpp-library-3.9.0-src.tar.gz && \
-    cd /apps/source/apache_sources/activemq-cpp-library-3.9.0 && ./autogen.sh && \
-    ./configure --disable-ssl --prefix="/apps/install" --with-apr=/apps/install && \
-    make -j8 && make install && make distclean && ldconfig && \
-    ln -s /apps/install/lib/libactivemq-cpp.so.19.0.0 /usr/lib/libactivemq-cpp.so
 
-################################################################################
-# NVIDIA CUDA toolkit setup                                                    #
-################################################################################
 
-RUN mkdir -p /apps/source/cuda && cd /apps/source/cuda && \
-    wget -nv -O cuda_9.0.176_384.81_linux.run \
-    "https://developer.nvidia.com/compute/cuda/9.0/Prod/local_installers/cuda_9.0.176_384.81_linux-run" && \
-    cd /apps/source/cuda && sh cuda_9.0.176_384.81_linux.run --toolkit \
-    --toolkitpath=/apps/install/cuda-9.0 --silent --verbose && \
-    ls -l /usr/local/cuda /apps/install/cuda-9.0 && \
-    echo "PATH=\$PATH:/usr/local/cuda/bin" >> /etc/profile.d/mpf.sh && \
-    . /etc/profile.d/mpf.sh && echo "/usr/local/cuda/lib64" >> \
-    /etc/ld.so.conf.d/mpf-x86_64.conf
+COPY . /home/mpf/openmpf-projects
 
-################################################################################
-# Build Google Test Framework                                                  #
-################################################################################
+ENV MPF_HOME /home/mpf/openmpf-projects/openmpf/trunk/install
 
-# Google Test 1.8.1:
-RUN mkdir /apps/source/gtest_sources
-RUN cd /apps/source/gtest_sources && git clone https://github.com/google/googletest.git googletest && \
-    cd googletest && git checkout release-1.8.1 && mkdir release && cd release && \
-    PKG_CONFIG_PATH="/apps/install/lib/pkgconfig" cmake3 .. && \
-    make -j$(nproc) && make install && ldconfig
+WORKDIR /home/mpf/openmpf-projects/openmpf
 
-################################################################################
-# For Tests: Install yum Dependencies                                          #
-################################################################################
+ARG RUN_TESTS=false
+ARG BUILD_PACKAGE_JSON=/home/mpf/openmpf-projects/openmpf/trunk/jenkins/scripts/config_files/openmpf-open-source-package.json
 
-RUN yum install -y git asciidoc rpm-build \
-    python2-devel PyYAML python-httplib2 python-jinja2 libtomcrypt \
-    python-paramiko python-six sshpass which mysql dos2unix ansible && \
-    yum clean all && rm -rf /var/cache/yum/*
+RUN --mount=type=cache,target=/root/.m2/repository,id=mvn_cache \
+    # Copy to shell variable so that parameter expansion works
+    build_package_json="$BUILD_PACKAGE_JSON"; \
+    if [ "${build_package_json:0:1}" != '/' ]; then \
+        build_package_json="/home/mpf/openmpf-projects/openmpf/trunk/jenkins/scripts/config_files/$build_package_json"; \
+    fi; \
 
-# TODO: For some reason this needs to be a separate step. I think it's because the
-#   mirror it choses for the other yum install does not have python-keyczar.
-#   This happens even if python-keyczar is the first thing in the list.
-RUN yum install -y python-keyczar && yum clean all
+    if [ ! -e /root/.m2/repository/edu/cmu/sphinx ]; then \
+        tar --extract --file /home/mpf/openmpf-projects/openmpf-build-tools/mpf-maven-deps.tar.gz \
+            --directory /root/.m2/repository/; \
+    fi; \
 
-# Update timeout for component deployment tests
-RUN echo 'gather_timeout = 60' >> /etc/ansible/ansible.cfg
+    cp trunk/workflow-manager/src/main/resources/properties/mpf-private-example.properties \
+        trunk/workflow-manager/src/main/resources/properties/mpf-private.properties; \
+    mvn package \
+        -DskipTests -Dmaven.test.skip=true -DskipITs \
+        -Dcargo.maven.skip=true \
+        -Dcomponents.build.package.json="$build_package_json" \
+        -Dstartup.auto.registration.skip=false \
+        -Dcomponents.build.parallel.builds="$(nproc)" \
+        -Dcomponents.build.make.jobs="$(nproc)" \
+        -DgitBranch='' \
+        -DgitShortId='' \
+        -DjenkinsBuildNumber=1; \
+    # Use nullglob to avoid entering for loop when no glob matches.
+    # Use globstar to enable ** globs.
+    shopt -s nullglob globstar; \
+    if [ "${RUN_TESTS,,}" = true ]; then \
+        cd /root/mpf-component-build; \
+        for test_executable in **/test/*Test; do \
+            cd "$(dirname "$test_executable")"; \
+            ./"$(basename "$test_executable")"; \
+            cd /root/mpf-component-build; \
+        done; \
+    fi; \
+    mkdir --parents /build-artifacts/plugins; \
+    cd /build-artifacts/plugins; \
+    # Extract packages here so that child Dockerfiles don't need to use a separate stage just to extract packages.
+    for package in /root/mpf-component-build/plugin-packages/*.tar.gz; do \
+        tar --extract --file "$package" & \
+    done; \
+    wait; \
+    # Descriptors only
+    mkdir /build-artifacts/descriptors; \
+    cd /build-artifacts/descriptors; \
+    plugins_dir=/build-artifacts/plugins; \
+    for full_path in "$plugins_dir"/*/descriptor/descriptor.json; do \
+        rel_path="$(realpath --relative-to="$plugins_dir" "$full_path")"; \
+        mkdir --parents "$(dirname "$rel_path")"; \
+        cp "$full_path" "$rel_path"; \
+    done; \
+    rm --recursive /root/mpf-component-build;
 
-################################################################################
-# For Tests: Configure Environment Variables                                   #
-################################################################################
 
-ENV ACTIVE_MQ_HOST=activemq
-ENV ACTIVE_MQ_BROKER_URI=failover://(tcp://$ACTIVE_MQ_HOST:61616)?jms.prefetchPolicy.all=0&startupMaxReconnectAttempts=1
-ENV MYSQL_HOST=mysql-database
-ENV THIS_MPF_NODE=localhost
-# JGROUPS_TCP_ADDRESS set in docker-entrypoint-test.sh
-ENV JGROUPS_TCP_PORT=7800
-ENV JGROUPS_FILE_PING_LOCATION=$MPF_HOME/share/nodes
-ENV no_proxy=localhost
-ENV MPF_USER=mpf
-ENV MPF_LOG_PATH=$MPF_HOME/share/logs
-# Every child node-manager container is treated as a spare node.
-ENV CORE_MPF_NODES=
-ENV LD_LIBRARY_PATH=/usr/lib64:$MPF_HOME/lib
-ENV PATH=$PATH:$MPF_HOME/bin
-ENV TOMCAT_BASE_URL=http://$THIS_MPF_NODE:8181
+WORKDIR /build-artifacts
 
-# The workflow manager must be added as an mpf-child so that plugin packages are
-# extracted at startup, which is necessary for component auto-registration.
-RUN echo '[mpf-child]' >> /etc/ansible/hosts; \
-    echo $THIS_MPF_NODE >> /etc/ansible/hosts;
+RUN ln --symbolic /home/mpf/openmpf-projects/openmpf/trunk/workflow-manager/target/workflow-manager.war \
+                  /build-artifacts/workflow-manager.war; \
+    ln --symbolic /home/mpf/openmpf-projects/openmpf/trunk/install \
+                  /build-artifacts/install; \
+    ln --symbolic /root/mpf-sdk-install \
+                  /build-artifacts/mpf-sdk-install;
 
-################################################################################
-# Prepare Entrypoint                                                           #
-################################################################################
 
-COPY *.sh /home/mpf/
-RUN dos2unix -q /home/mpf/*.sh
-ENTRYPOINT ["/home/mpf/docker-entrypoint.sh"]
-
-################################################################################
-# Labels                                                                       #
-################################################################################
-
-ARG BUILD_TAG
 ARG BUILD_DATE
 ARG BUILD_SHAS
+ARG BUILD_TAG
 
-# Clear inherited labels from CentOS 7.4.1708 base image.
-# TODO: Remove these when we start using a newer CentOS base image.
-LABEL build-date= \
-      license= \
-      name= \
-      vendor=
-
-# Set labels
 LABEL org.label-schema.build-date=$BUILD_DATE \
       org.label-schema.license="Mixed" \
       org.label-schema.name="OpenMPF Build Environment" \
       org.label-schema.schema-version="1.0" \
       org.label-schema.url="https://openmpf.github.io" \
       org.label-schema.vcs-ref=$BUILD_SHAS \
-      org.label-schema.vcs-url="https://github.com/openmpf" \
+      org.label-schema.vcs-url="https://github.com/openmpf/openmpf-projects" \
       org.label-schema.vendor="MITRE" \
-      org.label-schema.version=$BUILD_TAG \
-      org.label-schema.vendor=MITRE \
-      org.label-schema.version=$BUILD_VERSION
-
+      org.label-schema.version=$BUILD_TAG
