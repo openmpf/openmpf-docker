@@ -88,7 +88,7 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
     } // stage('Clone repos')
 
     stage('Build images') {
-        if (buildPackageJson.contain('/')) {
+        if (buildPackageJson.contains('/')) {
             sh "cp $buildPackageJson openmpf-projects/openmpf/trunk/jenkins/scripts/config_files"
             buildPackageJson = buildPackageJson.substring(buildPackageJson.lastIndexOf("/")) + 1
         }
