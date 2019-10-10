@@ -41,32 +41,18 @@ services:
     command: [
       '--wait_timeout=28800',
     ]
-    volumes:
-      - mysql_data:/var/lib/mysql
-    networks:
-      - overlay
-    deploy:
-      placement:
-        constraints:
-          - node.role == manager
 
   activemq:
-    image: openmpf_activemq
+    image: openmpf_activemq:${TAG:-latest}
     environment:
       # Set which configuration files are used at runtime:
       - ACTIVE_MQ_PROFILE=default
-    ports:
-      - "8161:8161"
-    networks:
-      - overlay
 
   redis:
     image: redis:latest
-    networks:
-      - overlay
 
   workflow-manager:
-    image: openmpf_integration_tests
+    image: openmpf_integration_tests:${TAG:-latest}
     build: integration_tests
     depends_on:
       - mysql-database
@@ -76,53 +62,30 @@ services:
     environment:
       # The following line is needed to wait until the mySQL service is available:
       - MYSQL_ROOT_PASSWORD=password
-    ports:
-      - "8080:8080"
     volumes:
-#      - shared_data:/home/mpf/openmpf-projects/openmpf/trunk/install/share
       - shared_data:/opt/mpf/share
-      - /home/mpf/temp/test-reports:/test-reports
-    networks:
-      - overlay
-    deploy:
-      placement:
-        constraints:
-          - node.role == manager
 
   node-manager:
-    image: openmpf_node_manager
+    image: openmpf_node_manager:${TAG:-latest}
     build: node_manager
     volumes:
       - shared_data:/opt/mpf/share
-    networks:
-      - overlay
-    deploy:
-      mode: global
 
   ocv-face-detection:
-    image: openmpf_ocv_face_detection
+    image: openmpf_ocv_face_detection:${TAG:-latest}
     environment:
       WFM_PASSWORD: mpfadm
       WFM_USER: admin
-    networks:
-      - overlay
     volumes:
-      - shared_data:/opt/mpf/share:rw
+      - shared_data:/opt/mpf/share
 
   tesseract-ocr-text-detection:
-    image: openmpf_tesseract_ocr_text_detection
+    image: openmpf_tesseract_ocr_text_detection:${TAG:-latest}
     environment:
       WFM_PASSWORD: mpfadm
       WFM_USER: admin
-    networks:
-      - overlay
     volumes:
-      - shared_data:/opt/mpf/share:rw
-
+      - shared_data:/opt/mpf/share
 
 volumes:
   shared_data:
-  mysql_data:
-
-networks:
-  overlay:
