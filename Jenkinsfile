@@ -95,7 +95,7 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
         withEnv(['DOCKER_BUILDKIT=1', 'RUN_TESTS=true']) {
             dir ('openmpf-docker') {
                 sh 'docker build -f openmpf_build/Dockerfile ../openmpf-projects --build-arg RUN_TESTS ' +
-                        "-t openmpf_build:$imageTag"
+                        "--build-arg BUILD_PACKAGE_JSON=$buildPackageJson  -t openmpf_build:$imageTag"
 
                 sh "docker build workflow_manager -t openmpf_workflow_manager:$imageTag"
 
