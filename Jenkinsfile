@@ -36,61 +36,58 @@ def openmpfDockerBranch = env.openmpf_docker_branch ?: 'develop'
 
 def buildPackageJson = env.build_package_json
 
-
 def imageTag = env.image_tag
+
+def preserveContainersOnFailure = env.preserve_containers_on_failure?.toBoolean ?: false
 
 
 node(env.jenkins_nodes) {
 wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color in Jenkins console
+
+    def buildId = "${currentBuild.projectName}_${currentBuild.number}"
+
     stage('Clone repos') {
         if (!fileExists('openmpf-projects')) {
             sh 'git clone --recurse-submodules https://github.com/openmpf/openmpf-projects.git'
         }
-        sh """
-            cd openmpf-projects
-            git clean -ffd
-            git submodule foreach git clean -ffd
+        dir('openmpf-projects') {
+            sh 'git clean -ffd'
+            sh 'git submodule foreach git clean -ffd'
+            sh 'git fetch'
+            sh "git checkout 'origin/$openmpfProjectsBranch'"
 
-            git fetch
-            git checkout 'origin/$openmpfProjectsBranch'
+            sh "cd openmpf && git checkout 'origin/$openmpfBranch'"
 
-            cd openmpf
-            git checkout 'origin/$openmpfBranch'
+            sh "cd openmpf-components && git checkout 'origin/$openmpfComponentsBranch'"
 
-            cd ../openmpf-components
-            git checkout 'origin/$openmpfComponentsBranch'
+            sh "cd openmpf-contrib-components && git checkout 'origin/$openmpfContribComponentsBranch'"
 
-            cd ../openmpf-contrib-components
-            git checkout 'origin/$openmpfContribComponentsBranch'
+            sh "cd openmpf-cpp-component-sdk && git checkout 'origin/$openmpfCppComponentSdkBranch'"
 
-            cd ../openmpf-cpp-component-sdk
-            git checkout 'origin/$openmpfCppComponentSdkBranch'
+            sh "cd openmpf-java-component-sdk && git checkout 'origin/$openmpfJavaComponentSdkBranch'"
 
-            cd ../openmpf-java-component-sdk
-            git checkout 'origin/$openmpfJavaComponentSdkBranch'
+            sh "cd openmpf-python-component-sdk && git checkout 'origin/$openmpfPythonComponentSdkBranch'"
 
-            cd ../openmpf-python-component-sdk
-            git checkout 'origin/$openmpfPythonComponentSdkBranch'
-            
-            cd ../openmpf-build-tools
-            git checkout 'origin/$openmpfBuildToolsBranch'
-        """
+            sh "cd openmpf-build-tools && git checkout 'origin/$openmpfBuildToolsBranch'"
+        }
 
         if (!fileExists('openmpf-docker')) {
             sh 'git clone https://github.com/openmpf/openmpf-docker.git'
         }
-        sh """
-            cd openmpf-docker
-            git clean -ffd
-            git fetch
-            git checkout 'origin/$openmpfDockerBranch'
-        """
+
+        dir('openmpf-docker') {
+            sh 'git clean -ffd'
+            sh 'git fetch'
+            sh "git checkout 'origin/$openmpfDockerBranch'"
+        }
     } // stage('Clone repos')
 
     stage('Build images') {
+        sh 'docker pull centos:7' // Make sure we are using the most recent centos:7 release
+
         if (buildPackageJson.contains('/')) {
             sh "cp $buildPackageJson openmpf-projects/openmpf/trunk/jenkins/scripts/config_files"
-            buildPackageJson = buildPackageJson.substring(buildPackageJson.lastIndexOf("/")) + 1
+            buildPackageJson = buildPackageJson.substring(buildPackageJson.lastIndexOf("/") + 1)
         }
         withEnv(['DOCKER_BUILDKIT=1', 'RUN_TESTS=true']) {
             dir ('openmpf-docker') {
@@ -104,7 +101,6 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                 sh "docker build integration_tests -t openmpf_integration_tests:$imageTag"
             }
 
-
             dir('openmpf-docker/components') {
                 sh "docker build . -f cpp_component_build/Dockerfile -t openmpf_cpp_component_build:$imageTag"
 
@@ -113,7 +109,6 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                 sh "docker build . -f python_executor/Dockerfile -t openmpf_python_executor:$imageTag"
             }
 
-
             dir('openmpf-projects/openmpf-components') {
                 sh "docker build cpp/OcvFaceDetection --build-arg RUN_TESTS -t openmpf_ocv_face_detection:$imageTag"
 
@@ -121,9 +116,31 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                         "-t openmpf_tesseract_ocr_text_detection:$imageTag"
 
                 sh "docker build python/EastTextDetection -t openmpf_east_text_detection:$imageTag"
-
             }
         }
     } // stage('Build images')
+    stage('Run Integration Tests') {
+        dir('openmpf-docker') {
+            cp '.env.tpl .env'
+            withEnv(["TAG=$imageTag",
+                     // Use custom project name to allow multiple builds on same machine
+                     "COMPOSE_PROJECT_NAME=openmpf_$buildId",
+                     'COMPOSE_FILE=docker-compose.integration.test.yml']) {
+                try {
+                    sh 'docker-compose up --exit-code-from workflow-manager'
+                    sh 'docker-compose down --volumes'
+                }
+                catch (e) {
+                    if (preserveContainersOnFailure) {
+                        sh 'docker-compose stop'
+                    }
+                    else {
+                        sh 'docker-compose down --volumes'
+                    }
+                    throw e;
+                }
+            } // withEnv
+        } // dir('openmpf-docker')
+    } // stage('Run Integration Tests')
 } // wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm'])
 } // node(env.jenkins_nodes)
