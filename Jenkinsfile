@@ -90,7 +90,7 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
     stage('Build images') {
         if (buildPackageJson.contain('/')) {
             sh "cp $buildPackageJson openmpf-projects/openmpf/trunk/jenkins/scripts/config_files"
-            buildPackageJson = buildPackageJson.substring(buildPackageJson.lastIndexOf("/") + 1
+            buildPackageJson = buildPackageJson.substring(buildPackageJson.lastIndexOf("/")) + 1
         }
         withEnv(['DOCKER_BUILDKIT=1', 'RUN_TESTS=true']) {
             dir ('openmpf-docker') {
