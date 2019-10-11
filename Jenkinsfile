@@ -77,6 +77,7 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                 userRemoteConfigs: [[url: 'https://github.com/openmpf/openmpf-docker.git']],
                 extensions:[
                         [$class: 'CleanBeforeCheckout'],
+                        [$class: 'RelativeTargetDirectory', relativeTargetDir:'openmpf-docker']
                         [$class: 'ScmName', name: 'openmpf-docker']])
 //        if (!fileExists('openmpf-docker')) {
 //            sh 'git clone https://github.com/openmpf/openmpf-docker.git'
