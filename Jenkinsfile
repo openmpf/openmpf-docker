@@ -118,7 +118,7 @@ node(env.jenkins_nodes) {
                 sh 'cp .env.tpl .env'
                 withEnv(["TAG=$imageTag"]) {
                     sh 'docker-compose -f docker-compose.core.yml -f docker-compose.components.yml ' +
-                            '-f docker-compose.components.test.yml build'
+                            "-f docker-compose.components.test.yml build $commonBuildArgs"
                 }
             }
 //
