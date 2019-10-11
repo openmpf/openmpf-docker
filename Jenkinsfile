@@ -73,7 +73,7 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
 
         def createSubmoduleScmConfig(name, branch) {
             return [
-                $class: 'GitSCM'
+                $class: 'GitSCM',
                 branches: [[name: branch]],
                 userRemoteConfigs: [[url: "https://github.com/openmpf/${name}.git"]],
                 extensions:[
@@ -85,7 +85,7 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
 
         checkout($class: 'MultiSCM', scmList: [
             [
-                $class: 'GitSCM'
+                $class: 'GitSCM',
                 branches: [[name: openmpfDockerBranch]],
                 userRemoteConfigs: [[url: 'https://github.com/openmpf/openmpf-docker.git']],
                 extensions:[
@@ -94,7 +94,7 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                         [$class: 'ScmName', name: 'openmpf-docker']]
             ],
             [
-                $class: 'GitSCM'
+                $class: 'GitSCM',
                 branches: [[name: openmpfProjectsBranch]],
                 userRemoteConfigs: [[url: 'https://github.com/openmpf/openmpf-projects.git']],
                 extensions:[
