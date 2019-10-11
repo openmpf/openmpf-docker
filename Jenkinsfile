@@ -125,7 +125,7 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
     } // stage('Build images')
     stage('Run Integration Tests') {
         dir('openmpf-docker') {
-            cp '.env.tpl .env'
+            sh 'cp .env.tpl .env'
             withEnv(["TAG=$imageTag",
                      // Use custom project name to allow multiple builds on same machine
                      "COMPOSE_PROJECT_NAME=openmpf_$buildId",
