@@ -96,13 +96,14 @@ node(env.jenkins_nodes) {
                 sh 'docker build -f openmpf_build/Dockerfile ../openmpf-projects --build-arg RUN_TESTS ' +
                         "--build-arg BUILD_PACKAGE_JSON=$buildPackageJson  -t openmpf_build:$imageTag"
 
-                sh "docker build workflow_manager -t openmpf_workflow_manager:$imageTag $commonBuildArgs"
 
-                sh "docker build node_manager -t openmpf_node_manager:$imageTag $commonBuildArgs"
-
+//                sh "docker build workflow_manager -t openmpf_workflow_manager:$imageTag $commonBuildArgs"
+//
+//                sh "docker build node_manager -t openmpf_node_manager:$imageTag $commonBuildArgs"
+//
                 sh "docker build integration_tests -t openmpf_integration_tests:$imageTag $commonBuildArgs"
-
-                sh "docker build activemq -t openmpf_activemq:$imageTag"
+//
+//                sh "docker build activemq -t openmpf_activemq:$imageTag"
             }
 
             dir('openmpf-docker/components') {
@@ -113,21 +114,28 @@ node(env.jenkins_nodes) {
 
                 sh "docker build . -f python_executor/Dockerfile -t openmpf_python_executor:$imageTag $commonBuildArgs"
             }
-
-            dir('openmpf-projects/openmpf-components') {
-                sh "docker build cpp/OcvFaceDetection --build-arg RUN_TESTS -t openmpf_ocv_face_detection:$imageTag " +
-                        "$commonBuildArgs"
-
-                sh 'docker build cpp/TesseractOCRTextDetection --build-arg RUN_TESTS ' +
-                        "-t openmpf_tesseract_ocr_text_detection:$imageTag $commonBuildArgs"
-
-                sh "docker build python/EastTextDetection -t openmpf_east_text_detection:$imageTag $commonBuildArgs"
+            dir ('openmpf-docker') {
+                sh 'cp .env.tpl .env'
+                withEnv(["TAG=$imageTag"]) {
+                    sh 'docker-compose -f docker-compose.core.yml -f docker-compose.components.yml ' +
+                            '-f docker-compose.components.test.yml build'
+                }
             }
+//
+//            dir('openmpf-projects/openmpf-components') {
+//                sh "docker build cpp/OcvFaceDetection --build-arg RUN_TESTS -t openmpf_ocv_face_detection:$imageTag " +
+//                        "$commonBuildArgs"
+//
+//                sh 'docker build cpp/TesseractOCRTextDetection --build-arg RUN_TESTS ' +
+//                        "-t openmpf_tesseract_ocr_text_detection:$imageTag $commonBuildArgs"
+//
+//                sh "docker build python/EastTextDetection -t openmpf_east_text_detection:$imageTag $commonBuildArgs"
+//            }
         }
     } // stage('Build images')
     stage('Run Integration Tests') {
         dir('openmpf-docker') {
-            sh 'cp .env.tpl .env'
+//            sh 'cp .env.tpl .env'
             withEnv(["TAG=$imageTag",
                      // Use custom project name to allow multiple builds on same machine
                      "COMPOSE_PROJECT_NAME=openmpf_$buildId",
