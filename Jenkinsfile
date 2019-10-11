@@ -38,7 +38,7 @@ def buildPackageJson = env.build_package_json
 
 def imageTag = env.image_tag
 
-def preserveContainersOnFailure = env.preserve_containers_on_failure?.toBoolean ?: false
+def preserveContainersOnFailure = env.preserve_containers_on_failure?.toBoolean() ?: false
 
 
 node(env.jenkins_nodes) {
@@ -71,15 +71,22 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
             sh "cd openmpf-build-tools && git checkout 'origin/$openmpfBuildToolsBranch'"
         }
 
-        if (!fileExists('openmpf-docker')) {
-            sh 'git clone https://github.com/openmpf/openmpf-docker.git'
-        }
 
-        dir('openmpf-docker') {
-            sh 'git clean -ffd'
-            sh 'git fetch'
-            sh "git checkout 'origin/$openmpfDockerBranch'"
-        }
+        checkout($class: 'GitSCM',
+                branches: [[name: openmpfDockerBranch]],
+                userRemoteConfigs: [[url: 'https://github.com/openmpf/openmpf-docker.git']],
+                extensions:[
+                        [$class: 'CleanBeforeCheckout'],
+                        [$class: 'ScmName', name: 'openmpf-docker']])
+//        if (!fileExists('openmpf-docker')) {
+//            sh 'git clone https://github.com/openmpf/openmpf-docker.git'
+//        }
+//
+//        dir('openmpf-docker') {
+//            sh 'git clean -ffd'
+//            sh 'git fetch'
+//            sh "git checkout 'origin/$openmpfDockerBranch'"
+//        }
     } // stage('Clone repos')
 
     stage('Build images') {
