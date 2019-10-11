@@ -40,17 +40,6 @@ def imageTag = env.image_tag
 
 def preserveContainersOnFailure = env.preserve_containers_on_failure?.toBoolean() ?: false
 
-def createSubmoduleScmConfig(name, branch) {
-    return [
-            $class: 'GitSCM',
-            branches: [[name: branch]],
-            userRemoteConfigs: [[url: "https://github.com/openmpf/${name}.git"]],
-            extensions:[
-                    [$class: 'CleanBeforeCheckout'],
-                    [$class: 'RelativeTargetDirectory', relativeTargetDir: "openmpf-projects/$branch"],
-                    [$class: 'ScmName', name: name]]
-    ]
-}
 
 node(env.jenkins_nodes) {
     wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color in Jenkins console
@@ -58,75 +47,39 @@ node(env.jenkins_nodes) {
     def buildId = "${currentBuild.projectName}_${currentBuild.number}"
 
     stage('Clone repos') {
-//        if (!fileExists('openmpf-projects')) {
-//            sh 'git clone --recurse-submodules https://github.com/openmpf/openmpf-projects.git'
-//        }
-//        dir('openmpf-projects') {
-//            sh 'git clean -ffd'
-//            sh 'git submodule foreach git clean -ffd'
-//            sh 'git fetch'
-//            sh "git checkout 'origin/$openmpfProjectsBranch'"
-//
-//            sh "cd openmpf && git checkout 'origin/$openmpfBranch'"
-//
-//            sh "cd openmpf-components && git checkout 'origin/$openmpfComponentsBranch'"
-//
-//            sh "cd openmpf-contrib-components && git checkout 'origin/$openmpfContribComponentsBranch'"
-//
-//            sh "cd openmpf-cpp-component-sdk && git checkout 'origin/$openmpfCppComponentSdkBranch'"
-//
-//            sh "cd openmpf-java-component-sdk && git checkout 'origin/$openmpfJavaComponentSdkBranch'"
-//
-//            sh "cd openmpf-python-component-sdk && git checkout 'origin/$openmpfPythonComponentSdkBranch'"
-//
-//            sh "cd openmpf-build-tools && git checkout 'origin/$openmpfBuildToolsBranch'"
-//        }
+        if (!fileExists('openmpf-projects')) {
+            sh 'git clone --recurse-submodules https://github.com/openmpf/openmpf-projects.git'
+        }
+        dir('openmpf-projects') {
+            sh 'git clean -ffd'
+            sh 'git submodule foreach git clean -ffd'
+            sh 'git fetch'
+            sh "git checkout 'origin/$openmpfProjectsBranch'"
 
+            sh "cd openmpf && git checkout 'origin/$openmpfBranch'"
 
-        checkout($class: 'MultiSCM', scmList: [
-            [
-                $class: 'GitSCM',
-                branches: [[name: openmpfDockerBranch]],
-                userRemoteConfigs: [[url: 'https://github.com/openmpf/openmpf-docker.git']],
-                extensions:[
-                        [$class: 'CleanBeforeCheckout'],
-                        [$class: 'RelativeTargetDirectory', relativeTargetDir:'openmpf-docker'],
-                        [$class: 'ScmName', name: 'openmpf-docker']]
-            ],
-            [
-                $class: 'GitSCM',
-                branches: [[name: openmpfProjectsBranch]],
-                userRemoteConfigs: [[url: 'https://github.com/openmpf/openmpf-projects.git']],
-                extensions:[
-                        [$class: 'CleanBeforeCheckout'],
-                        [$class: 'RelativeTargetDirectory', relativeTargetDir:'openmpf-projects'],
-                        [$class: 'ScmName', name: 'openmpf-projects']]
-            ],
-            createSubmoduleScmConfig('openmpf', openmpfBranch),
-            createSubmoduleScmConfig('openmpf-components', openmpfComponentsBranch),
-            createSubmoduleScmConfig('openmpf-contrib-components', openmpfContribComponentsBranch),
-            createSubmoduleScmConfig('openmpf-cpp-component-sdk', openmpfCppComponentSdkBranch),
-            createSubmoduleScmConfig('openmpf-java-component-sdk', openmpfJavaComponentSdkBranch),
-            createSubmoduleScmConfig('openmpf-python-component-sdk', openmpfPythonComponentSdkBranch),
-            createSubmoduleScmConfig('openmpf-build-tools', openmpfBuildToolsBranch),
-        ])
+            sh "cd openmpf-components && git checkout 'origin/$openmpfComponentsBranch'"
 
-//        checkout($class: 'GitSCM',
-//                branches: [[name: openmpfDockerBranch]],
-//                userRemoteConfigs: [[url: 'https://github.com/openmpf/openmpf-docker.git']],
-//                extensions:[
-//                        [$class: 'CleanBeforeCheckout'],
-//                        [$class: 'RelativeTargetDirectory', relativeTargetDir:'openmpf-docker'],
-//                        [$class: 'ScmName', name: 'openmpf-docker']])
-//        if (!fileExists('openmpf-docker')) {
-//            sh 'git clone https://github.com/openmpf/openmpf-docker.git'
-//        }
-//
-//        dir('openmpf-docker') {
-//            sh 'git clean -ffd'
-//            sh 'git fetch'
-//            sh "git checkout 'origin/$openmpfDockerBranch'"
-//        }
+            sh "cd openmpf-contrib-components && git checkout 'origin/$openmpfContribComponentsBranch'"
+
+            sh "cd openmpf-cpp-component-sdk && git checkout 'origin/$openmpfCppComponentSdkBranch'"
+
+            sh "cd openmpf-java-component-sdk && git checkout 'origin/$openmpfJavaComponentSdkBranch'"
+
+            sh "cd openmpf-python-component-sdk && git checkout 'origin/$openmpfPythonComponentSdkBranch'"
+
+            sh "cd openmpf-build-tools && git checkout 'origin/$openmpfBuildToolsBranch'"
+        }
+
+        if (!fileExists('openmpf-docker')) {
+            sh 'git clone https://github.com/openmpf/openmpf-docker.git'
+        }
+
+        dir('openmpf-docker') {
+            sh 'git clean -ffd'
+            sh 'git fetch'
+            sh "git checkout 'origin/$openmpfDockerBranch'"
+        }
     } // stage('Clone repos')
 
     stage('Build images') {

@@ -15,6 +15,10 @@ cd /home/mpf/openmpf-docker
 #export RUN_TESTS=${RUN_TESTS:-false}
 export RUN_TESTS=${RUN_TESTS:-true}
 
+
+echo '=== ActiveMQ ==='
+docker build activemq -t openmpf_activemq
+
 echo '=== OpenMPF Build ==='
 docker build -f openmpf_build/Dockerfile /home/mpf/openmpf-projects --build-arg RUN_TESTS -t openmpf_build
 
