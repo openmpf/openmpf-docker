@@ -40,9 +40,20 @@ def imageTag = env.image_tag
 
 def preserveContainersOnFailure = env.preserve_containers_on_failure?.toBoolean() ?: false
 
+def createSubmoduleScmConfig(name, branch) {
+    return [
+            $class: 'GitSCM',
+            branches: [[name: branch]],
+            userRemoteConfigs: [[url: "https://github.com/openmpf/${name}.git"]],
+            extensions:[
+                    [$class: 'CleanBeforeCheckout'],
+                    [$class: 'RelativeTargetDirectory', relativeTargetDir: "openmpf-projects/$branch"],
+                    [$class: 'ScmName', name: name]]
+    ]
+}
 
 node(env.jenkins_nodes) {
-wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color in Jenkins console
+    wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color in Jenkins console
 
     def buildId = "${currentBuild.projectName}_${currentBuild.number}"
 
@@ -71,17 +82,6 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
 //            sh "cd openmpf-build-tools && git checkout 'origin/$openmpfBuildToolsBranch'"
 //        }
 
-        def createSubmoduleScmConfig(name, branch) {
-            return [
-                $class: 'GitSCM',
-                branches: [[name: branch]],
-                userRemoteConfigs: [[url: "https://github.com/openmpf/${name}.git"]],
-                extensions:[
-                        [$class: 'CleanBeforeCheckout'],
-                        [$class: 'RelativeTargetDirectory', relativeTargetDir: "openmpf-projects/$branch"],
-                        [$class: 'ScmName', name: name]]
-            ]
-        }
 
         checkout($class: 'MultiSCM', scmList: [
             [
