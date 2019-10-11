@@ -101,6 +101,8 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                 sh "docker build node_manager -t openmpf_node_manager:$imageTag $commonBuildArgs"
 
                 sh "docker build integration_tests -t openmpf_integration_tests:$imageTag $commonBuildArgs"
+
+                sh "docker build activemq -t openmpf_activemq:$imageTag"
             }
 
             dir('openmpf-docker/components') {
