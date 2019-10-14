@@ -183,7 +183,7 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
         }
 
         for (repo in allRepos) {
-            repo.sha = sh("cd $repo.path && git rev-parse HEAD", returnStdout: true).trim()
+            repo.sha = sh(script: "cd $repo.path && git rev-parse HEAD", returnStdout: true).trim()
         }
     } // stage('Clone repos')
 
