@@ -60,7 +60,60 @@ def openmpfCustomSystemTestsSlug = env.openmpf_custom_system_tests_slug
 def openmpfCustomSystemTestsBranch = env.openmpf_custom_system_tests_branch ?: 'develop'
 
 
+class Repo {
+    def name
+    def url
+    def path
+    def branch
 
+    Repo(name, url, path, branch) {
+        this.name = name;
+        this.url = url;
+        this.path = path
+        this.branch = branch
+    }
+}
+
+def openmpfProjectsRepo = new Repo('openmpf-projects', 'https://github.com/openmpf/openmpf-projects.git',
+        'openmpf-projects', openmpfProjectsBranch)
+
+def openmpfDockerRepo = new Repo('openmpf-docker', 'https://github.com/openmpf/openmpf-docker.git',
+        'openmpf-docker', openmpfDockerBranch)
+
+def coreRepos = [
+        new Repo('openmpf', 'https://github.com/openmpf/openmpf.git',
+                'openmpf-projects/openmpf', openmpfBranch),
+
+        new Repo('openmpf-components', 'https://github.com/openmpf/openmpf-components.git',
+                'openmpf-projects/openmpf-components', openmpfComponentsBranch),
+
+        new Repo('openmpf-contrib-components', 'https://github.com/openmpf/openmpf-contrib-components.git',
+                'openmpf-projects/openmpf-contrib-components', openmpfContribComponentsBranch),
+
+        new Repo('openmpf-cpp-component-sdk', 'https://github.com/openmpf/openmpf-cpp-component-sdk.git',
+                'openmpf-projects/openmpf-cpp-component-sdk', openmpfCppComponentSdkBranch),
+
+        new Repo('openmpf-java-component-sdk', 'https://github.com/openmpf/openmpf-java-component-sdk.git',
+                'openmpf-projects/openmpf-java-component-sdk', openmpfJavaComponentSdkBranch),
+
+        new Repo('openmpf-python-component-sdk', 'https://github.com/openmpf/openmpf-python-component-sdk.git',
+                'openmpf-projects/openmpf-python-component-sdk', openmpfPythonComponentSdkBranch),
+
+        new Repo('openmpf-build-tools', 'https://github.com/openmpf/openmpf-build-tools.git',
+                'openmpf-projects/openmpf-build-tools', openmpfBuildToolsBranch),
+]
+
+def customRepos = []
+if (buildCustomComponents) {
+    customRepos.add(new Repo(openmpfCustomDockerSlug, openmpfCustomDockerRepo, openmpfCustomDockerSlug,
+            openmpfCustomDockerBranch))
+
+    customRepos.add(new Repo(openmpfCustomComponentsSlug, openmpfCustomComponentsRepo, openmpfCustomComponentsSlug,
+            openmpfCustomComponentsBranch))
+
+    customRepos.add(new Repo(openmpfCustomSystemTestsSlug, openmpfCustomSystemTestsRepo, openmpfCustomSystemTestsSlug,
+            openmpfCustomSystemTestsBranch))
+}
 
 
 node(env.jenkins_nodes) {
@@ -69,59 +122,39 @@ node(env.jenkins_nodes) {
     def buildId = "${currentBuild.projectName}_${currentBuild.number}"
 
     stage('Clone repos') {
-        if (!fileExists('openmpf-projects')) {
-            sh 'git clone --recurse-submodules https://github.com/openmpf/openmpf-projects.git'
+
+        if (!fileExists(openmpfProjectsRepo.path)) {
+            sh "git clone --recurse-submodules $openmpfProjectsRepo.url"
         }
-        dir('openmpf-projects') {
+        dir(openmpfProjectsRepo.path) {
             sh 'git clean -ffd'
             sh 'git submodule foreach git clean -ffd'
             sh 'git fetch'
-            sh "git checkout 'origin/$openmpfProjectsBranch'"
-
-            sh "cd openmpf && git checkout 'origin/$openmpfBranch'"
-
-            sh "cd openmpf-components && git checkout 'origin/$openmpfComponentsBranch'"
-
-            sh "cd openmpf-contrib-components && git checkout 'origin/$openmpfContribComponentsBranch'"
-
-            sh "cd openmpf-cpp-component-sdk && git checkout 'origin/$openmpfCppComponentSdkBranch'"
-
-            sh "cd openmpf-java-component-sdk && git checkout 'origin/$openmpfJavaComponentSdkBranch'"
-
-            sh "cd openmpf-python-component-sdk && git checkout 'origin/$openmpfPythonComponentSdkBranch'"
-
-            sh "cd openmpf-build-tools && git checkout 'origin/$openmpfBuildToolsBranch'"
+            sh "git checkout 'origin/$openmpfProjectsRepo.branch'"
+        }
+        for (repo in coreRepos) {
+            sh "cd '$repo.path' && git checkout 'origin/$repo.branch'"
         }
 
-        if (!fileExists('openmpf-docker')) {
-            sh 'git clone https://github.com/openmpf/openmpf-docker.git'
+
+        if (!fileExists(openmpfDockerRepo.path)) {
+            sh "git clone $openmpfDockerRepo.url"
         }
-        dir('openmpf-docker') {
+        dir(openmpfDockerRepo.path) {
             sh 'git clean -ffd'
             sh 'git fetch'
-            sh "git checkout 'origin/$openmpfDockerBranch'"
+            sh "git checkout 'origin/$openmpfDockerRepo.branch'"
         }
 
-        if (buildCustomComponents) {
-            custom_repos = [
-                [url: openmpfCustomDockerRepo, branch: openmpfCustomDockerBranch,
-                     dir: openmpfCustomDockerSlug],
-                [url: openmpfCustomComponentsRepo, branch: openmpfCustomComponentsBranch,
-                    dir: openmpfCustomComponentsSlug],
-                [url: openmpfCustomSystemTestsRepo, branch: openmpfCustomSystemTestsBranch,
-                    dir: openmpfCustomSystemTestsSlug]
-            ]
-            for (repo in custom_repos) {
-                checkout(
-                        $class: 'GitSCM',
-                        userRemoteConfigs: [[url: repo.url, credentialsId: openmpfCustomRepoCredId]],
-                        branches: [[name: repo.branch]],
-                        extensions: [
-                                [$class: 'CleanBeforeCheckout'],
-                                [$class: 'RelativeTargetDirectory', relativeTargetDir: repo.dir]])
-            }
+        for (repo in customRepos) {
+            checkout(
+                    $class: 'GitSCM',
+                    userRemoteConfigs: [[url: repo.url, credentialsId: openmpfCustomRepoCredId]],
+                    branches: [[name: repo.branch]],
+                    extensions: [
+                            [$class: 'CleanBeforeCheckout'],
+                            [$class: 'RelativeTargetDirectory', relativeTargetDir: repo.path]])
         }
-
     } // stage('Clone repos')
 
     stage('Build images') {
