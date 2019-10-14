@@ -186,7 +186,6 @@ node(env.jenkins_nodes) {
                      "COMPOSE_FILE=$composeFiles"]) {
                 try {
                     sh 'docker-compose up --exit-code-from workflow-manager'
-                    junit 'test-reports/*-reports/*.xml'
                     sh 'docker-compose down --volumes'
                 }
                 catch (e) {
@@ -197,6 +196,9 @@ node(env.jenkins_nodes) {
                         sh 'docker-compose down --volumes'
                     }
                     throw e;
+                }
+                finally {
+                    junit 'test-reports/*-reports/*.xml'
                 }
             } // withEnv
         } // dir('openmpf-docker')

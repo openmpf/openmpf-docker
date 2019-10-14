@@ -19,3 +19,4 @@ docker-compose-test.yml
 swarm-compose.yml
 openmpf-docker-images*
 .env
+test-reports
