@@ -101,6 +101,8 @@ find . -path '*/surefire-reports/*.xml' -exec cp {} /test-reports/surefire-repor
 mkdir /test-reports/failsafe-reports
 find . -path '*/failsafe-reports/*.xml' -exec cp {} /test-reports/failsafe-reports \;
 
+chmod -R 777 /test-reports
+
 
 # Maven doesn't exit with error when tests in certain Maven modules fail.
 python /scripts/check-test-reports.py /test-reports
