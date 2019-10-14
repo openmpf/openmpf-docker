@@ -71,6 +71,7 @@ services:
       - MYSQL_ROOT_PASSWORD=password
     volumes:
       - shared_data:/opt/mpf/share
+      - ./test-reports:/test-reports
     networks:
       - overlay
 

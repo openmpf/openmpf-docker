@@ -186,6 +186,7 @@ node(env.jenkins_nodes) {
                      "COMPOSE_FILE=$composeFiles"]) {
                 try {
                     sh 'docker-compose up --exit-code-from workflow-manager'
+                    junit 'test-reports/*-reports/*.xml'
                     sh 'docker-compose down --volumes'
                 }
                 catch (e) {
