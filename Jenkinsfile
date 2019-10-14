@@ -43,6 +43,8 @@ def preserveContainersOnFailure = env.preserve_containers_on_failure?.toBoolean(
 
 // These properties are for building with custom components
 def buildCustomComponents = env.build_custom_components?.toBoolean() ?: false
+def openmpfCustomRepoCredId = env.openmpf_custom_repo_cred_id
+
 
 def openmpfCustomDockerRepo = env.openmpf_custom_docker_repo
 def openmpfCustomDockerSlug = env.openmpf_custom_docker_slug
