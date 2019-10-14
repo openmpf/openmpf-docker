@@ -197,8 +197,9 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
 
         withEnv(['DOCKER_BUILDKIT=1', 'RUN_TESTS=true']) {
             buildShas = getBuildShasStr(allRepos)
-            def commonBuildArgs = " --build-arg BUILD_REGISTRY=$remoteImagePrefix --build-arg BUILD_TAG=$imageTag " +
-                    "--build-arg BUILD_DATE=$buildDate --build-arg BUILD_SHAS=$buildShas ";
+            def commonBuildArgs = " --build-arg BUILD_REGISTRY='$remoteImagePrefix' " +
+                    "--build-arg BUILD_TAG='$imageTag' --build-arg BUILD_DATE='$buildDate' " +
+                    "--build-arg BUILD_SHAS='$buildShas' ";
 
 
             dir ('openmpf-docker') {
