@@ -14,6 +14,15 @@ updateOrAddProperty() {
     fi
 }
 
+# TODO: Add wait to executor entrypoints
+# Wait for ActiveMQ service.
+echo 'Waiting for ActiveMQ to become available ...'
+until curl --head "$ACTIVE_MQ_HOST:8161" >> /dev/null 2>&1; do
+    echo 'ActiveMQ is unavailable. Sleeping.'
+    sleep 5
+done
+echo 'ActiveMQ is up'
+
 python -u /scripts/descriptor-receiver.py &
 descriptor_receiver_pid=$!
 
@@ -31,12 +40,19 @@ cd /home/mpf/openmpf-projects/openmpf
 mkdir "$MPF_HOME/share/samples"
 cp --recursive trunk/mpf-system-tests/src/test/resources/samples/* "$MPF_HOME/share/samples"
 cp --recursive trunk/workflow-manager/src/test/resources/samples/* "$MPF_HOME/share/samples"
+cp --recursive trunk/workflow-manager/src/test/resources/samples/* "$MPF_HOME/share/samples"
+
+if [ -f /scripts/docker-custom-entrypoint.sh ]; then
+    source /scripts/docker-custom-entrypoint.sh
+fi
 
 
 echo 'Waiting for MySQL to become available ...'
 /scripts/wait-for-it.sh "$MYSQL_HOST:3306" --timeout=0
 echo 'MySQL is up'
 
+
+set +o xtrace
 
 # Wait for Redis service.
 echo 'Waiting for Redis to become available ...'
@@ -69,7 +85,8 @@ mvn verify \
     -DgitShortId=123 \
     -DjenkinsBuildNumber=1 \
     -Dstartup.auto.registration.skip=false \
-    -Dexec.skip=true
+    -Dexec.skip=true \
+    $MVN_OPTIONS
 
 mavenRetVal=$?
 
