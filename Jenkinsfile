@@ -40,6 +40,10 @@ def imageTag = env.image_tag
 
 def preserveContainersOnFailure = env.preserve_containers_on_failure?.toBoolean() ?: false
 
+def dockerRegistryHost = env.docker_registry_host
+def dockerRegistryPort = env.docker_registry_port
+def dockerRegistryPath = env.docker_registry_path ?: "/openmpf"
+
 
 // These properties are for building with custom components
 def buildCustomComponents = env.build_custom_components?.toBoolean() ?: false
@@ -65,6 +69,7 @@ class Repo {
     def url
     def path
     def branch
+    def sha
 
     Repo(name, url, path, branch) {
         this.name = name;
@@ -115,11 +120,32 @@ if (buildCustomComponents) {
             openmpfCustomSystemTestsBranch))
 }
 
+def allRepos = [openmpfDockerRepo, openmpfProjectsRepo] + coreRepos + customRepos
+
 
 node(env.jenkins_nodes) {
-    wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color in Jenkins console
+wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color in Jenkins console
 
     def buildId = "${currentBuild.projectName}_${currentBuild.number}"
+    def buildDate = sh(script: 'date --iso-8601=seconds', returnStdout: true).trim()
+
+
+    def dockerRegistryHostAndPort = dockerRegistryHost
+    if (dockerRegistryPort) {
+        dockerRegistryHostAndPort += ':' + dockerRegistryPort
+    }
+
+    def remoteImagePrefix = dockerRegistryHostAndPort
+    if (dockerRegistryPath) {
+        if (!dockerRegistryPath.startsWith("/")) {
+            remoteImagePrefix += "/"
+        }
+        remoteImagePrefix += dockerRegistryPath
+        if (!dockerRegistryPath.endsWith("/")) {
+            remoteImagePrefix += "/"
+        }
+    }
+
 
     stage('Clone repos') {
 
@@ -155,6 +181,10 @@ node(env.jenkins_nodes) {
                             [$class: 'CleanBeforeCheckout'],
                             [$class: 'RelativeTargetDirectory', relativeTargetDir: repo.path]])
         }
+
+        for (repo in allRepos) {
+            repo.sha = sh("cd $repo.path && git rev-parse HEAD", returnStdout: true).trim()
+        }
     } // stage('Clone repos')
 
     stage('Build images') {
@@ -164,12 +194,16 @@ node(env.jenkins_nodes) {
             sh "cp $buildPackageJson openmpf-projects/openmpf/trunk/jenkins/scripts/config_files"
             buildPackageJson = buildPackageJson.substring(buildPackageJson.lastIndexOf("/") + 1)
         }
-        withEnv(['DOCKER_BUILDKIT=1', 'RUN_TESTS=true', "BUILD_TAG=$imageTag"]) {
-            def commonBuildArgs = '--build-arg BUILD_TAG'
+
+        withEnv(['DOCKER_BUILDKIT=1', 'RUN_TESTS=true']) {
+            buildShas = getBuildShasStr(allRepos)
+            def commonBuildArgs = " --build-arg BUILD_REGISTRY=$remoteImagePrefix --build-arg BUILD_TAG=$imageTag " +
+                    "--build-arg BUILD_DATE=$buildDate --build-arg BUILD_SHAS=$buildShas ";
+
 
             dir ('openmpf-docker') {
                 sh 'docker build -f openmpf_build/Dockerfile ../openmpf-projects --build-arg RUN_TESTS ' +
-                        "--build-arg BUILD_PACKAGE_JSON=$buildPackageJson  -t openmpf_build:$imageTag"
+                        "--build-arg BUILD_PACKAGE_JSON=$buildPackageJson $commonBuildArgs -t openmpf_build:$imageTag"
 
                 sh "docker build integration_tests -t openmpf_integration_tests:$imageTag $commonBuildArgs"
             }
@@ -197,7 +231,7 @@ node(env.jenkins_nodes) {
                         composeFiles += ":$customComponentsYml"
                     }
                 }
-                withEnv(["TAG=$imageTag", "COMPOSE_FILE=$composeFiles"]) {
+                withEnv(["TAG=$imageTag", "REGISTRY=$remoteImagePrefix", "COMPOSE_FILE=$composeFiles"]) {
                     sh "docker-compose build $commonBuildArgs --build-arg RUN_TESTS"
                 }
             }
@@ -214,6 +248,7 @@ node(env.jenkins_nodes) {
             }
 
             withEnv(["TAG=$imageTag",
+                     "REGISTRY=$remoteImagePrefix",
                      // Use custom project name to allow multiple builds on same machine
                      "COMPOSE_PROJECT_NAME=openmpf_$buildId",
                      "COMPOSE_FILE=$composeFiles"]) {
@@ -238,3 +273,7 @@ node(env.jenkins_nodes) {
     } // stage('Run Integration Tests')
 } // wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm'])
 } // node(env.jenkins_nodes)
+
+def getBuildShasStr(repos) {
+    repos.collect { "$it.name: $it.sha" }.join(', ')
+}

@@ -94,7 +94,7 @@ kill "$descriptor_receiver_pid"
 
 rm --recursive --force /test-reports/*
 
-cd ..
+cd ../..
 mkdir --parents /test-reports/surefire-reports
 find . -path '*/surefire-reports/*.xml' -exec cp {} /test-reports/surefire-reports \;
 

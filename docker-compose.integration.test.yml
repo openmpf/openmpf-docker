@@ -45,7 +45,7 @@ services:
       - overlay
 
   activemq:
-    image: openmpf_activemq:${TAG:-latest}
+    image: ${REGISTRY}openmpf_activemq:${TAG:-latest}
     environment:
       # Set which configuration files are used at runtime:
       - ACTIVE_MQ_PROFILE=default
@@ -59,7 +59,7 @@ services:
       - overlay
 
   workflow-manager:
-    image: openmpf_integration_tests:${TAG:-latest}
+    image: ${REGISTRY}openmpf_integration_tests:${TAG:-latest}
     build: integration_tests
     depends_on:
       - mysql-database
@@ -77,7 +77,7 @@ services:
 
 
   node-manager:
-    image: openmpf_node_manager:${TAG:-latest}
+    image: ${REGISTRY}openmpf_node_manager:${TAG:-latest}
     build: node_manager
     volumes:
       - shared_data:/opt/mpf/share
