@@ -117,7 +117,7 @@ node(env.jenkins_nodes) {
                         userRemoteConfigs: [[url: repo.url, credentialsId: openmpfCustomRepoCredId]],
                         branches: [[name: repo.branch]],
                         extensions: [
-                                [$class: CleanBeforeCheckout],
+                                [$class: 'CleanBeforeCheckout'],
                                 [$class: 'RelativeTargetDirectory', relativeTargetDir: repo.dir]])
             }
         }
