@@ -121,7 +121,7 @@ node(env.jenkins_nodes) {
             withEnv(["TAG=$imageTag",
                      // Use custom project name to allow multiple builds on same machine
                      "COMPOSE_PROJECT_NAME=openmpf_$buildId",
-                     'COMPOSE_FILE=docker-compose.integration.test.yml']) {
+                     'COMPOSE_FILE=docker-compose.integration.test.yml:docker-compose.components.yml']) {
                 try {
                     sh 'docker-compose up --exit-code-from workflow-manager'
                     sh 'docker-compose down --volumes'

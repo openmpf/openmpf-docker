@@ -41,15 +41,22 @@ services:
     command: [
       '--wait_timeout=28800',
     ]
+    networks:
+      - overlay
 
   activemq:
     image: openmpf_activemq:${TAG:-latest}
     environment:
       # Set which configuration files are used at runtime:
       - ACTIVE_MQ_PROFILE=default
+    networks:
+      - overlay
+
 
   redis:
     image: redis:latest
+    networks:
+      - overlay
 
   workflow-manager:
     image: openmpf_integration_tests:${TAG:-latest}
@@ -64,28 +71,22 @@ services:
       - MYSQL_ROOT_PASSWORD=password
     volumes:
       - shared_data:/opt/mpf/share
+    networks:
+      - overlay
+
 
   node-manager:
     image: openmpf_node_manager:${TAG:-latest}
     build: node_manager
     volumes:
       - shared_data:/opt/mpf/share
+    networks:
+      - overlay
 
-  ocv-face-detection:
-    image: openmpf_ocv_face_detection:${TAG:-latest}
-    environment:
-      WFM_PASSWORD: mpfadm
-      WFM_USER: admin
-    volumes:
-      - shared_data:/opt/mpf/share
 
-  tesseract-ocr-text-detection:
-    image: openmpf_tesseract_ocr_text_detection:${TAG:-latest}
-    environment:
-      WFM_PASSWORD: mpfadm
-      WFM_USER: admin
-    volumes:
-      - shared_data:/opt/mpf/share
 
 volumes:
   shared_data:
+
+networks:
+  overlay:
