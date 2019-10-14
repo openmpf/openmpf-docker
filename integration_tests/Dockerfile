@@ -64,7 +64,6 @@ RUN curl --location 'https://archive.apache.org/dist/maven/maven-3/3.3.3/binarie
     ln --symbolic /opt/apache-maven-3.3.3/bin/mvn /usr/local/bin;
 
 RUN mvn dependency:get -Dartifact=org.apache.maven.plugins:maven-surefire-plugin:2.22.1; \
-    mvn dependency:get -Dartifact=org.apache.maven.surefire:maven-surefire-common:2.14; \
     mvn dependency:get -Dartifact=org.apache.maven.surefire:surefire-junit4:2.22.1; \
     mvn dependency:get -Dartifact=org.apache.maven.surefire:surefire-junit47:2.22.1; \
     mvn dependency:get -Dartifact=org.codehaus.cargo:cargo-maven2-plugin:1.4.8; \
