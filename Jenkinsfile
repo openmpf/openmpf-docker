@@ -204,23 +204,28 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
 
             dir ('openmpf-docker') {
                 sh 'docker build -f openmpf_build/Dockerfile ../openmpf-projects --build-arg RUN_TESTS ' +
-                        "--build-arg BUILD_PACKAGE_JSON=$buildPackageJson $commonBuildArgs -t openmpf_build:$imageTag"
+                        "--build-arg BUILD_PACKAGE_JSON=$buildPackageJson $commonBuildArgs " +
+                        "-t ${remoteImagePrefix}openmpf_build:$imageTag"
 
-                sh "docker build integration_tests -t openmpf_integration_tests:$imageTag $commonBuildArgs"
+                sh "docker build integration_tests $commonBuildArgs " +
+                        "-t ${remoteImagePrefix}openmpf_integration_tests:$imageTag"
             }
 
             if (buildCustomComponents) {
-                sh "docker build $openmpfCustomSystemTestsSlug -t openmpf_integration_tests:$imageTag $commonBuildArgs"
+                sh "docker build $openmpfCustomSystemTestsSlug $commonBuildArgs " +
+                        "-t ${remoteImagePrefix}openmpf_integration_tests:$imageTag "
             }
 
 
             dir('openmpf-docker/components') {
-                sh "docker build . -f cpp_component_build/Dockerfile -t openmpf_cpp_component_build:$imageTag " +
-                        "$commonBuildArgs"
+                sh "docker build . -f cpp_component_build/Dockerfile $commonBuildArgs " +
+                        "-t ${remoteImagePrefix}openmpf_cpp_component_build:$imageTag"
 
-                sh "docker build . -f cpp_executor/Dockerfile -t openmpf_cpp_executor:$imageTag $commonBuildArgs"
+                sh "docker build . -f cpp_executor/Dockerfile $commonBuildArgs " +
+                        "-t ${remoteImagePrefix}openmpf_cpp_executor:$imageTag"
 
-                sh "docker build . -f python_executor/Dockerfile -t openmpf_python_executor:$imageTag $commonBuildArgs"
+                sh "docker build . -f python_executor/Dockerfile $commonBuildArgs " +
+                        "-t ${remoteImagePrefix}openmpf_python_executor:$imageTag"
             }
 
             dir ('openmpf-docker') {
