@@ -41,6 +41,26 @@ def imageTag = env.image_tag
 def preserveContainersOnFailure = env.preserve_containers_on_failure?.toBoolean() ?: false
 
 
+// These properties are for building with custom components
+def buildCustomComponents = env.build_custom_components?.toBoolean() ?: false
+
+def openmpfCustomDockerRepo = env.openmpf_custom_docker_repo
+def openmpfCustomDockerSlug = env.openmpf_custom_docker_slug
+def openmpfCustomDockerBranch = env.openmpf_custom_docker_branch ?: 'develop'
+
+
+def openmpfCustomComponentsRepo = env.openmpf_custom_components_repo
+def openmpfCustomComponentsSlug = env.openmpf_custom_components_slug
+def openmpfCustomComponentsBranch = env.openmpf_custom_components_branch ?: 'develop'
+
+def openmpfCustomSystemTestsRepo = env.openmpf_custom_system_tests_repo
+def openmpfCustomSystemTestsSlug = env.openmpf_custom_system_tests_slug
+def openmpfCustomSystemTestsBranch = env.openmpf_custom_system_tests_branch ?: 'develop'
+
+
+
+
+
 node(env.jenkins_nodes) {
     wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color in Jenkins console
 
@@ -74,12 +94,32 @@ node(env.jenkins_nodes) {
         if (!fileExists('openmpf-docker')) {
             sh 'git clone https://github.com/openmpf/openmpf-docker.git'
         }
-
         dir('openmpf-docker') {
             sh 'git clean -ffd'
             sh 'git fetch'
             sh "git checkout 'origin/$openmpfDockerBranch'"
         }
+
+        if (buildCustomComponents) {
+            custom_repos = [
+                [url: openmpfCustomDockerRepo, branch: openmpfCustomDockerBranch,
+                     dir: openmpfCustomDockerSlug],
+                [url: openmpfCustomComponentsRepo, branch: openmpfCustomComponentsBranch,
+                    dir: openmpfCustomComponentsSlug],
+                [url: openmpfCustomSystemTestsRepo, branch: openmpfCustomSystemTestsBranch,
+                    dir: openmpfCustomSystemTestsSlug]
+            ]
+            for (repo in custom_repos) {
+                checkout(
+                        $class: 'GitSCM',
+                        userRemoteConfigs: [[url: repo.url, credentialsId: openmpfCustomRepoCredId]],
+                        branches: [[name: repo.branch]],
+                        extensions: [
+                                [$class: CleanBeforeCheckout],
+                                [$class: 'RelativeTargetDirectory', relativeTargetDir: repo.dir]])
+            }
+        }
+
     } // stage('Clone repos')
 
     stage('Build images') {
@@ -99,6 +139,11 @@ node(env.jenkins_nodes) {
                 sh "docker build integration_tests -t openmpf_integration_tests:$imageTag $commonBuildArgs"
             }
 
+            if (buildCustomComponents) {
+                sh "docker build $openmpfCustomSystemTestsSlug -t openmpf_integration_tests:$imageTag $commonBuildArgs"
+            }
+
+
             dir('openmpf-docker/components') {
                 sh "docker build . -f cpp_component_build/Dockerfile -t openmpf_cpp_component_build:$imageTag " +
                         "$commonBuildArgs"
@@ -107,21 +152,36 @@ node(env.jenkins_nodes) {
 
                 sh "docker build . -f python_executor/Dockerfile -t openmpf_python_executor:$imageTag $commonBuildArgs"
             }
+
             dir ('openmpf-docker') {
                 sh 'cp .env.tpl .env'
-                withEnv(["TAG=$imageTag"]) {
-                    sh 'docker-compose -f docker-compose.core.yml -f docker-compose.components.yml ' +
-                            "-f docker-compose.components.test.yml build $commonBuildArgs"
+                def composeFiles = 'docker-compose.core.yml:docker-compose.components.yml'
+                if (buildCustomComponents) {
+                    def customComponentsYml = "../$openmpfCustomDockerSlug/docker-compose.custom-components.yml"
+                    if (fileExists(customComponentsYml)) {
+                        composeFiles += ":$customComponentsYml"
+                    }
+                }
+                withEnv(["TAG=$imageTag", "COMPOSE_FILE=$composeFiles"]) {
+                    sh "docker-compose build $commonBuildArgs --build-arg RUN_TESTS"
                 }
             }
         }
     } // stage('Build images')
     stage('Run Integration Tests') {
         dir('openmpf-docker') {
+            def composeFiles = 'docker-compose.integration.test.yml:docker-compose.components.yml'
+            if (buildCustomComponents) {
+                def customComponentsYml = "../$openmpfCustomDockerSlug/docker-compose.custom-components.yml"
+                if (fileExists(customComponentsYml)) {
+                    composeFiles += ":$customComponentsYml"
+                }
+            }
+
             withEnv(["TAG=$imageTag",
                      // Use custom project name to allow multiple builds on same machine
                      "COMPOSE_PROJECT_NAME=openmpf_$buildId",
-                     'COMPOSE_FILE=docker-compose.integration.test.yml:docker-compose.components.yml']) {
+                     "COMPOSE_FILE=$composeFiles"]) {
                 try {
                     sh 'docker-compose up --exit-code-from workflow-manager'
                     sh 'docker-compose down --volumes'
