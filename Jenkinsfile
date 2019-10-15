@@ -34,16 +34,6 @@ def openmpfBuildToolsBranch = env.openmpf_build_tools_branch ?: 'develop'
 
 def openmpfDockerBranch = env.openmpf_docker_branch ?: 'develop'
 
-def buildPackageJson = env.build_package_json
-
-def imageTag = env.image_tag
-
-def preserveContainersOnFailure = env.preserve_containers_on_failure?.toBoolean() ?: false
-
-def dockerRegistryHost = env.docker_registry_host
-def dockerRegistryPort = env.docker_registry_port
-def dockerRegistryPath = env.docker_registry_path ?: "/openmpf"
-def dockerRegistryCredId = env.docker_registry_cred_id;
 
 
 
@@ -51,11 +41,9 @@ def dockerRegistryCredId = env.docker_registry_cred_id;
 def buildCustomComponents = env.build_custom_components?.toBoolean() ?: false
 def openmpfCustomRepoCredId = env.openmpf_custom_repo_cred_id
 
-
 def openmpfCustomDockerRepo = env.openmpf_custom_docker_repo
 def openmpfCustomDockerSlug = env.openmpf_custom_docker_slug
 def openmpfCustomDockerBranch = env.openmpf_custom_docker_branch ?: 'develop'
-
 
 def openmpfCustomComponentsRepo = env.openmpf_custom_components_repo
 def openmpfCustomComponentsSlug = env.openmpf_custom_components_slug
@@ -65,7 +53,25 @@ def openmpfCustomSystemTestsRepo = env.openmpf_custom_system_tests_repo
 def openmpfCustomSystemTestsSlug = env.openmpf_custom_system_tests_slug
 def openmpfCustomSystemTestsBranch = env.openmpf_custom_system_tests_branch ?: 'develop'
 
+// These properties are for applying custom configurations to images
+def applyCustomConfig = env.apply_custom_config?.toBoolean() ?: false
+def openmpfConfigDockerRepo = env.openmpf_config_docker_repo
+def openmpfConfigDockerSlug = env.openmpf_config_docker_slug
+def openmpfConfigDockerRepo = env.openmpf_config_docker_branch
 
+
+
+def buildPackageJson = env.build_package_json
+
+def imageTag = env.image_tag
+def buildNoCache = env.build_no_cache?.toBoolean() ?: false
+
+def preserveContainersOnFailure = env.preserve_containers_on_failure?.toBoolean() ?: false
+
+def dockerRegistryHost = env.docker_registry_host
+def dockerRegistryPort = env.docker_registry_port
+def dockerRegistryPath = env.docker_registry_path ?: "/openmpf"
+def dockerRegistryCredId = env.docker_registry_cred_id;
 def pushRuntimeImages = env.push_runtime_images?.toBoolean() ?: false
 
 def postOpenmpfDockerBuildStatus = env.post_openmpf_docker_build_status?.toBoolean() ?: false
@@ -118,6 +124,9 @@ def coreRepos = [
                 'openmpf-projects/openmpf-build-tools', openmpfBuildToolsBranch),
 ]
 
+def customConfigRepo = new Repo(openmpfConfigDockerSlug, openmpfConfigDockerRepo, openmpfConfigDockerSlug,
+        openmpfConfigDockerRepo)
+
 def customRepos = []
 if (buildCustomComponents) {
     customRepos.add(new Repo(openmpfCustomDockerSlug, openmpfCustomDockerRepo, openmpfCustomDockerSlug,
@@ -128,6 +137,9 @@ if (buildCustomComponents) {
 
     customRepos.add(new Repo(openmpfCustomSystemTestsSlug, openmpfCustomSystemTestsRepo, openmpfCustomSystemTestsSlug,
             openmpfCustomSystemTestsBranch))
+    if (applyCustomConfig) {
+        customRepos.add(customConfigRepo)
+    }
 }
 
 def allRepos = [openmpfDockerRepo, openmpfProjectsRepo] + coreRepos + customRepos
@@ -158,6 +170,8 @@ try {
         }
     }
 
+    def workflowManagerImageName = "${remoteImagePrefix}openmpf_workflow_manager:$imageTag"
+    def activeMqImageName = "${remoteImagePrefix}openmpf_activemq:$imageTag"
     def cppBuildImageName = "${remoteImagePrefix}openmpf_cpp_component_build:$imageTag"
     def cppExecutorImageName = "${remoteImagePrefix}openmpf_cpp_executor:$imageTag"
     def pythonExecutorImageName = "${remoteImagePrefix}openmpf_python_executor:$imageTag"
@@ -214,8 +228,9 @@ try {
         }
 
         withEnv(['DOCKER_BUILDKIT=1', 'RUN_TESTS=true']) {
+            def noCacheArg = buildNoCache ? '--no-cache' : ''
             def commonBuildArgs = " --build-arg BUILD_REGISTRY='$remoteImagePrefix' " +
-                    "--build-arg BUILD_TAG='$imageTag' "
+                    "--build-arg BUILD_TAG='$imageTag' $noCacheArg "
 
             dir ('openmpf-docker') {
                 sh 'docker build -f openmpf_build/Dockerfile ../openmpf-projects --build-arg RUN_TESTS ' +
@@ -259,8 +274,20 @@ try {
                     sh "docker-compose build $commonBuildArgs --build-arg RUN_TESTS"
                 }
             }
-        }
+
+            if (applyCustomConfig) {
+                echo 'APPLYING CUSTOM CONFIGURATION'
+                dir(customConfigRepo.path) {
+                    sh "docker build workflow_manager $commonBuildArgs -t $workflowManagerImageName"
+                    sh "docker build activemq $commonBuildArgs -t $activeMqImageName"
+                }
+            }
+            else  {
+                echo 'SKIPPING CUSTOM CONFIGURATION'
+            }
+        } // withEnv
     } // stage('Build images')
+
     stage('Run Integration Tests') {
         dir('openmpf-docker') {
             def composeFiles = "docker-compose.integration.test.yml:$componentComposeFiles"
