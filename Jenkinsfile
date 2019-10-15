@@ -66,6 +66,14 @@ def openmpfCustomSystemTestsSlug = env.openmpf_custom_system_tests_slug
 def openmpfCustomSystemTestsBranch = env.openmpf_custom_system_tests_branch ?: 'develop'
 
 
+def pushRuntimeImages = env.push_runtime_images?.toBoolean() ?: false
+
+def postOpenmpfDockerBuildStatus = env.post_openmpf_docker_build_status?.toBoolean() ?: false
+def githubAuthToken = env.github_auth_token
+def emailRecipients = env.email_recipients
+
+
+
 class Repo {
     def name
     def url
@@ -127,7 +135,9 @@ def allRepos = [openmpfDockerRepo, openmpfProjectsRepo] + coreRepos + customRepo
 
 node(env.jenkins_nodes) {
 wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color in Jenkins console
+def buildException
 
+try {
     def buildId = "${currentBuild.projectName}_${currentBuild.number}"
     def buildDate = sh(script: 'date --iso-8601=seconds', returnStdout: true).trim()
 
@@ -280,15 +290,51 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
         } // dir('openmpf-docker')
     } // stage('Run Integration Tests')
     stage('Push runtime images') {
-        withEnv(["TAG=$imageTag", "REGISTRY=$remoteImagePrefix", "COMPOSE_FILE=$runtimeComposeFiles"]) {
-            docker.withRegistry("http://$dockerRegistryHostAndPort", dockerRegistryCredId) {
-                sh 'docker-compose push'
-                sh "docker push '${cppBuildImageName}'"
-                sh "docker push '${cppExecutorImageName}'"
-                sh "docker push '${pythonExecutorImageName}'"
-            }
+        if (!pushRuntimeImages) {
+            echo 'SKIPPING PUSH OF RUNTIME IMAGES'
         }
+        when (pushRuntimeImages) {
+            withEnv(["TAG=$imageTag", "REGISTRY=$remoteImagePrefix", "COMPOSE_FILE=$runtimeComposeFiles"]) {
+                docker.withRegistry("http://$dockerRegistryHostAndPort", dockerRegistryCredId) {
+                    sh 'docker-compose push'
+                    sh "docker push '${cppBuildImageName}'"
+                    sh "docker push '${cppExecutorImageName}'"
+                    sh "docker push '${pythonExecutorImageName}'"
+                } // docker.withRegistry ...
+            } // withEnv...
+        } // when (pushRuntimeImages)
     } // stage('Push runtime images')
+}
+catch (e) { // Global exception handler
+    buildException = e
+    throw e
+}
+finally {
+    def buildStatus
+    if (isAborted()) {
+        echo 'DETECTED BUILD ABORTED'
+        buildStatus = "aborted"
+    }
+    else if (buildException != null) {
+        echo 'DETECTED BUILD FAILURE'
+        echo 'Exception type: ' + buildException.getClass()
+        echo 'Exception message: ' + buildException.getMessage()
+        buildStatus = "failure"
+    }
+    else {
+        echo 'DETECTED BUILD COMPLETED'
+        echo "CURRENT BUILD RESULT: ${currentBuild.currentResult}"
+        buildStatus = currentBuild.currentResult.equals("SUCCESS") ? "success" : "failure"
+    }
+
+    if (postOpenmpfDockerBuildStatus) {
+        postBuildStatus(openmpfDockerRepo)
+        for (repo in coreRepos) {
+            postBuildStatus(repo)
+        }
+    }
+    email(buildStatus, emailRecipients)
+}
 } // wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm'])
 } // node(env.jenkins_nodes)
 
@@ -297,3 +343,33 @@ def getBuildShasStr(repos) {
     repos.collect { "$it.name: $it.sha" }.join(', ')
 }
 
+def isAborted() {
+    return currentBuild.result == 'ABORTED' ||
+            !currentBuild.getRawBuild().getActions(jenkins.model.InterruptedBuildAction).isEmpty()
+}
+
+def postBuildStatus(repo, status) {
+    def description = "$currentBuild.projectName $currentBuild.displayName"
+    def statusJson = /{ "state": "$status", "description": "$description", "context": "jenkins" }/
+    def url = "https://api.github.com/repos/openmpf/$repo.name/status/$repo.sha"
+    def response = sh(script:
+            "curl -s -X POST -H 'Authorization: token $githubAuthToken' -d '$statusJson' $url",
+            returnStdout: true)
+
+    def resultJson = readJSON(text: response)
+
+    def success = (resultJson.state == status && resultJson.description == description
+                    && resultJson.context == "jenkins")
+    if (!success) {
+        echo 'Failed to post build status:'
+        echo response
+    }
+}
+
+def email(status, recipients) {
+    emailext(
+        subject: "$status: $env.JOB_NAME [$env.BUILD_NUMBER]",
+        body: '${JELLY_SCRIPT,template="text"}',
+        recipientProviders: [[$class: 'RequesterRecipientProvider']],
+        to: recipients);
+}
