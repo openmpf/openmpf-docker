@@ -43,6 +43,8 @@ def preserveContainersOnFailure = env.preserve_containers_on_failure?.toBoolean(
 def dockerRegistryHost = env.docker_registry_host
 def dockerRegistryPort = env.docker_registry_port
 def dockerRegistryPath = env.docker_registry_path ?: "/openmpf"
+def dockerRegistryCredId = env.docker_registry_cred_id;
+
 
 
 // These properties are for building with custom components
@@ -146,6 +148,9 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
         }
     }
 
+    def cppBuildImageName = "${remoteImageTagPrefix}openmpf_cpp_component_build:$imageTag"
+    def cppExecutorImageName = "${remoteImageTagPrefix}openmpf_cpp_executor:$imageTag"
+    def pythonExecutorImageName = "${remoteImageTagPrefix}openmpf_python_executor:$imageTag"
 
     stage('Clone repos') {
 
@@ -187,6 +192,9 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
         }
     } // stage('Clone repos')
 
+    def componentComposeFiles
+    def runtimeComposeFiles
+
     stage('Build images') {
         sh 'docker pull centos:7' // Make sure we are using the most recent centos:7 release
 
@@ -196,13 +204,8 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
         }
 
         withEnv(['DOCKER_BUILDKIT=1', 'RUN_TESTS=true']) {
-            buildShas = getBuildShasStr(allRepos)
-//            def commonBuildArgs = " --build-arg BUILD_REGISTRY='$remoteImagePrefix' " +
-//                    "--build-arg BUILD_TAG='$imageTag' --build-arg BUILD_DATE='$buildDate' " +
-//                    "--build-arg BUILD_SHAS='$buildShas' ";
             def commonBuildArgs = " --build-arg BUILD_REGISTRY='$remoteImagePrefix' " +
-                    "--build-arg BUILD_TAG='$imageTag' --build-arg BUILD_SHAS='$buildShas' ";
-
+                    "--build-arg BUILD_TAG='$imageTag' "
 
             dir ('openmpf-docker') {
                 sh 'docker build -f openmpf_build/Dockerfile ../openmpf-projects --build-arg RUN_TESTS ' +
@@ -221,25 +224,28 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
 
             dir('openmpf-docker/components') {
                 sh "docker build . -f cpp_component_build/Dockerfile $commonBuildArgs " +
-                        "-t ${remoteImagePrefix}openmpf_cpp_component_build:$imageTag"
+                        "-t $cppBuildImageName"
 
                 sh "docker build . -f cpp_executor/Dockerfile $commonBuildArgs " +
-                        "-t ${remoteImagePrefix}openmpf_cpp_executor:$imageTag"
+                        "-t $cppExecutorImageName"
 
                 sh "docker build . -f python_executor/Dockerfile $commonBuildArgs " +
-                        "-t ${remoteImagePrefix}openmpf_python_executor:$imageTag"
+                        "-t $pythonExecutorImageName"
             }
 
             dir ('openmpf-docker') {
                 sh 'cp .env.tpl .env'
-                def composeFiles = 'docker-compose.core.yml:docker-compose.components.yml'
+
+                componentComposeFiles = 'docker-compose.components.yml'
                 if (buildCustomComponents) {
                     def customComponentsYml = "../$openmpfCustomDockerSlug/docker-compose.custom-components.yml"
                     if (fileExists(customComponentsYml)) {
-                        composeFiles += ":$customComponentsYml"
+                        componentComposeFiles += ":$customComponentsYml"
                     }
                 }
-                withEnv(["TAG=$imageTag", "REGISTRY=$remoteImagePrefix", "COMPOSE_FILE=$composeFiles"]) {
+                runtimeComposeFiles = "docker-compose.core.yml:$componentComposeFiles"
+
+                withEnv(["TAG=$imageTag", "REGISTRY=$remoteImagePrefix", "COMPOSE_FILE=$runtimeComposeFiles"]) {
                     sh "docker-compose build $commonBuildArgs --build-arg RUN_TESTS"
                 }
             }
@@ -247,13 +253,7 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
     } // stage('Build images')
     stage('Run Integration Tests') {
         dir('openmpf-docker') {
-            def composeFiles = 'docker-compose.integration.test.yml:docker-compose.components.yml'
-            if (buildCustomComponents) {
-                def customComponentsYml = "../$openmpfCustomDockerSlug/docker-compose.custom-components.yml"
-                if (fileExists(customComponentsYml)) {
-                    composeFiles += ":$customComponentsYml"
-                }
-            }
+            def composeFiles = "docker-compose.integration.test.yml:$componentComposeFiles"
 
             withEnv(["TAG=$imageTag",
                      "REGISTRY=$remoteImagePrefix",
@@ -279,9 +279,21 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
             } // withEnv
         } // dir('openmpf-docker')
     } // stage('Run Integration Tests')
+    stage('Push runtime images') {
+        withEnv(["TAG=$imageTag", "REGISTRY=$remoteImagePrefix", "COMPOSE_FILE=$runtimeComposeFiles"]) {
+            docker.withRegistry("http://$dockerRegistryHostAndPort", dockerRegistryCredId) {
+                sh 'docker-compose push'
+                sh "docker push '${cppBuildImageName}'"
+                sh "docker push '${cppExecutorImageName}'"
+                sh "docker push '${pythonExecutorImageName}'"
+            }
+        }
+    } // stage('Push runtime images')
 } // wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm'])
 } // node(env.jenkins_nodes)
+
 
 def getBuildShasStr(repos) {
     repos.collect { "$it.name: $it.sha" }.join(', ')
 }
+
