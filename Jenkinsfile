@@ -24,17 +24,15 @@
  ******************************************************************************/
 
 def openmpfProjectsBranch = env.openmpf_projects_branch ?: 'develop'
-def openmpfBranch = env.openmpf_branch ?: 'develop'
-def openmpfComponentsBranch = env.openmpf_components_branch ?: 'develop'
-def openmpfContribComponentsBranch = env.openmpf_contrib_components_branch ?: 'develop'
-def openmpfCppComponentSdkBranch = env.openmpf_cpp_component_sdk_branch ?: 'develop'
-def openmpfJavaComponentSdkBranch = env.openmpf_java_component_sdk_branch ?: 'develop'
-def openmpfPythonComponentSdkBranch = env.openmpf_python_component_sdk_branch ?: 'develop'
-def openmpfBuildToolsBranch = env.openmpf_build_tools_branch ?: 'develop'
+def openmpfBranch = env.openmpf_branch
+def openmpfComponentsBranch = env.openmpf_components_branch
+def openmpfContribComponentsBranch = env.openmpf_contrib_components_branch
+def openmpfCppComponentSdkBranch = env.openmpf_cpp_component_sdk_branch
+def openmpfJavaComponentSdkBranch = env.openmpf_java_component_sdk_branch
+def openmpfPythonComponentSdkBranch = env.openmpf_python_component_sdk_branch
+def openmpfBuildToolsBranch = env.openmpf_build_tools_branch
 
 def openmpfDockerBranch = env.openmpf_docker_branch ?: 'develop'
-
-
 
 
 // These properties are for building with custom components
@@ -188,7 +186,9 @@ try {
             sh "git checkout 'origin/$openmpfProjectsRepo.branch'"
         }
         for (repo in coreRepos) {
-            sh "cd '$repo.path' && git checkout 'origin/$repo.branch'"
+            if (repo.branch && !repo.branch.isAllWhitespace()) {
+                sh "cd '$repo.path' && git checkout 'origin/$repo.branch'"
+            }
         }
 
 
@@ -376,6 +376,10 @@ def isAborted() {
 }
 
 def postBuildStatus(repo, status) {
+    if (!repo.branch || repo.branch.isAllWhitespace()) {
+        return
+    }
+
     def description = "$currentBuild.projectName $currentBuild.displayName"
     def statusJson = /{ "state": "$status", "description": "$description", "context": "jenkins" }/
     def url = "https://api.github.com/repos/openmpf/$repo.name/status/$repo.sha"
