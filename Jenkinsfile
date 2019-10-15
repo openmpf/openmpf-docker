@@ -39,21 +39,17 @@ def openmpfDockerBranch = env.openmpf_docker_branch ?: 'develop'
 def buildCustomComponents = env.build_custom_components?.toBoolean() ?: false
 def openmpfCustomRepoCredId = env.openmpf_custom_repo_cred_id
 
-def openmpfCustomDockerRepo = env.openmpf_custom_docker_repo
-def openmpfCustomDockerSlug = env.openmpf_custom_docker_slug
-def openmpfCustomDockerBranch = env.openmpf_custom_docker_branch ?: 'develop'
-
-def openmpfCustomComponentsRepo = env.openmpf_custom_components_repo
+def openmpfCustomComponentsUrl = env.openmpf_custom_components_repo
 def openmpfCustomComponentsSlug = env.openmpf_custom_components_slug
 def openmpfCustomComponentsBranch = env.openmpf_custom_components_branch ?: 'develop'
 
-def openmpfCustomSystemTestsRepo = env.openmpf_custom_system_tests_repo
+def openmpfCustomSystemTestsUrl = env.openmpf_custom_system_tests_repo
 def openmpfCustomSystemTestsSlug = env.openmpf_custom_system_tests_slug
 def openmpfCustomSystemTestsBranch = env.openmpf_custom_system_tests_branch ?: 'develop'
 
 // These properties are for applying custom configurations to images
 def applyCustomConfig = env.apply_custom_config?.toBoolean() ?: false
-def openmpfConfigDockerRepo = env.openmpf_config_docker_repo
+def openmpfConfigDockerUrl = env.openmpf_config_docker_repo
 def openmpfConfigDockerSlug = env.openmpf_config_docker_slug
 def openmpfConfigDockerBranch = env.openmpf_config_docker_branch
 
@@ -133,19 +129,22 @@ def openmpfBuildToolsRepo = new Repo('openmpf-build-tools',
 def projectsSubRepos = [ openmpfRepo, openmpfComponentsRepo, openmpfContribComponentsRepo, openmpfCppSdkRepo,
                          opnmpfJavaSdkRepo, openmpfPythonSdkRepo, openmpfBuildToolsRepo ]
 
-def customConfigRepo = new Repo(openmpfConfigDockerSlug, openmpfConfigDockerRepo, openmpfConfigDockerSlug,
+
+def customComponentsRepo = new Repo(openmpfCustomComponentsSlug, openmpfCustomComponentsUrl,
+        openmpfCustomComponentsSlug, openmpfCustomComponentsBranch)
+
+def customSystemTestsRepo = new Repo(openmpfCustomSystemTestsSlug, openmpfCustomSystemTestsUrl,
+        openmpfCustomSystemTestsSlug, openmpfCustomSystemTestsBranch)
+
+def customConfigRepo = new Repo(openmpfConfigDockerSlug, openmpfConfigDockerUrl, openmpfConfigDockerSlug,
         openmpfConfigDockerBranch)
 
 def customRepos = []
 if (buildCustomComponents) {
-    customRepos.add(new Repo(openmpfCustomDockerSlug, openmpfCustomDockerRepo, openmpfCustomDockerSlug,
-            openmpfCustomDockerBranch))
+    customRepos.add(customComponentsRepo)
 
-    customRepos.add(new Repo(openmpfCustomComponentsSlug, openmpfCustomComponentsRepo, openmpfCustomComponentsSlug,
-            openmpfCustomComponentsBranch))
+    customRepos.add(customSystemTestsRepo)
 
-    customRepos.add(new Repo(openmpfCustomSystemTestsSlug, openmpfCustomSystemTestsRepo, openmpfCustomSystemTestsSlug,
-            openmpfCustomSystemTestsBranch))
     if (applyCustomConfig) {
         customRepos.add(customConfigRepo)
     }
@@ -285,7 +284,7 @@ try {
             }
 
             if (buildCustomComponents) {
-                sh "docker build $openmpfCustomSystemTestsSlug $commonBuildArgs ${getShasBuildArg(allRepos)} " +
+                sh "docker build $customSystemTestsRepo.path $commonBuildArgs ${getShasBuildArg(allRepos)} " +
                         " -t ${remoteImagePrefix}openmpf_integration_tests:$imageTag "
             }
 
@@ -308,7 +307,7 @@ try {
 
                 componentComposeFiles = 'docker-compose.components.yml'
                 if (buildCustomComponents) {
-                    def customComponentsYml = "../$openmpfCustomDockerSlug/docker-compose.custom-components.yml"
+                    def customComponentsYml = "../$customComponentsRepo.path/docker-compose.custom-components.yml"
                     if (fileExists(customComponentsYml)) {
                         componentComposeFiles += ":$customComponentsYml"
                     }
@@ -412,6 +411,10 @@ finally {
         }
     }
     email(buildStatus, emailRecipients)
+
+    // Remove dangling <none> images that are more than 2 weeks old.
+//    sh 'docker image prune --force --filter "until=336h"'
+//    sh 'docker builder prune --force --keep-storage=80GB'
 }
 } // wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm'])
 } // node(env.jenkins_nodes)
