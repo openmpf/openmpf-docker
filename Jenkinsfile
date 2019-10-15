@@ -324,7 +324,7 @@ try {
         when (pushRuntimeImages) {
             withEnv(["TAG=$imageTag", "REGISTRY=$remoteImagePrefix", "COMPOSE_FILE=$runtimeComposeFiles"]) {
                 docker.withRegistry("http://$dockerRegistryHostAndPort", dockerRegistryCredId) {
-                    sh 'docker-compose push'
+                    sh 'cd openmpf-docker && docker-compose push'
                     sh "docker push '${cppBuildImageName}'"
                     sh "docker push '${cppExecutorImageName}'"
                     sh "docker push '${pythonExecutorImageName}'"
