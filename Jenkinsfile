@@ -57,7 +57,7 @@ def openmpfCustomSystemTestsBranch = env.openmpf_custom_system_tests_branch ?: '
 def applyCustomConfig = env.apply_custom_config?.toBoolean() ?: false
 def openmpfConfigDockerRepo = env.openmpf_config_docker_repo
 def openmpfConfigDockerSlug = env.openmpf_config_docker_slug
-def openmpfConfigDockerRepo = env.openmpf_config_docker_branch
+def openmpfConfigDockerBranch = env.openmpf_config_docker_branch
 
 
 
@@ -125,7 +125,7 @@ def coreRepos = [
 ]
 
 def customConfigRepo = new Repo(openmpfConfigDockerSlug, openmpfConfigDockerRepo, openmpfConfigDockerSlug,
-        openmpfConfigDockerRepo)
+        openmpfConfigDockerBranch)
 
 def customRepos = []
 if (buildCustomComponents) {
