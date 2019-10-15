@@ -184,6 +184,7 @@ try {
             sh 'git submodule foreach git clean -ffd'
             sh 'git fetch'
             sh "git checkout 'origin/$openmpfProjectsRepo.branch'"
+            sh 'git submodule update'
         }
         for (repo in coreRepos) {
             if (repo.branch && !repo.branch.isAllWhitespace()) {
@@ -355,9 +356,9 @@ finally {
     }
 
     if (postOpenmpfDockerBuildStatus) {
-        postBuildStatus(openmpfDockerRepo, buildStatus)
+        postBuildStatus(openmpfDockerRepo, buildStatus, githubAuthToken)
         for (repo in coreRepos) {
-            postBuildStatus(repo, buildStatus)
+            postBuildStatus(repo, buildStatus, githubAuthToken)
         }
     }
     email(buildStatus, emailRecipients)
@@ -375,7 +376,7 @@ def isAborted() {
             !currentBuild.getRawBuild().getActions(jenkins.model.InterruptedBuildAction).isEmpty()
 }
 
-def postBuildStatus(repo, status) {
+def postBuildStatus(repo, status, githubAuthToken) {
     if (!repo.branch || repo.branch.isAllWhitespace()) {
         return
     }
