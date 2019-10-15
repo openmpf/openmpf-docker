@@ -148,9 +148,9 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
         }
     }
 
-    def cppBuildImageName = "${remoteImageTagPrefix}openmpf_cpp_component_build:$imageTag"
-    def cppExecutorImageName = "${remoteImageTagPrefix}openmpf_cpp_executor:$imageTag"
-    def pythonExecutorImageName = "${remoteImageTagPrefix}openmpf_python_executor:$imageTag"
+    def cppBuildImageName = "${remoteImagePrefix}openmpf_cpp_component_build:$imageTag"
+    def cppExecutorImageName = "${remoteImagePrefix}openmpf_cpp_executor:$imageTag"
+    def pythonExecutorImageName = "${remoteImagePrefix}openmpf_python_executor:$imageTag"
 
     stage('Clone repos') {
 
