@@ -255,14 +255,14 @@ try {
 
 
             dir('openmpf-docker/components') {
-                def cppShas = getShasBuildArg([openmpfCppSdkRepo, openmpfDockerRepo])
+                def cppShas = getShasBuildArg([openmpfCppSdkRepo])
                 sh "docker build . -f cpp_component_build/Dockerfile $commonBuildArgs $cppShas " +
                         " -t $cppBuildImageName"
 
                 sh "docker build . -f cpp_executor/Dockerfile $commonBuildArgs $cppShas " +
                         " -t $cppExecutorImageName"
 
-                def pythonShas = getShasBuildArg([openmpfPythonSdkRepo, openmpfDockerRepo])
+                def pythonShas = getShasBuildArg([openmpfPythonSdkRepo])
                 sh "docker build . -f python_executor/Dockerfile $commonBuildArgs $pythonShas " +
                         " -t $pythonExecutorImageName"
             }
