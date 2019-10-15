@@ -79,11 +79,11 @@ def emailRecipients = env.email_recipients
 
 
 class Repo {
-    def name
-    def url
-    def path
-    def branch
-    def sha
+    String name
+    String url
+    String path
+    String branch
+    String sha
 
     Repo(name, url, path, branch) {
         this.name = name;
@@ -99,28 +99,33 @@ def openmpfProjectsRepo = new Repo('openmpf-projects', 'https://github.com/openm
 def openmpfDockerRepo = new Repo('openmpf-docker', 'https://github.com/openmpf/openmpf-docker.git',
         'openmpf-docker', openmpfDockerBranch)
 
-def coreRepos = [
-        new Repo('openmpf', 'https://github.com/openmpf/openmpf.git',
-                'openmpf-projects/openmpf', openmpfBranch),
+def openmpfRepo = new Repo('openmpf', 'https://github.com/openmpf/openmpf.git',
+        'openmpf-projects/openmpf', openmpfBranch)
 
-        new Repo('openmpf-components', 'https://github.com/openmpf/openmpf-components.git',
-                'openmpf-projects/openmpf-components', openmpfComponentsBranch),
+def openmpfComponentsRepo = new Repo('openmpf-components', 'https://github.com/openmpf/openmpf-components.git',
+        'openmpf-projects/openmpf-components', openmpfComponentsBranch)
 
-        new Repo('openmpf-contrib-components', 'https://github.com/openmpf/openmpf-contrib-components.git',
-                'openmpf-projects/openmpf-contrib-components', openmpfContribComponentsBranch),
+def openmpfContribComponentsRepo = new Repo('openmpf-contrib-components',
+        'https://github.com/openmpf/openmpf-contrib-components.git',
+        'openmpf-projects/openmpf-contrib-components', openmpfContribComponentsBranch)
 
-        new Repo('openmpf-cpp-component-sdk', 'https://github.com/openmpf/openmpf-cpp-component-sdk.git',
-                'openmpf-projects/openmpf-cpp-component-sdk', openmpfCppComponentSdkBranch),
+def openmpfCppSdkRepo = new Repo('openmpf-cpp-component-sdk',
+        'https://github.com/openmpf/openmpf-cpp-component-sdk.git',
+        'openmpf-projects/openmpf-cpp-component-sdk', openmpfCppComponentSdkBranch),
 
-        new Repo('openmpf-java-component-sdk', 'https://github.com/openmpf/openmpf-java-component-sdk.git',
-                'openmpf-projects/openmpf-java-component-sdk', openmpfJavaComponentSdkBranch),
+def opnmpfJavaSdkRepo = new Repo('openmpf-java-component-sdk',
+        'https://github.com/openmpf/openmpf-java-component-sdk.git',
+        'openmpf-projects/openmpf-java-component-sdk', openmpfJavaComponentSdkBranch),
 
-        new Repo('openmpf-python-component-sdk', 'https://github.com/openmpf/openmpf-python-component-sdk.git',
-                'openmpf-projects/openmpf-python-component-sdk', openmpfPythonComponentSdkBranch),
+def openmpfPythonSdkRepo = new Repo('openmpf-python-component-sdk', 'https://github.com/openmpf/openmpf-python-component-sdk.git',
+        'openmpf-projects/openmpf-python-component-sdk', openmpfPythonComponentSdkBranch),
 
-        new Repo('openmpf-build-tools', 'https://github.com/openmpf/openmpf-build-tools.git',
-                'openmpf-projects/openmpf-build-tools', openmpfBuildToolsBranch),
-]
+def openmpfBuildToolsRepo = new Repo('openmpf-build-tools',
+        'https://github.com/openmpf/openmpf-build-tools.git',
+        'openmpf-projects/openmpf-build-tools', openmpfBuildToolsBranch),
+
+def projectsSubRepos = [ openmpfRepo, openmpfComponentsRepo, openmpfContribComponentsRepo, openmpfCppSdkRepo,
+                         opnmpfJavaSdkRepo, openmpfPythonSdkRepo, openmpfBuildToolsRepo ]
 
 def customConfigRepo = new Repo(openmpfConfigDockerSlug, openmpfConfigDockerRepo, openmpfConfigDockerSlug,
         openmpfConfigDockerBranch)
@@ -140,7 +145,7 @@ if (buildCustomComponents) {
     }
 }
 
-def allRepos = [openmpfDockerRepo, openmpfProjectsRepo] + coreRepos + customRepos
+def allRepos = [openmpfDockerRepo, openmpfProjectsRepo] + projectsSubRepos + customRepos
 
 
 node(env.jenkins_nodes) {
@@ -186,7 +191,7 @@ try {
             sh "git checkout 'origin/$openmpfProjectsRepo.branch'"
             sh 'git submodule update'
         }
-        for (repo in coreRepos) {
+        for (repo in projectsSubRepos) {
             if (repo.branch && !repo.branch.isAllWhitespace()) {
                 sh "cd '$repo.path' && git checkout 'origin/$repo.branch'"
             }
@@ -234,33 +239,38 @@ try {
                     "--build-arg BUILD_TAG='$imageTag' $noCacheArg "
 
             dir ('openmpf-docker') {
+                def shasArg = getShasBuildArg([openmpfDockerRepo, openmpfProjectsRepo] + projectsSubRepos);
                 sh 'docker build -f openmpf_build/Dockerfile ../openmpf-projects --build-arg RUN_TESTS ' +
-                        "--build-arg BUILD_PACKAGE_JSON=$buildPackageJson $commonBuildArgs " +
-                        "-t ${remoteImagePrefix}openmpf_build:$imageTag"
+                        "--build-arg BUILD_PACKAGE_JSON=$buildPackageJson $commonBuildArgs $shasArg " +
+                        " -t ${remoteImagePrefix}openmpf_build:$imageTag"
 
-                sh "docker build integration_tests $commonBuildArgs " +
-                        "-t ${remoteImagePrefix}openmpf_integration_tests:$imageTag"
+                sh "docker build integration_tests $commonBuildArgs $shasArg " +
+                        " -t ${remoteImagePrefix}openmpf_integration_tests:$imageTag"
             }
 
             if (buildCustomComponents) {
-                sh "docker build $openmpfCustomSystemTestsSlug $commonBuildArgs " +
-                        "-t ${remoteImagePrefix}openmpf_integration_tests:$imageTag "
+                sh "docker build $openmpfCustomSystemTestsSlug $commonBuildArgs ${getShasBuildArg(allRepos)} " +
+                        " -t ${remoteImagePrefix}openmpf_integration_tests:$imageTag "
             }
 
 
             dir('openmpf-docker/components') {
-                sh "docker build . -f cpp_component_build/Dockerfile $commonBuildArgs " +
-                        "-t $cppBuildImageName"
+                def cppShas = getShasBuildArg([openmpfCppSdkRepo, openmpfDockerRepo])
+                sh "docker build . -f cpp_component_build/Dockerfile $commonBuildArgs $cppShas " +
+                        " -t $cppBuildImageName"
 
-                sh "docker build . -f cpp_executor/Dockerfile $commonBuildArgs " +
-                        "-t $cppExecutorImageName"
+                sh "docker build . -f cpp_executor/Dockerfile $commonBuildArgs $cppShas " +
+                        " -t $cppExecutorImageName"
 
-                sh "docker build . -f python_executor/Dockerfile $commonBuildArgs " +
-                        "-t $pythonExecutorImageName"
+                def pythonShas = getShasBuildArg([openmpfPythonSdkRepo, openmpfDockerRepo])
+                sh "docker build . -f python_executor/Dockerfile $commonBuildArgs $pythonShas " +
+                        " -t $pythonExecutorImageName"
             }
 
             dir ('openmpf-docker') {
                 sh 'cp .env.tpl .env'
+
+                def shasArg = getShasBuildArg(allRepos)
 
                 componentComposeFiles = 'docker-compose.components.yml'
                 if (buildCustomComponents) {
@@ -272,15 +282,21 @@ try {
                 runtimeComposeFiles = "docker-compose.core.yml:$componentComposeFiles"
 
                 withEnv(["TAG=$imageTag", "REGISTRY=$remoteImagePrefix", "COMPOSE_FILE=$runtimeComposeFiles"]) {
-                    sh "docker-compose build $commonBuildArgs --build-arg RUN_TESTS"
+                    def shasArg = getShasBuildArg(allRepos)
+                    sh "docker-compose build $commonBuildArgs $shasArg --build-arg RUN_TESTS"
                 }
             }
 
             if (applyCustomConfig) {
                 echo 'APPLYING CUSTOM CONFIGURATION'
                 dir(customConfigRepo.path) {
-                    sh "docker build workflow_manager $commonBuildArgs -t $workflowManagerImageName"
-                    sh "docker build activemq $commonBuildArgs -t $activeMqImageName"
+                    def wfmShasArg = getShasBuildArg([openmpfDockerRepo, customConfigRepo, openmpfRepo])
+                    sh "docker build workflow_manager $commonBuildArgs $wfmShasArg " +
+                            " -t $workflowManagerImageName"
+
+                    def amqShasArg = getShasBuildArg([openmpfDockerRepo, customConfigRepo])
+                    sh "docker build activemq $commonBuildArgs $amqShasArg " +
+                            " -t $activeMqImageName"
                 }
             }
             else  {
@@ -357,7 +373,7 @@ finally {
 
     if (postOpenmpfDockerBuildStatus) {
         postBuildStatus(openmpfDockerRepo, buildStatus, githubAuthToken)
-        for (repo in coreRepos) {
+        for (repo in projectsSubRepos) {
             postBuildStatus(repo, buildStatus, githubAuthToken)
         }
     }
@@ -367,9 +383,13 @@ finally {
 } // node(env.jenkins_nodes)
 
 
-def getBuildShasStr(repos) {
-    repos.collect { "$it.name: $it.sha" }.join(', ')
+
+
+def getShasBuildArg(repos) {
+    def shas = repos.collect { "$it.name: $it.sha" }.join(', ')
+    return " --build-arg BUILD_SHAS='$shas' "
 }
+
 
 def isAborted() {
     return currentBuild.result == 'ABORTED' ||
