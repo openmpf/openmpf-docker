@@ -72,9 +72,12 @@ def dockerRegistryPath = env.docker_registry_path ?: "/openmpf"
 def dockerRegistryCredId = env.docker_registry_cred_id;
 def pushRuntimeImages = env.push_runtime_images?.toBoolean() ?: false
 
+def pollReposAndEndBuild = env.poll_repos_and_end_build?.toBoolean() ?: false
+
 def postOpenmpfDockerBuildStatus = env.post_openmpf_docker_build_status?.toBoolean() ?: false
 def githubAuthToken = env.github_auth_token
 def emailRecipients = env.email_recipients
+
 
 
 
@@ -84,6 +87,7 @@ class Repo {
     String path
     String branch
     String sha
+    String prevSha
 
     Repo(name, url, path, branch) {
         this.name = name;
@@ -182,6 +186,14 @@ try {
     def pythonExecutorImageName = "${remoteImagePrefix}openmpf_python_executor:$imageTag"
 
     stage('Clone repos') {
+        for (repo in allRepos) {
+            if (fileExists(repo.path)) {
+                repo.prevSha = sh(script: "cd $repo.path && git rev-parse HEAD", returnStdout: true).trim()
+            }
+            else {
+                repo.prevSha = 'NONE'
+            }
+        }
 
         if (!fileExists(openmpfProjectsRepo.path)) {
             sh "git clone --recurse-submodules $openmpfProjectsRepo.url"
@@ -223,6 +235,29 @@ try {
             repo.sha = sh(script: "cd $repo.path && git rev-parse HEAD", returnStdout: true).trim()
         }
     } // stage('Clone repos')
+
+    stage('Check repos for updates') {
+        if (!pollReposAndEndBuild) {
+            echo 'SKIPPING REPO UPDATE CHECK'
+        }
+
+        when (pollReposAndEndBuild) {
+            echo 'CHANGES:'
+
+            def requiresBuild = false
+
+            for (repo in allRepos) {
+                requiresBuild |= (repo.prevSha != repo.sha)
+                echo "$repo.name: $repo.prevSha --> $repo.sha"
+            }
+            echo "REQUIRES BUILD: $requiresBuild"
+            currentBuild.result = requiresBuild ? 'SUCCESS' : 'ABORTED';
+        }
+
+    } // stage('Check repos for updates')
+    if (pollReposAndEndBuild) {
+        return // end build early; do this outside of a stage
+    }
 
     def componentComposeFiles
     def runtimeComposeFiles
