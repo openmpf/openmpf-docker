@@ -272,8 +272,6 @@ try {
             dir ('openmpf-docker') {
                 sh 'cp .env.tpl .env'
 
-                def shasArg = getShasBuildArg(allRepos)
-
                 componentComposeFiles = 'docker-compose.components.yml'
                 if (buildCustomComponents) {
                     def customComponentsYml = "../$openmpfCustomDockerSlug/docker-compose.custom-components.yml"
