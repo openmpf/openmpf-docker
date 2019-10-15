@@ -71,6 +71,15 @@ if [ ! -f "$markerFile" ]; then
     updateOrAddProperty "$mpfCustomPropertiesFile" "node.auto.unconfig.enabled" "true"
 fi
 
+################################################################################
+# Custom Steps                                                                 #
+################################################################################
+
+# If this is a custom build, run the custom entrypoint steps.
+if [ -f /scripts/docker-custom-entrypoint.sh ]; then
+    /scripts/docker-custom-entrypoint.sh
+fi
+
 
 ################################################################################
 # Configure HTTP or HTTPS                                                      #
