@@ -355,9 +355,9 @@ finally {
     }
 
     if (postOpenmpfDockerBuildStatus) {
-        postBuildStatus(openmpfDockerRepo)
+        postBuildStatus(openmpfDockerRepo, buildStatus)
         for (repo in coreRepos) {
-            postBuildStatus(repo)
+            postBuildStatus(repo, buildStatus)
         }
     }
     email(buildStatus, emailRecipients)
