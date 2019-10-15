@@ -383,7 +383,7 @@ def postBuildStatus(repo, status, githubAuthToken) {
 
     def description = "$currentBuild.projectName $currentBuild.displayName"
     def statusJson = /{ "state": "$status", "description": "$description", "context": "jenkins" }/
-    def url = "https://api.github.com/repos/openmpf/$repo.name/status/$repo.sha"
+    def url = "https://api.github.com/repos/openmpf/$repo.name/statuses/$repo.sha"
     def response = sh(script:
             "curl -s -X POST -H 'Authorization: token $githubAuthToken' -d '$statusJson' $url",
             returnStdout: true)
