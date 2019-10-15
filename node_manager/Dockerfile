@@ -74,12 +74,10 @@ COPY docker-entrypoint.sh /scripts/docker-entrypoint.sh
 ENTRYPOINT ["/scripts/docker-entrypoint.sh"]
 
 
-ARG BUILD_DATE
 ARG BUILD_SHAS
 ARG BUILD_TAG
 
-LABEL org.label-schema.build-date=$BUILD_DATE \
-      org.label-schema.license="Mixed" \
+LABEL org.label-schema.license="Mixed" \
       org.label-schema.name="OpenMPF Node Manager" \
       org.label-schema.schema-version="1.0" \
       org.label-schema.url="https://openmpf.github.io" \

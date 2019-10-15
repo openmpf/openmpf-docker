@@ -276,12 +276,11 @@ try {
                     "--build-arg BUILD_TAG='$imageTag' $noCacheArg "
 
             dir ('openmpf-docker') {
-                def shasArg = getShasBuildArg([openmpfDockerRepo, openmpfProjectsRepo] + projectsSubRepos);
                 sh 'docker build -f openmpf_build/Dockerfile ../openmpf-projects --build-arg RUN_TESTS ' +
-                        "--build-arg BUILD_PACKAGE_JSON=$buildPackageJson $commonBuildArgs $shasArg " +
+                        "--build-arg BUILD_PACKAGE_JSON=$buildPackageJson $commonBuildArgs " +
                         " -t ${remoteImagePrefix}openmpf_build:$imageTag"
 
-                sh "docker build integration_tests $commonBuildArgs $shasArg " +
+                sh "docker build integration_tests $commonBuildArgs " +
                         " -t ${remoteImagePrefix}openmpf_integration_tests:$imageTag"
             }
 

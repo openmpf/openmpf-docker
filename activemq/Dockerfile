@@ -44,12 +44,10 @@ ENTRYPOINT ["/opt/activemq/bin/docker-entrypoint.sh"]
 ################################################################################
 
 ARG BUILD_TAG
-ARG BUILD_DATE
 ARG BUILD_SHAS
 
 # Set labels
-LABEL org.label-schema.build-date=$BUILD_DATE \
-      org.label-schema.license="GPLv2" \
+LABEL org.label-schema.license="GPLv2" \
       org.label-schema.name="OpenMPF ActiveMQ" \
       org.label-schema.schema-version="1.0" \
       org.label-schema.url="https://openmpf.github.io" \

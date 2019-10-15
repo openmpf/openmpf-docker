@@ -96,12 +96,10 @@ ONBUILD ENTRYPOINT ["python", "/scripts/docker-entrypoint.py"]
 ENTRYPOINT ["bash", "-c", "/scripts/install-component.sh && python /scripts/docker-entrypoint.py"]
 
 
-ARG BUILD_DATE
 ARG BUILD_SHAS
 ARG BUILD_TAG
 
-LABEL org.label-schema.build-date=$BUILD_DATE \
-      org.label-schema.license="Apache 2.0" \
+LABEL org.label-schema.license="Apache 2.0" \
       org.label-schema.name="OpenMPF Python Component Executor" \
       org.label-schema.schema-version="1.0" \
       org.label-schema.url="https://openmpf.github.io" \

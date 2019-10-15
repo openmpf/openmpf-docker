@@ -123,16 +123,9 @@ COPY docker-entrypoint.sh /scripts/docker-entrypoint.sh
 ENTRYPOINT ["/scripts/docker-entrypoint.sh"]
 
 
-ARG BUILD_DATE
-ARG BUILD_SHAS
-ARG BUILD_TAG
-
-LABEL org.label-schema.build-date=$BUILD_DATE \
-      org.label-schema.license="Apache 2.0" \
+LABEL org.label-schema.license="Apache 2.0" \
       org.label-schema.name="OpenMPF Integration Tests" \
       org.label-schema.schema-version="1.0" \
       org.label-schema.url="https://openmpf.github.io" \
-      org.label-schema.vcs-ref=$BUILD_SHAS \
       org.label-schema.vcs-url="https://github.com/openmpf/openmpf" \
-      org.label-schema.vendor="MITRE" \
-      org.label-schema.version=$BUILD_TAG
+      org.label-schema.vendor="MITRE"
