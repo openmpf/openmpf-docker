@@ -102,8 +102,9 @@ def openmpfDockerRepo = new Repo('openmpf-docker', 'https://github.com/openmpf/o
 def openmpfRepo = new Repo('openmpf', 'https://github.com/openmpf/openmpf.git',
         'openmpf-projects/openmpf', openmpfBranch)
 
-def openmpfComponentsRepo = new Repo('openmpf-components', 'https://github.com/openmpf/openmpf-components.git',
-        'openmpf-projects/openmpf-components', openmpfComponentsBranch)
+def openmpfComponentsRepo = new Repo('openmpf-components',
+        'https://github.com/openmpf/openmpf-components.git', 'openmpf-projects/openmpf-components',
+        openmpfComponentsBranch)
 
 def openmpfContribComponentsRepo = new Repo('openmpf-contrib-components',
         'https://github.com/openmpf/openmpf-contrib-components.git',
@@ -111,18 +112,19 @@ def openmpfContribComponentsRepo = new Repo('openmpf-contrib-components',
 
 def openmpfCppSdkRepo = new Repo('openmpf-cpp-component-sdk',
         'https://github.com/openmpf/openmpf-cpp-component-sdk.git',
-        'openmpf-projects/openmpf-cpp-component-sdk', openmpfCppComponentSdkBranch),
+        'openmpf-projects/openmpf-cpp-component-sdk', openmpfCppComponentSdkBranch)
 
 def opnmpfJavaSdkRepo = new Repo('openmpf-java-component-sdk',
         'https://github.com/openmpf/openmpf-java-component-sdk.git',
-        'openmpf-projects/openmpf-java-component-sdk', openmpfJavaComponentSdkBranch),
+        'openmpf-projects/openmpf-java-component-sdk', openmpfJavaComponentSdkBranch)
 
-def openmpfPythonSdkRepo = new Repo('openmpf-python-component-sdk', 'https://github.com/openmpf/openmpf-python-component-sdk.git',
-        'openmpf-projects/openmpf-python-component-sdk', openmpfPythonComponentSdkBranch),
+def openmpfPythonSdkRepo = new Repo('openmpf-python-component-sdk',
+        'https://github.com/openmpf/openmpf-python-component-sdk.git',
+        'openmpf-projects/openmpf-python-component-sdk', openmpfPythonComponentSdkBranch)
 
 def openmpfBuildToolsRepo = new Repo('openmpf-build-tools',
         'https://github.com/openmpf/openmpf-build-tools.git',
-        'openmpf-projects/openmpf-build-tools', openmpfBuildToolsBranch),
+        'openmpf-projects/openmpf-build-tools', openmpfBuildToolsBranch)
 
 def projectsSubRepos = [ openmpfRepo, openmpfComponentsRepo, openmpfContribComponentsRepo, openmpfCppSdkRepo,
                          opnmpfJavaSdkRepo, openmpfPythonSdkRepo, openmpfBuildToolsRepo ]
