@@ -23,44 +23,14 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
-def openmpfProjectsBranch = env.openmpf_projects_branch ?: 'develop'
-def openmpfBranch = env.openmpf_branch
-def openmpfComponentsBranch = env.openmpf_components_branch
-def openmpfContribComponentsBranch = env.openmpf_contrib_components_branch
-def openmpfCppComponentSdkBranch = env.openmpf_cpp_component_sdk_branch
-def openmpfJavaComponentSdkBranch = env.openmpf_java_component_sdk_branch
-def openmpfPythonComponentSdkBranch = env.openmpf_python_component_sdk_branch
-def openmpfBuildToolsBranch = env.openmpf_build_tools_branch
-
-def openmpfDockerBranch = env.openmpf_docker_branch ?: 'develop'
-
-
-// These properties are for building with custom components
-def buildCustomComponents = env.build_custom_components?.toBoolean() ?: false
-def openmpfCustomRepoCredId = env.openmpf_custom_repo_cred_id
-
-def openmpfCustomComponentsUrl = env.openmpf_custom_components_repo
-def openmpfCustomComponentsSlug = env.openmpf_custom_components_slug
-def openmpfCustomComponentsBranch = env.openmpf_custom_components_branch ?: 'develop'
-
-def openmpfCustomSystemTestsUrl = env.openmpf_custom_system_tests_repo
-def openmpfCustomSystemTestsSlug = env.openmpf_custom_system_tests_slug
-def openmpfCustomSystemTestsBranch = env.openmpf_custom_system_tests_branch ?: 'develop'
-
-// These properties are for applying custom configurations to images
-def applyCustomConfig = env.apply_custom_config?.toBoolean() ?: false
-def openmpfConfigDockerUrl = env.openmpf_config_docker_repo
-def openmpfConfigDockerSlug = env.openmpf_config_docker_slug
-def openmpfConfigDockerBranch = env.openmpf_config_docker_branch
-
-
-
+def imageTag = env.image_tag ?: 'deleteme'
+def buildNoCache = env.build_no_cache?.toBoolean() ?: false
+def preserveContainersOnFailure = env.preserve_containers_on_failure?.toBoolean() ?: false
 def buildPackageJson = env.build_package_json
 
-def imageTag = env.image_tag
-def buildNoCache = env.build_no_cache?.toBoolean() ?: false
-
-def preserveContainersOnFailure = env.preserve_containers_on_failure?.toBoolean() ?: false
+def buildCustomComponents = env.build_custom_components?.toBoolean() ?: false
+def openmpfCustomRepoCredId = env.openmpf_custom_repo_cred_id
+def applyCustomConfig = env.apply_custom_config?.toBoolean() ?: false
 
 def dockerRegistryHost = env.docker_registry_host
 def dockerRegistryPort = env.docker_registry_port
@@ -76,7 +46,6 @@ def emailRecipients = env.email_recipients
 
 
 
-
 class Repo {
     String name
     String url
@@ -85,66 +54,66 @@ class Repo {
     String sha
     String prevSha
 
-    Repo(name, url, path, branch) {
-        this.name = name;
-        this.url = url;
+    private Repo(path, url, branch, name) {
         this.path = path
+        this.url = url;
         this.branch = branch
+        this.name = name;
+    }
+
+    Repo(path, url, branch) {
+        this(path, url, branch, path)
+    }
+
+    static Repo projectsSubRepo(name, branch) {
+        return new Repo("openmpf-projects/$name", null, branch, name)
     }
 }
 
+
 def openmpfProjectsRepo = new Repo('openmpf-projects', 'https://github.com/openmpf/openmpf-projects.git',
-        'openmpf-projects', openmpfProjectsBranch)
+        env.openmpf_projects_branch ?: 'develop')
+
 
 def openmpfDockerRepo = new Repo('openmpf-docker', 'https://github.com/openmpf/openmpf-docker.git',
-        'openmpf-docker', openmpfDockerBranch)
+        env.openmpf_docker_branch ?: 'develop')
 
-def openmpfRepo = new Repo('openmpf', 'https://github.com/openmpf/openmpf.git',
-        'openmpf-projects/openmpf', openmpfBranch)
 
-def openmpfComponentsRepo = new Repo('openmpf-components',
-        'https://github.com/openmpf/openmpf-components.git', 'openmpf-projects/openmpf-components',
-        openmpfComponentsBranch)
+def openmpfRepo = Repo.projectsSubRepo('openmpf', env.openmpf_branch)
 
-def openmpfContribComponentsRepo = new Repo('openmpf-contrib-components',
-        'https://github.com/openmpf/openmpf-contrib-components.git',
-        'openmpf-projects/openmpf-contrib-components', openmpfContribComponentsBranch)
 
-def openmpfCppSdkRepo = new Repo('openmpf-cpp-component-sdk',
-        'https://github.com/openmpf/openmpf-cpp-component-sdk.git',
-        'openmpf-projects/openmpf-cpp-component-sdk', openmpfCppComponentSdkBranch)
+def openmpfComponentsRepo = Repo.projectsSubRepo('openmpf-components', env.openmpf_components_branch)
 
-def opnmpfJavaSdkRepo = new Repo('openmpf-java-component-sdk',
-        'https://github.com/openmpf/openmpf-java-component-sdk.git',
-        'openmpf-projects/openmpf-java-component-sdk', openmpfJavaComponentSdkBranch)
+def openmpfContribComponentsRepo = Repo.projectsSubRepo('openmpf-contrib-components',
+        env.openmpf_contrib_components_branch)
 
-def openmpfPythonSdkRepo = new Repo('openmpf-python-component-sdk',
-        'https://github.com/openmpf/openmpf-python-component-sdk.git',
-        'openmpf-projects/openmpf-python-component-sdk', openmpfPythonComponentSdkBranch)
+def openmpfCppSdkRepo = Repo.projectsSubRepo('openmpf-cpp-component-sdk', env.openmpf_cpp_component_sdk_branch)
 
-def openmpfBuildToolsRepo = new Repo('openmpf-build-tools',
-        'https://github.com/openmpf/openmpf-build-tools.git',
-        'openmpf-projects/openmpf-build-tools', openmpfBuildToolsBranch)
+def opnmpfJavaSdkRepo = Repo.projectsSubRepo('openmpf-java-component-sdk', env.openmpf_java_component_sdk_branch)
+
+def openmpfPythonSdkRepo = Repo.projectsSubRepo('openmpf-python-component-sdk',
+        env.openmpf_python_component_sdk_branch)
+
+def openmpfBuildToolsRepo = Repo.projectsSubRepo('openmpf-build-tools', env.openmpf_build_tools_branch)
+
 
 def projectsSubRepos = [ openmpfRepo, openmpfComponentsRepo, openmpfContribComponentsRepo, openmpfCppSdkRepo,
                          opnmpfJavaSdkRepo, openmpfPythonSdkRepo, openmpfBuildToolsRepo ]
 
 
-def customComponentsRepo = new Repo(openmpfCustomComponentsSlug, openmpfCustomComponentsUrl,
-        openmpfCustomComponentsSlug, openmpfCustomComponentsBranch)
+def customComponentsRepo = new Repo(env.openmpf_custom_components_slug, env.openmpf_custom_components_repo,
+        env.openmpf_custom_components_branch ?: 'develop')
 
-def customSystemTestsRepo = new Repo(openmpfCustomSystemTestsSlug, openmpfCustomSystemTestsUrl,
-        openmpfCustomSystemTestsSlug, openmpfCustomSystemTestsBranch)
+def customSystemTestsRepo = new Repo(env.openmpf_custom_system_tests_slug, env.openmpf_custom_system_tests_repo,
+        env.openmpf_custom_system_tests_branch ?: 'develop')
 
-def customConfigRepo = new Repo(openmpfConfigDockerSlug, openmpfConfigDockerUrl, openmpfConfigDockerSlug,
-        openmpfConfigDockerBranch)
+def customConfigRepo = new Repo(env.openmpf_config_docker_slug, env.openmpf_config_docker_repo,
+        env.openmpf_config_docker_branch ?: 'develop')
 
 def customRepos = []
 if (buildCustomComponents) {
     customRepos.add(customComponentsRepo)
-
     customRepos.add(customSystemTestsRepo)
-
     if (applyCustomConfig) {
         customRepos.add(customConfigRepo)
     }
@@ -416,8 +385,8 @@ finally {
     email(buildStatus, emailRecipients)
 
     // Remove dangling <none> images that are more than 2 weeks old.
-//    sh 'docker image prune --force --filter "until=336h"'
-//    sh 'docker builder prune --force --keep-storage=80GB'
+    sh 'docker image prune --force --filter "until=336h"'
+    sh 'docker builder prune --force --keep-storage=80GB'
 }
 } // wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm'])
 } // node(env.jenkins_nodes)
