@@ -263,7 +263,7 @@ try {
 
     stage('Build images') {
         // Make sure we are using most recent version of external images
-        for (externalImage : ['centos:7', 'webcenter/activemq', 'mariadb:latest', 'redis:latest']) {
+        for (externalImage in ['centos:7', 'webcenter/activemq', 'mariadb:latest', 'redis:latest']) {
             sh "docker pull '$externalImage'"
         }
 
