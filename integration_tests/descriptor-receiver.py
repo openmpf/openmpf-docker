@@ -33,6 +33,7 @@ import BaseHTTPServer
 import json
 import os
 
+# Creates an endpoint where Docker components can register their descriptors for use in integration tests.
 def main():
     server = BaseHTTPServer.HTTPServer(('', 8080), RequestHandler)
     server.serve_forever()

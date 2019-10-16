@@ -80,6 +80,11 @@ if [ -f /scripts/docker-custom-entrypoint.sh ]; then
     /scripts/docker-custom-entrypoint.sh
 fi
 
+################################################################################
+# Create Marker File                                                           #
+################################################################################
+touch "$markerFile"
+
 
 ################################################################################
 # Configure HTTP or HTTPS                                                      #
@@ -132,11 +137,6 @@ EndOfPythonScript
 else
     export CATALINA_OPTS="$CATALINA_OPTS -Dtransport.guarantee='NONE' -Dweb.rest.protocol='http'"
 fi
-
-################################################################################
-# Create Marker File                                                           #
-################################################################################
-touch "$markerFile"
 
 
 ################################################################################

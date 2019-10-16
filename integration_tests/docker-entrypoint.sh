@@ -40,7 +40,6 @@ cd /home/mpf/openmpf-projects/openmpf
 mkdir "$MPF_HOME/share/samples"
 cp --recursive trunk/mpf-system-tests/src/test/resources/samples/* "$MPF_HOME/share/samples"
 cp --recursive trunk/workflow-manager/src/test/resources/samples/* "$MPF_HOME/share/samples"
-cp --recursive trunk/workflow-manager/src/test/resources/samples/* "$MPF_HOME/share/samples"
 
 if [ -f /scripts/docker-custom-entrypoint.sh ]; then
     source /scripts/docker-custom-entrypoint.sh
@@ -73,7 +72,7 @@ echo 'ActiveMQ is up'
 
 set -o xtrace
 
-set +e
+set -o errexit
 
 mvn verify \
     -Dspring.profiles.active=jenkins -Pjenkins \
@@ -92,6 +91,7 @@ mavenRetVal=$?
 
 kill "$descriptor_receiver_pid"
 
+# Remove old test reports since /test-reports gets bind mounted in compose file.
 rm --recursive --force /test-reports/*
 
 cd ../..

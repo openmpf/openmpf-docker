@@ -82,13 +82,6 @@ ENV LD_LIBRARY_PATH=/usr/lib64:/opt/apache-tomcat/webapps/workflow-manager/WEB-I
 ENV PATH=$PATH:$MPF_HOME/bin
 ENV JAVA_HOME=/usr/lib/jvm/jre-11
 
-# The workflow manager must be added as an mpf-child so that plugin packages are
-# extracted at startup, which is necessary for component auto-registration.
-RUN mkdir /etc/ansible; \
-    echo '[mpf-child]' >> /etc/ansible/hosts; \
-    echo $THIS_MPF_NODE >> /etc/ansible/hosts;
-
-
 EXPOSE 8080 8443
 
 COPY docker-entrypoint.sh /scripts/docker-entrypoint.sh
