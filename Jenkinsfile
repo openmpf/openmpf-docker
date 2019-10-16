@@ -262,7 +262,10 @@ try {
     def runtimeComposeFiles
 
     stage('Build images') {
-        sh 'docker pull centos:7' // Make sure we are using the most recent centos:7 release
+        // Make sure we are using most recent version of external images
+        for (externalImage : ['centos:7', 'webcenter/activemq', 'mariadb:latest', 'redis:latest']) {
+            sh "docker pull '$externalImage'"
+        }
 
         if (buildPackageJson.contains('/')) {
             sh "cp $buildPackageJson openmpf-projects/openmpf/trunk/jenkins/scripts/config_files"
