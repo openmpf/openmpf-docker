@@ -70,6 +70,8 @@ def main():
     else:
         register_component(descriptor_path, wfm_base_url, wfm_user, wfm_password)
 
+    wait_for_activemq(activemq_host)
+
     with open(descriptor_path, 'r') as descriptor_file:
         descriptor = json.load(descriptor_file)
 
@@ -86,6 +88,25 @@ def main():
 
     print('Executor exit code =', exit_code)
     sys.exit(exit_code)
+
+
+def wait_for_activemq(activemq_host):
+    while True:
+        try:
+            conn = httplib.HTTPConnection(activemq_host, 8161)
+            conn.request('HEAD', '/')
+            resp = conn.getresponse()
+            if 200 <= resp.status <= 299:
+                return
+            print('Received non-success status code of {} when trying to connect to ActiveMQ. '
+                  'This is either because ActiveMQ is still starting or the wrong host name was used for the '
+                  'ACTIVE_MQ_HOST(={}) environment variable. Connection to ActiveMQ will re-attempted in 5 seconds.'
+                  .format(resp.status, activemq_host))
+        except socket.error as e:
+            print('Attempt to connect to ActiveMQ failed due to "{}". This is either because ActiveMQ is still '
+                  'starting or the wrong host name was used for the ACTIVE_MQ_HOST(={}) environment variable. '
+                  'Connection to ActiveMQ will re-attempted in 5 seconds.'.format(e, activemq_host))
+        time.sleep(5)
 
 
 

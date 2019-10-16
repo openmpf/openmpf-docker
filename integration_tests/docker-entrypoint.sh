@@ -14,14 +14,6 @@ updateOrAddProperty() {
     fi
 }
 
-# TODO: Add wait to executor entrypoints
-# Wait for ActiveMQ service.
-echo 'Waiting for ActiveMQ to become available ...'
-until curl --head "$ACTIVE_MQ_HOST:8161" >> /dev/null 2>&1; do
-    echo 'ActiveMQ is unavailable. Sleeping.'
-    sleep 5
-done
-echo 'ActiveMQ is up'
 
 python -u /scripts/descriptor-receiver.py &
 descriptor_receiver_pid=$!
