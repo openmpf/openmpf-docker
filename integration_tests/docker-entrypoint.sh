@@ -64,7 +64,7 @@ echo 'ActiveMQ is up'
 
 set -o xtrace
 
-set -o errexit
+set +o errexit
 
 mvn verify \
     -Dspring.profiles.active=jenkins -Pjenkins \
