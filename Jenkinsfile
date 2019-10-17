@@ -287,7 +287,7 @@ try {
 
                 withEnv(["TAG=$imageTag", "REGISTRY=$remoteImagePrefix", "COMPOSE_FILE=$runtimeComposeFiles"]) {
                     def shasArg = getShasBuildArg(allRepos)
-                    sh "docker-compose build $commonBuildArgs $shasArg --build-arg RUN_TESTS"
+                    sh "docker-compose build $commonBuildArgs $shasArg --build-arg RUN_TESTS --parallel"
                 }
             }
 
