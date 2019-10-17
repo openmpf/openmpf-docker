@@ -361,18 +361,18 @@ finally {
     def buildStatus
     if (isAborted()) {
         echo 'DETECTED BUILD ABORTED'
-        buildStatus = "aborted"
+        buildStatus = 'failure'
     }
     else if (buildException != null) {
         echo 'DETECTED BUILD FAILURE'
         echo 'Exception type: ' + buildException.getClass()
         echo 'Exception message: ' + buildException.getMessage()
-        buildStatus = "failure"
+        buildStatus = 'failure'
     }
     else {
         echo 'DETECTED BUILD COMPLETED'
         echo "CURRENT BUILD RESULT: ${currentBuild.currentResult}"
-        buildStatus = currentBuild.currentResult.equals("SUCCESS") ? "success" : "failure"
+        buildStatus = currentBuild.currentResult == 'SUCCESS' ? 'success' : 'failure'
     }
 
     if (postOpenmpfDockerBuildStatus) {
