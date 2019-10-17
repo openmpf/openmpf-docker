@@ -128,7 +128,6 @@ def buildException
 
 try {
     def buildId = "${currentBuild.projectName}_${currentBuild.number}"
-    def buildDate = sh(script: 'date --iso-8601=seconds', returnStdout: true).trim()
 
 
     def dockerRegistryHostAndPort = dockerRegistryHost
@@ -169,7 +168,7 @@ try {
         dir(openmpfProjectsRepo.path) {
             sh 'git clean -ffd'
             sh 'git submodule foreach git clean -ffd'
-            sh 'git fetch'
+            sh 'git fetch --recurse-submodules'
             sh "git checkout 'origin/$openmpfProjectsRepo.branch'"
             sh 'git submodule update'
         }
