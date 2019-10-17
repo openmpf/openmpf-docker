@@ -26,7 +26,7 @@
 def imageTag = env.image_tag ?: 'deleteme'
 def buildNoCache = env.build_no_cache?.toBoolean() ?: false
 def preserveContainersOnFailure = env.preserve_containers_on_failure?.toBoolean() ?: false
-def buildPackageJson = env.build_package_json
+def buildPackageJson = env.build_package_json ?: 'openmpf-non-docker-components-package.json'
 
 def buildCustomComponents = env.build_custom_components?.toBoolean() ?: false
 def openmpfCustomRepoCredId = env.openmpf_custom_repo_cred_id

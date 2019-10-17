@@ -139,7 +139,7 @@ ENV MPF_HOME /home/mpf/openmpf-projects/openmpf/trunk/install
 WORKDIR /home/mpf/openmpf-projects/openmpf
 
 ARG RUN_TESTS=false
-ARG BUILD_PACKAGE_JSON=/home/mpf/openmpf-projects/openmpf/trunk/jenkins/scripts/config_files/openmpf-open-source-package.json
+ARG BUILD_PACKAGE_JSON=/home/mpf/openmpf-projects/openmpf/trunk/jenkins/scripts/config_files/openmpf-non-docker-components-package.json
 
 RUN --mount=type=cache,id=mvn_cache,target=/root/.m2/repository,sharing=private \
     # Copy to shell variable so that parameter expansion works
