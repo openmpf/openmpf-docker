@@ -93,6 +93,7 @@ find . -path '*/surefire-reports/*.xml' -exec cp {} /test-reports/surefire-repor
 mkdir /test-reports/failsafe-reports
 find . -path '*/failsafe-reports/*.xml' -exec cp {} /test-reports/failsafe-reports \;
 
+# This is needed so that the Jenkinsfile can run `git clean` wihout being root at the beginning of the build
 chmod -R 777 /test-reports
 
 

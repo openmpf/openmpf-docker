@@ -76,10 +76,14 @@ FROM ${BUILD_REGISTRY}openmpf_build:${BUILD_TAG} as integration_tests
 
 SHELL ["/bin/bash", "-o", "errexit", "-o", "pipefail", "-c"]
 
-RUN --mount=type=cache,target=/mnt/mvn,id=mvn_cache \
+# Copy Maven repository out of cache mount so that the Maven dependencies can be used when running the
+# integration tests. This is necessary because the cache mount is only available at build time and the
+# integration tests run at run time.
+RUN --mount=type=cache,id=mvn_cache,target=/mnt/mvn,sharing=private \
     mkdir --parents /root/.m2/repository; \
     cp --recursive /mnt/mvn/* /root/.m2/repository;
 
+RUN cp --recursive /build-artifacts/mvn/mpf /root/.m2/repository/org/mitre
 
 COPY --from=download_dependencies /opt/apache-tomcat-8.5.41 /opt/apache-tomcat-8.5.41
 RUN ln --symbolic /opt/apache-tomcat-8.5.41 /opt/apache-tomcat

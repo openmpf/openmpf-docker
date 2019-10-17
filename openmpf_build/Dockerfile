@@ -141,7 +141,7 @@ WORKDIR /home/mpf/openmpf-projects/openmpf
 ARG RUN_TESTS=false
 ARG BUILD_PACKAGE_JSON=/home/mpf/openmpf-projects/openmpf/trunk/jenkins/scripts/config_files/openmpf-open-source-package.json
 
-RUN --mount=type=cache,target=/root/.m2/repository,id=mvn_cache \
+RUN --mount=type=cache,id=mvn_cache,target=/root/.m2/repository,sharing=private \
     # Copy to shell variable so that parameter expansion works
     build_package_json="$BUILD_PACKAGE_JSON"; \
     if [ "${build_package_json:0:1}" != '/' ]; then \
@@ -165,6 +165,9 @@ RUN --mount=type=cache,target=/root/.m2/repository,id=mvn_cache \
         -DgitBranch='' \
         -DgitShortId='' \
         -DjenkinsBuildNumber=1; \
+    mkdir --parents /build-artifacts/mvn/mpf; \
+    # Move mpf artifacts out of Maven repo so they won't be in the cache mount when another build is started
+    mv /root/.m2/repository/org/mitre/mpf /build-artifacts/mvn; \
     # Use nullglob to avoid entering for loop when no glob matches.
     # Use globstar to enable ** globs.
     shopt -s nullglob globstar; \
