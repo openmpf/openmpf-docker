@@ -104,6 +104,16 @@ if [ -f /home/mpf/docker-custom-entrypoint.sh ]; then
 fi
 
 ################################################################################
+# Configure users                                                              #
+################################################################################
+
+if [ -f /run/secrets/user_properties ]
+then
+    mkdir "$MPF_HOME/config"
+    ln -s /run/secrets/user_properties "$MPF_HOME/config/user.properties"
+fi
+
+################################################################################
 # Configure HTTP or HTTPS                                                      #
 ################################################################################
 
