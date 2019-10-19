@@ -30,7 +30,7 @@ version: '3.7'
 
 services:
   workflow-manager:
-    secrets: [user_properties] // TODO: set location on image
+    secrets: [user_properties]
 
 # A secret will not be created unless at least one service uses it.
 secrets:

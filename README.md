@@ -377,11 +377,10 @@ or virtual machines. The simplest way to do this is to set up a Docker Swarm
 deployment. If you would like a walkthrough on how to do that, please see the
 [Swarm Deployment Guide](SWARM.md).
 
-#### (Optional) Configure Users
+### (Optional) Configure Users
 
-Copy the
-`openmpf-projects/openmpf/trunk/workflow-manager/src/main/resources/properties/user.properties`
-file ([link](https://github.com/openmpf/openmpf/blob/master/trunk/workflow-manager/src/main/resources/properties/user.properties))
+Copy
+`openmpf-projects/openmpf/trunk/workflow-manager/src/main/resources/properties/user.properties` ([link](https://github.com/openmpf/openmpf/blob/master/trunk/workflow-manager/src/main/resources/properties/user.properties))
 somewhere on the swarm manager host and make modifications to that file. Then
 set the `USER_PROPERTIES_PATH` variable in the `.env` file to the location of
 that file.
