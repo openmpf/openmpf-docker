@@ -37,9 +37,10 @@ SHELL ["/bin/bash", "-o", "errexit", "-o", "pipefail", "-c"]
 RUN yum-config-manager --setopt=override_install_langs='' --save; \
     yum install --assumeyes --nogpgcheck https://download1.rpmfusion.org/free/el/rpmfusion-free-release-7.noarch.rpm \
             https://download1.rpmfusion.org/nonfree/el/rpmfusion-nonfree-release-7.noarch.rpm; \
-    yum install --assumeyes java-11-openjdk ffmpeg tomcat-native; \
+    yum install --assumeyes java-11-openjdk ffmpeg tomcat-native python-pip; \
     yum clean all; \
-    rm -rf /var/cache/yum/*;
+    rm -rf /var/cache/yum/*; \
+    pip install --upgrade pip;
 
 
 RUN mkdir /scripts; \
@@ -58,12 +59,16 @@ RUN curl --location 'http://archive.apache.org/dist/tomcat/tomcat-8/v8.5.41/bin/
         /opt/apache-tomcat/conf/context.xml;
 
 
+COPY --from=openmpf_build /home/mpf/openmpf-projects/openmpf/trunk/bin/mpf-scripts /home/mpf/mpf-scripts
+# Make sure mpf-scripts is not globally installed and that the mpf command in not on the $PATH
+RUN mkdir --parents /home/mpf/mpf-scripts-install; \
+    pip install --no-cache --target /home/mpf/mpf-scripts-install /home/mpf/mpf-scripts
+
 COPY --from=openmpf_build /build-artifacts/workflow-manager.war /opt/apache-tomcat/webapps/
 
 ENV MPF_HOME /opt/mpf
 
 COPY --from=openmpf_build /build-artifacts/descriptors $MPF_HOME/plugins
-
 
 ENV ACTIVE_MQ_HOST=activemq
 ENV ACTIVE_MQ_BROKER_URI="failover://(tcp://$ACTIVE_MQ_HOST:61616)?jms.prefetchPolicy.all=0&startupMaxReconnectAttempts=1"
@@ -85,6 +90,7 @@ ENV JAVA_HOME=/usr/lib/jvm/jre-11
 EXPOSE 8080 8443
 
 COPY docker-entrypoint.sh /scripts/docker-entrypoint.sh
+COPY mpf-users.sh /usr/local/bin/mpf-users
 
 ENTRYPOINT ["/scripts/docker-entrypoint.sh"]
 

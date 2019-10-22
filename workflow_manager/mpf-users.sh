@@ -1,0 +1,93 @@
+#!/bin/bash
+
+#############################################################################
+# NOTICE                                                                    #
+#                                                                           #
+# This software (or technical data) was produced for the U.S. Government    #
+# under contract, and is subject to the Rights in Data-General Clause       #
+# 52.227-14, Alt. IV (DEC 2007).                                            #
+#                                                                           #
+# Copyright 2019 The MITRE Corporation. All Rights Reserved.                #
+#############################################################################
+
+#############################################################################
+# Copyright 2019 The MITRE Corporation                                      #
+#                                                                           #
+# Licensed under the Apache License, Version 2.0 (the "License");           #
+# you may not use this file except in compliance with the License.          #
+# You may obtain a copy of the License at                                   #
+#                                                                           #
+#    http://www.apache.org/licenses/LICENSE-2.0                             #
+#                                                                           #
+# Unless required by applicable law or agreed to in writing, software       #
+# distributed under the License is distributed on an "AS IS" BASIS,         #
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  #
+# See the License for the specific language governing permissions and       #
+# limitations under the License.                                            #
+#############################################################################
+
+set -o errexit -o pipefail -o xtrace
+
+
+run_user_command() {
+    local mpf_subcommand=$1
+    shift
+    export PYTHONPATH=/home/mpf/mpf-scripts-install
+    python "$PYTHONPATH/mpf/command_line.py" \
+        "$mpf_subcommand" --sql-host "$MYSQL_HOST" --sql-password "$MYSQL_ROOT_PASSWORD" --skip-sql-start "$@"
+}
+
+script_name=$(basename "$0")
+
+subcommand=$1
+shift
+
+case "$subcommand" in
+list)
+    run_user_command list-users
+    ;;
+add)
+    if [ $# -ne 2 ]; then
+        echo 'Incorrent number of arguments. Expected 2 arguments.'
+        echo "Usage: $script_name add <user> <role>"
+        exit 2
+    fi
+    run_user_command add-user "$@"
+    ;;
+remove)
+    if [ $# -ne 1 ]; then
+        echo 'Incorrent number of arguments. Expected 1 argument.'
+        echo "Usage: $script_name remove <user>"
+        exit 2
+    fi
+    run_user_command remove-user "$@"
+    ;;
+change-password)
+    if [ $# -ne 1 ]; then
+        echo 'Incorrent number of arguments. Expected 1 argument.'
+        echo "Usage: $script_name change-password <user>"
+        exit 2
+    fi
+    run_user_command change-password "$@"
+    ;;
+change-role)
+    if [ $# -ne 2 ]; then
+        echo 'Incorrent number of arguments. Expected 2 arguments.'
+        echo "Usage: $script_name change-role <user> <role>"
+        exit 2
+    fi
+    run_user_command change-role "$@"
+    ;;
+*)
+    cat << EndOfMessage
+Invalid command
+Usage:
+    $script_name list
+    $script_name add <user> <role>
+    $script_name remove <user>
+    $script_name change-password <user>
+    $script_name change-role <user> <role>
+EndOfMessage
+    exit 1
+    ;;
+esac
