@@ -165,7 +165,7 @@ Bash, which is part of [Git for Windows](https://gitforwindows.org/), or
 
 ### Build the OpenMPF Docker Images
 
-Note that this process can take 1.5 - 2 hours if you're starting from scratch.
+Note that this process can take an hour if you're starting from scratch.
 
 #### Setup
 
@@ -191,22 +191,22 @@ please refer to the [Contribution Guide](CONTRIBUTING.md).
 Run the following command from within the `openmpf-docker` directory to create
 the OpenMPF build image:
 
-- `docker build -f openmpf_build/Dockerfile path/to/openmpf-projects -t openmpf_build`
+- `DOCKER_BUILDKIT=1 docker build -f openmpf_build/Dockerfile path/to/openmpf-projects -t openmpf_build`
 
 
 #### Build the OpenMPF Component Executor Docker Image
 
 Run the following command from within the `openmpf-docker/components`
 directory to create the OpenMPF Python component executor image:
-- `docker build . -f python_executor/Dockerfile -t openmpf_python_executor`
+- `DOCKER_BUILDKIT=1 docker build . -f python_executor/Dockerfile -t openmpf_python_executor`
 
 Run the following command from within the `openmpf-docker/components`
 directory to create the OpenMPF C++ component build image:
-- `docker build . -f cpp_component_build/Dockerfile -t openmpf_cpp_component_build`
+- `DOCKER_BUILDKIT=1 docker build . -f cpp_component_build/Dockerfile -t openmpf_cpp_component_build`
 
 Run the following command from within the `openmpf-docker/components`
 directory to create the OpenMPF C++ component executor image:
-- `docker build . -f cpp_executor/Dockerfile -t openmpf_cpp_executor`
+- `DOCKER_BUILDKIT=1 docker build . -f cpp_executor/Dockerfile -t openmpf_cpp_executor`
 
 #### Generate docker-compose.yml
 
