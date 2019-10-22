@@ -395,7 +395,8 @@ docker-compose \
    config > docker-compose.yml
 ```
 
-If configuring your deployment with HTTPS, you may also need to add `-f docker-compose.https.yml` to the above command.
+If configuring your deployment with HTTPS, you will also need to add
+`-f docker-compose.https.yml` to the above command.
 
 ### (Optional) Configure HTTPS
 
@@ -418,7 +419,7 @@ docker-compose \
    config > docker-compose.yml
 ```
 
-If configuring your deployment with custom user password settings, you may also
+If configuring your deployment with custom user password settings, you will also
 need to add `-f docker-compose.users.yml` to the above command.
 
 ### (Optional) Add GPU support with NVIDIA CUDA
