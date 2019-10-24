@@ -78,3 +78,10 @@ services:
     build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/cpp/DlibFaceDetection
     deploy:
       mode: global
+
+  scene-change-detection:
+    <<: *detection-component-base
+    image: ${REGISTRY}openmpf_scene_change_detection:${TAG}
+    build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/cpp/SceneChangeDetection
+    deploy:
+      mode: global
