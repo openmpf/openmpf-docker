@@ -41,8 +41,6 @@ RUN yum-config-manager --setopt=override_install_langs='' --save; \
             cmake3 make gcc gcc-c++ qt-devel log4cxx-devel boost-devel ffmpeg ffmpeg-devel \
             java-11-openjdk-devel python-pip python-devel activemq-cpp-devel protobuf-static protobuf-devel \
             gtest-devel \
-            # dlib dependencies
-            bzip2 \
             # OALPR dependencies
             libjpeg-devel libpng-devel libtiff-devel zlib; \
     yum clean all; \
@@ -84,14 +82,6 @@ RUN mkdir /tmp/opencv; \
 RUN curl --location 'https://archive.apache.org/dist/maven/maven-3/3.3.3/binaries/apache-maven-3.3.3-bin.tar.gz' \
         | tar --extract --gzip --directory /opt; \
     ln --symbolic /opt/apache-maven-3.3.3/bin/mvn /usr/local/bin;
-
-
-
-# dlib
-RUN mkdir --parents /apps/source/dlib-sources; \
-    curl --location 'http://dlib.net/files/dlib-18.18.tar.bz2' \
-        | tar --extract --bzip2 --directory /apps/source/dlib-sources;
-
 
 
 # Oalpr

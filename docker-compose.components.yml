@@ -71,3 +71,10 @@ services:
     build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/cpp/DarknetDetection
     deploy:
       mode: global
+
+  dlib-face-detection:
+    <<: *detection-component-base
+    image: ${REGISTRY}openmpf_dlib_face_detection:${TAG}
+    build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/cpp/DlibFaceDetection
+    deploy:
+      mode: global
