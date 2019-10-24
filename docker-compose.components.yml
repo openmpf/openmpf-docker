@@ -85,3 +85,10 @@ services:
     build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/cpp/SceneChangeDetection
     deploy:
       mode: global
+
+  ocv-dnn-detection:
+    <<: *detection-component-base
+    image: ${REGISTRY}openmpf_ocv_dnn_detection:${TAG}
+    build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/cpp/OcvDnnDetection
+    deploy:
+      mode: global
