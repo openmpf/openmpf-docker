@@ -183,6 +183,7 @@ try {
             sh "git clone $openmpfDockerRepo.url"
         }
         dir(openmpfDockerRepo.path) {
+            sh 'rm -rf test-reports/*'
             sh 'git clean -ffd'
             sh 'git fetch'
             sh "git checkout 'origin/$openmpfDockerRepo.branch'"
