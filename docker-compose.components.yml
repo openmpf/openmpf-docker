@@ -115,3 +115,12 @@ services:
       context: ${OPENMPF_PROJECTS_PATH}/openmpf-contrib-components/cpp/motion
     deploy:
       mode: global
+
+  subsense-motion-detection:
+    <<: *detection-component-base
+    image: ${REGISTRY}openmpf_subsense_motion_detection:${TAG}
+    build:
+      dockerfile: ${OPENMPF_PROJECTS_PATH}/openmpf-contrib-components/cpp/motion/SubsenseMotionDetection/Dockerfile
+      context: ${OPENMPF_PROJECTS_PATH}/openmpf-contrib-components/cpp/motion
+    deploy:
+      mode: global
