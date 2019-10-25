@@ -71,7 +71,7 @@ set +o errexit
 
 mvn verify \
     -Dspring.profiles.active=jenkins -Pjenkins \
-    -Dit.test=ITComponentLifecycle,ITWebREST,ITComponentRegistration,ITWebStreamingReports \
+    -Dit.test=ITComponentLifecycle,ITWebREST,ITComponentRegistration \
     -DfailIfNoTests=false \
     -Dtransport.guarantee=NONE \
     -Dweb.rest.protocol=http \
