@@ -106,3 +106,12 @@ services:
     build: ${OPENMPF_PROJECTS_PATH}/openmpf-contrib-components/cpp/OcvPersonDetection
     deploy:
       mode: global
+
+  mog-motion-detection:
+    <<: *detection-component-base
+    image: ${REGISTRY}openmpf_mog_motion_detection:${TAG}
+    build:
+      dockerfile: ${OPENMPF_PROJECTS_PATH}/openmpf-contrib-components/cpp/motion/MogMotionDetection/Dockerfile
+      context: ${OPENMPF_PROJECTS_PATH}/openmpf-contrib-components/cpp/motion
+    deploy:
+      mode: global
