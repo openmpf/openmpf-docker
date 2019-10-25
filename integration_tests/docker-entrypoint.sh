@@ -14,6 +14,9 @@ updateOrAddProperty() {
     fi
 }
 
+# Remove old test reports since /test-reports gets bind mounted in compose file.
+rm --recursive --force /test-reports/*
+
 
 python -u /scripts/descriptor-receiver.py &
 descriptor_receiver_pid=$!
@@ -82,9 +85,6 @@ mvn verify \
 mavenRetVal=$?
 
 kill "$descriptor_receiver_pid"
-
-# Remove old test reports since /test-reports gets bind mounted in compose file.
-rm --recursive --force /test-reports/*
 
 cd ../..
 mkdir --parents /test-reports/surefire-reports
