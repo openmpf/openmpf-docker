@@ -31,20 +31,12 @@ FROM centos:7 as openmpf_build
 
 SHELL ["/bin/bash", "-o", "errexit", "-o", "pipefail", "-c"]
 
-# Change config because the centos:7 image sets this yum property to en_US.utf8 which prevents other locales
-# (including other Engish locales) from being installed with GCC.
-RUN yum-config-manager --setopt=override_install_langs='' --save; \
-    yum install --assumeyes epel-release https://download1.rpmfusion.org/free/el/rpmfusion-free-release-7.noarch.rpm \
+RUN yum install --assumeyes epel-release https://download1.rpmfusion.org/free/el/rpmfusion-free-release-7.noarch.rpm \
             https://download1.rpmfusion.org/nonfree/el/rpmfusion-nonfree-release-7.noarch.rpm; \
-    yum install --assumeyes \
-            # OpenMPF dependencies
-            cmake3 make gcc gcc-c++ qt-devel log4cxx-devel boost-devel ffmpeg ffmpeg-devel \
-            java-11-openjdk-devel python-pip python-devel activemq-cpp-devel protobuf-static protobuf-devel \
-            gtest-devel \
-            # OALPR dependencies
-            libjpeg-devel libpng-devel libtiff-devel zlib; \
+    yum install --assumeyes cmake3 make gcc gcc-c++ qt-devel log4cxx-devel boost-devel ffmpeg ffmpeg-devel gtest-devel \
+            java-11-openjdk-devel python-pip python-devel activemq-cpp-devel protobuf-static protobuf-devel; \
     yum clean all; \
-    rm --recursive --force /var/cache/yum/*; \
+    rm --recursive /var/cache/yum/*; \
     pip install --upgrade --no-cache-dir pip wheel; \
     # For protobuf maven plugin
     ln --symbolic /usr/bin/protoc /usr/local/bin/protoc;
@@ -82,44 +74,6 @@ RUN mkdir /tmp/opencv; \
 RUN curl --location 'https://archive.apache.org/dist/maven/maven-3/3.3.3/binaries/apache-maven-3.3.3-bin.tar.gz' \
         | tar --extract --gzip --directory /opt; \
     ln --symbolic /opt/apache-maven-3.3.3/bin/mvn /usr/local/bin;
-
-
-# Oalpr
-
-RUN mkdir /tmp/leptonica; \
-    cd /tmp/leptonica; \
-    curl --location 'https://github.com/DanBloomberg/leptonica/archive/1.75.0.tar.gz' \
-        | tar --extract --gzip; \
-    mkdir leptonica-1.75.0/build; \
-    cd leptonica-1.75.0/build; \
-    cmake3 -DCMAKE_INSTALL_PREFIX:PATH=/usr/local ..; \
-    make install --jobs "$(nproc)"; \
-    rm --recursive /tmp/leptonica;
-
-
-RUN mkdir /tmp/tesseract; \
-    cd /tmp/tesseract; \
-    curl --location 'https://github.com/tesseract-ocr/tesseract/archive/4.0.0.tar.gz' \
-        | tar --extract --gzip; \
-    mkdir tesseract-4.0.0/build; \
-    cd tesseract-4.0.0/build; \
-    PKG_CONFIG_PATH=/usr/local/lib/pkgconfig cmake3 -DCMAKE_INSTALL_PREFIX:PATH=/usr/local ..; \
-    make install --jobs "$(nproc)"; \
-    rm --recursive /tmp/tesseract;
-
-
-RUN mkdir /tmp/oalpr; \
-    cd /tmp/oalpr; \
-    curl --location 'https://github.com/openalpr/openalpr/archive/6ead2fb8f72ac1929a2e04912c5795af0bf37761.tar.gz' \
-        | tar --extract --gzip; \
-    cd openalpr-6ead2fb8f72ac1929a2e04912c5795af0bf37761/src; \
-    mkdir build; \
-    cd build; \
-    cmake3 -DCMAKE_CXX_STANDARD=11 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DWITH_DAEMON=OFF \
-           -DCMAKE_INSTALL_PREFIX:PATH=/usr/local -DLeptonica_LIB=/usr/local/lib/libleptonica.so ..; \
-    make install -j "$(nproc)"; \
-    rm --recursive /tmp/oalpr;
-
 
 
 COPY . /home/mpf/openmpf-projects
