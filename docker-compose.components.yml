@@ -111,8 +111,8 @@ services:
     <<: *detection-component-base
     image: ${REGISTRY}openmpf_mog_motion_detection:${TAG}
     build:
-      dockerfile: ${OPENMPF_PROJECTS_PATH}/openmpf-contrib-components/cpp/motion/MogMotionDetection/Dockerfile
       context: ${OPENMPF_PROJECTS_PATH}/openmpf-contrib-components/cpp/motion
+      dockerfile: MogMotionDetection/Dockerfile
     deploy:
       mode: global
 
@@ -120,7 +120,7 @@ services:
     <<: *detection-component-base
     image: ${REGISTRY}openmpf_subsense_motion_detection:${TAG}
     build:
-      dockerfile: ${OPENMPF_PROJECTS_PATH}/openmpf-contrib-components/cpp/motion/SubsenseMotionDetection/Dockerfile
       context: ${OPENMPF_PROJECTS_PATH}/openmpf-contrib-components/cpp/motion
+      dockerfile: SubsenseMotionDetection/Dockerfile
     deploy:
       mode: global
