@@ -286,7 +286,8 @@ try {
                 }
                 runtimeComposeFiles = "docker-compose.core.yml:$componentComposeFiles"
 
-                withEnv(["TAG=$imageTag", "REGISTRY=$remoteImagePrefix", "COMPOSE_FILE=$runtimeComposeFiles"]) {
+                withEnv(["TAG=$imageTag", "REGISTRY=$remoteImagePrefix",
+                         "COMPOSE_FILE=$runtimeComposeFiles", 'COMPOSE_DOCKER_CLI_BUILD=1']) {
                     def shasArg = getShasBuildArg(allRepos)
                     sh "docker-compose build $commonBuildArgs $shasArg --build-arg RUN_TESTS --parallel"
                 }
