@@ -315,13 +315,18 @@ try {
         dir('openmpf-docker') {
             def composeFiles = "docker-compose.integration.test.yml:$componentComposeFiles"
 
+            def nproc = sh(script: 'nproc' returnStdout: true).trim()
+
+            def componentsYaml = readYaml(file: 'docker-compose.components.yml')
+            def scaleArgs = componentsYaml.services.collect({ "--scale '$it.key=$nproc'" }).join(' ')
+
             withEnv(["TAG=$imageTag",
                      "REGISTRY=$remoteImagePrefix",
                      // Use custom project name to allow multiple builds on same machine
                      "COMPOSE_PROJECT_NAME=openmpf_$buildId",
                      "COMPOSE_FILE=$composeFiles"]) {
                 try {
-                    sh 'docker-compose up --exit-code-from workflow-manager'
+                    sh "docker-compose up --exit-code-from workflow-manager $scaleArgs"
                     sh 'docker-compose down --volumes'
                 }
                 catch (e) {
