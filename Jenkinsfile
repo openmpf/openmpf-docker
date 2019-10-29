@@ -31,7 +31,7 @@ def buildPackageJson = env.build_package_json ?: 'openmpf-non-docker-components-
 def buildCustomComponents = env.build_custom_components?.toBoolean() ?: false
 def openmpfCustomRepoCredId = env.openmpf_custom_repo_cred_id
 def applyCustomConfig = env.apply_custom_config?.toBoolean() ?: false
-def mvnTestOptions = env.mvn_test_options ? ''
+def mvnTestOptions = env.mvn_test_options ?: ''
 
 def dockerRegistryHost = env.docker_registry_host
 def dockerRegistryPort = env.docker_registry_port
