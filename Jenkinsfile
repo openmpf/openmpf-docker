@@ -147,11 +147,12 @@ try {
         }
     }
 
-    def workflowManagerImageName = "${remoteImagePrefix}openmpf_workflow_manager:$imageTag"
-    def activeMqImageName = "${remoteImagePrefix}openmpf_activemq:$imageTag"
-    def cppBuildImageName = "${remoteImagePrefix}openmpf_cpp_component_build:$imageTag"
-    def cppExecutorImageName = "${remoteImagePrefix}openmpf_cpp_executor:$imageTag"
-    def pythonExecutorImageName = "${remoteImagePrefix}openmpf_python_executor:$imageTag"
+    def inProgressTag = buildId
+    def workflowManagerImageName = "openmpf_workflow_manager:$inProgressTag"
+    def activeMqImageName = "openmpf_activemq:$inProgressTag"
+    def cppBuildImageName = "openmpf_cpp_component_build:$inProgressTag"
+    def cppExecutorImageName = "openmpf_cpp_executor:$inProgressTag"
+    def pythonExecutorImageName = "openmpf_python_executor:$inProgressTag"
 
     stage('Clone repos') {
         for (repo in allRepos) {
@@ -244,21 +245,20 @@ try {
 
         withEnv(['DOCKER_BUILDKIT=1', 'RUN_TESTS=true']) {
             def noCacheArg = buildNoCache ? '--no-cache' : ''
-            def commonBuildArgs = " --build-arg BUILD_REGISTRY='$remoteImagePrefix' " +
-                    "--build-arg BUILD_TAG='$imageTag' $noCacheArg "
+            def commonBuildArgs = " --build-arg BUILD_TAG='$inProgressTag' $noCacheArg "
 
             dir ('openmpf-docker') {
                 sh 'docker build -f openmpf_build/Dockerfile ../openmpf-projects --build-arg RUN_TESTS ' +
                         "--build-arg BUILD_PACKAGE_JSON=$buildPackageJson $commonBuildArgs " +
-                        " -t ${remoteImagePrefix}openmpf_build:$imageTag"
+                        " -t ${remoteImagePrefix}openmpf_build:$inProgressTag"
 
                 sh "docker build integration_tests $commonBuildArgs " +
-                        " -t ${remoteImagePrefix}openmpf_integration_tests:$imageTag"
+                        " -t ${remoteImagePrefix}openmpf_integration_tests:$inProgressTag"
             }
 
             if (buildCustomComponents) {
                 sh "docker build $customSystemTestsRepo.path $commonBuildArgs ${getShasBuildArg(allRepos)} " +
-                        " -t ${remoteImagePrefix}openmpf_integration_tests:$imageTag "
+                        " -t ${remoteImagePrefix}openmpf_integration_tests:$inProgressTag "
             }
 
 
@@ -287,8 +287,7 @@ try {
                 }
                 runtimeComposeFiles = "docker-compose.core.yml:$componentComposeFiles"
 
-                withEnv(["TAG=$imageTag", "REGISTRY=$remoteImagePrefix",
-                         "COMPOSE_FILE=$runtimeComposeFiles", 'COMPOSE_DOCKER_CLI_BUILD=1']) {
+                withEnv(["TAG=$inProgressTag", "COMPOSE_FILE=$runtimeComposeFiles", 'COMPOSE_DOCKER_CLI_BUILD=1']) {
                     def shasArg = getShasBuildArg(allRepos)
                     sh "docker-compose build $commonBuildArgs $shasArg --build-arg RUN_TESTS --parallel"
                 }
@@ -320,8 +319,7 @@ try {
             def componentsYaml = readYaml(file: 'docker-compose.components.yml')
             def scaleArgs = componentsYaml.services.collect({ "--scale '$it.key=$nproc'" }).join(' ')
 
-            withEnv(["TAG=$imageTag",
-                     "REGISTRY=$remoteImagePrefix",
+            withEnv(["TAG=$inProgressTag",
                      "EXTRA_MVN_OPTIONS=$mvnTestOptions",
                      // Use custom project name to allow multiple builds on same machine
                      "COMPOSE_PROJECT_NAME=openmpf_$buildId",
@@ -345,6 +343,17 @@ try {
             } // withEnv
         } // dir('openmpf-docker')
     } // stage('Run Integration Tests')
+    stage('Re-Tag Images') {
+        def imageNames = sh(script: "docker images 'openmpf_*:$inProgressTag' --format '{{.Repository}}'",
+                            returnStdout: true).trim().split('\n')
+        for (def imageName: imageNames) {
+            def inProgressName = "$imageName:$inProgressTag"
+            def finalName = "${remoteImagePrefix}${imageName}:$imageTag"
+            sh "docker tag $inProgressName $finalName"
+            // When an image has multiple tags `docker image rm` only removes the specified tag
+            sh "docker image rm $inProgressName"
+        }
+    }
     stage('Push runtime images') {
         if (!pushRuntimeImages) {
             echo 'SKIPPING PUSH OF RUNTIME IMAGES'
