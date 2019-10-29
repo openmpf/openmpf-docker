@@ -250,15 +250,15 @@ try {
             dir ('openmpf-docker') {
                 sh 'docker build -f openmpf_build/Dockerfile ../openmpf-projects --build-arg RUN_TESTS ' +
                         "--build-arg BUILD_PACKAGE_JSON=$buildPackageJson $commonBuildArgs " +
-                        " -t ${remoteImagePrefix}openmpf_build:$inProgressTag"
+                        " -t openmpf_build:$inProgressTag"
 
                 sh "docker build integration_tests $commonBuildArgs " +
-                        " -t ${remoteImagePrefix}openmpf_integration_tests:$inProgressTag"
+                        " -t openmpf_integration_tests:$inProgressTag"
             }
 
             if (buildCustomComponents) {
                 sh "docker build $customSystemTestsRepo.path $commonBuildArgs ${getShasBuildArg(allRepos)} " +
-                        " -t ${remoteImagePrefix}openmpf_integration_tests:$inProgressTag "
+                        " -t openmpf_integration_tests:$inProgressTag "
             }
 
 
