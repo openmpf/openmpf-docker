@@ -69,6 +69,7 @@ services:
     environment:
       # The following line is needed to wait until the mySQL service is available:
       - MYSQL_ROOT_PASSWORD=password
+      - EXTRA_MVN_OPTIONS=$EXTRA_MVN_OPTIONS
     volumes:
       - shared_data:/opt/mpf/share
       - ./test-reports:/test-reports

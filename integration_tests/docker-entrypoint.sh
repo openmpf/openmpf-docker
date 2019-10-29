@@ -80,7 +80,7 @@ mvn verify \
     -DjenkinsBuildNumber=1 \
     -Dstartup.auto.registration.skip=false \
     -Dexec.skip=true \
-    $MVN_OPTIONS
+    $MVN_OPTIONS $EXTRA_MVN_OPTIONS # Intentionally unquoted to allow variables to hold mulitple flags.
 
 mavenRetVal=$?
 

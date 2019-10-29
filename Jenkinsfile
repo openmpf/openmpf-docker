@@ -31,6 +31,7 @@ def buildPackageJson = env.build_package_json ?: 'openmpf-non-docker-components-
 def buildCustomComponents = env.build_custom_components?.toBoolean() ?: false
 def openmpfCustomRepoCredId = env.openmpf_custom_repo_cred_id
 def applyCustomConfig = env.apply_custom_config?.toBoolean() ?: false
+def mvnTestOptions = env.mvn_test_options ? ''
 
 def dockerRegistryHost = env.docker_registry_host
 def dockerRegistryPort = env.docker_registry_port
@@ -316,12 +317,12 @@ try {
             def composeFiles = "docker-compose.integration.test.yml:$componentComposeFiles"
 
             def nproc = sh(script: 'nproc', returnStdout: true).trim()
-
             def componentsYaml = readYaml(file: 'docker-compose.components.yml')
             def scaleArgs = componentsYaml.services.collect({ "--scale '$it.key=$nproc'" }).join(' ')
 
             withEnv(["TAG=$imageTag",
                      "REGISTRY=$remoteImagePrefix",
+                     "EXTRA_MVN_OPTIONS=$mvnTestOptions",
                      // Use custom project name to allow multiple builds on same machine
                      "COMPOSE_PROJECT_NAME=openmpf_$buildId",
                      "COMPOSE_FILE=$composeFiles"]) {
