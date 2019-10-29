@@ -212,7 +212,11 @@ directory to create the OpenMPF C++ component executor image:
 
 From within the `openmpf-docker` directory, copy `env.tpl` to `.env` and set
 environment variables in `.env`. Make sure that `OPENMPF_PROJECTS_PATH` is
-set correctly. 
+set correctly.
+
+The default user password settings are public knowledge, which could be a
+security risk. To configure your own user settings, see
+[below](#optional-configure-users).
 
 Leave the `KEYSTORE_` variables in `.env`  blank when configuring the Workflow
 Manager to use HTTP. To enable HTTPS, see [below](#optional-configure-https).
@@ -346,6 +350,27 @@ or virtual machines. The simplest way to do this is to set up a Docker Swarm
 deployment. If you would like a walkthrough on how to do that, please see the
 [Swarm Deployment Guide](SWARM.md).
 
+### (Optional) Configure Users
+
+Copy
+`openmpf-projects/openmpf/trunk/workflow-manager/src/main/resources/properties/user.properties` ([link](https://github.com/openmpf/openmpf/blob/master/trunk/workflow-manager/src/main/resources/properties/user.properties))
+somewhere on the swarm manager host and make modifications to that file. Then
+set the `USER_PROPERTIES_PATH` variable in the `.env` file to the location of
+that file.
+
+Run the following command to generate the stand-alone `docker-compose.yml` file:
+
+```
+docker-compose \
+   -f docker-compose.core.yml \
+   -f docker-compose.users.yml \
+   -f docker-compose.components.yml \
+   config > docker-compose.yml
+```
+
+If configuring your deployment with HTTPS, you will also need to add
+`-f docker-compose.https.yml` to the above command.
+
 ### (Optional) Configure HTTPS
 
 The Workflow Manager web application can be configured to use HTTPS. To enable
@@ -366,6 +391,9 @@ docker-compose \
    -f docker-compose.components.yml \
    config > docker-compose.yml
 ```
+
+If configuring your deployment with custom user password settings, you will also
+need to add `-f docker-compose.users.yml` to the above command.
 
 ### (Optional) Add GPU support with NVIDIA CUDA
 

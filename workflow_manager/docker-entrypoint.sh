@@ -87,6 +87,21 @@ touch "$markerFile"
 
 
 ################################################################################
+# Configure users                                                              #
+################################################################################
+
+rm -f "$MPF_HOME/config/user.properties"
+
+if [ -f /run/secrets/user_properties ]
+then
+    mkdir -p "$MPF_HOME/config"
+    ln -s /run/secrets/user_properties "$MPF_HOME/config/user.properties"
+fi
+
+# else, the user.properties template will be moved to
+# "$MPF_HOME/config/user.properties" by the WFM
+
+################################################################################
 # Configure HTTP or HTTPS                                                      #
 ################################################################################
 
