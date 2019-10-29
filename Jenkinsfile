@@ -315,7 +315,7 @@ try {
         dir('openmpf-docker') {
             def composeFiles = "docker-compose.integration.test.yml:$componentComposeFiles"
 
-            def nproc = sh(script: 'nproc' returnStdout: true).trim()
+            def nproc = sh(script: 'nproc', returnStdout: true).trim()
 
             def componentsYaml = readYaml(file: 'docker-compose.components.yml')
             def scaleArgs = componentsYaml.services.collect({ "--scale '$it.key=$nproc'" }).join(' ')
