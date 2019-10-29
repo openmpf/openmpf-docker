@@ -96,7 +96,6 @@ ENTRYPOINT ["/scripts/docker-entrypoint.sh"]
 
 
 ARG BUILD_SHAS
-ARG BUILD_TAG
 
 LABEL org.label-schema.license="Mixed" \
       org.label-schema.name="OpenMPF Workflow Manager" \
@@ -104,7 +103,6 @@ LABEL org.label-schema.license="Mixed" \
       org.label-schema.url="https://openmpf.github.io" \
       org.label-schema.vcs-ref=$BUILD_SHAS \
       org.label-schema.vcs-url="https://github.com/openmpf/openmpf" \
-      org.label-schema.vendor="MITRE" \
-      org.label-schema.version=$BUILD_TAG
+      org.label-schema.vendor="MITRE"
 
 

@@ -97,7 +97,6 @@ ENTRYPOINT ["bash", "-c", "/scripts/install-component.sh && python /scripts/dock
 
 
 ARG BUILD_SHAS
-ARG BUILD_TAG
 
 LABEL org.label-schema.license="Apache 2.0" \
       org.label-schema.name="OpenMPF Python Component Executor" \
@@ -105,5 +104,4 @@ LABEL org.label-schema.license="Apache 2.0" \
       org.label-schema.url="https://openmpf.github.io" \
       org.label-schema.vcs-ref=$BUILD_SHAS \
       org.label-schema.vcs-url="https://github.com/openmpf/openmpf-python-component-sdk" \
-      org.label-schema.vendor="MITRE" \
-      org.label-schema.version=$BUILD_TAG
+      org.label-schema.vendor="MITRE"
