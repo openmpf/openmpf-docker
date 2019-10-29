@@ -125,10 +125,14 @@ def allRepos = [openmpfDockerRepo, openmpfProjectsRepo] + projectsSubRepos + cus
 
 node(env.jenkins_nodes) {
 wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color in Jenkins console
+
 def buildException
+def inProgressTag
 
 try {
     def buildId = "${currentBuild.projectName}_${currentBuild.number}"
+    // Use inProgressTag to ensure concurrent builds don't use the same image tag.
+    inProgressTag = buildId
 
 
     def dockerRegistryHostAndPort = dockerRegistryHost
@@ -146,13 +150,6 @@ try {
             remoteImagePrefix += "/"
         }
     }
-
-    def inProgressTag = buildId
-    def workflowManagerImageName = "openmpf_workflow_manager:$inProgressTag"
-    def activeMqImageName = "openmpf_activemq:$inProgressTag"
-    def cppBuildImageName = "openmpf_cpp_component_build:$inProgressTag"
-    def cppExecutorImageName = "openmpf_cpp_executor:$inProgressTag"
-    def pythonExecutorImageName = "openmpf_python_executor:$inProgressTag"
 
     stage('Clone repos') {
         for (repo in allRepos) {
@@ -265,14 +262,14 @@ try {
             dir('openmpf-docker/components') {
                 def cppShas = getShasBuildArg([openmpfCppSdkRepo])
                 sh "docker build . -f cpp_component_build/Dockerfile $commonBuildArgs $cppShas " +
-                        " -t $cppBuildImageName"
+                        " -t openmpf_cpp_component_build:$inProgressTag"
 
                 sh "docker build . -f cpp_executor/Dockerfile $commonBuildArgs $cppShas " +
-                        " -t $cppExecutorImageName"
+                        " -t openmpf_cpp_executor:$inProgressTag"
 
                 def pythonShas = getShasBuildArg([openmpfPythonSdkRepo])
                 sh "docker build . -f python_executor/Dockerfile $commonBuildArgs $pythonShas " +
-                        " -t $pythonExecutorImageName"
+                        " -t openmpf_python_executor:$inProgressTag"
             }
 
             dir ('openmpf-docker') {
@@ -298,11 +295,11 @@ try {
                 dir(customConfigRepo.path) {
                     def wfmShasArg = getShasBuildArg([openmpfDockerRepo, customConfigRepo, openmpfRepo])
                     sh "docker build workflow_manager $commonBuildArgs $wfmShasArg " +
-                            " -t $workflowManagerImageName"
+                            " -t openmpf_workflow_manager:$inProgressTag"
 
                     def amqShasArg = getShasBuildArg([openmpfDockerRepo, customConfigRepo])
                     sh "docker build activemq $commonBuildArgs $amqShasArg " +
-                            " -t $activeMqImageName"
+                            " -t openmpf_activemq:$inProgressTag"
                 }
             }
             else  {
@@ -344,15 +341,7 @@ try {
         } // dir('openmpf-docker')
     } // stage('Run Integration Tests')
     stage('Re-Tag Images') {
-        def imageNames = sh(script: "docker images 'openmpf_*:$inProgressTag' --format '{{.Repository}}'",
-                            returnStdout: true).trim().split('\n')
-        for (def imageName: imageNames) {
-            def inProgressName = "$imageName:$inProgressTag"
-            def finalName = "${remoteImagePrefix}${imageName}:$imageTag"
-            sh "docker tag $inProgressName $finalName"
-            // When an image has multiple tags `docker image rm` only removes the specified tag
-            sh "docker image rm $inProgressName"
-        }
+        reTagImages(inProgressTag, remoteImagePrefix, imageTag)
     }
     stage('Push runtime images') {
         if (!pushRuntimeImages) {
@@ -362,9 +351,9 @@ try {
             withEnv(["TAG=$imageTag", "REGISTRY=$remoteImagePrefix", "COMPOSE_FILE=$runtimeComposeFiles"]) {
                 docker.withRegistry("http://$dockerRegistryHostAndPort", dockerRegistryCredId) {
                     sh 'cd openmpf-docker && docker-compose push'
-                    sh "docker push '${cppBuildImageName}'"
-                    sh "docker push '${cppExecutorImageName}'"
-                    sh "docker push '${pythonExecutorImageName}'"
+                    sh "docker push '${remoteImagePrefix}openmpf_cpp_component_build:$imageTag'"
+                    sh "docker push '${remoteImagePrefix}openmpf_cpp_executor:$imageTag'"
+                    sh "docker push '${remoteImagePrefix}openmpf_python_executor:$imageTag'"
                 } // docker.withRegistry ...
             } // withEnv...
         } // when (pushRuntimeImages)
@@ -390,6 +379,11 @@ finally {
         echo 'DETECTED BUILD COMPLETED'
         echo "CURRENT BUILD RESULT: ${currentBuild.currentResult}"
         buildStatus = currentBuild.currentResult == 'SUCCESS' ? 'success' : 'failure'
+    }
+
+    if (buildStatus != 'success') {
+        // Re-tag images after failure so we don't end up with a bunch of images for every failed build.
+        reTagImages(inProgressTag, '', 'failed-build')
     }
 
     if (postOpenmpfDockerBuildStatus) {
@@ -449,4 +443,18 @@ def email(status, recipients) {
         body: '${JELLY_SCRIPT,template="text"}',
         recipientProviders: [[$class: 'RequesterRecipientProvider']],
         to: recipients);
+}
+
+
+def reTagImages(inProgressTag, remoteImagePrefix, imageTag) {
+    def imageNames = sh(script: "docker images 'openmpf_*:$inProgressTag' --format '{{.Repository}}'",
+                        returnStdout: true).trim().split('\n')
+
+    for (def imageName: imageNames) {
+        def inProgressName = "$imageName:$inProgressTag"
+        def finalName = "${remoteImagePrefix}${imageName}:$imageTag"
+        sh "docker tag $inProgressName $finalName"
+        // When an image has multiple tags `docker image rm` only removes the specified tag
+        sh "docker image rm $inProgressName"
+    }
 }
