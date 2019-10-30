@@ -41,7 +41,7 @@ ENV MPF_HOME /opt/mpf
 
 ENV COMPONENT_VIRTUALENV $MPF_HOME/plugins/plugin/venv
 
-RUN yum install --assumeyes --nogpgcheck epel-release \
+RUN yum install --assumeyes epel-release \
             https://download1.rpmfusion.org/free/el/rpmfusion-free-release-7.noarch.rpm \
             https://download1.rpmfusion.org/nonfree/el/rpmfusion-nonfree-release-7.noarch.rpm; \
     # libSM and libXrender packages are required for opencv-python

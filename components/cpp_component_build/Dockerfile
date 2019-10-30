@@ -36,7 +36,7 @@ SHELL ["/bin/bash", "-o", "errexit", "-o", "pipefail", "-c"]
 # Change config because the centos:7 image sets this yum property to en_US.utf8 which prevents other locales
 # (including other Engish locales) from being installed with GCC.
 RUN yum-config-manager --setopt=override_install_langs='' --save; \
-    yum install --assumeyes --nogpgcheck epel-release \
+    yum install --assumeyes epel-release \
             https://download1.rpmfusion.org/free/el/rpmfusion-free-release-7.noarch.rpm \
             https://download1.rpmfusion.org/nonfree/el/rpmfusion-nonfree-release-7.noarch.rpm; \
     yum install --assumeyes cmake3 make gcc gcc-c++ qt-devel log4cxx-devel boost-devel ffmpeg gtest-devel; \

@@ -74,7 +74,6 @@ ENTRYPOINT ["python", "/scripts/docker-entrypoint.py"]
 
 
 ARG BUILD_SHAS
-
 LABEL org.label-schema.license="Apache 2.0" \
       org.label-schema.name="OpenMPF C++ Component Executor" \
       org.label-schema.schema-version="1.0" \
