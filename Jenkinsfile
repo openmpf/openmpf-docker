@@ -312,13 +312,8 @@ try {
             def composeFiles = "docker-compose.integration.test.yml:$componentComposeFiles"
 
             def nproc = sh(script: 'nproc', returnStdout: true).trim()
-            def scaleArgs = (componentComposeFiles
-                    .split(':')
-                    .collect { readYaml(file: it) }
-                    *.services
-                    *.collect { "--scale '$it.key=$nproc'" }
-                    .flatten()
-                    .join(' '))
+            def componentsYaml = readYaml(file: 'docker-compose.components.yml')
+            def scaleArgs = componentsYaml.services.collect({ "--scale '$it.key=$nproc'" }).join(' ')
 
             withEnv(["TAG=$inProgressTag",
                      "EXTRA_MVN_OPTIONS=$mvnTestOptions",
