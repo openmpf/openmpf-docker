@@ -194,7 +194,7 @@ the OpenMPF build image:
 - `DOCKER_BUILDKIT=1 docker build -f openmpf_build/Dockerfile path/to/openmpf-projects -t openmpf_build`
 
 
-#### Build the OpenMPF Component Executor Docker Image
+#### Build the OpenMPF Component Executor Docker Images
 
 Run the following command from within the `openmpf-docker/components`
 directory to create the OpenMPF Python component executor image:
@@ -207,6 +207,14 @@ directory to create the OpenMPF C++ component build image:
 Run the following command from within the `openmpf-docker/components`
 directory to create the OpenMPF C++ component executor image:
 - `DOCKER_BUILDKIT=1 docker build . -f cpp_executor/Dockerfile -t openmpf_cpp_executor`
+
+Run the following command from within the `openmpf-docker/components`
+directory to create the OpenMPF Java component build image:
+- `DOCKER_BUILDKIT=1 docker build . -f java_component_build/Dockerfile -t openmpf_java_component_build`
+
+Run the following command from within the `openmpf-docker/components`
+directory to create the OpenMPF Java component executor image:
+- `DOCKER_BUILDKIT=1 docker build . -f java_executor/Dockerfile -t openmpf_java_executor`
 
 #### Generate docker-compose.yml
 

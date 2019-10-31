@@ -100,6 +100,13 @@ services:
     deploy:
       mode: global
 
+  sphinx-speech-detection:
+    <<: *detection-component-base
+    image: ${REGISTRY}openmpf_sphinx_speech_detection:${TAG}
+    build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/java/SphinxSpeechDetection
+    deploy:
+      mode: global
+
   ocv-person-detection:
     <<: *detection-component-base
     image: ${REGISTRY}openmpf_ocv_person_detection:${TAG}

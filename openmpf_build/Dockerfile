@@ -92,11 +92,6 @@ RUN --mount=type=cache,id=mvn_cache,target=/root/.m2/repository,sharing=private 
         build_package_json="/home/mpf/openmpf-projects/openmpf/trunk/jenkins/scripts/config_files/$build_package_json"; \
     fi; \
 
-    if [ ! -e /root/.m2/repository/edu/cmu/sphinx ]; then \
-        tar --extract --file /home/mpf/openmpf-projects/openmpf-build-tools/mpf-maven-deps.tar.gz \
-            --directory /root/.m2/repository/; \
-    fi; \
-
     cp trunk/workflow-manager/src/main/resources/properties/mpf-private-example.properties \
         trunk/workflow-manager/src/main/resources/properties/mpf-private.properties; \
     mvn package \

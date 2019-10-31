@@ -30,6 +30,7 @@ from __future__ import print_function, division
 import base64
 import collections
 import errno
+import glob
 import httplib
 import json
 import os
@@ -81,10 +82,12 @@ def main():
     log_dir = os.path.join(base_log_path, node_name, 'log')
 
     executor_proc = start_executor(descriptor, mpf_home, activemq_host, node_name)
-    tail_proc = tail_log(log_dir, component_log_name, executor_proc.pid)
+    tail_proc = tail_log_if_needed(log_dir, component_log_name, descriptor['sourceLanguage'].lower(),
+                                   executor_proc.pid)
 
     exit_code = executor_proc.wait()
-    tail_proc.wait()
+    if tail_proc:
+        tail_proc.wait()
 
     print('Executor exit code =', exit_code)
     sys.exit(exit_code)
@@ -203,20 +206,31 @@ def handle_registration_error(http_error):
 
 
 def start_executor(descriptor, mpf_home, activemq_host, node_name):
-    amq_detection_component_path = os.path.join(mpf_home, 'bin/amq_detection_component')
     activemq_broker_uri = 'failover://(tcp://{}:61616)?jms.prefetchPolicy.all=0&startupMaxReconnectAttempts=1'\
                           .format(activemq_host)
     algorithm_name = descriptor['algorithm']['name'].upper()
     queue_name = 'MPF.DETECTION_{}_REQUEST'.format(algorithm_name)
-    language = descriptor['sourceLanguage']
+    language = descriptor['sourceLanguage'].lower()
 
     executor_env = get_executor_env_vars(mpf_home, descriptor, node_name)
-    batch_lib = expand_env_vars(descriptor['batchLibrary'], executor_env)
-    if language == 'c++':
-        # Set to standard location for Docker plugins
-        batch_lib = replace_component_name_in_path(batch_lib, descriptor['componentName'])
+    if language in ('c++', 'python'):
+        amq_detection_component_path = os.path.join(mpf_home, 'bin/amq_detection_component')
+        batch_lib = expand_env_vars(descriptor['batchLibrary'], executor_env)
+        if language == 'c++':
+            # Set to standard location for Docker plugins
+            batch_lib = replace_component_name_in_path(batch_lib, descriptor['componentName'])
+        executor_command = (amq_detection_component_path, activemq_broker_uri, batch_lib, queue_name, language)
 
-    executor_command = (amq_detection_component_path, activemq_broker_uri, batch_lib, queue_name, language)
+    elif language == 'java':
+        executor_jar = find_java_executor_jar(descriptor, mpf_home)
+        component_jar = os.path.join(mpf_home, 'plugins/plugin', descriptor['batchLibrary'])
+        class_path = executor_jar + ':' + component_jar
+        executor_command = ('java', '--class-path', class_path,
+                            'org.mitre.mpf.component.executor.detection.MPFDetectionMain',
+                            queue_name, activemq_broker_uri)
+    else:
+        raise RuntimeError('Descriptor contained invalid sourceLanguage property it must be c++, python, or java.')
+
     print('Starting component executor with command:', format_command_list(executor_command))
     executor_proc = subprocess.Popen(executor_command,
                                      env=executor_env,
@@ -230,6 +244,23 @@ def start_executor(descriptor, mpf_home, activemq_host, node_name):
     return executor_proc
 
 
+def find_java_executor_jar(descriptor, mpf_home):
+    java_executor_path_pattern = os.path.join(mpf_home, 'jars', 'mpf-java-component-executor-{}.jar')
+    middleware_version = descriptor['middlewareVersion']
+    executor_matching_version_path = java_executor_path_pattern.format(middleware_version)
+    if os.path.exists(executor_matching_version_path):
+        return executor_matching_version_path
+
+    executor_path_with_glob = java_executor_path_pattern.format('*')
+    glob_matches = glob.glob(executor_path_with_glob)
+    if not glob_matches:
+        raise RuntimeError('Did not find the OpenMPF Java Executor jar at "{}".'.format(executor_path_with_glob))
+    expanded_executor_path = glob_matches[0]
+    print('WARNING: Did not find the OpenMPF Java Executor version "{}" at "{}". Using "{}" instead.'
+          .format(middleware_version, executor_matching_version_path, expanded_executor_path))
+    return expanded_executor_path
+
+
 def stop_executor(executor_proc):
     still_running = executor_proc.poll() is None
     if still_running:
@@ -238,31 +269,35 @@ def stop_executor(executor_proc):
         executor_proc.communicate('q\n')
 
 
-def tail_log(log_dir, component_log_name, executor_pid):
+def tail_log_if_needed(log_dir, component_log_name, source_language, executor_pid):
+    is_java = source_language == 'java'
+    if is_java and not component_log_name:
+        return None
+
     if not os.path.exists(log_dir):
         os.makedirs(log_dir)
 
-    detection_log_file = os.path.join(log_dir, 'detection.log')
+    log_files = []
+    if not is_java:
+        log_files.append(os.path.join(log_dir, 'detection.log'))
     if component_log_name:
-        component_log_file = os.path.join(log_dir, component_log_name)
-        log_files = (detection_log_file, component_log_file)
+        log_files.append(os.path.join(log_dir, component_log_name))
     else:
         print('WARNING: No component log file specified. Only component executor\'s log will appear')
-        log_files = (detection_log_file,)
 
     for log_file in log_files:
         if not os.path.exists(log_file):
             # Create file if it doesn't exist.
             open(log_file, 'a').close()
 
-    tail_command = (
+    tail_command = [
         'tail',
         # Follow by name to handle log rollover.
         '--follow=name',
         # Watch executor process and exit when executor exists.
         '--pid', str(executor_pid),
         # Don't output file name headers which tail does by default when tailing multiple files.
-        '--quiet') + log_files
+        '--quiet'] + log_files
 
     print('Displaying logs with command: ', format_command_list(tail_command))
     # Use preexec_fn=os.setpgrp to prevent ctrl-c from killing tail since
