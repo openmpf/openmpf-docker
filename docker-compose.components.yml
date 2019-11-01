@@ -107,6 +107,20 @@ services:
     deploy:
       mode: global
 
+  tika-image-detection:
+    <<: *detection-component-base
+    image: ${REGISTRY}openmpf_tika_image_detection:${TAG}
+    build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/java/TikaImageDetection
+    deploy:
+      mode: global
+
+  tika-text-detection:
+    <<: *detection-component-base
+    image: ${REGISTRY}openmpf_tika_text_detection:${TAG}
+    build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/java/TikaTextDetection
+    deploy:
+      mode: global
+
   ocv-person-detection:
     <<: *detection-component-base
     image: ${REGISTRY}openmpf_ocv_person_detection:${TAG}
