@@ -266,6 +266,15 @@ try {
                 sh "docker build . -f cpp_executor/Dockerfile $commonBuildArgs $cppShas " +
                         " -t openmpf_cpp_executor:$inProgressTag"
 
+
+                def javaShas = getShasBuildArg([opnmpfJavaSdkRepo])
+                sh "docker build . -f java_component_build/Dockerfile $commonBuildArgs $javaShas " +
+                        " -t openmpf_java_component_build:$inProgressTag"
+
+                sh "docker build . -f java_executor/Dockerfile $commonBuildArgs $javaShas " +
+                        " -t openmpf_java_executor:$inProgressTag"
+
+
                 def pythonShas = getShasBuildArg([openmpfPythonSdkRepo])
                 sh "docker build . -f python_executor/Dockerfile $commonBuildArgs $pythonShas " +
                         " -t openmpf_python_executor:$inProgressTag"
@@ -348,10 +357,17 @@ try {
         }
         when (pushRuntimeImages) {
             withEnv(["TAG=$imageTag", "REGISTRY=$remoteImagePrefix", "COMPOSE_FILE=$runtimeComposeFiles"]) {
+
                 docker.withRegistry("http://$dockerRegistryHostAndPort", dockerRegistryCredId) {
+
                     sh 'cd openmpf-docker && docker-compose push'
+
                     sh "docker push '${remoteImagePrefix}openmpf_cpp_component_build:$imageTag'"
                     sh "docker push '${remoteImagePrefix}openmpf_cpp_executor:$imageTag'"
+
+                    sh "docker push '${remoteImagePrefix}openmpf_java_component_build:$imageTag'"
+                    sh "docker push '${remoteImagePrefix}openmpf_java_executor:$imageTag'"
+
                     sh "docker push '${remoteImagePrefix}openmpf_python_executor:$imageTag'"
                 } // docker.withRegistry ...
             } // withEnv...
