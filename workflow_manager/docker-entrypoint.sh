@@ -28,16 +28,6 @@
 
 set -o errexit -o pipefail -o xtrace
 
-updateOrAddProperty() {
-    file="$1"
-    key="$2"
-    value="$3"
-    if grep --quiet "^$key=" "$file"; then
-        sed --in-place "/$key=/s/=.*/=$value/" "$file"
-    else
-        echo "$key=$value" >> "$file"
-    fi
-}
 
 # NOTE: Docker assigns each Node Manager container a hostname that is a 12-digit
 # hash. For each container, we set THIS_MPF_NODE="node_manager_id_<hash>".
@@ -55,23 +45,6 @@ fi
 export JGROUPS_TCP_ADDRESS="$HOSTNAME"
 
 ################################################################################
-# Configure Properties                                                         #
-################################################################################
-
-# Configure properties only if this is the first time we're initializing
-# $MPF_HOME/share. This prevents overwriting user customizations made during
-# runtime or post-deployment.
-markerFile="$MPF_HOME/share/config/.docker-entrypoint-init"
-if [ ! -f "$markerFile" ]; then
-    mkdir --parents "$MPF_HOME/share/config"
-
-    mpfCustomPropertiesFile="$MPF_HOME/share/config/mpf-custom.properties"
-
-    updateOrAddProperty "$mpfCustomPropertiesFile" "node.auto.config.enabled" "true"
-    updateOrAddProperty "$mpfCustomPropertiesFile" "node.auto.unconfig.enabled" "true"
-fi
-
-################################################################################
 # Custom Steps                                                                 #
 ################################################################################
 
@@ -79,12 +52,6 @@ fi
 if [ -f /scripts/docker-custom-entrypoint.sh ]; then
     /scripts/docker-custom-entrypoint.sh
 fi
-
-################################################################################
-# Create Marker File                                                           #
-################################################################################
-touch "$markerFile"
-
 
 ################################################################################
 # Configure users                                                              #

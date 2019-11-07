@@ -2,32 +2,12 @@
 
 set -o errexit -o pipefail -o xtrace
 
-updateOrAddProperty() {
-    file="$1"
-    key="$2"
-    value="$3"
-
-    if grep --quiet "^$key=" "$file"; then
-        sed --in-place "/$key=/s/=.*/=$value/" "$file"
-    else
-        echo "$key=$value" >> "$file"
-    fi
-}
-
 # Remove old test reports since /test-reports gets bind mounted in compose file.
 rm --recursive --force /test-reports/*
 
 
 python -u /scripts/descriptor-receiver.py &
 descriptor_receiver_pid=$!
-
-mkdir --parents "$MPF_HOME/share/config"
-
-mpfCustomPropertiesFile="$MPF_HOME/share/config/mpf-custom.properties"
-
-updateOrAddProperty "$mpfCustomPropertiesFile" "node.auto.config.enabled" "true"
-updateOrAddProperty "$mpfCustomPropertiesFile" "node.auto.unconfig.enabled" "true"
-
 
 cd /home/mpf/openmpf-projects/openmpf
 
@@ -80,6 +60,7 @@ mvn verify \
     -DjenkinsBuildNumber=1 \
     -Dstartup.auto.registration.skip=false \
     -Dexec.skip=true \
+    -Dnode.manager.disabled=true \
     $MVN_OPTIONS $EXTRA_MVN_OPTIONS # Intentionally unquoted to allow variables to hold mulitple flags.
 
 mavenRetVal=$?

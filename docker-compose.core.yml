@@ -89,21 +89,9 @@ services:
         constraints:
           - node.role == manager
 
-  node-manager:
-    image: ${REGISTRY}openmpf_node_manager:${TAG}
-    build:
-      context: node_manager
-    volumes:
-      - shared_data:/opt/mpf/share
-    networks:
-      - overlay
-    deploy:
-      mode: global
-
   markup:
     image: ${REGISTRY}openmpf_markup:${TAG}
-    build:
-      context: markup
+    build: markup
     volumes:
       - shared_data:/opt/mpf/share
     networks:

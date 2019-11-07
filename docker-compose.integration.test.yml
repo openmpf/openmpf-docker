@@ -52,7 +52,6 @@ services:
     networks:
       - overlay
 
-
   redis:
     image: redis:latest
     networks:
@@ -65,7 +64,6 @@ services:
       - mysql-database
       - redis
       - activemq
-      - node-manager
     environment:
       # The following line is needed to wait until the mySQL service is available:
       - MYSQL_ROOT_PASSWORD=password
@@ -76,18 +74,9 @@ services:
     networks:
       - overlay
 
-  node-manager:
-    image: ${REGISTRY}openmpf_node_manager:${TAG:-latest}
-    build: node_manager
-    volumes:
-      - shared_data:/opt/mpf/share
-    networks:
-      - overlay
-
   markup:
     image: ${REGISTRY}openmpf_markup:${TAG}
-    build:
-      context: markup
+    build: markup
     volumes:
       - shared_data:/opt/mpf/share
     networks:
