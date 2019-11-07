@@ -1,3 +1,5 @@
+#!/bin/bash
+
 #############################################################################
 # NOTICE                                                                    #
 #                                                                           #
@@ -24,81 +26,19 @@
 # limitations under the License.                                            #
 #############################################################################
 
-# Use this file in conjunction with docker-compose.http.yml or
-# docker-compose.https.yml.
+set -o errexit -o pipefail
 
-version: '3.7'
+# NOTE: $HOSTNAME is not known until runtime.
+export THIS_MPF_NODE="${THIS_MPF_NODE}_id_${HOSTNAME}"
 
-services:
-  mysql-database:
-    image: mariadb:latest
-    environment:
-      - MYSQL_ROOT_PASSWORD=password
-      - MYSQL_DATABASE=mpf
-      - MYSQL_USER=mpf
-      - MYSQL_PASSWORD=mpf
-    # https://github.com/docker-library/mariadb/issues/113
-    command: [
-      '--wait_timeout=28800',
-    ]
-    networks:
-      - overlay
+# Wait for ActiveMQ service.
+echo 'Waiting for ActiveMQ to become available ...'
+until curl --head "$ACTIVE_MQ_HOST:8161" >> /dev/null 2>&1; do
+    echo 'ActiveMQ is unavailable. Sleeping.'
+    sleep 5
+done
+echo 'ActiveMQ is up'
 
-  activemq:
-    image: ${REGISTRY}openmpf_activemq:${TAG:-latest}
-    environment:
-      # Set which configuration files are used at runtime:
-      - ACTIVE_MQ_PROFILE=default
-    networks:
-      - overlay
+set -o xtrace
 
-
-  redis:
-    image: redis:latest
-    networks:
-      - overlay
-
-  workflow-manager:
-    image: ${REGISTRY}openmpf_integration_tests:${TAG:-latest}
-    build: integration_tests
-    depends_on:
-      - mysql-database
-      - redis
-      - activemq
-      - node-manager
-    environment:
-      # The following line is needed to wait until the mySQL service is available:
-      - MYSQL_ROOT_PASSWORD=password
-      - EXTRA_MVN_OPTIONS=$EXTRA_MVN_OPTIONS
-    volumes:
-      - shared_data:/opt/mpf/share
-      - ./test-reports:/test-reports
-    networks:
-      - overlay
-
-  node-manager:
-    image: ${REGISTRY}openmpf_node_manager:${TAG:-latest}
-    build: node_manager
-    volumes:
-      - shared_data:/opt/mpf/share
-    networks:
-      - overlay
-
-  markup:
-    image: ${REGISTRY}openmpf_markup:${TAG}
-    build:
-      context: markup
-    volumes:
-      - shared_data:/opt/mpf/share
-    networks:
-      - overlay
-    deploy:
-      mode: global
-
-
-
-volumes:
-  shared_data:
-
-networks:
-  overlay:
+exec java -jar mpf-markup-*.jar "$ACTIVE_MQ_BROKER_URI"

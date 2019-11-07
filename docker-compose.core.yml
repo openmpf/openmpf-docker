@@ -100,6 +100,17 @@ services:
     deploy:
       mode: global
 
+  markup:
+    image: ${REGISTRY}openmpf_markup:${TAG}
+    build:
+      context: markup
+    volumes:
+      - shared_data:/opt/mpf/share
+    networks:
+      - overlay
+    deploy:
+      mode: global
+
 volumes:
   shared_data:
   mysql_data:

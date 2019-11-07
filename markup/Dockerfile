@@ -1,3 +1,5 @@
+# syntax=docker/dockerfile:experimental
+
 #############################################################################
 # NOTICE                                                                    #
 #                                                                           #
@@ -24,81 +26,48 @@
 # limitations under the License.                                            #
 #############################################################################
 
-# Use this file in conjunction with docker-compose.http.yml or
-# docker-compose.https.yml.
-
-version: '3.7'
-
-services:
-  mysql-database:
-    image: mariadb:latest
-    environment:
-      - MYSQL_ROOT_PASSWORD=password
-      - MYSQL_DATABASE=mpf
-      - MYSQL_USER=mpf
-      - MYSQL_PASSWORD=mpf
-    # https://github.com/docker-library/mariadb/issues/113
-    command: [
-      '--wait_timeout=28800',
-    ]
-    networks:
-      - overlay
-
-  activemq:
-    image: ${REGISTRY}openmpf_activemq:${TAG:-latest}
-    environment:
-      # Set which configuration files are used at runtime:
-      - ACTIVE_MQ_PROFILE=default
-    networks:
-      - overlay
-
-
-  redis:
-    image: redis:latest
-    networks:
-      - overlay
-
-  workflow-manager:
-    image: ${REGISTRY}openmpf_integration_tests:${TAG:-latest}
-    build: integration_tests
-    depends_on:
-      - mysql-database
-      - redis
-      - activemq
-      - node-manager
-    environment:
-      # The following line is needed to wait until the mySQL service is available:
-      - MYSQL_ROOT_PASSWORD=password
-      - EXTRA_MVN_OPTIONS=$EXTRA_MVN_OPTIONS
-    volumes:
-      - shared_data:/opt/mpf/share
-      - ./test-reports:/test-reports
-    networks:
-      - overlay
-
-  node-manager:
-    image: ${REGISTRY}openmpf_node_manager:${TAG:-latest}
-    build: node_manager
-    volumes:
-      - shared_data:/opt/mpf/share
-    networks:
-      - overlay
-
-  markup:
-    image: ${REGISTRY}openmpf_markup:${TAG}
-    build:
-      context: markup
-    volumes:
-      - shared_data:/opt/mpf/share
-    networks:
-      - overlay
-    deploy:
-      mode: global
+ARG BUILD_REGISTRY
+ARG BUILD_TAG=latest
+FROM ${BUILD_REGISTRY}openmpf_build:${BUILD_TAG} as openmpf_build
 
 
 
-volumes:
-  shared_data:
+FROM centos:7
+SHELL ["/bin/bash", "-o", "errexit", "-o", "pipefail", "-c"]
 
-networks:
-  overlay:
+
+RUN yum install --assumeyes https://download1.rpmfusion.org/free/el/rpmfusion-free-release-7.noarch.rpm \
+            https://download1.rpmfusion.org/nonfree/el/rpmfusion-nonfree-release-7.noarch.rpm; \
+    yum install --assumeyes java-11-openjdk ffmpeg; \
+    yum clean all; \
+    rm -rf /var/cache/yum/*;
+
+ENV MPF_HOME /opt/mpf
+ENV ACTIVE_MQ_HOST activemq
+ENV ACTIVE_MQ_BROKER_URI="failover://(tcp://$ACTIVE_MQ_HOST:61616)?jms.prefetchPolicy.all=0&startupMaxReconnectAttempts=1"
+ENV MPF_LOG_PATH $MPF_HOME/share/logs
+ENV THIS_MPF_NODE markup
+
+
+# Use mount and cp shell command because docker COPY resolves symlinks which will end up duplicate copies the libraries.
+RUN --mount=type=bind,from=openmpf_build,source=/build-artifacts/install/lib,target=/tmp/mpf-libs \
+    cd /tmp/mpf-libs; \
+    cp --preserve=links --no-dereference libmpfopencvjni.so libmpfDetectionComponentApi.so libopencv* \
+        /usr/lib64;
+
+COPY --from=openmpf_build /build-artifacts/install/jars $MPF_HOME/jars
+
+WORKDIR $MPF_HOME/jars
+
+COPY docker-entrypoint.sh /scripts/docker-entrypoint.sh
+ENTRYPOINT ["/scripts/docker-entrypoint.sh"]
+
+
+ARG BUILD_SHAS
+LABEL org.label-schema.license="Apache 2.0" \
+      org.label-schema.name="OpenMPF Markup" \
+      org.label-schema.schema-version="1.0" \
+      org.label-schema.url="https://openmpf.github.io" \
+      org.label-schema.vcs-ref=$BUILD_SHAS \
+      org.label-schema.vcs-url="https://github.com/openmpf/openmpf" \
+      org.label-schema.vendor="MITRE"

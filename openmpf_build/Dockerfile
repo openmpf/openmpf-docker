@@ -91,7 +91,8 @@ RUN --mount=type=cache,id=mvn_cache,target=/root/.m2/repository,sharing=private 
     if [ "${build_package_json:0:1}" != '/' ]; then \
         build_package_json="/home/mpf/openmpf-projects/openmpf/trunk/jenkins/scripts/config_files/$build_package_json"; \
     fi; \
-
+    # Remove markup service
+    echo '{}' > trunk/workflow-manager/src/main/resources/templates/nodeServicesPalette.json; \
     cp trunk/workflow-manager/src/main/resources/properties/mpf-private-example.properties \
         trunk/workflow-manager/src/main/resources/properties/mpf-private.properties; \
     mvn package \
