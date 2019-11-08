@@ -51,24 +51,11 @@ RUN mkdir /tmp/opencv; \
     cd opencv-3.4.7; \
     mkdir build; \
     cd build; \
-    cmake3 -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX:PATH="/opt/opencv-3.4.7" \
-        -DWITH_GSTREAMER:BOOL="0" -DWITH_OPENMP:BOOL="1" \
-        -DBUILD_opencv_apps:BOOL="0" -DWITH_OPENCLAMDBLAS:BOOL="0" \
-        -DWITH_CUDA:BOOL="0" -DCLAMDFFT_ROOT_DIR:PATH="CLAMDFFT_ROOT_DIR-NOTFOUND" \
-        -DBUILD_opencv_aruco:BOOL="0" -DWITH_WEBP:BOOL="0" \
-        -DBZIP2_LIBRARIES:FILEPATH="BZIP2_LIBRARIES-NOTFOUND" \
-        -DWITH_GIGEAPI:BOOL="0" -DWITH_JPEG:BOOL="1" -DWITH_CUFFT:BOOL="0" \
-        -DWITH_IPP:BOOL="0" -DWITH_V4L:BOOL="1" -DWITH_GDAL:BOOL="0" \
-        -DWITH_OPENCLAMDFFT:BOOL="0" -DWITH_GPHOTO2:BOOL="0" -DWITH_VTK:BOOL="0" \
-        -DWITH_GTK_2_X:BOOL="0" -DBUILD_opencv_world:BOOL="0" -DWITH_TIFF:BOOL="1" \
-        -DWITH_1394:BOOL="0" -DWITH_EIGEN:BOOL="0" -DWITH_LIBV4L:BOOL="0" \
-        -DBUILD_opencv_ts:BOOL="0" -DWITH_MATLAB:BOOL="0" -DWITH_OPENCL:BOOL="0" \
-        -DWITH_PVAPI:BOOL="0" -DENABLE_CXX11:BOOL="1" ..; \
+    cmake3 -DCMAKE_INSTALL_PREFIX:PATH="/opt/opencv-3.4.7" -DWITH_IPP:BOOL="0" ..; \
     make --jobs "$(nproc)" install; \
     ln --symbolic /opt/opencv-3.4.7/include/opencv2 /usr/local/include/opencv2; \
     ln --symbolic /opt/opencv-3.4.7/include/opencv /usr/local/include/opencv; \
-    rm --recursive /tmp/opencv
-
+    rm --recursive /tmp/opencv;
 
 
 RUN curl --location 'https://archive.apache.org/dist/maven/maven-3/3.3.3/binaries/apache-maven-3.3.3-bin.tar.gz' \
