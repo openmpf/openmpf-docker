@@ -245,7 +245,7 @@ RUN mkdir -p /apps/source/cuda && cd /apps/source/cuda && \
     wget -nv -O cuda_10.1.243_418.87.00_linux.run \
     "http://developer.download.nvidia.com/compute/cuda/10.1/Prod/local_installers/cuda_10.1.243_418.87.00_linux.run" && \
     cd /apps/source/cuda && sh cuda_10.1.243_418.87.00_linux.run --toolkit \
-    --toolkitpath=/apps/install/cuda-10.1 --silent --verbose && \
+    --toolkitpath=/apps/install/cuda-10.1 --silent && \
     ls -l /usr/local/cuda /apps/install/cuda-10.1 && \
     echo "PATH=\$PATH:/usr/local/cuda/bin" >> /etc/profile.d/mpf.sh && \
     . /etc/profile.d/mpf.sh && echo "/usr/local/cuda/lib64" >> \
