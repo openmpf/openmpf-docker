@@ -425,7 +425,7 @@ need to add `-f docker-compose.users.yml` to the above command.
 ### (Optional) Add GPU support with NVIDIA CUDA
 
 To run OpenMPF components that use the NVIDIA GPUs, you must
-ensure that the host OS of the GPU machine has version 9.1 or higher of the
+ensure that the host OS of the GPU machine has version 10.1 or higher of the
 NVIDIA GPU drivers installed. To install the drivers, please see the full
 instructions
 [here](https://docs.nvidia.com/cuda/cuda-installation-guide-linux/index.html).

@@ -90,7 +90,7 @@ RUN sed -i "/^override_install_lang/d" /etc/yum.conf && \
 # NVIDIA CUDA runtime setup                                                    #
 ################################################################################
 
-ENV CUDA_VERSION 9.1.85
+ENV CUDA_VERSION 10.1.243
 
 # nvidia-docker 1.0
 LABEL com.nvidia.volumes.needed="nvidia_driver"
