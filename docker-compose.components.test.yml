@@ -27,14 +27,52 @@
 
 version: '3.7'
 
+x-build-args:
+  &test-args
+  build:
+    args:
+      RUN_TESTS: 'true'
+
 services:
+  darknet-detection:
+    <<: *test-args
+
+  dlib-face-detection:
+    <<: *test-args
+
+  east-text-detection:
+    <<: *test-args
+
+  mog-motion-detection:
+    <<: *test-args
+
+  oalpr-license-plate-text-detection:
+    <<: *test-args
+
+  ocv-dnn-detection:
+    <<: *test-args
+
   ocv-face-detection:
-    build:
-      args:
-        RUN_TESTS: 'true'
+    <<: *test-args
+
+  ocv-person-detection:
+    <<: *test-args
+
+  scene-change-detection:
+    <<: *test-args
+
+  sphinx-speech-detection:
+    <<: *test-args
+
+  subsense-motion-detection:
+    <<: *test-args
 
   tesseract-ocr-text-detection:
-    build:
-      args:
-        RUN_TESTS: 'true'
+    <<: *test-args
+
+  tika-image-detection:
+    <<: *test-args
+
+  tika-text-detection:
+    <<: *test-args
 

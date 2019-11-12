@@ -41,30 +41,6 @@ x-detection-component-base:
     - overlay
 
 services:
-  east-text-detection:
-    <<: *detection-component-base
-    image: ${REGISTRY}openmpf_east_text_detection:${TAG}
-    build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/python/EastTextDetection
-    deploy:
-      mode: global
-      resources:
-        limits:
-          cpus: "2.0"
-
-  ocv-face-detection:
-    <<: *detection-component-base
-    image: ${REGISTRY}openmpf_ocv_face_detection:${TAG}
-    build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/cpp/OcvFaceDetection
-    deploy:
-      mode: global
-
-  tesseract-ocr-text-detection:
-    <<: *detection-component-base
-    image: ${REGISTRY}openmpf_tesseract_ocr_text_detection:${TAG}
-    build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/cpp/TesseractOCRTextDetection
-    deploy:
-      mode: global
-
   darknet-detection:
     <<: *detection-component-base
     image: ${REGISTRY}openmpf_darknet_detection:${TAG}
@@ -79,17 +55,22 @@ services:
     deploy:
       mode: global
 
-  scene-change-detection:
+  east-text-detection:
     <<: *detection-component-base
-    image: ${REGISTRY}openmpf_scene_change_detection:${TAG}
-    build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/cpp/SceneChangeDetection
+    image: ${REGISTRY}openmpf_east_text_detection:${TAG}
+    build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/python/EastTextDetection
     deploy:
       mode: global
+      resources:
+        limits:
+          cpus: "2.0"
 
-  ocv-dnn-detection:
+  mog-motion-detection:
     <<: *detection-component-base
-    image: ${REGISTRY}openmpf_ocv_dnn_detection:${TAG}
-    build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/cpp/OcvDnnDetection
+    image: ${REGISTRY}openmpf_mog_motion_detection:${TAG}
+    build:
+      context: ${OPENMPF_PROJECTS_PATH}/openmpf-contrib-components/cpp/motion
+      dockerfile: MogMotionDetection/Dockerfile
     deploy:
       mode: global
 
@@ -100,10 +81,54 @@ services:
     deploy:
       mode: global
 
+  ocv-dnn-detection:
+    <<: *detection-component-base
+    image: ${REGISTRY}openmpf_ocv_dnn_detection:${TAG}
+    build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/cpp/OcvDnnDetection
+    deploy:
+      mode: global
+
+  ocv-face-detection:
+    <<: *detection-component-base
+    image: ${REGISTRY}openmpf_ocv_face_detection:${TAG}
+    build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/cpp/OcvFaceDetection
+    deploy:
+      mode: global
+
+  ocv-person-detection:
+    <<: *detection-component-base
+    image: ${REGISTRY}openmpf_ocv_person_detection:${TAG}
+    build: ${OPENMPF_PROJECTS_PATH}/openmpf-contrib-components/cpp/OcvPersonDetection
+    deploy:
+      mode: global
+
+  scene-change-detection:
+    <<: *detection-component-base
+    image: ${REGISTRY}openmpf_scene_change_detection:${TAG}
+    build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/cpp/SceneChangeDetection
+    deploy:
+      mode: global
+
   sphinx-speech-detection:
     <<: *detection-component-base
     image: ${REGISTRY}openmpf_sphinx_speech_detection:${TAG}
     build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/java/SphinxSpeechDetection
+    deploy:
+      mode: global
+
+  subsense-motion-detection:
+    <<: *detection-component-base
+    image: ${REGISTRY}openmpf_subsense_motion_detection:${TAG}
+    build:
+      context: ${OPENMPF_PROJECTS_PATH}/openmpf-contrib-components/cpp/motion
+      dockerfile: SubsenseMotionDetection/Dockerfile
+    deploy:
+      mode: global
+
+  tesseract-ocr-text-detection:
+    <<: *detection-component-base
+    image: ${REGISTRY}openmpf_tesseract_ocr_text_detection:${TAG}
+    build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/cpp/TesseractOCRTextDetection
     deploy:
       mode: global
 
@@ -121,27 +146,5 @@ services:
     deploy:
       mode: global
 
-  ocv-person-detection:
-    <<: *detection-component-base
-    image: ${REGISTRY}openmpf_ocv_person_detection:${TAG}
-    build: ${OPENMPF_PROJECTS_PATH}/openmpf-contrib-components/cpp/OcvPersonDetection
-    deploy:
-      mode: global
 
-  mog-motion-detection:
-    <<: *detection-component-base
-    image: ${REGISTRY}openmpf_mog_motion_detection:${TAG}
-    build:
-      context: ${OPENMPF_PROJECTS_PATH}/openmpf-contrib-components/cpp/motion
-      dockerfile: MogMotionDetection/Dockerfile
-    deploy:
-      mode: global
 
-  subsense-motion-detection:
-    <<: *detection-component-base
-    image: ${REGISTRY}openmpf_subsense_motion_detection:${TAG}
-    build:
-      context: ${OPENMPF_PROJECTS_PATH}/openmpf-contrib-components/cpp/motion
-      dockerfile: SubsenseMotionDetection/Dockerfile
-    deploy:
-      mode: global
