@@ -155,7 +155,7 @@ network in `docker-compose.core.yml` as follows:
 
 ```
 networks:
-  overlay:
+  default:
     driver: overlay
     ipam:
       config:

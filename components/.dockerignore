@@ -24,70 +24,7 @@
 # limitations under the License.                                            #
 #############################################################################
 
-# Use this file in conjunction with docker-compose.http.yml or
-# docker-compose.https.yml.
+**/Dockerfile
+.dockerignore
 
-version: '3.7'
-
-services:
-  mysql-database:
-    image: mariadb:latest
-    environment:
-      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
-      - MYSQL_DATABASE=${MYSQL_DATABASE}
-      - MYSQL_USER=${MYSQL_USER}
-      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
-    # https://github.com/docker-library/mariadb/issues/113
-    command: [
-      '--wait_timeout=28800',
-    ]
-    volumes:
-      - mysql_data:/var/lib/mysql
-    deploy:
-      placement:
-        constraints:
-          - node.role == manager
-
-  activemq:
-    image: ${REGISTRY}openmpf_activemq:${TAG}
-    build: activemq
-    environment:
-      # Set which configuration files are used at runtime:
-      - ACTIVE_MQ_PROFILE=${ACTIVE_MQ_PROFILE}
-    ports:
-      - "8161:8161"
-
-  redis:
-    image: redis:latest
-
-  workflow-manager:
-    image: ${REGISTRY}openmpf_workflow_manager:${TAG}
-    build: workflow_manager
-    depends_on:
-      - mysql-database
-      - redis
-      - activemq
-    restart: always
-    environment:
-      # The following line is needed to wait until the mySQL service is available:
-      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
-    ports:
-      - "8080:8080"
-    volumes:
-      - shared_data:/opt/mpf/share
-    deploy:
-      placement:
-        constraints:
-          - node.role == manager
-
-  markup:
-    image: ${REGISTRY}openmpf_markup:${TAG}
-    build: markup
-    volumes:
-      - shared_data:/opt/mpf/share
-    deploy:
-      mode: global
-
-volumes:
-  shared_data:
-  mysql_data:
+**/README.md
