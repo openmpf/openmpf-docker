@@ -59,17 +59,18 @@ The minimal Dockerfile is:
 # In first stage of the build we extend the openmpf_java_component_build base image.
 FROM openmpf_java_component_build:latest as build_component
 
-# If your component has external dependencies, you would add the commands necessary to download or build the 
-# dependencies here. Adding the dependencies prior the copying in your source code allows you to take advantage of 
-# the Docker build cache to avoid re-installing the dependencies every time your source code changes.
+# If your component has external dependencies, you would add the commands necessary to download 
+# or build the dependencies here. Adding the dependencies prior the copying in your source code 
+# allows you to take advantage of the Docker build cache to avoid re-installing the dependencies 
+# every time your source code changes.
 # e.g. RUN yum install -y mydependency
 
 
 # Start by just copying your pom.xml file.
 COPY pom.xml pom.xml
 
-# Download Maven dependencies before copying in the rest of the source code so that maven doesn't have to re-download
-# dependencies every time the source code changes.
+# Download Maven dependencies before copying in the rest of the source code so that 
+# Maven doesn't need to re-download dependencies every time the source code changes.
 RUN mvn org.apache.maven.plugins:maven-dependency-plugin:3.1.1:go-offline;
 
 # Copy in the rest of your source code.
@@ -83,13 +84,15 @@ RUN mvn package -Dmpf.assembly.format=dir
 # In the second stage of the build we extend the openmpf_java_executor base image. 
 FROM openmpf_java_executor:latest
 
-# If your component has runtime dependencies other than the Maven libraries required at compile time you should
-# install them here. Adding the dependencies prior to copying your component's build artifacts allows you to take
-# advantage of the Docker build cache to avoid re-installing the dependencies every time your source code changes.
+# If your component has runtime dependencies other than the Maven libraries required at 
+# compile time you should install them here. Adding the dependencies prior to copying your 
+# component's build artifacts allows you to take advantage of the Docker build cache to avoid 
+# re-installing the dependencies every time your source code changes.
 
 
-# Copy only the files the component will need at runtime from the build stage. This line also copies over the 
-# jar dependencies. One of the things that the `mvn package` command does is collect the jar dependencies.
+# Copy only the files the component will need at runtime from the build stage. 
+# This line also copies over the jar dependencies. 
+# One of the things that the `mvn package` command does is collect the jar dependencies.
 COPY --from=build_component /home/mpf/component_src/target/plugin-packages/MyFaceDetection/MyFaceDetection \
                             $INSTALL_DIR
 ```

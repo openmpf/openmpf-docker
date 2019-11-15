@@ -54,33 +54,36 @@ The minimal Dockerfile is:
 # In first stage of the build we extend the openmpf_cpp_component_build base image.
 FROM openmpf_cpp_component_build:latest as build_component
 
-# If your component has external dependencies, you would add the commands necessary to download or build the 
-# dependencies here. Adding the dependencies prior the copying in your source code allows you to take advantage of 
-# the Docker build cache to avoid re-installing the dependencies every time your source code changes.
+# If your component has external dependencies, you would add the commands necessary to download or
+# build the dependencies here. Adding the dependencies prior the copying in your source code 
+# allows you to take advantage of the Docker build cache to avoid re-installing the dependencies 
+# every time your source code changes.
 # e.g. RUN yum install -y mydependency
 
 # Copy in your source code
 COPY . .
 
-# Build your component. The build-component.sh script is provided by the openmpf_cpp_component_build base image.
+# Build your component. The build-component.sh script is provided by the 
+# openmpf_cpp_component_build base image.
 RUN build-component.sh
 
 
 # In the second stage of the build we extend the openmpf_cpp_executor base image. 
 FROM openmpf_cpp_executor:latest
 
-# If your component has runtime dependencies other than the shared libraries required at compile time you should
-# install them here. Adding the dependencies prior to copying your component's build artifacts allows you to take
-# advantage of the Docker build cache to avoid re-installing the dependencies every time your source code changes.
+# If your component has runtime dependencies other than the shared libraries required at compile 
+# time you should install them here. Adding the dependencies prior to copying your component's 
+# build artifacts allows you to take advantage of the Docker build cache to avoid re-installing
+# the dependencies every time your source code changes.
 
 
-# Set the COMPONENT_LOG_NAME environment variable so that your component's log file can be printed to standard out 
-# when running the image.
+# Set the COMPONENT_LOG_NAME environment variable so that your component's log file can be 
+# printed to standard out when running the image.
 ENV COMPONENT_LOG_NAME my-face-detection.log
 
-# Copy only the files the component will need at runtime from the build stage. This line also copies over the 
-# libraries that your component links to. One of the things that build-component.sh does is collect the libraries your 
-# component links to.
+# Copy only the files the component will need at runtime from the build stage. 
+# This line also copies over the libraries that your component links to. 
+# One of the things that build-component.sh does is collect the libraries your component links to.
 COPY --from=build_component $BUILD_DIR/plugin/MyFaceDetection $INSTALL_DIR
 
 # Copy over the library containing your component's compiled code.
