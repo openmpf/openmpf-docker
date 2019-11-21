@@ -28,11 +28,14 @@
 
 version: '3.7'
 
+x-common-env-vars:
+  &common-env-vars
+  WFM_USER: ${WFM_USER}
+  WFM_PASSWORD: ${WFM_PASSWORD}
+
 x-detection-component-base:
   &detection-component-base
-  environment:
-    - WFM_USER=${WFM_USER}
-    - WFM_PASSWORD=${WFM_PASSWORD}
+  environment: *common-env-vars
   depends_on:
     - workflow-manager
   volumes:
@@ -98,7 +101,8 @@ services:
     image: ${REGISTRY}openmpf_sphinx_speech_detection:${TAG}
     build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/java/SphinxSpeechDetection
     environment:
-      JAVA_TOOL_OPTIONS: -Xmx1g  # limit Java heap size to 1GB
+      <<: *common-env-vars
+      JAVA_TOOL_OPTION: -Xmx1g  # limit Java heap size to 1GB
 
   subsense-motion-detection:
     <<: *detection-component-base
