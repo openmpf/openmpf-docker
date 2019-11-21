@@ -248,7 +248,19 @@ try {
                         "--build-arg BUILD_PACKAGE_JSON=$buildPackageJson $commonBuildArgs " +
                         " -t openmpf_build:$inProgressTag"
 
-                sh "docker build integration_tests $commonBuildArgs " +
+                // --no-cache needs to be handled differently for the openmpf_integration_tests image because it
+                // expects that openmpf_build will populated the mvn_cache cache mount. When you run a
+                // --no-cache build, Docker will clear any cache mounts used in the Dockerfile right before
+                // beginning the build. If we were to just do a regular --no-cahe build for openmpf_integration_tests,
+                // the mvn_cache mount will be empty.
+                if (buildNoCache) {
+                    // openmpf_integration_tests Dockerfile uses two stages. The final stage uses openmpf_build as the
+                    // base image, so the --no-cache build of openmpf_build invalidates the cache for that stage.
+                    // In order to invalidate the cache for the first stage (download_dependencies), we do a --no-cache
+                    // build with download_dependencies as the target
+                    sh 'docker build integration_tests --target download_dependencies --no-cache'
+                }
+                sh "docker build integration_tests $commonBuildArgs --no-cache=false" +
                         " -t openmpf_integration_tests:$inProgressTag"
             }
 
