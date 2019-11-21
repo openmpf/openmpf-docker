@@ -410,7 +410,7 @@ finally {
 
     if (buildStatus != 'success') {
         // Re-tag images after failure so we don't end up with a bunch of images for every failed build.
-        reTagImages(inProgressTag, '', 'failed-build')
+        reTagImages(inProgressTag, '', 'failed-build-deleteme')
     }
 
     if (postOpenmpfDockerBuildStatus) {
@@ -494,7 +494,7 @@ def dockerCleanUp() {
 
     def now = java.time.Instant.now()
     for (image in images) {
-        if (!image.contains('mpf')) {
+        if (!image.contains('deleteme')) {
             continue;
         }
 
