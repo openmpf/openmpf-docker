@@ -102,7 +102,7 @@ services:
     build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/java/SphinxSpeechDetection
     environment:
       <<: *common-env-vars
-      JAVA_TOOL_OPTION: -Xmx1g  # limit Java heap size to 1GB
+      JAVA_TOOL_OPTIONS: -Xmx1g  # limit Java heap size to 1GB
 
   subsense-motion-detection:
     <<: *detection-component-base
