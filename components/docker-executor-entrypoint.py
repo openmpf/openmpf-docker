@@ -275,7 +275,13 @@ def tail_log_if_needed(log_dir, component_log_name, source_language, executor_pi
         return None
 
     if not os.path.exists(log_dir):
-        os.makedirs(log_dir)
+        try:
+            os.makedirs(log_dir)
+        except OSError as e:
+            # Two components may both try to create the directory at the same time,
+            # so we ignore the error indicating that the directory already exists.
+            if e.errno != errno.EEXIST:
+                raise
 
     log_files = []
     if not is_java:
