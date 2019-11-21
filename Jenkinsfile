@@ -421,9 +421,7 @@ finally {
     }
     email(buildStatus, emailRecipients)
 
-    // Remove dangling <none> images that are more than 2 weeks old.
-    sh 'docker image prune --force --filter "until=336h"'
-    sh 'docker builder prune --force --keep-storage=80GB'
+    dockerCleanUp()
 }
 } // wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm'])
 } // node(env.jenkins_nodes)
@@ -484,4 +482,36 @@ def reTagImages(inProgressTag, remoteImagePrefix, imageTag) {
         // When an image has multiple tags `docker image rm` only removes the specified tag
         sh "docker image rm $inProgressName"
     }
+}
+
+
+def dockerCleanUp() {
+    // Remove dangling <none> images that are more than 1 week old.
+    sh 'docker image prune --force --filter "until=168h"'
+
+    def images = sh(script: "docker images --filter 'dangling=false' --format '{{.Repository}}:{{.Tag}}",
+            returnStdout: true).trim().split('\n')
+
+    def now = java.time.Instant.now()
+    for (image in images) {
+        if (!image.contains('mpf')) {
+            continue;
+        }
+
+        // Time format from Docker (it includes quotes at beginning and end): "2019-11-18T18:58:33.990718123Z"
+        def quotedTagTimeString = sh(script: "docker image inspect --format '{{json .Metadata.LastTagTime}}' $image",
+                returnStdout: true).trim()
+        def tagTimeString = quotedTagTimeString[1..-2]
+        def tagTime = java.time.Instant.parse(tagTimeString)
+
+        def daysSinceLastTag = tagTime.until(now, java.time.temporal.ChronoUnit.DAYS)
+        if (daysSinceLastTag > 1) {
+            echo "$image is a candidate for removal because it was last tagged $daysSinceLastTag days ago."
+        }
+        else {
+            echo "$image is NOT a candidate for removal because it was last tagged $daysSinceLastTag days ago."
+        }
+    }
+
+    sh 'docker builder prune --force --keep-storage=80GB'
 }
