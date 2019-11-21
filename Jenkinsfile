@@ -486,8 +486,12 @@ def reTagImages(inProgressTag, remoteImagePrefix, imageTag) {
 
 
 def dockerCleanUp() {
+    def daysUntilRemoval = 7
+    def hoursUntilRemoval = daysUntilRemoval * 24
     // Remove dangling <none> images that are more than 1 week old.
-    sh 'docker image prune --force --filter "until=168h"'
+    sh "docker image prune --force --filter 'until=${hoursUntilRemoval}h'"
+
+    echo "Checking for deleteme images older than $daysUntilRemoval days."
 
     def images = sh(script: "docker images --filter 'dangling=false' --format '{{.Repository}}:{{.Tag}}'",
             returnStdout: true).trim().split('\n')
@@ -505,11 +509,9 @@ def dockerCleanUp() {
         def tagTime = java.time.Instant.parse(tagTimeString)
 
         def daysSinceLastTag = tagTime.until(now, java.time.temporal.ChronoUnit.DAYS)
-        if (daysSinceLastTag > 1) {
-            echo "$image is a candidate for removal because it was last tagged $daysSinceLastTag days ago."
-        }
-        else {
-            echo "$image is NOT a candidate for removal because it was last tagged $daysSinceLastTag days ago."
+        if (daysSinceLastTag > daysUntilRemoval) {
+            echo "Deleting $image because has \"deleteme\" in its name and was last tagged $daysSinceLastTag days ago."
+            sh "docker image rm $image"
         }
     }
 
