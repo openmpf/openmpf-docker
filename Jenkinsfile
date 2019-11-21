@@ -489,7 +489,7 @@ def dockerCleanUp() {
     // Remove dangling <none> images that are more than 1 week old.
     sh 'docker image prune --force --filter "until=168h"'
 
-    def images = sh(script: "docker images --filter 'dangling=false' --format '{{.Repository}}:{{.Tag}}",
+    def images = sh(script: "docker images --filter 'dangling=false' --format '{{.Repository}}:{{.Tag}}'",
             returnStdout: true).trim().split('\n')
 
     def now = java.time.Instant.now()
