@@ -97,6 +97,8 @@ services:
     <<: *detection-component-base
     image: ${REGISTRY}openmpf_sphinx_speech_detection:${TAG}
     build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/java/SphinxSpeechDetection
+    environment:
+      JAVA_TOOL_OPTIONS: -Xmx1g  # limit Java heap size to 1GB
 
   subsense-motion-detection:
     <<: *detection-component-base
