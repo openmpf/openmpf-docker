@@ -332,9 +332,14 @@ try {
         dir('openmpf-docker') {
             def composeFiles = "docker-compose.integration.test.yml:$componentComposeFiles"
 
-            def nproc = sh(script: 'nproc', returnStdout: true).trim()
-            def componentsYaml = readYaml(file: 'docker-compose.components.yml')
-            def scaleArgs = componentsYaml.services.collect({ "--scale '$it.key=$nproc'" }).join(' ')
+            def nproc = sh(script: 'nproc', returnStdout: true).trim() as int
+            def sericesInSystemTests = ['ocv-face-detection', 'darknet-detection', 'dlib-face-detection',
+                                        'ocv-dnn-detection', 'oalpr-license-plate-text-detection',
+                                        'ocv-person-detection', 'mog-motion-detection', 'subsense-motion-detection']
+
+            def scaleArgs = sericesInSystemTests.collect({ "--scale '$it.key=$nproc'" }).join(' ')
+            // Sphinx uses a huge amount of memory so we don't want more than 2 of them.
+            scaleArgs += " --scale sphinx-speech-detection=${Math.min(nproc, 2)} "
 
             withEnv(["TAG=$inProgressTag",
                      "EXTRA_MVN_OPTIONS=$mvnTestOptions",
