@@ -67,6 +67,9 @@ COPY . .
 # script is provided by the openmpf_cpp_component_build base image.
 RUN build-component.sh
 
+# You optionally may want to run unit test here, or wherever is appropriate for your Dockerfile. 
+# The [OcvFaceDetection component's Dockerfile](https://github.com/openmpf/openmpf-components/blob/master/cpp/OcvFaceDetection/Dockerfile) 
+# shows one way of setting up unit tests, but you can do it in whatever way you see fit. 
 
 # In the second stage of the build we extend the openmpf_cpp_executor base image. 
 FROM openmpf_cpp_executor:latest
