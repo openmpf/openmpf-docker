@@ -13,7 +13,7 @@ This image will:
   to start your component container.
   
   
-How to build the `openmpf_cpp_component_build` and `openmpf_cpp_executor` base images
+Build the base images
 ======================================================
 ```bash
 cd /path/to/openmpf-docker/components
@@ -22,13 +22,13 @@ DOCKER_BUILDKIT=1 docker build . -f cpp_executor/Dockerfile -t openmpf_cpp_execu
 ```
 
 
-How to use this image
+How to use the base images
 ===========================
 The following steps assume you are using the default project structure for OpenMPF C++ components. Documentation
 for C++ components can be found [here](https://openmpf.github.io/docs/site/CPP-Batch-Component-API). 
 
-The [OcvFace component](https://github.com/openmpf/openmpf-components/tree/master/cpp/OcvFaceDetection) is a good 
-example of a Dockerized C++ component that has no external dependencies.
+The [OcvFaceDetection component](https://github.com/openmpf/openmpf-components/tree/master/cpp/OcvFaceDetection) 
+is a good example of a Dockerized C++ component that has no external dependencies.
 The [TesseractOCRTextDetection component](https://github.com/openmpf/openmpf-components/tree/master/cpp/TesseractOCRTextDetection) 
 is good example of Dockerized component that does have external dependencies.
 
@@ -63,8 +63,8 @@ FROM openmpf_cpp_component_build:latest as build_component
 # Copy in your source code
 COPY . .
 
-# Build your component. The build-component.sh script is provided by the 
-# openmpf_cpp_component_build base image.
+# Build your component. The [build-component.sh](../cpp_component_build/scripts/build-component.sh) script is 
+# provided by the openmpf_cpp_component_build base image.
 RUN build-component.sh
 
 
@@ -78,12 +78,12 @@ FROM openmpf_cpp_executor:latest
 
 
 # Set the COMPONENT_LOG_NAME environment variable so that your component's log file can be 
-# printed to standard out when running the image.
+# printed to standard out when running the image. The log name is defined in plugin-files/config/Log4cxxConfig.xml.
 ENV COMPONENT_LOG_NAME my-face-detection.log
 
 # Copy only the files the component will need at runtime from the build stage. 
 # This line also copies over the libraries that your component links to. 
-# One of the things that build-component.sh does is collect the libraries your component links to.
+# Note that running build-component.sh in the first stage collected those libraries for you.
 COPY --from=build_component $BUILD_DIR/plugin/MyFaceDetection $INSTALL_DIR
 
 # Copy over the library containing your component's compiled code.
@@ -96,10 +96,11 @@ Your Dockerfile may use more than the two stages shown above, but the final stag
 
 ### Build your component image
 Run the following command, replacing `<component_name>` with the name of your component and `<component_path>` with the
-path on the host file system to the component projects's top level directory:
+path on the host file system to the component project's top level directory:
 ```bash
 docker build -t <component_name> <component_path>
 ```
+For example: `docker build -t MyFaceDetection /path/to/MyFaceDetection`.
 
 
 ### Run your component
