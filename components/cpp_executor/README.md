@@ -63,8 +63,8 @@ FROM openmpf_cpp_component_build:latest as build_component
 # Copy in your source code
 COPY . .
 
-# Build your component. The [build-component.sh](../cpp_component_build/scripts/build-component.sh) script is 
-# provided by the openmpf_cpp_component_build base image.
+# Build your component. The [build-component.sh](../cpp_component_build/scripts/build-component.sh) 
+# script is provided by the openmpf_cpp_component_build base image.
 RUN build-component.sh
 
 
@@ -78,7 +78,8 @@ FROM openmpf_cpp_executor:latest
 
 
 # Set the COMPONENT_LOG_NAME environment variable so that your component's log file can be 
-# printed to standard out when running the image. The log name is defined in plugin-files/config/Log4cxxConfig.xml.
+# printed to standard out when running the image. 
+# The log name is defined in plugin-files/config/Log4cxxConfig.xml.
 ENV COMPONENT_LOG_NAME my-face-detection.log
 
 # Copy only the files the component will need at runtime from the build stage. 
