@@ -491,34 +491,39 @@ def reTagImages(inProgressTag, remoteImagePrefix, imageTag) {
 
 
 def dockerCleanUp() {
-    def daysUntilRemoval = 7
-    def hoursUntilRemoval = daysUntilRemoval * 24
-    // Remove dangling <none> images that are more than 1 week old.
-    sh "docker image prune --force --filter 'until=${hoursUntilRemoval}h'"
+    try {
+        def daysUntilRemoval = 7
+        def hoursUntilRemoval = daysUntilRemoval * 24
+        // Remove dangling <none> images that are more than 1 week old.
+        sh "docker image prune --force --filter 'until=${hoursUntilRemoval}h'"
 
-    echo "Checking for deleteme images older than $daysUntilRemoval days."
+        echo "Checking for deleteme images older than $daysUntilRemoval days."
 
-    def images = sh(script: "docker images --filter 'dangling=false' --format '{{.Repository}}:{{.Tag}}'",
-            returnStdout: true).trim().split('\n')
+        def images = sh(script: "docker images --filter 'dangling=false' --format '{{.Repository}}:{{.Tag}}'",
+                returnStdout: true).trim().split('\n')
 
-    def now = java.time.Instant.now()
-    for (image in images) {
-        if (!image.contains('deleteme')) {
-            continue;
+        def now = java.time.Instant.now()
+        for (image in images) {
+            if (!image.contains('deleteme')) {
+                continue;
+            }
+
+            // Time format from Docker (it includes quotes at beginning and end): "2019-11-18T18:58:33.990718123Z"
+            def quotedTagTimeString = sh(script: "docker image inspect --format '{{json .Metadata.LastTagTime}}' $image",
+                    returnStdout: true).trim()
+            def tagTimeString = quotedTagTimeString[1..-2]
+            def tagTime = java.time.Instant.parse(tagTimeString)
+
+            def daysSinceLastTag = tagTime.until(now, java.time.temporal.ChronoUnit.DAYS)
+            if (daysSinceLastTag > daysUntilRemoval) {
+                echo "Deleting $image because has \"deleteme\" in its name and was last tagged $daysSinceLastTag days ago."
+                sh "docker image rm $image"
+            }
         }
 
-        // Time format from Docker (it includes quotes at beginning and end): "2019-11-18T18:58:33.990718123Z"
-        def quotedTagTimeString = sh(script: "docker image inspect --format '{{json .Metadata.LastTagTime}}' $image",
-                returnStdout: true).trim()
-        def tagTimeString = quotedTagTimeString[1..-2]
-        def tagTime = java.time.Instant.parse(tagTimeString)
-
-        def daysSinceLastTag = tagTime.until(now, java.time.temporal.ChronoUnit.DAYS)
-        if (daysSinceLastTag > daysUntilRemoval) {
-            echo "Deleting $image because has \"deleteme\" in its name and was last tagged $daysSinceLastTag days ago."
-            sh "docker image rm $image"
-        }
+        sh 'docker builder prune --force --keep-storage=80GB'
     }
-
-    sh 'docker builder prune --force --keep-storage=80GB'
+    catch (e) {
+        echo "Docker clean up failed due to: $e"
+    }
 }
