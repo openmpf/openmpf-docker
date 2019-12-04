@@ -41,6 +41,9 @@ MYSQL_DATABASE=mpf
 MYSQL_USER=mpf
 MYSQL_PASSWORD=mpf
 
+# The root password is only used to configure the mysql_database service.
+MYSQL_ROOT_PASSWORD=password
+
 WFM_USER=admin
 WFM_PASSWORD=mpfadm
 
