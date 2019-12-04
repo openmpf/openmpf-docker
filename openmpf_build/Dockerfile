@@ -406,6 +406,11 @@ RUN yum install -y python-keyczar && yum clean all
 # Update timeout for component deployment tests
 RUN echo 'gather_timeout = 60' >> /etc/ansible/ansible.cfg
 
+RUN mkdir /scripts; \
+    curl --location https://raw.githubusercontent.com/vishnubob/wait-for-it/master/wait-for-it.sh \
+        > /scripts/wait-for-it.sh; \
+    chmod +x /scripts/wait-for-it.sh;
+    
 ################################################################################
 # For Tests: Link ffserver and ffprobe                                         #
 ################################################################################
