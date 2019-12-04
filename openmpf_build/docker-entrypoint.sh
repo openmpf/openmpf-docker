@@ -62,6 +62,13 @@ if [ -d "$installDir" ]; then
   rm -rf share/* ||:
 fi
 
+# Removes "target" directories that may have been generated from non-Docker builds.
+find /home/mpf/openmpf-projects -type d -name target -print0 | xargs --null --no-run-if-empty rm -r
+# Removes jars that may have been generated from non-Docker builds.
+rm -rf /root/.m2/repository/org/mitre
+# Removes cmake files that may have been generated from non-Docker builds.
+rm -rf /home/mpf/openmpf-projects/openmpf/trunk/build
+
 # Make sure the source code line endings are correct if copying the source from a Windows host.
 cd /home/mpf/openmpf-projects && find . -type f -exec dos2unix -q {} \;
 

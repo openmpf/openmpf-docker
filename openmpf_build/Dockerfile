@@ -419,7 +419,6 @@ RUN ln -s /apps/install/bin/ffserver /usr/bin/ffserver && \
 
 ENV ACTIVE_MQ_HOST=activemq
 ENV ACTIVE_MQ_BROKER_URI=failover://(tcp://$ACTIVE_MQ_HOST:61616)?jms.prefetchPolicy.all=0&startupMaxReconnectAttempts=1
-ENV MYSQL_HOST=mysql_database
 ENV THIS_MPF_NODE=localhost
 # JGROUPS_TCP_ADDRESS set in docker-entrypoint-test.sh
 ENV JGROUPS_TCP_PORT=7800
@@ -432,6 +431,7 @@ ENV CORE_MPF_NODES=
 ENV LD_LIBRARY_PATH=/usr/lib64:$MPF_HOME/lib
 ENV PATH=$PATH:$MPF_HOME/bin
 ENV TOMCAT_BASE_URL=http://$THIS_MPF_NODE:8181
+ENV JDBC_URL=jdbc:postgresql://db:5432/mpf
 
 # The workflow manager must be added as an mpf-child so that plugin packages are
 # extracted at startup, which is necessary for component auto-registration.
