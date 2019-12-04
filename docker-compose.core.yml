@@ -33,7 +33,6 @@ services:
   mysql_database:
     image: mariadb:latest
     environment:
-      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
       - MYSQL_DATABASE=${MYSQL_DATABASE}
       - MYSQL_USER=${MYSQL_USER}
       - MYSQL_PASSWORD=${MYSQL_PASSWORD}
@@ -78,8 +77,11 @@ services:
       - activemq
     restart: always
     environment:
-      # The following line is needed to wait until the mySQL service is available:
-      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      # The following lines are needed to wait until the mySQL service is available:
+      - MYSQL_USER=${MYSQL_USER}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+      # It's okay to separate options by spaces without using quotes.
+      # - MYSQL_OPTIONS=--ssl
     ports:
       - "8080:8080"
     volumes:
