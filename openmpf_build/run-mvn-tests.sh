@@ -69,7 +69,7 @@ echo "node.auto.unconfig.enabled=true" >> "$MPF_HOME/share/config/mpf-custom.pro
 # Wait for mySQL service.
 set +o xtrace
 echo "Waiting for MySQL to become available ..."
-until mysql -h "$MYSQL_HOST" -u "$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_OPTIONS" -e "quit" >> /dev/null 2>&1; do
+until mysql -h "$MYSQL_HOST" -u "$MYSQL_USER" -p"$MYSQL_PASSWORD" $MYSQL_OPTIONS -e "quit" >> /dev/null 2>&1; do
   echo "MySQL is unavailable. Sleeping."
   sleep 5
 done
