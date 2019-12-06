@@ -395,7 +395,7 @@ RUN cd /apps/source/gtest_sources && git clone https://github.com/google/googlet
 
 RUN yum install -y git asciidoc rpm-build \
     python2-devel PyYAML python-httplib2 python-jinja2 libtomcrypt \
-    python-paramiko python-six sshpass which mysql dos2unix ansible && \
+    python-paramiko python-six sshpass which dos2unix ansible && \
     yum clean all && rm -rf /var/cache/yum/*
 
 # TODO: For some reason this needs to be a separate step. I think it's because the
@@ -410,7 +410,7 @@ RUN mkdir /scripts; \
     curl --location https://raw.githubusercontent.com/vishnubob/wait-for-it/master/wait-for-it.sh \
         > /scripts/wait-for-it.sh; \
     chmod +x /scripts/wait-for-it.sh;
-    
+
 ################################################################################
 # For Tests: Link ffserver and ffprobe                                         #
 ################################################################################
@@ -436,6 +436,7 @@ ENV CORE_MPF_NODES=
 ENV LD_LIBRARY_PATH=/usr/lib64:$MPF_HOME/lib
 ENV PATH=$PATH:$MPF_HOME/bin
 ENV TOMCAT_BASE_URL=http://$THIS_MPF_NODE:8181
+# Default for JDBC configuration. Can be overridden at runtime.
 ENV JDBC_URL=jdbc:postgresql://db:5432/mpf
 
 # The workflow manager must be added as an mpf-child so that plugin packages are

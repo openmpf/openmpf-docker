@@ -72,7 +72,6 @@ rm -rf /home/mpf/openmpf-projects/openmpf/trunk/build
 # Make sure the source code line endings are correct if copying the source from a Windows host.
 cd /home/mpf/openmpf-projects && find . -type f -exec dos2unix -q {} \;
 
-# TODO: Update the command line tools to remove Redis, mySQL, and ActiveMQ startup
 # Install OpenMPF command line tools:
 pip install /home/mpf/openmpf-projects/openmpf/trunk/bin/mpf-scripts
 
