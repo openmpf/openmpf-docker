@@ -41,5 +41,5 @@ cd /opt/activemq/bin
 cp env.$ACTIVE_MQ_PROFILE env
 
 # This script from the webcenter/activemq image runs activemq under supervisord.
-/app/run.sh
+exec /app/run.sh
 

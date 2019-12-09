@@ -59,13 +59,18 @@ RUN yum -y install java-11-openjdk
 
 RUN yum install -y git asciidoc rpm-build \
     python2-devel PyYAML python-httplib2 python-jinja2 libtomcrypt \
-    python-paramiko python-six sshpass which mysql dos2unix ansible && \
+    python-paramiko python-six sshpass which dos2unix ansible && \
     yum clean all && rm -rf /var/cache/yum/*
 
 # TODO: For some reason this needs to be a separate step. I think it's because the
 #   mirror it choses for the other yum install does not have python-keyczar.
 #   This happens even if python-keyczar is the first thing in the list.
 RUN yum install -y python-keyczar && yum clean all
+
+RUN mkdir /scripts; \
+    curl --location https://raw.githubusercontent.com/vishnubob/wait-for-it/master/wait-for-it.sh \
+        > /scripts/wait-for-it.sh; \
+    chmod +x /scripts/wait-for-it.sh;
 
 ################################################################################
 # Copy Files                                                                   #
@@ -123,8 +128,7 @@ RUN cd /home/mpf && mkdir -p /home/mpf/openmpf-projects/openmpf/trunk && \
 
 ENV ACTIVE_MQ_HOST=activemq
 ENV ACTIVE_MQ_BROKER_URI=failover://(tcp://$ACTIVE_MQ_HOST:61616)?jms.prefetchPolicy.all=0&startupMaxReconnectAttempts=1
-ENV MYSQL_HOST=mysql-database
-ENV THIS_MPF_NODE=workflow-manager
+ENV THIS_MPF_NODE=workflow_manager
 # JGROUPS_TCP_ADDRESS set in docker-entrypoint.sh
 ENV JGROUPS_TCP_PORT=7800
 ENV JGROUPS_FILE_PING_LOCATION=$MPF_HOME/share/nodes
@@ -136,6 +140,9 @@ ENV CORE_MPF_NODES=
 ENV LD_LIBRARY_PATH=/usr/lib64:$MPF_HOME/lib
 ENV PATH=$PATH:$MPF_HOME/bin
 ENV JAVA_HOME=/usr/lib/jvm/jre-11
+
+# Default for JDBC configuration. Can be overridden at runtime.
+ENV JDBC_URL=jdbc:postgresql://db:5432/mpf
 
 # The workflow manager must be added as an mpf-child so that plugin packages are
 # extracted at startup, which is necessary for component auto-registration.

@@ -147,8 +147,8 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
     def buildSharedDataVolumeSuffix = 'shared_data_' + currentBuild.projectName
     def buildSharedDataVolume = 'openmpf_' + buildSharedDataVolumeSuffix
 
-    def buildMySqlDataVolumeSuffix = 'mysql_data_' + currentBuild.projectName
-    def buildMySqlDataVolume = 'openmpf_' + buildMySqlDataVolumeSuffix
+    def buildDbDataVolumeSuffix = 'db_data_' + currentBuild.projectName
+    def buildDbDataVolume = 'openmpf_' + buildDbDataVolumeSuffix
 
     def buildNetworkSuffix = 'overlay_' + currentBuild.projectName
     def buildNetwork = 'openmpf_' + buildNetworkSuffix
@@ -157,7 +157,7 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
         buildDate = getTimestamp()
 
         // Clean up last run
-        sh 'docker volume rm -f ' + buildSharedDataVolume + ' ' + buildMySqlDataVolume
+        sh 'docker volume rm -f ' + buildSharedDataVolume + ' ' + buildDbDataVolume
         removeDockerNetwork(buildNetwork)
 
         // Revert changes made to files by a previous Jenkins build
@@ -453,7 +453,7 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
 
                         // Update volume and network names
                         sh 'sed -i \'s/shared_data:/' + buildSharedDataVolumeSuffix + ':/g\' docker-compose-test.yml'
-                        sh 'sed -i \'s/mysql_data:/' + buildMySqlDataVolumeSuffix + ':/g\' docker-compose-test.yml'
+                        sh 'sed -i \'s/db_data:/' + buildDbDataVolumeSuffix + ':/g\' docker-compose-test.yml'
                         sh 'sed -i \'s/overlay/' + buildNetworkSuffix + '/g\' docker-compose-test.yml'
 
                         // To prevent conflicts with other concurrent builds, don't expose any ports
@@ -489,7 +489,7 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                             sh 'sleep 10' // give previous command some time
                         }
 
-                        sh 'docker volume rm -f ' + buildMySqlDataVolume // preserve openmpf_shared_data for post-run analysis
+                        sh 'docker volume rm -f ' + buildDbDataVolume // preserve openmpf_shared_data for post-run analysis
                         removeDockerNetwork(buildNetwork)
                     }
 

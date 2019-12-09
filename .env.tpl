@@ -36,12 +36,6 @@ REGISTRY=
 
 TAG=latest
 
-# MySQL
-MYSQL_ROOT_PASSWORD=password
-MYSQL_DATABASE=mpf
-MYSQL_USER=mpf
-MYSQL_PASSWORD=mpf
-
 WFM_USER=admin
 WFM_PASSWORD=mpfadm
 
@@ -53,3 +47,11 @@ USER_PROPERTIES_PATH=
 # Set these if using "docker-compose.https.yml".
 KEYSTORE_PATH=
 KEYSTORE_PASSWORD=
+
+
+# Optional database configuration options.
+# Uncomment and modify to customize database configuration.
+# JDBC_URL=jdbc:postgresql://db:5432/mpf
+# POSTGRES_USER=mpf
+# POSTGRES_PASSWORD=password
+# POSTGRES_DB=mpf

@@ -184,15 +184,22 @@ echo `date` > "$markerFile"
 # Start Tomcat                                                                 #
 ################################################################################
 
+echo 'Waiting for PostgreSQL to become available ...'
+# Expects a JDBC_URL to be a url like "jdbc:postgresql://db:5432/mpf",
+# or "jdbc:postgresql://db:5432/mpf?option1=value1&option2=value2"
+# Regex converts: <anything>://<hostname>:<port number>/<anything> -> <hostname>:<port number>
+if [[ $JDBC_URL =~ .+://([^/]+:[[:digit:]]+) ]]; then
+    jdbc_host_port=${BASH_REMATCH[1]}
+    /scripts/wait-for-it.sh "$jdbc_host_port" --timeout=0
+else
+    echo "Error the value of the \$JDBC_URL environment variable contains the invalid value of \"$JDBC_URL\"." \
+         "Expected a url like: jdbc:postgresql://db:5432/mpf"
+    exit 3
+fi
+echo 'PostgreSQL is available'
+
 set +o xtrace
 
-# Wait for mySQL service.
-echo "Waiting for MySQL to become available ..."
-until mysql -h "$MYSQL_HOST" -u root -p"$MYSQL_ROOT_PASSWORD" -e "quit" >> /dev/null 2>&1; do
-  echo "MySQL is unavailable. Sleeping."
-  sleep 5
-done
-echo "MySQL is up"
 
 # Wait for Redis service.
 echo "Waiting for Redis to become available ..."
@@ -214,4 +221,4 @@ echo "ActiveMQ is up"
 set -o xtrace
 
 # Run Tomcat (as root user)
-/opt/apache-tomcat/bin/catalina.sh run
+exec /opt/apache-tomcat/bin/catalina.sh run
