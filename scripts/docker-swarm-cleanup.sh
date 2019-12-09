@@ -32,14 +32,14 @@
 
 printUsage() {
   echo "Usages:"
-  echo "docker-swarm-cleanup.sh [--ask-pass] <--mysql-volume|--all-volumes|--no-volumes> [--remove-shared-data]"
+  echo "docker-swarm-cleanup.sh [--ask-pass] <--db-volume|--all-volumes|--no-volumes> [--remove-shared-data]"
   exit -1
 }
 
 # parseVolumeType(1: volumeType)
 parseVolumeType() {
-  if [ "$1" == "--mysql-volume" ]; then
-    removeMysqlVolume=1
+  if [ "$1" == "--db-volume" ]; then
+    removeDbVolume=1
   elif [ "$1" == "--all-volumes" ]; then
     removeAllVolumes=1
   elif [ "$1" != "--no-volumes" ]; then
@@ -72,17 +72,17 @@ exit
 EOF
 }
 
-# cleanupMysqlVolume(1: sshCmd)
-cleanupMysqlVolume() {
+# cleanupDbVolume(1: sshCmd)
+cleanupDbVolume() {
 sshCmd="$1"
 "${sshCmd[@]}" << "EOF"
 # Don't remove openmpf_shared_data.
-volumeIds=$(docker volume ls -f name=openmpf_mysql_data -q)
+volumeIds=$(docker volume ls -f name=openmpf_db_data -q)
 if [ ! -z "$volumeIds" ]; then
   echo "Removing openmpf volumes:"
   docker volume rm -f $volumeIds;
 else
-  echo "No openmpf_mysql_data volume found."
+  echo "No openmpf_db_data volume found."
 fi
 echo
 exit
@@ -123,7 +123,7 @@ forAllNodes() {
 }
 
 askPass=0
-removeMysqlVolume=0
+removeDbVolume=0
 removeAllVolumes=0
 removeSharedData=0
 
@@ -193,6 +193,6 @@ echo
 
 if [ "$removeAllVolumes" == 1 ]; then
   forAllNodes "$nodeIds" cleanupAllVolumes
-elif [ "$removeMysqlVolume" == 1 ]; then
-  forAllNodes "$nodeIds" cleanupMysqlVolume
+elif [ "$removeDbVolume" == 1 ]; then
+  forAllNodes "$nodeIds" cleanupDbVolume
 fi

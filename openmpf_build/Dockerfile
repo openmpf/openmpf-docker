@@ -395,7 +395,7 @@ RUN cd /apps/source/gtest_sources && git clone https://github.com/google/googlet
 
 RUN yum install -y git asciidoc rpm-build \
     python2-devel PyYAML python-httplib2 python-jinja2 libtomcrypt \
-    python-paramiko python-six sshpass which mysql dos2unix ansible && \
+    python-paramiko python-six sshpass which dos2unix ansible && \
     yum clean all && rm -rf /var/cache/yum/*
 
 # TODO: For some reason this needs to be a separate step. I think it's because the
@@ -405,6 +405,11 @@ RUN yum install -y python-keyczar && yum clean all
 
 # Update timeout for component deployment tests
 RUN echo 'gather_timeout = 60' >> /etc/ansible/ansible.cfg
+
+RUN mkdir /scripts; \
+    curl --location https://raw.githubusercontent.com/vishnubob/wait-for-it/master/wait-for-it.sh \
+        > /scripts/wait-for-it.sh; \
+    chmod +x /scripts/wait-for-it.sh;
 
 ################################################################################
 # For Tests: Link ffserver and ffprobe                                         #
@@ -419,7 +424,6 @@ RUN ln -s /apps/install/bin/ffserver /usr/bin/ffserver && \
 
 ENV ACTIVE_MQ_HOST=activemq
 ENV ACTIVE_MQ_BROKER_URI=failover://(tcp://$ACTIVE_MQ_HOST:61616)?jms.prefetchPolicy.all=0&startupMaxReconnectAttempts=1
-ENV MYSQL_HOST=mysql_database
 ENV THIS_MPF_NODE=localhost
 # JGROUPS_TCP_ADDRESS set in docker-entrypoint-test.sh
 ENV JGROUPS_TCP_PORT=7800
@@ -432,6 +436,8 @@ ENV CORE_MPF_NODES=
 ENV LD_LIBRARY_PATH=/usr/lib64:$MPF_HOME/lib
 ENV PATH=$PATH:$MPF_HOME/bin
 ENV TOMCAT_BASE_URL=http://$THIS_MPF_NODE:8181
+# Default for JDBC configuration. Can be overridden at runtime.
+ENV JDBC_URL=jdbc:postgresql://db:5432/mpf
 
 # The workflow manager must be added as an mpf-child so that plugin packages are
 # extracted at startup, which is necessary for component auto-registration.

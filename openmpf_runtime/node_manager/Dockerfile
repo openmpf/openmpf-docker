@@ -162,7 +162,6 @@ RUN for dir in $MPF_HOME/plugins/*; do /home/mpf/setup-python-component-venv.py 
 
 ENV ACTIVE_MQ_HOST=activemq
 ENV ACTIVE_MQ_BROKER_URI=failover://(tcp://$ACTIVE_MQ_HOST:61616)?jms.prefetchPolicy.all=0&startupMaxReconnectAttempts=1
-ENV MYSQL_HOST=mysql_database
 ENV THIS_MPF_NODE=node_manager
 # JGROUPS_TCP_ADDRESS set in docker-entrypoint.sh
 ENV JGROUPS_TCP_PORT=7800
