@@ -40,8 +40,8 @@ printUsage() {
 # generateWithoutRegistry(1: fileName, 2: imageTag, 3: keystorePath, 4: keystorePassword)
 generateWithoutRegistry() {
   cp templates/"$1" "$1"
-  sedi "s/<registry>\\/<repository>\\///g" "$1"
-  sedi "s/<image_tag>/$2/g" "$1"
+  sedi "s;<registry>/<repository>/;;g" "$1"
+  sedi "s;<image_tag>;$2;g" "$1"
 
   configureHttps "$1" "$3" "$4"
 }
@@ -49,8 +49,8 @@ generateWithoutRegistry() {
 # generateWithoutRegistry(1: fileName, 2: registry, 3: repository, 4: imageTag, 5: keystorePath, 6: keystorePassword)
 generateWithRegistry() {
   cp templates/"$1" "$1"
-  sedi "s/<registry>\\/<repository>/$2\\/$3/g" "$1"
-  sedi "s/<image_tag>/$4/g" "$1"
+  sedi "s;<registry>/<repository>;$2/$3;g" "$1"
+  sedi "s;<image_tag>;$4;g" "$1"
 
   configureHttps "$1" "$5" "$6"
 }

@@ -215,7 +215,12 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
             }
 
             // Generate compose files
-            sh './scripts/docker-generate-compose-files.sh ' + dockerRegistryHostAndPort + ' ' + dockerRegistryPath + ' ' + imageTag
+            def tmpDockerRegistryPath = dockerRegistryPath
+            if (dockerRegistryPath.startsWith("/")) {
+                tmpDockerRegistryPath = dockerRegistryPath.substring(1)
+            }
+
+            sh './scripts/docker-generate-compose-files.sh ' + dockerRegistryHostAndPort + ' ' + tmpDockerRegistryPath + ' ' + imageTag
 
             // TODO: Attempt to pull images in separate stage so that they are not
             // built from scratch on a clean Jenkins node.
