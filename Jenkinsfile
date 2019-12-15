@@ -50,6 +50,7 @@ def pushRuntimeImages = env.getProperty("push_runtime_images").toBoolean()
 
 def dockerRegistryHost = env.getProperty("docker_registry_host")
 def dockerRegistryPort = env.getProperty("docker_registry_port")
+def dockerRegistryPath = env.getProperty("docker_registry_path") ?: "/openmpf"
 def dockerRegistryCredId = env.getProperty("docker_registry_cred_id")
 def jenkinsNodes = env.getProperty("jenkins_nodes")
 def extraTestDataPath = env.getProperty("extra_test_data_path")
@@ -117,8 +118,26 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
         sh 'docker volume rm -f ' + buildSharedDataVolume + ' ' + buildMySqlDataVolume
         removeDockerNetwork(buildNetwork)
 
-        def dockerRegistryHostAndPort = dockerRegistryHost + ':' + dockerRegistryPort
-        def remoteImageTagPrefix = dockerRegistryHostAndPort + '/openmpf/'
+        // Revert changes made to files by a previous Jenkins build
+        if (fileExists('.git')) {
+            sh 'git reset --hard HEAD'
+        }
+
+        def dockerRegistryHostAndPort = dockerRegistryHost
+        if (dockerRegistryPort) {
+            dockerRegistryHostAndPort += ':' + dockerRegistryPort
+        }
+
+        def remoteImageTagPrefix = dockerRegistryHostAndPort
+        if (dockerRegistryPath) {
+            if (!dockerRegistryPath.startsWith("/")) {
+                remoteImageTagPrefix += "/"
+            }
+            remoteImageTagPrefix += dockerRegistryPath
+            if (!dockerRegistryPath.endsWith("/")) {
+                remoteImageTagPrefix += "/"
+            }
+        }
 
         def buildImageName = remoteImageTagPrefix + 'openmpf_build:' + imageTag
         def buildContainerId
