@@ -216,8 +216,11 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
 
             // Generate compose files
             def tmpDockerRegistryPath = dockerRegistryPath
-            if (dockerRegistryPath.startsWith("/")) {
-                tmpDockerRegistryPath = dockerRegistryPath.substring(1)
+            if (tmpDockerRegistryPath.startsWith("/")) {
+                tmpDockerRegistryPath = tmpDockerRegistryPath.substring(1)
+            }
+            if (tmpDockerRegistryPath.endsWith("/")) {
+                tmpDockerRegistryPath = tmpDockerRegistryPath.substring(0, tmpDockerRegistryPath.length()-1)
             }
 
             sh './scripts/docker-generate-compose-files.sh ' + dockerRegistryHostAndPort + ' ' + tmpDockerRegistryPath + ' ' + imageTag
