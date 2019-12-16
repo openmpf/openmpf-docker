@@ -128,8 +128,8 @@ RUN --mount=type=cache,id=mvn_cache,target=/root/.m2/repository,sharing=private 
 
 WORKDIR /build-artifacts
 
-RUN ln --symbolic /home/mpf/openmpf-projects/openmpf/trunk/workflow-manager/target/workflow-manager.war \
-                  /build-artifacts/workflow-manager.war; \
+RUN ln --symbolic /home/mpf/openmpf-projects/openmpf/trunk/workflow-manager/target/workflow-manager \
+                  /build-artifacts/workflow-manager; \
     ln --symbolic /home/mpf/openmpf-projects/openmpf/trunk/install \
                   /build-artifacts/install; \
     ln --symbolic /root/mpf-sdk-install \

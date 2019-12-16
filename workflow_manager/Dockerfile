@@ -62,7 +62,7 @@ COPY --from=openmpf_build /home/mpf/openmpf-projects/openmpf/trunk/bin/mpf-scrip
 RUN mkdir --parents /home/mpf/mpf-scripts-install; \
     pip install --no-cache --target /home/mpf/mpf-scripts-install /home/mpf/mpf-scripts
 
-COPY --from=openmpf_build /build-artifacts/workflow-manager.war /opt/apache-tomcat/webapps/
+COPY --from=openmpf_build /build-artifacts/workflow-manager /opt/apache-tomcat/webapps/workflow-manager
 
 ENV MPF_HOME /opt/mpf
 
