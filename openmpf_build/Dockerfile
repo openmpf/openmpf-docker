@@ -24,7 +24,7 @@
 # limitations under the License.                                            #
 #############################################################################
 
-FROM centos:7.4.1708 as openmpf_build
+FROM centos:7 as openmpf_build
 WORKDIR /home/mpf
 
 # TODO: "&&" remove source code after building libs.

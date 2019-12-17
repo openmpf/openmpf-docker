@@ -29,7 +29,7 @@ ARG BUILD_TAG=latest
 FROM ${BUILD_REGISTRY}openmpf_build:${BUILD_TAG} as openmpf_build
 
 # TODO: A new container can be made to include only a JRE and executables needed.
-FROM centos:7.4.1708
+FROM centos:7
 
 # Child node needs:
 #  - node-manager JAR
