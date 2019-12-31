@@ -172,7 +172,7 @@ Before proceeding, ensure that you've generated a `docker-compose.yml` file as
 explained in the [Generate
 docker-compose.yml](README.md#generate-docker-composeyml) section in the README.
 
-Note that by default both the Workflow Manager and mySQL containers have a
+Note that by default both the Workflow Manager and PostgreSQL containers have a
 `placement` constraint so that they are always deployed to the swarm manager
 node:
 
@@ -183,8 +183,8 @@ node:
           - node.role == manager
 ```
 
-The mySQL container must always run on the same node so that the same
-`openmpf_mysql_data` volume is used when the swarm is redeployed. The Workflow
+The PostgreSQL container must always run on the same node so that the same
+`openmpf_db_data` volume is used when the swarm is redeployed. The Workflow
 Manager container is run on the same node for efficiency. If you wish to change
 the node, then modify the `placement` constraints.
 
@@ -316,7 +316,7 @@ that begins with `docker stack deploy`, as though you had never deployed the
 stack before, then run the following command from within the `openmpf-docker`
 directory:
 
-- `./scripts/docker-swarm-cleanup.sh --mysql-volume --remove-shared-data`
+- `./scripts/docker-swarm-cleanup.sh --db-volume --remove-shared-data`
 
 As a convenience, this does not remove the shared volume so that you don't have
 to recreate it on all of the nodes the next time you deploy the stack.

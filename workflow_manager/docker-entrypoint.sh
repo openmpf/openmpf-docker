@@ -125,12 +125,23 @@ fi
 # Start Tomcat                                                                 #
 ################################################################################
 
-echo 'Waiting for MySQL to become available ...'
-/scripts/wait-for-it.sh "$MYSQL_HOST:3306" --timeout=0
-echo 'MySQL is available'
-
+echo 'Waiting for PostgreSQL to become available ...'
+# Expects a JDBC_URL to be a url like "jdbc:postgresql://db:5432/mpf",
+# or "jdbc:postgresql://db:5432/mpf?option1=value1&option2=value2"
+# Regex converts: <anything>://<hostname>:<port number>/<anything> -> <hostname>:<port number>
+if [[ $JDBC_URL =~ .+://([^/]+:[[:digit:]]+) ]]; then
+    jdbc_host_port=${BASH_REMATCH[1]}
+    /scripts/wait-for-it.sh "$jdbc_host_port" --timeout=0
+else
+    echo "Error the value of the \$JDBC_URL environment variable contains the invalid value of \"$JDBC_URL\"." \
+         "Expected a url like: jdbc:postgresql://db:5432/mpf"
+    exit 3
+fi
+echo 'PostgreSQL is available'
 
 set +o xtrace
+
+
 # Wait for Redis service.
 echo 'Waiting for Redis to become available ...'
 # From https://stackoverflow.com/a/39214806

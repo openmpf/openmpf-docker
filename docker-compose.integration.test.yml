@@ -30,17 +30,12 @@
 version: '3.7'
 
 services:
-  mysql-database:
-    image: mariadb:latest
+  db:
+    image: postgres:alpine
     environment:
-      - MYSQL_ROOT_PASSWORD=password
-      - MYSQL_DATABASE=mpf
-      - MYSQL_USER=mpf
-      - MYSQL_PASSWORD=mpf
-    # https://github.com/docker-library/mariadb/issues/113
-    command: [
-      '--wait_timeout=28800',
-    ]
+      POSTGRES_DB: ${POSTGRES_DB:-mpf}
+      POSTGRES_USER: ${POSTGRES_USER:-mpf}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
 
   activemq:
     image: ${REGISTRY}openmpf_activemq:${TAG:-latest}
@@ -55,12 +50,10 @@ services:
     image: ${REGISTRY}openmpf_integration_tests:${TAG:-latest}
     build: integration_tests
     depends_on:
-      - mysql-database
+      - db
       - redis
       - activemq
     environment:
-      # The following line is needed to wait until the mySQL service is available:
-      - MYSQL_ROOT_PASSWORD=password
       - EXTRA_MVN_OPTIONS=$EXTRA_MVN_OPTIONS
     volumes:
       - shared_data:/opt/mpf/share

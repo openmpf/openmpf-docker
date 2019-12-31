@@ -70,7 +70,6 @@ COPY --from=openmpf_build /build-artifacts/descriptors $MPF_HOME/plugins
 
 ENV ACTIVE_MQ_HOST=activemq
 ENV ACTIVE_MQ_BROKER_URI="failover://(tcp://$ACTIVE_MQ_HOST:61616)?jms.prefetchPolicy.all=0&startupMaxReconnectAttempts=1"
-ENV MYSQL_HOST=mysql-database
 ENV REDIS_HOST=redis
 ENV THIS_MPF_NODE=workflow-manager
 # JGROUPS_TCP_ADDRESS set in docker-entrypoint.sh
@@ -84,6 +83,10 @@ ENV CORE_MPF_NODES=''
 ENV LD_LIBRARY_PATH=/usr/lib64:/opt/apache-tomcat/webapps/workflow-manager/WEB-INF/classes
 ENV PATH=$PATH:$MPF_HOME/bin
 ENV JAVA_HOME=/usr/lib/jvm/jre-11
+# Default for JDBC configuration. Can be overridden at runtime.
+ENV JDBC_URL=jdbc:postgresql://db:5432/mpf
+ENV POSTGRES_USER=mpf
+ENV POSTGRES_PASSWORD=password
 
 EXPOSE 8080 8443
 

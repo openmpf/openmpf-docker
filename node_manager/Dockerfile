@@ -49,7 +49,6 @@ COPY --from=openmpf_build /build-artifacts/plugins $MPF_HOME/plugins
 
 ENV ACTIVE_MQ_HOST=activemq
 ENV ACTIVE_MQ_BROKER_URI="failover://(tcp://$ACTIVE_MQ_HOST:61616)?jms.prefetchPolicy.all=0&startupMaxReconnectAttempts=1"
-ENV MYSQL_HOST=mysql-database
 ENV THIS_MPF_NODE=node-manager
 ENV CORE_MPF_NODES=$THIS_MPF_NODE
 

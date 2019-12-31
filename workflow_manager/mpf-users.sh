@@ -26,15 +26,23 @@
 # limitations under the License.                                            #
 #############################################################################
 
-set -o errexit -o pipefail -o xtrace
+set -o errexit -o pipefail
 
 
 run_user_command() {
+    if [[ ! $JDBC_URL =~ .+://([^/]+:[[:digit:]]+) ]]; then
+        echo "Error the value of the \$JDBC_URL environment variable contains the invalid value of \"$JDBC_URL\"." \
+             "Expected a url like: jdbc:postgresql://db:5432/mpf"
+        exit 3
+    fi
+    jdbc_host_port=${BASH_REMATCH[1]}
+
     local mpf_subcommand=$1
     shift
     export PYTHONPATH=/home/mpf/mpf-scripts-install
     python "$PYTHONPATH/mpf/command_line.py" \
-        "$mpf_subcommand" --sql-host "$MYSQL_HOST" --sql-password "$MYSQL_ROOT_PASSWORD" --skip-sql-start "$@"
+        "$mpf_subcommand" --sql-host "$jdbc_host_port" --sql-user "$POSTGRES_USER" --sql-password "$POSTGRES_PASSWORD" \
+        --skip-sql-start "$@"
 }
 
 script_name=$(basename "$0")

@@ -102,7 +102,6 @@ RUN ln --symbolic /build-artifacts/descriptors "$MPF_HOME/plugins"
 
 ENV ACTIVE_MQ_HOST=activemq
 ENV ACTIVE_MQ_BROKER_URI="failover://(tcp://$ACTIVE_MQ_HOST:61616)?jms.prefetchPolicy.all=0&startupMaxReconnectAttempts=1"
-ENV MYSQL_HOST=mysql-database
 ENV REDIS_HOST=redis
 
 # JGROUPS_TCP_ADDRESS set in docker-entrypoint.sh
@@ -118,6 +117,8 @@ ENV PATH=$PATH:$MPF_HOME/bin
 ENV JAVA_HOME=/usr/lib/jvm/jre-11
 ENV CATALINA_OPTS "-Dtransport.guarantee='NONE' -Dweb.rest.protocol='http'"
 ENV TOMCAT_BASE_URL=http://localhost:8181
+# Default for JDBC configuration. Can be overridden at runtime.
+ENV JDBC_URL=jdbc:postgresql://db:5432/mpf
 
 
 COPY descriptor-receiver.py /scripts/descriptor-receiver.py
