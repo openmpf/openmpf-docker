@@ -202,25 +202,19 @@ try {
         }
     } // stage('Clone repos')
 
-    stage('Check repos for updates') {
-        if (!pollReposAndEndBuild) {
-            echo 'SKIPPING REPO UPDATE CHECK'
+    optional_stage('Check repos for updates', pollReposAndEndBuild) {
+        echo 'CHANGES:'
+
+        def requiresBuild = false
+
+        for (repo in allRepos) {
+            requiresBuild |= (repo.prevSha != repo.sha)
+            echo "$repo.name: $repo.prevSha --> $repo.sha"
         }
+        echo "REQUIRES BUILD: $requiresBuild"
+        currentBuild.result = requiresBuild ? 'SUCCESS' : 'ABORTED';
+    }
 
-        when (pollReposAndEndBuild) {
-            echo 'CHANGES:'
-
-            def requiresBuild = false
-
-            for (repo in allRepos) {
-                requiresBuild |= (repo.prevSha != repo.sha)
-                echo "$repo.name: $repo.prevSha --> $repo.sha"
-            }
-            echo "REQUIRES BUILD: $requiresBuild"
-            currentBuild.result = requiresBuild ? 'SUCCESS' : 'ABORTED';
-        }
-
-    } // stage('Check repos for updates')
     if (pollReposAndEndBuild) {
         return // end build early; do this outside of a stage
     }
@@ -368,28 +362,24 @@ try {
     stage('Re-Tag Images') {
         reTagImages(inProgressTag, remoteImagePrefix, imageTag)
     }
-    stage('Push runtime images') {
-        if (!pushRuntimeImages) {
-            echo 'SKIPPING PUSH OF RUNTIME IMAGES'
-        }
-        when (pushRuntimeImages) {
-            withEnv(["TAG=$imageTag", "REGISTRY=$remoteImagePrefix", "COMPOSE_FILE=$runtimeComposeFiles"]) {
 
-                docker.withRegistry("http://$dockerRegistryHostAndPort", dockerRegistryCredId) {
+    optional_stage('Push runtime images', pushRuntimeImages) {
+        withEnv(["TAG=$imageTag", "REGISTRY=$remoteImagePrefix", "COMPOSE_FILE=$runtimeComposeFiles"]) {
 
-                    sh 'cd openmpf-docker && docker-compose push'
+            docker.withRegistry("http://$dockerRegistryHostAndPort", dockerRegistryCredId) {
 
-                    sh "docker push '${remoteImagePrefix}openmpf_cpp_component_build:$imageTag'"
-                    sh "docker push '${remoteImagePrefix}openmpf_cpp_executor:$imageTag'"
+                sh 'cd openmpf-docker && docker-compose push'
 
-                    sh "docker push '${remoteImagePrefix}openmpf_java_component_build:$imageTag'"
-                    sh "docker push '${remoteImagePrefix}openmpf_java_executor:$imageTag'"
+                sh "docker push '${remoteImagePrefix}openmpf_cpp_component_build:$imageTag'"
+                sh "docker push '${remoteImagePrefix}openmpf_cpp_executor:$imageTag'"
 
-                    sh "docker push '${remoteImagePrefix}openmpf_python_executor:$imageTag'"
-                } // docker.withRegistry ...
-            } // withEnv...
-        } // when (pushRuntimeImages)
-    } // stage('Push runtime images')
+                sh "docker push '${remoteImagePrefix}openmpf_java_component_build:$imageTag'"
+                sh "docker push '${remoteImagePrefix}openmpf_java_executor:$imageTag'"
+
+                sh "docker push '${remoteImagePrefix}openmpf_python_executor:$imageTag'"
+            } // docker.withRegistry ...
+        } // withEnv...
+    }
 }
 catch (e) { // Global exception handler
     buildException = e
@@ -525,5 +515,18 @@ def dockerCleanUp() {
     }
     catch (e) {
         echo "Docker clean up failed due to: $e"
+    }
+}
+
+
+def optional_stage(name, condition, body) {
+    if (condition) {
+        stage (name, body);
+    }
+    else {
+        stage(name) {
+            echo "SKIPPING STAGE: $name"
+            org.jenkinsci.plugins.pipeline.modeldefinition.Utils.markStageSkippedForConditional(name)
+        }
     }
 }
