@@ -70,6 +70,10 @@ RUN mkdir /root/copy_libs64 \
 
 FROM centos:7
 
+RUN yum update -y \
+    && yum clean all \
+    && rm -rf /var/cache/yum/*
+
 # Copy in opencv-python dependencies
 COPY --from=extract_tar /root/copy_libs64 /usr/lib64/
 

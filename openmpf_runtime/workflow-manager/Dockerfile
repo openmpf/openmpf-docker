@@ -29,7 +29,7 @@ ARG BUILD_TAG=latest
 FROM ${BUILD_REGISTRY}openmpf_build:${BUILD_TAG} as openmpf_build
 
 # TODO: A new container can be made to include only the WAR file and a JRE.
-FROM centos:7.4.1708
+FROM centos:7
 
 ################################################################################
 # Initial Setup                                                                #
