@@ -53,7 +53,7 @@ services:
       - "8161:8161"
 
   redis:
-    image: redis:latest
+    image: redis:alpine
 
   workflow-manager:
     image: ${REGISTRY}openmpf_workflow_manager:${TAG}
