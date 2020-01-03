@@ -202,7 +202,7 @@ try {
         }
     } // stage('Clone repos')
 
-    optional_stage('Check repos for updates', pollReposAndEndBuild) {
+    optionalStage('Check repos for updates', pollReposAndEndBuild) {
         echo 'CHANGES:'
 
         def requiresBuild = false
@@ -363,7 +363,7 @@ try {
         reTagImages(inProgressTag, remoteImagePrefix, imageTag)
     }
 
-    optional_stage('Push runtime images', pushRuntimeImages) {
+    optionalStage('Push runtime images', pushRuntimeImages) {
         withEnv(["TAG=$imageTag", "REGISTRY=$remoteImagePrefix", "COMPOSE_FILE=$runtimeComposeFiles"]) {
 
             docker.withRegistry("http://$dockerRegistryHostAndPort", dockerRegistryCredId) {
@@ -519,7 +519,7 @@ def dockerCleanUp() {
 }
 
 
-def optional_stage(name, condition, body) {
+def optionalStage(name, condition, body) {
     if (condition) {
         stage (name, body);
     }
