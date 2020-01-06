@@ -371,6 +371,7 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
 
                         // Run container as daemon in background.
                         buildContainerId = sh(script: 'docker run --rm --entrypoint sleep -t -d ' +
+                                '-p 20160:20160 ' +
                                 '--mount type=bind,source=/home/jenkins/.m2,target=/root/.m2 ' +
                                 '--mount type=bind,source="$(pwd)"/openmpf_runtime/build_artifacts,target=/mnt/build_artifacts ' +
                                 '--mount type=bind,source="$(pwd)"/openmpf_build/openmpf-projects,target=/mnt/openmpf-projects ' +

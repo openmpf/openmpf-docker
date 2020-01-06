@@ -58,7 +58,7 @@ services:
       - overlay
 
   redis:
-    image: redis:latest
+    image: redis:alpine
     networks:
       - overlay
 
