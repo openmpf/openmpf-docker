@@ -7,6 +7,7 @@
  *                                                                            *
  * Copyright 2019 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
+
 /******************************************************************************
  * Copyright 2019 The MITRE Corporation                                       *
  *                                                                            *
@@ -168,7 +169,7 @@ try {
             sh 'git submodule foreach git clean -ffd'
             sh 'git fetch --recurse-submodules'
             sh "git checkout 'origin/$openmpfProjectsRepo.branch'"
-            sh 'git submodule update'
+            sh 'git submodule update --init'
         }
         for (repo in projectsSubRepos) {
             if (repo.branch && !repo.branch.isAllWhitespace()) {
@@ -243,9 +244,9 @@ try {
                         " -t openmpf_build:$inProgressTag"
 
                 // --no-cache needs to be handled differently for the openmpf_integration_tests image because it
-                // expects that openmpf_build will populated the mvn_cache cache mount. When you run a
+                // expects that openmpf_build will populate the mvn_cache cache mount. When you run a
                 // --no-cache build, Docker will clear any cache mounts used in the Dockerfile right before
-                // beginning the build. If we were to just do a regular --no-cahe build for openmpf_integration_tests,
+                // beginning the build. If we were to just do a regular --no-cache build for openmpf_integration_tests,
                 // the mvn_cache mount will be empty.
                 if (buildNoCache) {
                     // openmpf_integration_tests Dockerfile uses two stages. The final stage uses openmpf_build as the
@@ -291,10 +292,7 @@ try {
 
                 componentComposeFiles = 'docker-compose.components.yml'
                 if (buildCustomComponents) {
-                    def customComponentsYml = "../$customComponentsRepo.path/docker-compose.custom-components.yml"
-                    if (fileExists(customComponentsYml)) {
-                        componentComposeFiles += ":$customComponentsYml"
-                    }
+                    componentComposeFiles += ":../$customComponentsRepo.path/docker-compose.custom-components.yml"
                 }
                 runtimeComposeFiles = "docker-compose.core.yml:$componentComposeFiles"
 
@@ -327,11 +325,11 @@ try {
             def composeFiles = "docker-compose.integration.test.yml:$componentComposeFiles"
 
             def nproc = sh(script: 'nproc', returnStdout: true).trim() as int
-            def sericesInSystemTests = ['ocv-face-detection', 'darknet-detection', 'dlib-face-detection',
+            def servicesInSystemTests = ['ocv-face-detection', 'darknet-detection', 'dlib-face-detection',
                                         'ocv-dnn-detection', 'oalpr-license-plate-text-detection',
                                         'ocv-person-detection', 'mog-motion-detection', 'subsense-motion-detection']
 
-            def scaleArgs = sericesInSystemTests.collect({ "--scale '$it=$nproc'" }).join(' ')
+            def scaleArgs = servicesInSystemTests.collect({ "--scale '$it=$nproc'" }).join(' ')
             // Sphinx uses a huge amount of memory so we don't want more than 2 of them.
             scaleArgs += " --scale sphinx-speech-detection=${Math.min(nproc, 2)} "
 
@@ -359,6 +357,7 @@ try {
             } // withEnv
         } // dir('openmpf-docker')
     } // stage('Run Integration Tests')
+
     stage('Re-Tag Images') {
         reTagImages(inProgressTag, remoteImagePrefix, imageTag)
     }
@@ -379,7 +378,7 @@ try {
                 sh "docker push '${remoteImagePrefix}openmpf_python_executor:$imageTag'"
             } // docker.withRegistry ...
         } // withEnv...
-    }
+    } // optionalStage('Push runtime images', ...
 }
 catch (e) { // Global exception handler
     buildException = e
@@ -511,7 +510,7 @@ def dockerCleanUp() {
             }
         }
 
-        sh 'docker builder prune --force --keep-storage=80GB'
+        sh 'docker builder prune --force --keep-storage=120GB'
     }
     catch (e) {
         echo "Docker clean up failed due to: $e"

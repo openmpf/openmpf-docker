@@ -293,11 +293,6 @@ following command from within the `openmpf-docker` directory:
 
 This preserves all of the Docker volumes.
 
-Note that any changes made through the Nodes web UI to configure services will
-not be preserved. This is because the next time Docker deploys the Node Manager
-containers they will each have a randomly-generated hostname that does not
-correlate with the Node Manager containers in the previous deployment.
-
 The next time you deploy OpenMPF, all of the previous Node Manager logs will
 appear in the Logs web UI. To reduce clutter, consider running the following
 command to archive and remove the old Node Manager log files, where

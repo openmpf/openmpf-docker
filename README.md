@@ -195,25 +195,23 @@ the OpenMPF build image:
 
 
 #### Build the OpenMPF Component Executor Docker Images
+<span id="component-executors-build-commands"></span>
 
-Run the following command from within the `openmpf-docker/components`
-directory to create the OpenMPF Python component executor image:
+Run the commands in this section from within the `openmpf-docker/components` directory.
+
+Run the following command to create the OpenMPF Python component executor image:
 - `DOCKER_BUILDKIT=1 docker build . -f python_executor/Dockerfile -t openmpf_python_executor`
 
-Run the following command from within the `openmpf-docker/components`
-directory to create the OpenMPF C++ component build image:
+Run the following command to create the OpenMPF C++ component build image:
 - `DOCKER_BUILDKIT=1 docker build . -f cpp_component_build/Dockerfile -t openmpf_cpp_component_build`
 
-Run the following command from within the `openmpf-docker/components`
-directory to create the OpenMPF C++ component executor image:
+Run the following command to create the OpenMPF C++ component executor image:
 - `DOCKER_BUILDKIT=1 docker build . -f cpp_executor/Dockerfile -t openmpf_cpp_executor`
 
-Run the following command from within the `openmpf-docker/components`
-directory to create the OpenMPF Java component build image:
+Run the following command to create the OpenMPF Java component build image:
 - `DOCKER_BUILDKIT=1 docker build . -f java_component_build/Dockerfile -t openmpf_java_component_build`
 
-Run the following command from within the `openmpf-docker/components`
-directory to create the OpenMPF Java component executor image:
+Run the following command to create the OpenMPF Java component executor image:
 - `DOCKER_BUILDKIT=1 docker build . -f java_executor/Dockerfile -t openmpf_java_executor`
 
 #### Generate docker-compose.yml
@@ -277,32 +275,11 @@ container:
 
 > INFO: Server startup in 26967 ms
 
-#### Log into the Workflow Manager and Configure Nodes
+#### Log into the Workflow Manager
 
 You can reach the Workflow Manager at the following URL:
 
 `http://<ip-address-or-hostname-of-docker-host>:8080/workflow-manager`
-
-Once you have logged in, go to the Nodes web UI and check that one node is
-shown. The name of the node ends in a unique ID. That number corresponds
-to the ID of the Docker container. Optionally, modify the service configuration
-for that node if you want.
-
-By default, the following system properties are set in the Workflow Manager
-Docker image:
-
-- `node.auto.config.enabled`=true
-- `node.auto.unconfig.enabled`=true
-- `node.auto.config.num.services.per.component`=1
-
-With these settings, the Workflow Manager will automatically add the available
-node to the OpenMPF cluster and configure it with one service per type of
-component.
-
-If you set the first two properties to false, then when you restart the Docker
-Compose deployment you will need to manually add the node to the OpenMPF
-cluster using the Nodes UI and configure it. The service configuration is not
-persisted between deployments.
 
 #### Monitor the Containers
 
@@ -327,10 +304,6 @@ Alternatively, you can run the following command in a different terminal:
 - `docker-compose stop`
 
 Both approaches preserve the Docker volumes.
-
-Note that any changes made through the Nodes web UI to configure services will
-not be preserved. You will need to configure services again the next time you
-deploy OpenMPF.
 
 **Clean Slate**
 
@@ -442,9 +415,8 @@ the `detection.cuda.device.id property` to 0, or the CUDA index of your GPU
 device.
 
 ### (Optional) Running Tests
-- Build the `openmpf_cpp_component_build`, `openmpf_cpp_executor`, and `openmpf_python_executor` 
-  images as directed above.
-- From with the `openmpf-docker` directory run:
+Build the `openmpf_cpp_component_build`, `openmpf_cpp_executor`, and `openmpf_python_executor` 
+images as directed [above](#component-executors-build-commands). Then, from within the `openmpf-docker` directory run:
 ```shell script
 docker build -f openmpf_build/Dockerfile path/to/openmpf-projects -t openmpf_build --build-arg RUN_TESTS=true
 export COMPOSE_FILE='docker-compose.integration.test.yml:docker-compose.components.yml'
