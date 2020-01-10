@@ -29,7 +29,7 @@
 ARG BUILD_REGISTRY
 ARG BUILD_TAG=latest
 
-#########################
+
 # Separate stage so we don't have to re-download things when openmpf_build changes
 FROM centos:7 as download_dependencies
 
@@ -41,7 +41,6 @@ RUN yum install -y java-11-openjdk; \
 
 ENV JAVA_HOME=/usr/lib/jvm/jre-11
 
-
 RUN curl --location 'http://archive.apache.org/dist/tomcat/tomcat-8/v8.5.41/bin/apache-tomcat-8.5.41.tar.gz' \
         | tar --extract --gzip --directory /opt; \
     ln --symbolic /opt/apache-tomcat-8.5.41 /opt/apache-tomcat; \
@@ -52,7 +51,6 @@ RUN curl --location 'http://archive.apache.org/dist/tomcat/tomcat-8/v8.5.41/bin/
     # https://stackoverflow.com/questions/26893297/tomcat-8-throwing-org-apache-catalina-webresources-cache-getresource-unable-to
     sed --in-place '24s/.*/    <WatchedResource>$\{catalina\.ba\se\}\/conf\/web.xml<\/WatchedResource>\n    <Resources cachingAllowed="true" cacheMaxSize="100000" \/>/' \
             /opt/apache-tomcat/conf/context.xml;
-
 
 RUN mkdir /scripts; \
     curl --location https://raw.githubusercontent.com/vishnubob/wait-for-it/master/wait-for-it.sh \
@@ -70,9 +68,8 @@ RUN mvn dependency:get -Dartifact=org.apache.maven.plugins:maven-surefire-plugin
     mvn dependency:get -Dartifact=org.codehaus.cargo:cargo-core-container-tomcat:1.4.8;
 
 
-################################
-FROM ${BUILD_REGISTRY}openmpf_build:${BUILD_TAG} as integration_tests
 
+FROM ${BUILD_REGISTRY}openmpf_build:${BUILD_TAG} as integration_tests
 
 SHELL ["/bin/bash", "-o", "errexit", "-o", "pipefail", "-c"]
 
@@ -119,7 +116,6 @@ ENV CATALINA_OPTS "-Dtransport.guarantee='NONE' -Dweb.rest.protocol='http'"
 ENV TOMCAT_BASE_URL=http://localhost:8181
 # Default for JDBC configuration. Can be overridden at runtime.
 ENV JDBC_URL=jdbc:postgresql://db:5432/mpf
-
 
 COPY descriptor-receiver.py /scripts/descriptor-receiver.py
 COPY check-test-reports.py /scripts/check-test-reports.py
