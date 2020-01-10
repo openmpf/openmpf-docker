@@ -229,7 +229,7 @@ def start_executor(descriptor, mpf_home, activemq_host, node_name):
                             'org.mitre.mpf.component.executor.detection.MPFDetectionMain',
                             queue_name, activemq_broker_uri)
     else:
-        raise RuntimeError('Descriptor contained invalid sourceLanguage property it must be c++, python, or java.')
+        raise RuntimeError('Descriptor contained invalid sourceLanguage property. It must be c++, python, or java.')
 
     print('Starting component executor with command:', format_command_list(executor_command))
     executor_proc = subprocess.Popen(executor_command,
@@ -289,7 +289,7 @@ def tail_log_if_needed(log_dir, component_log_name, source_language, executor_pi
     if component_log_name:
         log_files.append(os.path.join(log_dir, component_log_name))
     else:
-        print('WARNING: No component log file specified. Only component executor\'s log will appear')
+        print('WARNING: No component log file specified. Only component executor\'s log will appear.')
 
     for log_file in log_files:
         if not os.path.exists(log_file):

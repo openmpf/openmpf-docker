@@ -34,7 +34,7 @@ FROM centos:7
 SHELL ["/bin/bash", "-o", "errexit", "-o", "pipefail", "-c"]
 
 # Change config because the centos:7 image sets this yum property to en_US.utf8 which prevents other locales
-# (including other Engish locales) from being installed with GCC.
+# (including other English locales) from being installed with GCC.
 RUN yum-config-manager --setopt=override_install_langs='' --save; \
     yum update --assumeyes; \
     yum install --assumeyes epel-release \

@@ -81,7 +81,7 @@ However, it is recommended that you set up your environment and install any depe
 `COPY . .` command. Putting steps before `COPY` allows you to avoid re-running those commands
 every time you modify your source code. For example:
 ```dockerfile
-FROM openmpf_python-executor:latest
+FROM openmpf_python_executor:latest
 
 # Replace with your actual dependencies
 RUN pip install --no-cache-dir 'opencv-python>=3.4.7' 'tensorflow'

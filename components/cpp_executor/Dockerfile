@@ -47,7 +47,8 @@ ENV MPF_HOME /opt/mpf
 
 WORKDIR $MPF_HOME
 
-# Use mount and cp shell command because docker COPY resolves symlinks which will end up duplicate copies the libraries.
+# Use mount and cp shell command because the docker COPY command resolves symlinks which then causes duplicate copies
+# of the libraries to be added to the image.
 RUN --mount=type=bind,from=openmpf_build,source=/build-artifacts/install/lib,target=/tmp/mpf-libs \
     cd /tmp/mpf-libs; \
     # component executor binary's dependencies
