@@ -50,13 +50,14 @@ ENV MPF_LOG_PATH $MPF_HOME/share/logs
 ENV THIS_MPF_NODE markup
 
 
-# Use mount and cp shell command because docker COPY resolves symlinks which will end up duplicate copies the libraries.
+# Use mount and cp shell command because the docker COPY command resolves symlinks which then causes duplicate copies
+# of the libraries to be added to the image.
 RUN --mount=type=bind,from=openmpf_build,source=/build-artifacts/install/lib,target=/tmp/mpf-libs \
     cd /tmp/mpf-libs; \
     cp --preserve=links --no-dereference libmpfopencvjni.so libmpfDetectionComponentApi.so libopencv* \
         /usr/lib64;
 
-COPY --from=openmpf_build /build-artifacts/install/jars $MPF_HOME/jars
+COPY --from=openmpf_build /build-artifacts/markup/*.jar $MPF_HOME/jars/
 
 WORKDIR $MPF_HOME/jars
 

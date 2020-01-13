@@ -57,7 +57,7 @@ RUN curl --location 'http://archive.apache.org/dist/tomcat/tomcat-8/v8.5.41/bin/
         /opt/apache-tomcat/conf/context.xml;
 
 
-COPY --from=openmpf_build /home/mpf/openmpf-projects/openmpf/trunk/bin/mpf-scripts /home/mpf/mpf-scripts
+COPY --from=openmpf_build /build-artifacts/mpf-scripts /home/mpf/mpf-scripts
 # Make sure mpf-scripts is not globally installed and that the mpf command in not on the $PATH
 RUN mkdir --parents /home/mpf/mpf-scripts-install; \
     pip install --no-cache --target /home/mpf/mpf-scripts-install /home/mpf/mpf-scripts
@@ -82,7 +82,6 @@ ENV MPF_LOG_PATH=$MPF_HOME/share/logs
 ENV CORE_MPF_NODES=''
 ENV LD_LIBRARY_PATH=/usr/lib64:/opt/apache-tomcat/webapps/workflow-manager/WEB-INF/classes
 ENV PATH=$PATH:$MPF_HOME/bin
-ENV JAVA_HOME=/usr/lib/jvm/jre-11
 # Default for JDBC configuration. Can be overridden at runtime.
 ENV JDBC_URL=jdbc:postgresql://db:5432/mpf
 ENV POSTGRES_USER=mpf

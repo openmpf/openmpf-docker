@@ -47,11 +47,9 @@ import urllib2
 
 
 def main():
-    # Environment variables that are required at runtime
-    wfm_user = os.getenv('WFM_USER')
-    wfm_password = os.getenv('WFM_PASSWORD')
-
     # Optional configurable environment variables
+    wfm_user = os.getenv('WFM_USER', 'admin')
+    wfm_password = os.getenv('WFM_PASSWORD', 'mpfadm')
     wfm_base_url = os.getenv('WFM_BASE_URL', 'http://workflow-manager:8080/workflow-manager')
     activemq_host = os.getenv('ACTIVE_MQ_HOST', 'activemq')
     component_log_name = os.getenv('COMPONENT_LOG_NAME')

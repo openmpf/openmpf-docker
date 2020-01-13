@@ -35,4 +35,4 @@ rm --force "$MPF_HOME"/share/nodes/MPF_Channel/*"${HOSTNAME}"-NodeManager.list
 export THIS_MPF_NODE="${THIS_MPF_NODE}_id_${HOSTNAME}"
 export JGROUPS_TCP_ADDRESS="$HOSTNAME"
 
-exec java -jar "$MPF_HOME/jars/mpf-nodemanager-4.1.0.jar"
+exec java -jar "$MPF_HOME"/jars/mpf-nodemanager-*.jar

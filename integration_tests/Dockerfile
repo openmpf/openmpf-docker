@@ -39,7 +39,7 @@ RUN yum install -y java-11-openjdk; \
     yum clean all; \
     rm -rf /var/cache/yum/*;
 
-ENV JAVA_HOME=/usr/lib/jvm/jre-11
+ENV JAVA_HOME /etc/alternatives/jre
 
 RUN curl --location 'http://archive.apache.org/dist/tomcat/tomcat-8/v8.5.41/bin/apache-tomcat-8.5.41.tar.gz' \
         | tar --extract --gzip --directory /opt; \
@@ -111,7 +111,6 @@ ENV MPF_LOG_PATH=$MPF_HOME/share/logs
 ENV CORE_MPF_NODES=''
 ENV LD_LIBRARY_PATH=/usr/lib64:$MPF_HOME/lib
 ENV PATH=$PATH:$MPF_HOME/bin
-ENV JAVA_HOME=/usr/lib/jvm/jre-11
 ENV CATALINA_OPTS "-Dtransport.guarantee='NONE' -Dweb.rest.protocol='http'"
 ENV TOMCAT_BASE_URL=http://localhost:8181
 # Default for JDBC configuration. Can be overridden at runtime.
