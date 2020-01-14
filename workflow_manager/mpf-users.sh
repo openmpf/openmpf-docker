@@ -56,7 +56,7 @@ list)
     ;;
 add)
     if [ $# -ne 2 ]; then
-        echo 'Incorrent number of arguments. Expected 2 arguments.'
+        echo 'Incorrect number of arguments. Expected 2 arguments.'
         echo "Usage: $script_name add <user> <role>"
         exit 2
     fi
@@ -64,7 +64,7 @@ add)
     ;;
 remove)
     if [ $# -ne 1 ]; then
-        echo 'Incorrent number of arguments. Expected 1 argument.'
+        echo 'Incorrect number of arguments. Expected 1 argument.'
         echo "Usage: $script_name remove <user>"
         exit 2
     fi
@@ -72,7 +72,7 @@ remove)
     ;;
 change-password)
     if [ $# -ne 1 ]; then
-        echo 'Incorrent number of arguments. Expected 1 argument.'
+        echo 'Incorrect number of arguments. Expected 1 argument.'
         echo "Usage: $script_name change-password <user>"
         exit 2
     fi
@@ -80,7 +80,7 @@ change-password)
     ;;
 change-role)
     if [ $# -ne 2 ]; then
-        echo 'Incorrent number of arguments. Expected 2 arguments.'
+        echo 'Incorrect number of arguments. Expected 2 arguments.'
         echo "Usage: $script_name change-role <user> <role>"
         exit 2
     fi
