@@ -128,12 +128,18 @@ RUN --mount=type=cache,id=mvn_cache,target=/root/.m2/repository,sharing=private 
 
 WORKDIR /build-artifacts
 
+# These two can't be symlinked because Docker was using the build cache even though the files had changed.
+# It appears that Docker COPY has an issue when using symlinks with wild cards.
+RUN mkdir markup; \
+    cp /home/mpf/openmpf-projects/openmpf/trunk/markup/target/*.jar markup/; \
+    mkdir java-executor; \
+    cp /home/mpf/openmpf-projects/openmpf/trunk/detection/executor/java/target/*.jar java-executor;
+
 RUN ln --symbolic /home/mpf/openmpf-projects/openmpf/trunk/workflow-manager/target/workflow-manager; \
     ln --symbolic /home/mpf/openmpf-projects/openmpf/trunk/bin/mpf-scripts; \
     ln --symbolic /home/mpf/openmpf-projects/openmpf/trunk/install; \
-    ln --symbolic /root/mpf-sdk-install; \
-    ln --symbolic /home/mpf/openmpf-projects/openmpf/trunk/markup/target markup; \
-    ln --symbolic /home/mpf/openmpf-projects/openmpf/trunk/detection/executor/java/target java-executor;
+    ln --symbolic /root/mpf-sdk-install;
+
 
 LABEL org.label-schema.license="Mixed" \
       org.label-schema.name="OpenMPF Build Environment" \
