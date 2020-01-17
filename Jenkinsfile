@@ -27,7 +27,6 @@
 def imageTag = env.image_tag ?: 'deleteme'
 def buildNoCache = env.build_no_cache?.toBoolean() ?: false
 def preserveContainersOnFailure = env.preserve_containers_on_failure?.toBoolean() ?: false
-def buildPackageJson = env.build_package_json ?: 'openmpf-non-docker-components-package.json'
 
 def buildCustomComponents = env.build_custom_components?.toBoolean() ?: false
 def openmpfCustomRepoCredId = env.openmpf_custom_repo_cred_id
@@ -229,19 +228,13 @@ try {
             sh "docker pull '$externalImage'"
         }
 
-        if (buildPackageJson.contains('/')) {
-            sh "cp $buildPackageJson openmpf-projects/openmpf/trunk/jenkins/scripts/config_files"
-            buildPackageJson = buildPackageJson.substring(buildPackageJson.lastIndexOf("/") + 1)
-        }
-
         withEnv(['DOCKER_BUILDKIT=1', 'RUN_TESTS=true']) {
             def noCacheArg = buildNoCache ? '--no-cache' : ''
             def commonBuildArgs = " --build-arg BUILD_TAG='$inProgressTag' $noCacheArg "
 
             dir ('openmpf-docker') {
                 sh 'docker build -f openmpf_build/Dockerfile ../openmpf-projects --build-arg RUN_TESTS ' +
-                        "--build-arg BUILD_PACKAGE_JSON=$buildPackageJson $commonBuildArgs " +
-                        " -t openmpf_build:$inProgressTag"
+                        "$commonBuildArgs -t openmpf_build:$inProgressTag"
 
                 // --no-cache needs to be handled differently for the openmpf_integration_tests image because it
                 // expects that openmpf_build will populate the mvn_cache cache mount. When you run a

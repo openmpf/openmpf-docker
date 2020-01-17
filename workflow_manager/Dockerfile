@@ -66,8 +66,6 @@ COPY --from=openmpf_build /build-artifacts/workflow-manager /opt/apache-tomcat/w
 
 ENV MPF_HOME /opt/mpf
 
-COPY --from=openmpf_build /build-artifacts/descriptors $MPF_HOME/plugins
-
 ENV ACTIVE_MQ_HOST=activemq
 ENV ACTIVE_MQ_BROKER_URI="failover://(tcp://$ACTIVE_MQ_HOST:61616)?jms.prefetchPolicy.all=0&startupMaxReconnectAttempts=1"
 ENV REDIS_HOST=redis

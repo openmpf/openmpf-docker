@@ -71,28 +71,17 @@ ENV MPF_HOME /home/mpf/openmpf-projects/openmpf/trunk/install
 WORKDIR /home/mpf/openmpf-projects/openmpf
 
 ARG RUN_TESTS=false
-ARG BUILD_PACKAGE_JSON=/home/mpf/openmpf-projects/openmpf/trunk/jenkins/scripts/config_files/openmpf-non-docker-components-package.json
 
 RUN --mount=type=cache,id=mvn_cache,target=/root/.m2/repository,sharing=private \
-    # Copy to shell variable so that parameter expansion works
-    build_package_json="$BUILD_PACKAGE_JSON"; \
-    if [ "${build_package_json:0:1}" != '/' ]; then \
-        build_package_json="/home/mpf/openmpf-projects/openmpf/trunk/jenkins/scripts/config_files/$build_package_json"; \
-    fi; \
     # Remove markup service
     echo '{}' > trunk/workflow-manager/src/main/resources/templates/nodeServicesPalette.json; \
-    cp trunk/workflow-manager/src/main/resources/properties/mpf-private-example.properties \
-        trunk/workflow-manager/src/main/resources/properties/mpf-private.properties; \
     mvn package \
         -DskipTests -Dmaven.test.skip=true -DskipITs \
         -Dcargo.maven.skip=true \
-        -Dcomponents.build.package.json="$build_package_json" \
+        -Dcomponents.build.components='' \
         -Dstartup.auto.registration.skip=false \
         -Dcomponents.build.parallel.builds="$(nproc)" \
-        -Dcomponents.build.make.jobs="$(nproc)" \
-        -DgitBranch='' \
-        -DgitShortId='' \
-        -DjenkinsBuildNumber=1; \
+        -Dcomponents.build.make.jobs="$(nproc)"; \
     mkdir --parents /build-artifacts/mvn/mpf; \
     # Move mpf artifacts out of Maven repo so they won't be in the cache mount when another build is started
     mv /root/.m2/repository/org/mitre/mpf /build-artifacts/mvn; \
@@ -107,22 +96,6 @@ RUN --mount=type=cache,id=mvn_cache,target=/root/.m2/repository,sharing=private 
             cd /root/mpf-component-build; \
         done; \
     fi; \
-    mkdir --parents /build-artifacts/plugins; \
-    cd /build-artifacts/plugins; \
-    # Extract packages here so that child Dockerfiles don't need to use a separate stage just to extract packages.
-    for package in /root/mpf-component-build/plugin-packages/*.tar.gz; do \
-        tar --extract --file "$package" & \
-    done; \
-    wait; \
-    # Descriptors only
-    mkdir /build-artifacts/descriptors; \
-    cd /build-artifacts/descriptors; \
-    plugins_dir=/build-artifacts/plugins; \
-    for full_path in "$plugins_dir"/*/descriptor/descriptor.json; do \
-        rel_path="$(realpath --relative-to="$plugins_dir" "$full_path")"; \
-        mkdir --parents "$(dirname "$rel_path")"; \
-        cp "$full_path" "$rel_path"; \
-    done; \
     rm --recursive /root/mpf-component-build;
 
 
