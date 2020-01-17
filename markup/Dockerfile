@@ -30,11 +30,14 @@ ARG BUILD_REGISTRY
 ARG BUILD_TAG=latest
 FROM ${BUILD_REGISTRY}openmpf_build:${BUILD_TAG} as openmpf_build
 
+# Docker COPY only preserves symlinks when copying an entire directory so we copy the files and their symlinks in to
+# a temporary directory
+RUN mkdir /root/copy_libs64 \
+    && cp --preserve=links --no-dereference /build-artifacts/install/lib/libopencv* /root/copy_libs64/
 
 
 FROM centos:7
 SHELL ["/bin/bash", "-o", "errexit", "-o", "pipefail", "-c"]
-
 
 RUN yum update --assumeyes; \
     yum install --assumeyes https://download1.rpmfusion.org/free/el/rpmfusion-free-release-7.noarch.rpm \
@@ -43,21 +46,20 @@ RUN yum update --assumeyes; \
     yum clean all; \
     rm -rf /var/cache/yum/*;
 
+COPY --from=openmpf_build /root/copy_libs64 /usr/lib64/
+
+COPY --from=openmpf_build /build-artifacts/install/lib/libmpfopencvjni.so /usr/lib64/
+
+COPY --from=openmpf_build /build-artifacts/install/lib/libmpfDetectionComponentApi.so /usr/lib64/
+
 ENV MPF_HOME /opt/mpf
-ENV ACTIVE_MQ_HOST activemq
-ENV ACTIVE_MQ_BROKER_URI="failover://(tcp://$ACTIVE_MQ_HOST:61616)?jms.prefetchPolicy.all=0&startupMaxReconnectAttempts=1"
-ENV MPF_LOG_PATH $MPF_HOME/share/logs
-ENV THIS_MPF_NODE markup
-
-
-# Use mount and cp shell command because the docker COPY command resolves symlinks which then causes duplicate copies
-# of the libraries to be added to the image.
-RUN --mount=type=bind,from=openmpf_build,source=/build-artifacts/install/lib,target=/tmp/mpf-libs \
-    cd /tmp/mpf-libs; \
-    cp --preserve=links --no-dereference libmpfopencvjni.so libmpfDetectionComponentApi.so libopencv* \
-        /usr/lib64;
 
 COPY --from=openmpf_build /build-artifacts/markup/*.jar $MPF_HOME/jars/
+
+ENV ACTIVE_MQ_HOST activemq
+ENV ACTIVE_MQ_BROKER_URI="failover://(tcp://$ACTIVE_MQ_HOST:61616)?jms.prefetchPolicy.all=0&startupMaxReconnectAttempts=10"
+ENV MPF_LOG_PATH $MPF_HOME/share/logs
+ENV THIS_MPF_NODE markup
 
 WORKDIR $MPF_HOME/jars
 
