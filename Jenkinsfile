@@ -248,12 +248,12 @@ try {
                     // build with download_dependencies as the target
                     sh 'docker build integration_tests --target download_dependencies --no-cache'
                 }
-                sh "docker build integration_tests $commonBuildArgs --no-cache=false" +
+                sh "docker build integration_tests $commonBuildArgs --no-cache=false " +
                         " -t openmpf_integration_tests:$inProgressTag"
             }
 
             if (buildCustomComponents) {
-                sh "docker build $customSystemTestsRepo.path $commonBuildArgs ${getVcsRefLabelArg(allRepos)} " +
+                sh "docker build $customSystemTestsRepo.path $commonBuildArgs " +
                         " -t openmpf_integration_tests:$inProgressTag "
             }
 
@@ -293,7 +293,7 @@ try {
                     sh "docker-compose build $commonBuildArgs --build-arg RUN_TESTS --parallel"
 
                     def composeYaml = readYaml(text: shOutput('docker-compose config'))
-                    addVcsRefLabels(composeYaml)
+                    addVcsRefLabels(composeYaml, openmpfRepo.sha)
                 }
             }
 
@@ -416,7 +416,7 @@ finally {
 } // node(env.jenkins_nodes)
 
 
-def addVcsRefLabels(composeYaml) {
+def addVcsRefLabels(composeYaml, openmpfRepoSha) {
     for (def serviceName in composeYaml.services.keySet()) {
         def service = composeYaml.services[serviceName]
         if (!service.build) {
@@ -427,7 +427,7 @@ def addVcsRefLabels(composeYaml) {
         // workflow-manager and markup have their build context within the openmpf-docker repo, but their content
         // is really based on the openmpf repo.
         if (serviceName == 'workflow-manager' || serviceName == 'markup') {
-            addLabelToImage(service.image, 'org.label-schema.vcs-ref', "openmpf: $openmpfRepo.sha")
+            addLabelToImage(service.image, 'org.label-schema.vcs-ref', "openmpf: $openmpfRepoSha")
             continue
         }
 
