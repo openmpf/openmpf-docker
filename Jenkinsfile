@@ -153,7 +153,7 @@ try {
     stage('Clone repos') {
         for (repo in allRepos) {
             if (fileExists(repo.path)) {
-                repo.prevSha = sh(script: "cd $repo.path && git rev-parse HEAD", returnStdout: true).trim()
+                repo.prevSha = shOutput "cd $repo.path && git rev-parse HEAD"
             }
             else {
                 repo.prevSha = 'NONE'
@@ -198,7 +198,7 @@ try {
         }
 
         for (repo in allRepos) {
-            repo.sha = sh(script: "cd $repo.path && git rev-parse HEAD", returnStdout: true).trim()
+            repo.sha = shOutput "cd $repo.path && git rev-parse HEAD"
         }
     } // stage('Clone repos')
 
@@ -319,7 +319,7 @@ try {
         dir('openmpf-docker') {
             def composeFiles = "docker-compose.integration.test.yml:$componentComposeFiles"
 
-            def nproc = sh(script: 'nproc', returnStdout: true).trim() as int
+            def nproc = shOutput('nproc') as int
             def servicesInSystemTests = ['ocv-face-detection', 'darknet-detection', 'dlib-face-detection',
                                         'ocv-dnn-detection', 'oalpr-license-plate-text-detection',
                                         'ocv-person-detection', 'mog-motion-detection', 'subsense-motion-detection']
@@ -474,9 +474,7 @@ def postBuildStatus(repo, status, githubAuthToken) {
     def description = "$currentBuild.projectName $currentBuild.displayName"
     def statusJson = /{ "state": "$status", "description": "$description", "context": "jenkins" }/
     def url = "https://api.github.com/repos/openmpf/$repo.name/statuses/$repo.sha"
-    def response = sh(script:
-            "curl -s -X POST -H 'Authorization: token $githubAuthToken' -d '$statusJson' $url",
-            returnStdout: true)
+    def response = shOutput "curl -s -X POST -H 'Authorization: token $githubAuthToken' -d '$statusJson' $url"
 
     def resultJson = readJSON(text: response)
 
@@ -498,8 +496,7 @@ def email(status, recipients) {
 
 
 def reTagImages(inProgressTag, remoteImagePrefix, imageTag) {
-    def imageNames = sh(script: "docker images 'openmpf_*:$inProgressTag' --format '{{.Repository}}'",
-                        returnStdout: true).trim().split('\n')
+    def imageNames = shOutput("docker images 'openmpf_*:$inProgressTag' --format '{{.Repository}}'").split('\n')
 
     for (def imageName: imageNames) {
         def inProgressName = "$imageName:$inProgressTag"
@@ -520,8 +517,8 @@ def dockerCleanUp() {
 
         echo "Checking for deleteme images older than $daysUntilRemoval days."
 
-        def images = sh(script: "docker images --filter 'dangling=false' --format '{{.Repository}}:{{.Tag}}'",
-                returnStdout: true).trim().split('\n')
+        def images = shOutput("docker images --filter 'dangling=false' --format '{{.Repository}}:{{.Tag}}'")\
+                        .split("\n")
 
         def now = java.time.Instant.now()
         for (image in images) {
@@ -530,8 +527,7 @@ def dockerCleanUp() {
             }
 
             // Time format from Docker (it includes quotes at beginning and end): "2019-11-18T18:58:33.990718123Z"
-            def quotedTagTimeString = sh(script: "docker image inspect --format '{{json .Metadata.LastTagTime}}' $image",
-                    returnStdout: true).trim()
+            def quotedTagTimeString = shOutput "docker image inspect --format '{{json .Metadata.LastTagTime}}' $image"
             def tagTimeString = quotedTagTimeString[1..-2]
             def tagTime = java.time.Instant.parse(tagTimeString)
 
