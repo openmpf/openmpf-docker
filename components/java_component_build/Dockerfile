@@ -94,6 +94,5 @@ LABEL org.label-schema.license="Apache 2.0" \
       org.label-schema.name="OpenMPF Java Component Builder" \
       org.label-schema.schema-version="1.0" \
       org.label-schema.url="https://openmpf.github.io" \
-      org.label-schema.vcs-ref=$BUILD_SHAS \
       org.label-schema.vcs-url="https://github.com/openmpf/openmpf-java-component-sdk" \
       org.label-schema.vendor="MITRE"
