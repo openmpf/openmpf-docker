@@ -300,11 +300,11 @@ try {
             if (applyCustomConfig) {
                 echo 'APPLYING CUSTOM CONFIGURATION'
                 dir(customConfigRepo.path) {
-                    def wfmShasArg = getVcsRefLabelArg([openmpfDockerRepo, customConfigRepo, openmpfRepo])
+                    def wfmShasArg = getVcsRefLabelArg([openmpfRepo, customConfigRepo])
                     sh "docker build workflow_manager $commonBuildArgs $wfmShasArg " +
                             " -t openmpf_workflow_manager:$inProgressTag"
 
-                    def amqShasArg = getVcsRefLabelArg([openmpfDockerRepo, customConfigRepo])
+                    def amqShasArg = getVcsRefLabelArg([openmpfRepo, customConfigRepo])
                     sh "docker build activemq $commonBuildArgs $amqShasArg " +
                             " -t openmpf_activemq:$inProgressTag"
                 }
@@ -421,24 +421,37 @@ def addVcsRefLabels(composeYaml) {
         def service = composeYaml.services[serviceName]
         if (!service.build) {
             echo "Not labeling $service.image since we didn't build it"
-            continue;
+            continue
         }
 
-        def existingVcsLabel = shOutput(
-                /docker image inspect $service.image --format '{{index .Config.Labels "org.label-schema.vcs-ref"}}'/)
+        // workflow-manager and markup have their build context within the openmpf-docker repo, but their content
+        // is really based on the openmpf repo.
+        if (serviceName == 'workflow-manager' || serviceName == 'markup') {
+            addLabelToImage(service.image, 'org.label-schema.vcs-ref', "openmpf: $openmpfRepo.sha")
+            continue
+        }
 
         def contextDir = service.build.context
         def tld = shOutput "cd '$contextDir' && basename \$(git rev-parse --show-toplevel)"
         def sha = shOutput "cd '$contextDir' && git rev-parse HEAD"
 
-        def newVcsLabel = "$tld: $sha"
-        if (existingVcsLabel) {
-            newVcsLabel += ", $existingVcsLabel"
-        }
-
-        sh "echo 'FROM $service.image' " +
-                "| docker build - -t $service.image --label org.label-schema.vcs-ref='$newVcsLabel'"
+        prependImageLabel(service.image, 'org.label-schema.vcs-ref', "$tld: $sha")
     }
+}
+
+
+def addLabelToImage(imageName, labelName, labelValue) {
+    sh "echo 'FROM $imageName' | docker build - -t $imageName --label '$labelName=$labelValue'"
+}
+
+def prependImageLabel(imageName, labelName, labelValue) {
+    def existingLabelValue = shOutput(
+            /docker image inspect $imageName --format '{{index .Config.Labels "$labelName"}}'/)
+
+    if (existingLabelValue) {
+        labelValue += ", $existingLabelValue"
+    }
+    addLabelToImage(imageName, labelName, labelValue)
 }
 
 
