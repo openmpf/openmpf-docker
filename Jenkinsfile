@@ -41,7 +41,7 @@ def pushRuntimeImages = env.push_runtime_images?.toBoolean() ?: false
 
 def pollReposAndEndBuild = env.poll_repos_and_end_build?.toBoolean() ?: false
 
-def postOpenmpfDockerBuildStatus = env.post_openmpf_docker_build_status?.toBoolean() ?: false
+def postBuildStatusEnabled = env.post_build_status?.toBoolean() ?: false
 def githubAuthToken = env.github_auth_token
 def emailRecipients = env.email_recipients
 
@@ -402,7 +402,7 @@ finally {
         reTagImages(inProgressTag, '', 'failed-build-deleteme')
     }
 
-    if (postOpenmpfDockerBuildStatus) {
+    if (postBuildStatusEnabled) {
         postBuildStatus(openmpfDockerRepo, buildStatus, githubAuthToken)
         for (repo in projectsSubRepos) {
             postBuildStatus(repo, buildStatus, githubAuthToken)
