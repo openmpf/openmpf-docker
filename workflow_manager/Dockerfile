@@ -84,6 +84,7 @@ ENV PATH=$PATH:$MPF_HOME/bin
 ENV JDBC_URL=jdbc:postgresql://db:5432/mpf
 ENV POSTGRES_USER=mpf
 ENV POSTGRES_PASSWORD=password
+ENV JAVA_OPTS='-Dspring.profiles.active=docker'
 
 EXPOSE 8080 8443
 
