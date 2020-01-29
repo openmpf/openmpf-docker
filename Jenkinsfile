@@ -293,18 +293,18 @@ try {
                     sh "docker-compose build $commonBuildArgs --build-arg RUN_TESTS --parallel"
 
                     def composeYaml = readYaml(text: shOutput('docker-compose config'))
-                    addVcsRefLabels(composeYaml, openmpfRepo.sha)
+                    addVcsRefLabels(composeYaml, openmpfRepo, openmpfDockerRepo)
                 }
             }
 
             if (applyCustomConfig) {
                 echo 'APPLYING CUSTOM CONFIGURATION'
                 dir(customConfigRepo.path) {
-                    def wfmShasArg = getVcsRefLabelArg([openmpfRepo, customConfigRepo])
+                    def wfmShasArg = getVcsRefLabelArg([openmpfRepo, openmpfDockerRepo, customConfigRepo])
                     sh "docker build workflow_manager $commonBuildArgs $wfmShasArg " +
                             " -t openmpf_workflow_manager:$inProgressTag"
 
-                    def amqShasArg = getVcsRefLabelArg([openmpfRepo, customConfigRepo])
+                    def amqShasArg = getVcsRefLabelArg([openmpfDockerRepo, customConfigRepo])
                     sh "docker build activemq $commonBuildArgs $amqShasArg " +
                             " -t openmpf_activemq:$inProgressTag"
                 }
@@ -416,7 +416,9 @@ finally {
 } // node(env.jenkins_nodes)
 
 
-def addVcsRefLabels(composeYaml, openmpfRepoSha) {
+def addVcsRefLabels(composeYaml, openmpfRepo, openmpfDockerRepo) {
+    def commonVcsRefs = formatVcsRefs([openmpfRepo, openmpfDockerRepo])
+
     for (def serviceName in composeYaml.services.keySet()) {
         def service = composeYaml.services[serviceName]
         if (!service.build) {
@@ -427,7 +429,7 @@ def addVcsRefLabels(composeYaml, openmpfRepoSha) {
         // workflow-manager and markup have their build context within the openmpf-docker repo, but their content
         // is really based on the openmpf repo.
         if (serviceName == 'workflow-manager' || serviceName == 'markup') {
-            addLabelToImage(service.image, 'org.label-schema.vcs-ref', "openmpf: $openmpfRepoSha")
+            addLabelToImage(service.image, 'org.label-schema.vcs-ref', commonVcsRefs)
             continue
         }
 
@@ -435,7 +437,7 @@ def addVcsRefLabels(composeYaml, openmpfRepoSha) {
         def tld = shOutput "cd '$contextDir' && basename \$(git rev-parse --show-toplevel)"
         def sha = shOutput "cd '$contextDir' && git rev-parse HEAD"
 
-        prependImageLabel(service.image, 'org.label-schema.vcs-ref', "$tld: $sha")
+        prependImageLabel(service.image, 'org.label-schema.vcs-ref', "$tld: $sha, $commonVcsRefs")
     }
 }
 
@@ -454,9 +456,12 @@ def prependImageLabel(imageName, labelName, labelValue) {
     addLabelToImage(imageName, labelName, labelValue)
 }
 
+def formatVcsRefs(repos) {
+    return repos.collect { "$it.name: $it.sha" }.join(', ');
+}
 
 def getVcsRefLabelArg(repos) {
-    def shas = repos.collect { "$it.name: $it.sha" }.join(', ')
+    def shas = formatVcsRefs(repos)
     return " --label org.label-schema.vcs-ref='$shas'"
 }
 
