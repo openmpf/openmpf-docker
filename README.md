@@ -256,7 +256,7 @@ remove the old containers and volumes:
 
 Run the following command to create the new runtime images:
 
-- `docker-compose build --parallel`
+- `docker-compose build`
 
 ### Run OpenMPF using Docker Compose
 
