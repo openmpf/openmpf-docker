@@ -48,7 +48,8 @@ run_user_command() {
 script_name=$(basename "$0")
 
 subcommand=$1
-shift
+# shift will fail if no arguments are provided so we add ||:
+shift ||:
 
 case "$subcommand" in
 list)
