@@ -361,9 +361,6 @@ try {
         withEnv(["TAG=$imageTag", "REGISTRY=$remoteImagePrefix", "COMPOSE_FILE=$runtimeComposeFiles"]) {
 
             docker.withRegistry("http://$dockerRegistryHostAndPort", dockerRegistryCredId) {
-
-                sh 'cd openmpf-docker && docker-compose push'
-
                 sh "docker push '${remoteImagePrefix}openmpf_cpp_component_build:$imageTag'"
                 sh "docker push '${remoteImagePrefix}openmpf_cpp_executor:$imageTag'"
 
@@ -371,6 +368,8 @@ try {
                 sh "docker push '${remoteImagePrefix}openmpf_java_executor:$imageTag'"
 
                 sh "docker push '${remoteImagePrefix}openmpf_python_executor:$imageTag'"
+
+                sh 'cd openmpf-docker && docker-compose push'
             } // docker.withRegistry ...
         } // withEnv...
     } // optionalStage('Push runtime images', ...
