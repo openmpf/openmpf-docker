@@ -68,7 +68,7 @@ ENV PYTHONUNBUFFERED 1
 
 ENV BUILD_DIR /home/mpf/component_build
 
-ENV INSTALL_DIR $MPF_HOME/plugins/plugin
+ENV PLUGINS_DIR $MPF_HOME/plugins
 
 COPY docker-executor-entrypoint.py /scripts/docker-entrypoint.py
 

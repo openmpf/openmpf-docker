@@ -39,7 +39,7 @@ SHELL ["/bin/bash", "-o", "errexit", "-o", "pipefail", "-c"]
 
 ENV MPF_HOME /opt/mpf
 
-ENV COMPONENT_VIRTUALENV $MPF_HOME/plugins/plugin/venv
+ENV COMPONENT_VIRTUALENV $MPF_HOME/plugin-venv
 
 RUN yum update --assumeyes; \
     yum install --assumeyes epel-release \

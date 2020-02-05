@@ -44,7 +44,7 @@ ENV MPF_HOME /opt/mpf
 
 ENV MPF_LOG_PATH $MPF_HOME/share/logs
 
-ENV INSTALL_DIR $MPF_HOME/plugins/plugin
+ENV PLUGINS_DIR $MPF_HOME/plugins
 
 COPY --from=openmpf_build /build-artifacts/java-executor/*.jar $MPF_HOME/jars/
 

@@ -28,28 +28,33 @@
 
 set -o errexit -o pipefail -o xtrace
 
-mkdir --parents "$MPF_HOME/plugins/plugin"
+src_dir="${SRC_DIR:-/home/mpf/component_src}"
 
-if [ -e /home/mpf/component_src/setup.py ]; then
+descriptor_path=$src_dir/plugin-files/descriptor/descriptor.json
+
+if [ ! -e "$descriptor_path" ]; then
+    echo "Error: Expected $descriptor_path to exist. Did you forget to COPY or bind mount your component source code?"
+    exit 3
+fi
+
+component_name=$(python -c "import json; print json.load(open('$descriptor_path'))['componentName']")
+mkdir --parents "$MPF_HOME/plugins/$component_name"
+
+if [ -e "$src_dir/setup.py" ]; then
     echo 'Installing setuptools plugin'
-    cp --recursive /home/mpf/component_src/plugin-files/* "$MPF_HOME/plugins/plugin/"
+    cp --recursive "$src_dir"/plugin-files/* "$MPF_HOME/plugins/$component_name/"
 
 
-    if [ -d /home/mpf/component_src/plugin-files/wheelhouse ]; then
+    if [ -d "$src_dir/plugin-files/wheelhouse" ]; then
         "$COMPONENT_VIRTUALENV/bin/pip" install \
-            --find-links /home/mpf/component_src/plugin-files/wheelhouse \
-            --no-cache-dir /home/mpf/component_src
+            --find-links "$src_dir/plugin-files/wheelhouse" \
+            --no-cache-dir "$src_dir"
     else
         "$COMPONENT_VIRTUALENV/bin/pip" install \
-            --no-cache-dir /home/mpf/component_src
+            --no-cache-dir "$src_dir"
     fi
-elif [ -e /home/mpf/component_src/descriptor/descriptor.json ]; then
-    echo 'Installing basic component'
-    cp --recursive /home/mpf/component_src/* "$MPF_HOME/plugins/plugin"
 else
-    echo 'ERROR: Expected either /home/mpf/component_src/setup.py or'\
-         '/home/mpf/component_src/descriptor/descriptor.json to exist.' \
-         'Did you forget to COPY or bind mount your component source code?'
-    exit 3
+    echo 'Installing basic component'
+    cp --recursive "$src_dir"/* "$MPF_HOME/plugins/$component_name/"
 fi
 

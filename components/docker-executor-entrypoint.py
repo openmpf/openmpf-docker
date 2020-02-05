@@ -62,7 +62,7 @@ def main():
     base_log_path = os.getenv('MPF_LOG_PATH', os.path.join(mpf_home, 'share/logs'))
 
 
-    descriptor_path = os.path.join(mpf_home, 'plugins/plugin/descriptor/descriptor.json')
+    descriptor_path = find_descriptor(mpf_home)
 
     if disable_component_registration:
         print('Component registration disabled because the '
@@ -90,6 +90,22 @@ def main():
 
     print('Executor exit code =', exit_code)
     sys.exit(exit_code)
+
+
+def find_descriptor(mpf_home):
+    glob_pattern = os.path.join(mpf_home, 'plugins/*/descriptor/descriptor.json')
+    glob_matches = glob.glob(glob_pattern)
+    if len(glob_matches) == 1:
+        return glob_matches[0]
+    if len(glob_matches) == 0:
+        raise RuntimeError('Expecting to find a descriptor file at "{}", but it was not there.'
+                           .format(glob_pattern))
+
+    if all(os.path.samefile(glob_matches[0], m) for m in glob_matches[1:]):
+        return glob_matches[0]
+
+    raise RuntimeError('Expected to find one descriptor matching "{}", but the following descriptors were found: {}'
+                       .format(glob_pattern, glob_matches))
 
 
 def wait_for_activemq(activemq_host):
@@ -215,14 +231,11 @@ def start_executor(descriptor, mpf_home, activemq_host, node_name):
     if language in ('c++', 'python'):
         amq_detection_component_path = os.path.join(mpf_home, 'bin/amq_detection_component')
         batch_lib = expand_env_vars(descriptor['batchLibrary'], executor_env)
-        if language == 'c++':
-            # Set to standard location for Docker plugins
-            batch_lib = replace_component_name_in_path(batch_lib, descriptor['componentName'])
         executor_command = (amq_detection_component_path, activemq_broker_uri, batch_lib, queue_name, language)
 
     elif language == 'java':
         executor_jar = find_java_executor_jar(descriptor, mpf_home)
-        component_jar = os.path.join(mpf_home, 'plugins/plugin', descriptor['batchLibrary'])
+        component_jar = os.path.join(mpf_home, 'plugins', descriptor['componentName'], descriptor['batchLibrary'])
         class_path = executor_jar + ':' + component_jar
         executor_command = ('java', '--class-path', class_path,
                             'org.mitre.mpf.component.executor.detection.MPFDetectionMain',
@@ -233,7 +246,7 @@ def start_executor(descriptor, mpf_home, activemq_host, node_name):
     print('Starting component executor with command:', format_command_list(executor_command))
     executor_proc = subprocess.Popen(executor_command,
                                      env=executor_env,
-                                     cwd=os.path.join(mpf_home, 'plugins/plugin'),
+                                     cwd=os.path.join(mpf_home, 'plugins', descriptor['componentName']),
                                      stdin=subprocess.PIPE)
 
     # Handle ctrl-c
@@ -327,14 +340,11 @@ def get_executor_env_vars(mpf_home, descriptor, node_name):
         else:
             executor_env[var_name] = var_value
 
-    mpf_lib_path = os.path.join(mpf_home, 'lib')
-
     ld_lib_path = executor_env.get('LD_LIBRARY_PATH', '')
     if ld_lib_path:
         ld_lib_path += ':'
-        ld_lib_path = replace_component_name_in_path(ld_lib_path, descriptor['componentName'])
 
-    executor_env['LD_LIBRARY_PATH'] = ld_lib_path + mpf_lib_path
+    executor_env['LD_LIBRARY_PATH'] = ld_lib_path + os.path.join(mpf_home, 'lib')
     return executor_env
 
 
@@ -345,10 +355,6 @@ def expand_env_vars(raw_str, env):
     # In the call to substitute the keyword arguments (**env) take precedence.
     return string.Template(raw_str).substitute(defaults, **env)
 
-
-
-def replace_component_name_in_path(path, component_name):
-    return path.replace('/plugins/' + component_name + '/', '/plugins/plugin/')
 
 
 def format_command_list(command):
