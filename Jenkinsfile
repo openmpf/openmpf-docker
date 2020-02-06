@@ -345,6 +345,7 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                 }
 
             } finally {
+                /* DEBUG
                 if (buildContainerId != null) {
                     sh 'docker container rm -f ' + buildContainerId
 
@@ -359,6 +360,7 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                         removeDockerNetwork(buildNetwork)
                     }
                 }
+                */
             }
 
             stage('Apply custom config') {
