@@ -108,7 +108,7 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
     def buildMySqlDataVolumeSuffix = 'mysql_data_' + currentBuild.projectName
     def buildMySqlDataVolume = 'openmpf_' + buildMySqlDataVolumeSuffix
 
-    def buildNetworkSuffix = 'compose_overlay_' + currentBuild.projectName
+    def buildNetworkSuffix = 'overlay_' + currentBuild.projectName
     def buildNetwork = 'openmpf_' + buildNetworkSuffix
 
     try {
@@ -325,7 +325,7 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                         // Update volume and network names
                         sh 'sed -i \'s/shared_data:/' + buildSharedDataVolumeSuffix + ':/g\' docker-compose-test.yml'
                         sh 'sed -i \'s/mysql_data:/' + buildMySqlDataVolumeSuffix + ':/g\' docker-compose-test.yml'
-                        sh 'sed -i \'s/compose_overlay/' + buildNetworkSuffix + '/g\' docker-compose-test.yml'
+                        sh 'sed -i \'s/overlay/' + buildNetworkSuffix + '/g\' docker-compose-test.yml'
 
                         // Run supporting containers in background.
                         sh 'docker-compose -f docker-compose-test.yml up -d' +
