@@ -299,6 +299,13 @@ RUN wget -nv -O /apps/source/config4cpp.tar.gz "http://www.config4star.org/downl
     cd dlib-18.18/dlib && mkdir build && cd build && cmake3 ../ && \
     cmake3 --build . --config Release && make install
 
+# ImageMagick6:
+RUN yum install -y http://rpms.remirepo.net/enterprise/remi-release-7.rpm && \
+    yum --enablerepo=remi install -y ImageMagick6 ImageMagick6-c++ \
+    ImageMagick6-c++-devel ImageMagick6-devel ImageMagick6-libs \
+    libgif libjpeg libpng libtiff zlib ghostscript && \
+    yum clean all && rm -rf /var/cache/yum/*
+
 # Leptonica 1.75.0:
 RUN wget -nv -O /apps/source/tesseract_sources/leptonica-1.75.0.tar.gz \
     "https://github.com/DanBloomberg/leptonica/archive/1.75.0.tar.gz" && \
@@ -324,10 +331,9 @@ RUN cd /apps/source/openalpr_sources && git clone https://github.com/openalpr/op
     make install -j && \
     ldconfig
 
-# ImageMagick6 :
-RUN yum install -y http://rpms.remirepo.net/enterprise/remi-release-7.rpm && \
-    yum --enablerepo=remi install -y ImageMagick6 ImageMagick6-c++ \
-    ImageMagick6-c++-devel ImageMagick6-devel ImageMagick6-libs && \
+# Install locales:
+RUN sed -i "/^override_install_lang/d" /etc/yum.conf && \
+    yum reinstall -y glibc-common && \
     yum clean all && rm -rf /var/cache/yum/*
 
 ################################################################################
