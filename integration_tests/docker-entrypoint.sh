@@ -88,19 +88,15 @@ set +o errexit
 mvn verify -Pjenkins \
     -Dcargo.spring.profiles.active=docker,jenkins \
     -Dspring.profiles.active=docker,jenkins \
-    -Dit.test=ITComponentLifecycle,ITWebREST,ITComponentRegistration \
-    -DfailIfNoTests=false \
+    -Dit.test=ITWebREST \
     -Dtransport.guarantee=NONE \
     -Dweb.rest.protocol=http \
-    -DgitBranch=test \
-    -DgitShortId=123 \
-    -DjenkinsBuildNumber=1 \
     -Dstartup.auto.registration.skip=false \
     -Dexec.skip=true \
     -Dnode.manager.disabled=true \
     $MVN_OPTIONS $EXTRA_MVN_OPTIONS # Intentionally unquoted to allow variables to hold mulitple flags.
 
-mavenRetVal=$?
+maven_exit_code=$?
 
 kill "$descriptor_receiver_pid"
 
@@ -117,16 +113,16 @@ chmod -R 777 /test-reports
 
 # Maven doesn't exit with error when tests in certain Maven modules fail.
 python /scripts/check-test-reports.py /test-reports
-check_reports_ret_val=$?
+check_reports_exit_code=$?
 
-if [ "$mavenRetVal" -ne 0 ]; then
+if [ "$maven_exit_code" -ne 0 ]; then
     echo 'DETECTED MAVEN TEST FAILURE(S)'
-    exit "$mavenRetVal"
+    exit "$maven_exit_code"
 fi
 
-if [ "$check_reports_ret_val" -ne 0 ]; then
+if [ "$check_reports_exit_code" -ne 0 ]; then
     echo 'DETECTED MAVEN TEST FAILURE(S)'
-    exit "$check_reports_ret_val"
+    exit "$check_reports_exit_code"
 fi
 
 echo 'DETECTED MAVEN TESTS PASSED'

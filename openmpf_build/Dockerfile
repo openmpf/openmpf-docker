@@ -73,8 +73,6 @@ WORKDIR /home/mpf/openmpf-projects/openmpf
 ARG RUN_TESTS=false
 
 RUN --mount=type=cache,id=mvn_cache,target=/root/.m2/repository,sharing=private \
-    # Remove markup service
-    echo '{}' > trunk/workflow-manager/src/main/resources/templates/nodeServicesPalette.json; \
     mvn package \
         -DskipTests -Dmaven.test.skip=true -DskipITs \
         -Dcargo.maven.skip=true \

@@ -70,14 +70,9 @@ ENV ACTIVE_MQ_HOST=activemq
 ENV ACTIVE_MQ_BROKER_URI="failover://(tcp://$ACTIVE_MQ_HOST:61616)?jms.prefetchPolicy.all=0&startupMaxReconnectAttempts=1"
 ENV REDIS_HOST=redis
 ENV THIS_MPF_NODE=workflow-manager
-# JGROUPS_TCP_ADDRESS set in docker-entrypoint.sh
-ENV JGROUPS_TCP_PORT=7800
-ENV JGROUPS_FILE_PING_LOCATION=$MPF_HOME/share/nodes
 ENV no_proxy=localhost
 ENV MPF_USER=root
 ENV MPF_LOG_PATH=$MPF_HOME/share/logs
-# Every child node-manager container is treated as a spare node.
-ENV CORE_MPF_NODES=''
 ENV LD_LIBRARY_PATH=/usr/lib64:/opt/apache-tomcat/webapps/workflow-manager/WEB-INF/classes
 ENV PATH=$PATH:$MPF_HOME/bin
 # Default for JDBC configuration. Can be overridden at runtime.
