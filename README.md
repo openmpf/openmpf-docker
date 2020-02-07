@@ -281,6 +281,10 @@ You can reach the Workflow Manager at the following URL:
 
 `http://<ip-address-or-hostname-of-docker-host>:8080/workflow-manager`
 
+After logging in, you can see which components are registered by clicking on 
+the "Configuration" dropdown from the top menu bar and then clicking on 
+"Component Registration".
+
 #### Monitor the Containers
 
 Show the containers running on the current node:

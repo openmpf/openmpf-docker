@@ -246,7 +246,7 @@ To monitor the log of the Workflow Manager, run:
 
 Press ctrl+c when done.
 
-#### Log into the Workflow Manager and Configure Nodes
+#### Log into the Workflow Manager
 
 You can reach the Workflow Manager using IP address or hostname of any of the
 nodes in the swarm. The request will be forwarded to the node that is hosting
@@ -254,29 +254,9 @@ the Workflow Manager container.
 
 `http://<ip-address-or-hostname-of-any-node>:8080/workflow-manager`
 
-Once you have logged in, go to the Nodes web UI and check that the number of
-nodes that are shown corresponds to the number of nodes in the swarm. You should
-see that the name of each node ends in a unique ID. That number corresponds
-to the ID of the Docker container. Optionally, modify the service configuration
-for those nodes if you want.
-
-By default, the following system properties are set in the Workflow Manager
-Docker image:
-
-- `node.auto.config.enabled`=true
-- `node.auto.unconfig.enabled`=true
-- `node.auto.config.num.services.per.component`=1
-
-With these settings, the Workflow Manager will automatically add all available
-nodes to the OpenMPF cluster and configure them with one service per type of
-component. Also, the Workflow Manager will unconfigure nodes when they leave the
-cluster.
-
-If you set the first two properties to false, then when you restart the Docker
-Swarm deployment you will need to manually add nodes to the cluster using the
-Nodes UI and configure them. Note that because Docker creates new containers
-when the deployment is restarted, each with a new unique ID, the service
-configurations are not persisted between deployments.
+After logging in, you can see which components are registered by clicking on 
+the "Configuration" dropdown from the top menu bar and then clicking on 
+"Component Registration".
 
 #### Tearing Down the Stack
 
