@@ -93,6 +93,12 @@ RUN --mount=type=cache,id=mvn_cache,target=/root/.m2/repository,sharing=private 
             ./"$(basename "$test_executable")"; \
             cd /root/mpf-component-build; \
         done; \
+        cd /home/mpf/openmpf-projects/openmpf/trunk/build; \
+        for test_executable in **/test/*Test; do \
+            cd "$(dirname "$test_executable")"; \
+            ./"$(basename "$test_executable")"; \
+            cd /home/mpf/openmpf-projects/openmpf/trunk/build; \
+        done; \
     fi; \
     rm --recursive /root/mpf-component-build;
 
