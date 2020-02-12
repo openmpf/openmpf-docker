@@ -70,8 +70,6 @@ ENV MPF_HOME /home/mpf/openmpf-projects/openmpf/trunk/install
 
 WORKDIR /home/mpf/openmpf-projects/openmpf
 
-ARG RUN_TESTS=false
-
 RUN --mount=type=cache,id=mvn_cache,target=/root/.m2/repository,sharing=private \
     mvn package \
         -DskipTests -Dmaven.test.skip=true -DskipITs \
@@ -82,26 +80,21 @@ RUN --mount=type=cache,id=mvn_cache,target=/root/.m2/repository,sharing=private 
         -Dcomponents.build.make.jobs="$(nproc)"; \
     mkdir --parents /build-artifacts/mvn/mpf; \
     # Move mpf artifacts out of Maven repo so they won't be in the cache mount when another build is started
-    mv /root/.m2/repository/org/mitre/mpf /build-artifacts/mvn; \
+    mv /root/.m2/repository/org/mitre/mpf /build-artifacts/mvn;
+
+ARG RUN_TESTS=false
+RUN \[ "${RUN_TESTS,,}" = true ] || exit 0; \
     # Use nullglob to avoid entering for loop when no glob matches.
     # Use globstar to enable ** globs.
     shopt -s nullglob globstar; \
-    if [ "${RUN_TESTS,,}" = true ]; then \
-        cd /root/mpf-component-build; \
+    for build_root in /root/mpf-component-build /home/mpf/openmpf-projects/openmpf/trunk/build; do \
+        cd "$build_root"; \
         for test_executable in **/test/*Test; do \
             cd "$(dirname "$test_executable")"; \
             ./"$(basename "$test_executable")"; \
-            cd /root/mpf-component-build; \
+            cd "$build_root"; \
         done; \
-        cd /home/mpf/openmpf-projects/openmpf/trunk/build; \
-        for test_executable in **/test/*Test; do \
-            cd "$(dirname "$test_executable")"; \
-            ./"$(basename "$test_executable")"; \
-            cd /home/mpf/openmpf-projects/openmpf/trunk/build; \
-        done; \
-    fi; \
-    rm --recursive /root/mpf-component-build;
-
+    done;
 
 WORKDIR /build-artifacts
 
