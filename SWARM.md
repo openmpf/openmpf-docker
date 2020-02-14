@@ -273,9 +273,9 @@ following command from within the `openmpf-docker` directory:
 
 This preserves all of the Docker volumes.
 
-The next time you deploy OpenMPF, all of the previous Node Manager logs will
-appear in the Logs web UI. To reduce clutter, consider running the following
-command to archive and remove the old Node Manager log files, where
+The next time you deploy OpenMPF, all of the previous component container logs 
+will appear in the Logs web UI. To reduce clutter, consider running the 
+following command to archive and remove the old component log files, where
 `<output-dir>` is a directory on the swarm manager host:
 
 - `./scripts/docker-swarm-logs.sh --node-manager-logs --archive <output-dir> --remove-originals`

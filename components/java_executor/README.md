@@ -93,8 +93,9 @@ FROM openmpf_java_executor:latest
 # Copy only the files the component will need at runtime from the build stage. 
 # This line also copies over the jar dependencies. 
 # One of the things that the `mvn package` command does is collect the jar dependencies.
-COPY --from=build_component /home/mpf/component_src/target/plugin-packages/MyFaceDetection/MyFaceDetection \
-                            $INSTALL_DIR
+COPY --from=build_component \
+    /home/mpf/component_src/target/plugin-packages/MyFaceDetection/MyFaceDetection \
+    $PLUGINS_DIR/MyFaceDetection
 ```
 
 Your Dockerfile may use more than the two stages shown above, but the final stage in the Dockerfile must be the

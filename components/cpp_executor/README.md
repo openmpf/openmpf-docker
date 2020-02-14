@@ -88,10 +88,12 @@ ENV COMPONENT_LOG_NAME my-face-detection.log
 # Copy only the files the component will need at runtime from the build stage. 
 # This line also copies over the libraries that your component links to. 
 # Note that running build-component.sh in the first stage collected those libraries for you.
-COPY --from=build_component $BUILD_DIR/plugin/MyFaceDetection $INSTALL_DIR
+COPY --from=build_component $BUILD_DIR/plugin/MyFaceDetection \
+                            $PLUGINS_DIR/MyFaceDetection
 
 # Copy over the library containing your component's compiled code.
-COPY --from=build_component $BUILD_DIR/libmpfMyFaceDetection.so $INSTALL_DIR/lib
+COPY --from=build_component $BUILD_DIR/libmpfMyFaceDetection.so \
+                            $PLUGINS_DIR/MyFaceDetection/lib/
 ```
 
 Your Dockerfile may use more than the two stages shown above, but the final stage in the Dockerfile must be the

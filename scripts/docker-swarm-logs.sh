@@ -30,8 +30,8 @@ set -Ee
 
 printUsage() {
   echo "Usages:"
-  echo "docker-swarm-logs.sh <--all-logs|--node-manager-logs> <--archive <output-dir>|--no-archive> [--remove-originals]"
-  exit -1
+  echo "docker-swarm-logs.sh <--all-logs|--component-logs> <--archive <output-dir>|--no-archive> [--remove-originals]"
+  exit 2
 }
 
 finally() {
@@ -42,8 +42,8 @@ finally() {
 parseLogType() {
     if [ "$1" = "--all-logs" ]; then
         allLogs=1
-    elif [ "$1" = "--node-manager-logs" ]; then
-        nodeManagerLogs=1
+    elif [ "$1" = "--component-logs" ]; then
+        componentLogs=1
     else
         printUsage
     fi
@@ -65,7 +65,7 @@ getTimestamp() {
 }
 
 allLogs=0
-nodeManagerLogs=0
+componentLogs=0
 outputDir=""
 removeOriginals=0
 
@@ -90,16 +90,16 @@ trap finally EXIT
 
 # Create a helper container that mounts the shared volume. Use an image that we know exists.
 # The exact image is not important.
-docker run -d --rm --entrypoint bash -v openmpf_shared_data:/data --name openmpf_helper redis -c "sleep infinity" > /dev/null
+docker run -d --rm -v openmpf_shared_data:/data --name openmpf_helper centos:7 sleep infinity > /dev/null
 
-if [ "$nodeManagerLogs" = 1 ]; then
-    findNameOption="-name 'node_manager_id_*'"
+if [ "$componentLogs" = 1 ]; then
+    findNameOption="-name '*_id_*'"
 fi
 
 logDirs=()
 while IFS=  read -r -d $'\0'; do
     logDirs+=("$REPLY")
-done < <(docker exec openmpf_helper bash -c "find /data/logs -type d -mindepth 1 -maxdepth 1 $findNameOption -print0")
+done < <(docker exec openmpf_helper find /data/logs -type d -mindepth 1 -maxdepth 1 $findNameOption -print0)
 
 if [ "${#logDirs[@]}" = 0 ]; then
     if [ "$allLogs" = 1 ]; then
@@ -119,8 +119,8 @@ if [ ! -z  "$outputDir" ]; then
     getTimestamp timestamp
     if [ "$allLogs" = 1 ]; then
         archiveDir="$outputDir/openmpf-logs.$timestamp"
-    elif [ "$nodeManagerLogs" = 1 ]; then
-        archiveDir="$outputDir/openmpf-node-manager-logs.$timestamp"
+    elif [ "$componentLogs" = 1 ]; then
+        archiveDir="$outputDir/openmpf-component-logs.$timestamp"
     fi
 
     mkdir -p "$archiveDir"
@@ -141,5 +141,5 @@ fi
 if [ "$removeOriginals" = 1 ]; then
     echo
     echo "Removing the original log directories from the shared volume."
-    docker exec openmpf_helper bash -c "find /data/logs -type d -mindepth 1 -maxdepth 1 $findNameOption -exec rm -rf {} \;"
+    docker exec openmpf_helper find /data/logs -type d -mindepth 1 -maxdepth 1 $findNameOption -exec rm -rf {} \;
 fi
