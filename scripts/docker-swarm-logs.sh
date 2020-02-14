@@ -24,122 +24,50 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  #
 # See the License for the specific language governing permissions and       #
 # limitations under the License.                                            #
-#############################################################################
+############################################################################
 
-set -Ee
+set -o errexit -o pipefail
 
 printUsage() {
-  echo "Usages:"
-  echo "docker-swarm-logs.sh <--all-logs|--component-logs> <--archive <output-dir>|--no-archive> [--remove-originals]"
-  exit 2
+    echo "Usage: $0 [--rm] [-o <output-dir>]"
+    echo "    --rm removes logs from the shared data volume."
+    echo "    -o stores the logs in a .tar.gz on the host file system."
+    exit 1
 }
 
-finally() {
-    docker rm -f openmpf_helper > /dev/null
-}
 
-# parseLogType(1: logType)
-parseLogType() {
-    if [ "$1" = "--all-logs" ]; then
-        allLogs=1
-    elif [ "$1" = "--component-logs" ]; then
-        componentLogs=1
-    else
-        printUsage
-    fi
-}
-
-# parseRemoveOriginals(1: option)
-parseRemoveOriginals() {
-    if [ "$1" = "--remove-originals" ]; then
-        removeOriginals=1
-    else
-        printUsage
-    fi
-}
-
-# getTimestamp(1: retval)
-getTimestamp() {
-    # Use ISO-8601 timestamp. Replace colon with period since colon may cause issues during extraction.
-    eval "$1='$(date --iso-8601=s | sed 's/:/./g')'"
-}
-
-allLogs=0
-componentLogs=0
-outputDir=""
-removeOriginals=0
-
-if [ $# -eq 3 ] || [ $# -eq 4 ]; then
-    parseLogType "$1"
-    if [ "$2" = "--archive" ]; then
-        outputDir="$3"
-        if [ $# -eq 4 ]; then
-            parseRemoveOriginals "$4"
-        fi
-    elif [ "$2" = "--no-archive" ]; then
-        parseRemoveOriginals "$3"
-    else
-        printUsage
-    fi
-else
+if [ $# -lt 1 ] || [ $# -gt 3 ]; then
     printUsage
 fi
 
-# Ensure that we clean up the helper container that we'll be creating next.
-trap finally EXIT
-
-# Create a helper container that mounts the shared volume. Use an image that we know exists.
-# The exact image is not important.
-docker run -d --rm -v openmpf_shared_data:/data --name openmpf_helper centos:7 sleep infinity > /dev/null
-
-if [ "$componentLogs" = 1 ]; then
-    findNameOption="-name '*_id_*'"
+if [ "$1" == '--rm' ]; then
+    remove_logs=true
+    shift ||:
 fi
 
-logDirs=()
-while IFS=  read -r -d $'\0'; do
-    logDirs+=("$REPLY")
-done < <(docker exec openmpf_helper find /data/logs -type d -mindepth 1 -maxdepth 1 $findNameOption -print0)
-
-if [ "${#logDirs[@]}" = 0 ]; then
-    if [ "$allLogs" = 1 ]; then
-        echo "No log files found in the shared directory."
-    else
-        echo "No log files in the shared directory match the specified criteria."
+if [ "$1" == -o ]; then
+    if [ ! "$2" ]; then
+        echo 'A directory must be provided when using -o'
+        printUsage
     fi
-    exit 0
+    output_dir=$2
 fi
 
-echo "Found the following log directories in the shared volume:"
-for logDir in "${logDirs[@]}"; do
-    echo "$logDir"
-done
-
-if [ ! -z  "$outputDir" ]; then
-    getTimestamp timestamp
-    if [ "$allLogs" = 1 ]; then
-        archiveDir="$outputDir/openmpf-logs.$timestamp"
-    elif [ "$componentLogs" = 1 ]; then
-        archiveDir="$outputDir/openmpf-component-logs.$timestamp"
-    fi
-
-    mkdir -p "$archiveDir"
-
-    echo
-    echo "Copying the log directories from the shared volume."
-    for logDir in "${logDirs[@]}"; do
-        docker cp openmpf_helper:"$logDir" "$archiveDir"
-    done
-
-    tar -czf "$archiveDir.tar.gz" -C "$(dirname $archiveDir)" "$(basename $archiveDir)"
-    rm -rf "$archiveDir"
-
-    echo
-    echo "Generated $archiveDir.tar.gz"
+if [ ! "$remove_logs" ] && [ ! "$output_dir" ]; then
+    printUsage
 fi
 
-if [ "$removeOriginals" = 1 ]; then
-    echo
-    echo "Removing the original log directories from the shared volume."
-    docker exec openmpf_helper find /data/logs -type d -mindepth 1 -maxdepth 1 $findNameOption -exec rm -rf {} \;
+container_id=$(docker create -v openmpf_shared_data:/data centos:7 sh -c 'rm -r /data/logs/*')
+trap 'docker rm -f $container_id > /dev/null' EXIT
+
+if [ "$output_dir" ]; then
+    # Use ISO-8601 timestamp. Replace colon with period since colon may cause issues during extraction.
+    timestamp=$(date --iso-8601=s | sed 's/:/./g')
+    archive_name="$output_dir/openmpf-logs.$timestamp.tar.gz"
+
+    docker cp "${container_id}:/data/logs" - | gzip > "$archive_name"
+fi
+
+if [ "$remove_logs" ]; then
+    docker start -a "$container_id"
 fi
