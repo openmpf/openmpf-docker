@@ -49,7 +49,8 @@ RUN yum update --assumeyes; \
     yum install --assumeyes ffmpeg libSM libXrender python-pip; \
     yum clean all; \
     rm --recursive /var/cache/yum/*; \
-    pip install --no-cache-dir --upgrade pip virtualenv; \
+    pip install --no-cache-dir --upgrade pip; \
+    pip install --no-cache-dir --upgrade virtualenv; \
     virtualenv "$COMPONENT_VIRTUALENV";
 
 

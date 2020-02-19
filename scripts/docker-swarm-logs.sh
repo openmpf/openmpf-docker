@@ -36,28 +36,34 @@ printUsage() {
 }
 
 
-if [ $# -lt 1 ] || [ $# -gt 3 ]; then
-    printUsage
-fi
-
-if [ "$1" == '--rm' ]; then
-    remove_logs=true
-    shift ||:
-fi
-
-if [ "$1" == -o ]; then
-    if [ ! "$2" ]; then
-        echo 'A directory must be provided when using -o'
+while [ "$1" ]; do
+    case "$1" in
+    --rm)
+        remove_logs=true
+        ;;
+    -o)
+        if [ ! "$2" ]; then
+            echo 'A directory must be provided when using -o'
+            printUsage
+        fi
+        output_dir=$2
+        shift
+        ;;
+    *)
+        echo "Unknown option: $1"
         printUsage
-    fi
-    output_dir=$2
-fi
+        ;;
+    esac
+    shift
+done
 
 if [ ! "$remove_logs" ] && [ ! "$output_dir" ]; then
     printUsage
 fi
 
-container_id=$(docker create -v openmpf_shared_data:/data centos:7 sh -c 'rm -r /data/logs/*')
+# Create a helper container that mounts the shared volume. Use an image that we know exists on the user's machine.
+# The exact image is not important.
+container_id=$(docker create -v openmpf_shared_data:/data --entrypoint sh redis:alpine -c 'rm -r /data/logs/*')
 trap 'docker rm -f $container_id > /dev/null' EXIT
 
 if [ "$output_dir" ]; then
