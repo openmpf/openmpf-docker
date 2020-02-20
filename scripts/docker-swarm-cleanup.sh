@@ -33,7 +33,7 @@
 printUsage() {
   echo "Usages:"
   echo "docker-swarm-cleanup.sh [--ask-pass] <--db-volume|--all-volumes|--no-volumes> [--remove-shared-data]"
-  exit -1
+  exit 1
 }
 
 # parseVolumeType(1: volumeType)
@@ -153,7 +153,7 @@ fi
 scriptPath="$(dirname $0)/docker-swarm-clean-shared-volume.sh"
 if [ ! -f "$scriptPath" ]; then
   echo "Could not find \"$scriptPath\". Aborting."
-  exit -1
+  exit 1
 fi
 
 if [ "$askPass" == 1 ]; then
@@ -184,10 +184,10 @@ forAllNodes "$nodeIds" cleanupContainers
 echo
 if [ "$removeSharedData" == 1 ]; then
   # Remove everything.
-  sh "$scriptPath" || exit -1 # abort if script fails
+  sh "$scriptPath" || exit 1 # abort if script fails
 else
   # Minimally, remove the "nodes" directory.
-  sh "$scriptPath" "nodes" || exit -1 # abort if script fails
+  sh "$scriptPath" "nodes" || exit 1 # abort if script fails
 fi
 echo
 

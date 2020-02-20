@@ -36,7 +36,7 @@ printUsage() {
   echo "Usages:"
   echo "docker-swarm-remove-images.sh [--ask-pass] [--dry-run] <--partial|--exact> -n <image-name>"
   echo "docker-swarm-remove-images.sh [--ask-pass] [--dry-run] <--partial|--exact> -t <image-tag>"
-  exit -1
+  exit 1
 }
 
 askPass=0
