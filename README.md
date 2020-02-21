@@ -202,6 +202,9 @@ Run the commands in this section from within the `openmpf-docker/components` dir
 Run the following command to create the OpenMPF Python component executor image:
 - `DOCKER_BUILDKIT=1 docker build . -f python_executor/Dockerfile -t openmpf_python_executor`
 
+Run the following command to create the OpenMPF Python component build image:
+- `DOCKER_BUILDKIT=1 docker build . -f python_component_build/Dockerfile -t openmpf_python_component_build`
+
 Run the following command to create the OpenMPF C++ component build image:
 - `DOCKER_BUILDKIT=1 docker build . -f cpp_component_build/Dockerfile -t openmpf_cpp_component_build`
 
