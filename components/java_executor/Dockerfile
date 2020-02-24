@@ -34,8 +34,7 @@ FROM centos:7
 SHELL ["/bin/bash", "-o", "errexit", "-o", "pipefail", "-c"]
 
 RUN yum update --assumeyes; \
-    yum install --assumeyes https://download1.rpmfusion.org/free/el/rpmfusion-free-release-7.noarch.rpm \
-                https://download1.rpmfusion.org/nonfree/el/rpmfusion-nonfree-release-7.noarch.rpm; \
+    yum install --assumeyes https://download1.rpmfusion.org/free/el/rpmfusion-free-release-7.noarch.rpm; \
     yum install --assumeyes java-11-openjdk ffmpeg; \
     yum clean all; \
     rm --recursive /var/cache/yum/*;
