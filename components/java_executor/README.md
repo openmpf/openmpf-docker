@@ -104,7 +104,7 @@ Your Dockerfile may use more than the two stages shown above, but the final stag
 
 ### Build your component image
 Run the following command, replacing `<component_name>` with the name of your component and `<component_path>` with the
-path on the host file system to the component projects's top level directory:
+path on the host file system to the component project's top level directory:
 ```bash
 docker build -t <component_name> <component_path>
 ```

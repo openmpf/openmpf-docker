@@ -2,7 +2,8 @@ Overview
 ==================
 The purpose of this image is to enable a developer to write a Python component for OpenMPF that can be encapsulated
 within a Docker container. This isolates the execution environment from the rest of OpenMPF,
-thereby providing greater freedom and portability.
+thereby providing greater freedom and portability. The `openmpf_python_component_build` and `openmpf_python_executor` 
+base images are designed to work together in a multi-stage Docker build.
 
 This image will:
 
@@ -10,96 +11,94 @@ This image will:
 - Execute your code using the OpenMPF component executor binary.
 - Tail log files so that they appear in the terminal window where you ran `docker run ..`
   to start your component container.
-
-You have two options:
-
-1\. Create a Dockerfile in your Python component project.
-  - Do this if you need to install custom dependencies in the image to run your component.
-  - This Dockerfile extends from the base `openmpf_python_executor` image.
-  - This approach will pull in your component source code via the Docker build context
-    with a `COPY` command when you run `docker build …`.
-  - This approach will install your component in the image at build time.
-    In the end you will have a Docker image for your component.
-
-2\. Use the base `openmpf_python_executor` image without your own Dockerfile.
-  - This is a simpler option if you don’t need to install custom dependencies.
-  - This approach will pull in your component source from a bind mount
-    that you must specify when you execute `docker run …`.
-  - This approach will install your component in the container as part of the Docker entry point at runtime.
-    Your code only ever exists in the container. This approach will not generate a Docker image for your component.
-  - You can think of the `openmpf_python_executor` image as a tool that you use to build and run your code.
-
-Each approach installs your component the same way,
-but the former does it at build time and the latter does it at runtime.
-
-
-How to build the `openmpf_python_executor` base image
+  
+  
+How to build the `openmpf_python_component_build` and `openmpf_python_executor` base images
 ======================================================
 ```bash
 cd /path/to/openmpf-docker/components
+DOCKER_BUILDKIT=1 docker build . -f python_component_build/Dockerfile -t openmpf_python_component_build
 DOCKER_BUILDKIT=1 docker build . -f python_executor/Dockerfile -t openmpf_python_executor
 ```
 
 
 How to use this image
 ===========================
-You can either create a Dockerfile in your Python component project or use this image directly using a bind mount.
-> **NOTE:** The following `docker run ...` commands use the default values for the `WFM_USER` and `WFM_PASSWORD`.
-> If the default admin user has been changed, you will need to change `WFM_USER` and `WFM_PASSWORD` to the credentials
-> that an admin user uses to log in to the Workflow Manager web UI.
+The following steps assume you are using the default project structure for OpenMPF Python components. Documentation
+for Python components can be found [here](https://openmpf.github.io/docs/site/Python-Batch-Component-API). 
 
-Create a Dockerfile in your Python component project
-----------------------------
+The [EastTextDetection component](https://github.com/openmpf/openmpf-components/tree/master/python/EastTextDetection) 
+is a good example of a Dockerized Python component.
+
+### Create a Dockerfile in your Python component project
 You should put your Dockerfile in the component project's top level directory. For example:
 ```
-PythonOcvComponent
+MyFaceDetection
 ├── Dockerfile
-├── setup.py
-├── ocv_component
-│   ├── ocv_component.py
-│   ├── __init__.py
-│   └── models
-│       ├── animal_names.txt
-│       ├── animal_network.bin
-│       └── models.ini
-└── plugin-files
-    └── descriptor
-        └── descriptor.json
+├── my_face_detection
+│   ├── __init__.py
+│   └── my_face_detection.py
+├── plugin-files
+│   └── descriptor
+│       └── descriptor.json
+└── setup.py
 ```
-
 
 The minimal Dockerfile is:
 ```dockerfile
-FROM openmpf_python_executor:latest
+# In first stage of the build we extend the openmpf_python_component_build base image.
+FROM openmpf_python_component_build:latest as build_component
 
+# If your component has external dependencies, you would add the commands necessary to download 
+# or build the dependencies here. Adding the dependencies prior the copying in your source code 
+# allows you to take advantage of the Docker build cache to avoid re-installing the dependencies 
+# every time your source code changes.
+# e.g. RUN pip install --no-cache-dir 'opencv-python>=3.4.7' 'tensorflow>=2.1.0'
+
+# Copy in your source code
 COPY . .
 
+# Install your component in to your component's virtualenv (located at $COMPONENT_VIRTUALENV)
+# The [install-component.sh](../python_component_build/scripts/install-component.sh) 
+# script is provided by the openmpf_python_component_build base image.
 RUN install-component.sh
-```
 
-However, it is recommended that you set up your environment and install any dependencies prior to the
-`COPY . .` command. Putting steps before `COPY` allows you to avoid re-running those commands
-every time you modify your source code. For example:
-```dockerfile
+# You optionally may want to run unit test here, or wherever is appropriate for your Dockerfile. 
+# The [EastTextDetection component's Dockerfile](https://github.com/openmpf/openmpf-components/blob/master/python/EastTextDetection/Dockerfile) 
+# shows one way of setting up unit tests, but you can do it in whatever way you see fit. 
+
+
+# In the second stage of the build we extend the openmpf_python_executor base image
 FROM openmpf_python_executor:latest
 
-# Replace with your actual dependencies
-RUN pip install --no-cache-dir 'opencv-python>=3.4.7' 'tensorflow'
 
-COPY . .
+# If your component has runtime dependencies that are not pip packages, 
+# you should install them here. Adding the dependencies prior to copying your component's 
+# build artifacts allows you to take advantage of the Docker build cache to avoid re-installing
+# the dependencies every time your source code changes.
 
-RUN install-component.sh
+# Copy your component's virtualenv from the build stage.
+# The install-component.sh script from the build stage installed 
+# your plugin code and it's pip dependencies in the 
+# virtualenv located at $COMPONENT_VIRTUALENV
+COPY --from=build_component $COMPONENT_VIRTUALENV $COMPONENT_VIRTUALENV
 
-# Only required if you want your component's log file to be written to stdout.
-# Can also be passed in using -e during `docker run ...`
-# Replace with your component's log file name
-ENV COMPONENT_LOG_NAME python-ocv-test.log
+# This copies over any files in your plugin's plugin-files directory.
+# Minimally, this will include your component's descriptor.
+COPY --from=build_component $PLUGINS_DIR/EastTextDetection $PLUGINS_DIR/EastTextDetection
+
+# Set the COMPONENT_LOG_NAME environment variable so that your component's log 
+# file can be printed to standard out when running the image. 
+ENV COMPONENT_LOG_NAME east-text-detection.log
 ```
 
+Your Dockerfile may use more than the two stages shown above, but the final stage in the Dockerfile must be the
+`FROM openmpf_python_executor:latest` stage.
 
-### Build image for your component
+
+### Build your component image
 Run the following command, replacing `<component_name>` with the name of your component and `<component_path>` with the
-path on the host file system to the component projects's top level directory:
+path on the host file system to the component project's top level directory:
 ```bash
 docker build -t <component_name> <component_path>
 ```
@@ -107,77 +106,14 @@ docker build -t <component_name> <component_path>
 
 ### Run your component
 1. Start OpenMPF
-2. Run the following command replacing `<component_name>` with the value provided in the build step.
+2. Run the following command replacing `<component_name>` with the value provided in the build step. 
+   If your OpenMPF deployment uses non-default credentials the `WFM_USER` and `WFM_PASSWORD` values will need to be 
+   modified.
 ```bash
-docker run --rm -it \
+docker run \
     --network openmpf_default \
     -v openmpf_shared_data:/opt/mpf/share \
     -e WFM_USER=admin \
     -e WFM_PASSWORD=mpfadm \
     <component_name>
-```
-
-
-Use this image without your own Dockerfile
----------------------------
-1. Start OpenMPF
-2. Run the following command replacing `<component_log_name>` with the name of the file that your component logs to
-   and `<component_path>` with the path on host file system to the component project's top level directory.
-```bash
-docker run --rm -it \
-    --network openmpf_default \
-    -v openmpf_shared_data:/opt/mpf/share \
-    -e WFM_USER=admin \
-    -e WFM_PASSWORD=mpf_adm \
-    -e COMPONENT_LOG_NAME=<component_log_name> \
-    -v "<component_path>:/home/mpf/component_src:ro" \
-    openmpf_python_executor
-```
-
-
-How to use this image with a non-Docker deployment of OpenMPF
-----------------------------------------------
-Additional command line arguments need to be added to the `docker run ...` command in order to use
-`openmpf_python_executor` with a non-Docker deployment.
-
-If you are using your own Dockerfile, to start your component run the following command replacing
-`<activemq_hostname>`, `<wfm_base_url>`, and `<component_name>` with appropriate values.
-```bash
-docker run --rm -it \
-    --network host \
-    -e ACTIVE_MQ_HOST=<activemq_hostname> \
-    -e WFM_BASE_URL=<wfm_base_url> \
-    -e WFM_USER=admin \
-    -e WFM_PASSWORD=mpfadm \
-    -v "$MPF_HOME/share/remote-media:$MPF_HOME/share/remote-media" \
-    -v "$MPF_HOME/share:/opt/mpf/share" \
-    <component_name>
-```
-As an example, if you are running ActiveMQ and Workflow Manager on your local machine and you want to run the
-`python_ocv_component` component, you would run the following command.
-```bash
-docker run --rm -it \
-    --network host \
-    -e ACTIVE_MQ_HOST=localhost \
-    -e WFM_BASE_URL=http://localhost:8080/workflow-manager \
-    -e WFM_USER=admin \
-    -e WFM_PASSWORD=mpfadm \
-    -v "$MPF_HOME/share/remote-media:$MPF_HOME/share/remote-media" \
-    -v "$MPF_HOME/share:/opt/mpf/share" \
-    python_ocv_component
-```
-
-If you are not using your own Dockerfile the command would be:
-```bash
-docker run --rm -it \
-    --network host \
-    -e ACTIVE_MQ_HOST=<activemq_hostname> \
-    -e WFM_BASE_URL=<wfm_base_url> \
-    -e WFM_USER=admin \
-    -e WFM_PASSWORD=mpfadm \
-    -e COMPONENT_LOG_NAME=<component_log_name> \
-    -v "<component_path>:/home/mpf/component_src:ro" \
-    -v "$MPF_HOME/share/remote-media:$MPF_HOME/share/remote-media" \
-    -v "$MPF_HOME/share:/opt/mpf/share" \
-    openmpf_python_executor
 ```
