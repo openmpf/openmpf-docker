@@ -58,12 +58,12 @@ FROM openmpf_python_component_build:latest as build_component
 # Copy in your source code
 COPY . .
 
-# Install your component in to your component's virtualenv (located at $COMPONENT_VIRTUALENV)
+# Install your component in to your component's virtualenv (located at $COMPONENT_VIRTUALENV).
 # The [install-component.sh](../python_component_build/scripts/install-component.sh) 
 # script is provided by the openmpf_python_component_build base image.
 RUN install-component.sh
 
-# You optionally may want to run unit test here, or wherever is appropriate for your Dockerfile. 
+# You optionally may want to run unit tests here, or wherever is appropriate for your Dockerfile. 
 # The [EastTextDetection component's Dockerfile](https://github.com/openmpf/openmpf-components/blob/master/python/EastTextDetection/Dockerfile) 
 # shows one way of setting up unit tests, but you can do it in whatever way you see fit. 
 
@@ -79,17 +79,17 @@ FROM openmpf_python_executor:latest
 
 # Copy your component's virtualenv from the build stage.
 # The install-component.sh script from the build stage installed 
-# your plugin code and it's pip dependencies in the 
-# virtualenv located at $COMPONENT_VIRTUALENV
+# your plugin code and its pip dependencies in the 
+# virtualenv located at $COMPONENT_VIRTUALENV.
 COPY --from=build_component $COMPONENT_VIRTUALENV $COMPONENT_VIRTUALENV
 
 # This copies over any files in your plugin's plugin-files directory.
 # Minimally, this will include your component's descriptor.
-COPY --from=build_component $PLUGINS_DIR/EastTextDetection $PLUGINS_DIR/EastTextDetection
+COPY --from=build_component $PLUGINS_DIR/MyFaceDetection $PLUGINS_DIR/MyFaceDetection
 
 # Set the COMPONENT_LOG_NAME environment variable so that your component's log 
 # file can be printed to standard out when running the image. 
-ENV COMPONENT_LOG_NAME east-text-detection.log
+ENV COMPONENT_LOG_NAME my-face-detection.log
 ```
 
 Your Dockerfile may use more than the two stages shown above, but the final stage in the Dockerfile must be the
@@ -102,6 +102,7 @@ path on the host file system to the component project's top level directory:
 ```bash
 docker build -t <component_name> <component_path>
 ```
+For example: `docker build -t MyFaceDetection /path/to/MyFaceDetection`.
 
 
 ### Run your component
