@@ -28,25 +28,102 @@
 
 version: '3.7'
 
+x-common-env-vars:
+  &common-env-vars
+  WFM_USER: ${WFM_USER}
+  WFM_PASSWORD: ${WFM_PASSWORD}
+
 x-detection-component-base:
   &detection-component-base
-  environment:
-    - WFM_USER=${WFM_USER}
-    - WFM_PASSWORD=${WFM_PASSWORD}
+  environment: *common-env-vars
   depends_on:
     - workflow-manager
   volumes:
     - shared_data:/opt/mpf/share
-  networks:
-    - overlay
+  deploy:
+    mode: replicated
+    replicas: 2
 
 services:
+  darknet-detection:
+    <<: *detection-component-base
+    image: ${REGISTRY}openmpf_darknet_detection:${TAG}
+    build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/cpp/DarknetDetection
+
+  dlib-face-detection:
+    <<: *detection-component-base
+    image: ${REGISTRY}openmpf_dlib_face_detection:${TAG}
+    build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/cpp/DlibFaceDetection
+
   east-text-detection:
     <<: *detection-component-base
-    image: ${REGISTRY}openmpf_east-text-detection:${TAG}
+    image: ${REGISTRY}openmpf_east_text_detection:${TAG}
     build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/python/EastTextDetection
     deploy:
       mode: global
       resources:
         limits:
           cpus: "2.0"
+
+  mog-motion-detection:
+    <<: *detection-component-base
+    image: ${REGISTRY}openmpf_mog_motion_detection:${TAG}
+    build:
+      context: ${OPENMPF_PROJECTS_PATH}/openmpf-contrib-components/cpp/motion
+      dockerfile: MogMotionDetection/Dockerfile
+
+  oalpr-license-plate-text-detection:
+    <<: *detection-component-base
+    image: ${REGISTRY}openmpf_oalpr_license_plate_text_detection:${TAG}
+    build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/cpp/OalprLicensePlateTextDetection
+
+  ocv-dnn-detection:
+    <<: *detection-component-base
+    image: ${REGISTRY}openmpf_ocv_dnn_detection:${TAG}
+    build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/cpp/OcvDnnDetection
+
+  ocv-face-detection:
+    <<: *detection-component-base
+    image: ${REGISTRY}openmpf_ocv_face_detection:${TAG}
+    build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/cpp/OcvFaceDetection
+
+  ocv-person-detection:
+    <<: *detection-component-base
+    image: ${REGISTRY}openmpf_ocv_person_detection:${TAG}
+    build: ${OPENMPF_PROJECTS_PATH}/openmpf-contrib-components/cpp/OcvPersonDetection
+
+  scene-change-detection:
+    <<: *detection-component-base
+    image: ${REGISTRY}openmpf_scene_change_detection:${TAG}
+    build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/cpp/SceneChangeDetection
+
+  sphinx-speech-detection:
+    <<: *detection-component-base
+    image: ${REGISTRY}openmpf_sphinx_speech_detection:${TAG}
+    build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/java/SphinxSpeechDetection
+    environment:
+      <<: *common-env-vars
+      JAVA_TOOL_OPTIONS: -Xmx1g  # limit Java heap size to 1GB
+
+  subsense-motion-detection:
+    <<: *detection-component-base
+    image: ${REGISTRY}openmpf_subsense_motion_detection:${TAG}
+    build:
+      context: ${OPENMPF_PROJECTS_PATH}/openmpf-contrib-components/cpp/motion
+      dockerfile: SubsenseMotionDetection/Dockerfile
+
+  tesseract-ocr-text-detection:
+    <<: *detection-component-base
+    image: ${REGISTRY}openmpf_tesseract_ocr_text_detection:${TAG}
+    build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/cpp/TesseractOCRTextDetection
+
+  tika-image-detection:
+    <<: *detection-component-base
+    image: ${REGISTRY}openmpf_tika_image_detection:${TAG}
+    build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/java/TikaImageDetection
+
+  tika-text-detection:
+    <<: *detection-component-base
+    image: ${REGISTRY}openmpf_tika_text_detection:${TAG}
+    build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/java/TikaTextDetection
+

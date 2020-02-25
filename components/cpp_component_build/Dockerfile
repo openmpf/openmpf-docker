@@ -24,29 +24,50 @@
 # limitations under the License.                                            #
 #############################################################################
 
-FROM webcenter/activemq
 
-ENV ACTIVE_MQ_PROFILE=default
+ARG BUILD_REGISTRY
+ARG BUILD_TAG=latest
+FROM ${BUILD_REGISTRY}openmpf_build:${BUILD_TAG} as openmpf_build
 
-COPY activemq-*.xml /opt/activemq/conf/
-COPY env.* /opt/activemq/bin/
+FROM centos:7
 
-COPY docker-entrypoint.sh /opt/activemq/bin/entrypoint.sh.tmp
-# The following tr command deletes the carriage return character '\r', converting CRLF to LF.
-RUN tr -d '\r' < /opt/activemq/bin/entrypoint.sh.tmp > /opt/activemq/bin/docker-entrypoint.sh
-RUN chmod 755 /opt/activemq/bin/docker-entrypoint.sh
+SHELL ["/bin/bash", "-o", "errexit", "-o", "pipefail", "-c"]
 
-ENTRYPOINT ["/opt/activemq/bin/docker-entrypoint.sh"]
+# Change config because the centos:7 image sets this yum property to en_US.utf8 which prevents other locales
+# (including other English locales) from being installed with GCC.
+RUN yum-config-manager --setopt=override_install_langs='' --save; \
+    yum update --assumeyes; \
+    yum install --assumeyes epel-release \
+            https://download1.rpmfusion.org/free/el/rpmfusion-free-release-7.noarch.rpm; \
+    yum install --assumeyes cmake3 make gcc gcc-c++ qt-devel log4cxx-devel boost-devel ffmpeg gtest-devel; \
+    yum clean all; \
+    rm --recursive /var/cache/yum/*;
+
+COPY --from=openmpf_build /opt/opencv-3.4.7 /opt/opencv-3.4.7
+
+# Normally components' CMakeList.txt file includes include(../ComponentSetup.cmake) but since that is outside of the
+# components' build context we create it here.
+RUN mkdir /home/mpf; echo 'find_package(mpfCMakeHelpers REQUIRED)' > /home/mpf/ComponentSetup.cmake
+
+COPY --from=openmpf_build /build-artifacts/mpf-sdk-install/include /home/mpf/mpf-sdk-install/include
+COPY --from=openmpf_build /build-artifacts/mpf-sdk-install/lib /home/mpf/mpf-sdk-install/lib
+
+COPY cpp_component_build/scripts /scripts
+
+ENV PATH /scripts:$PATH
+
+ENV CMAKE_PREFIX_PATH /home/mpf/mpf-sdk-install/lib/cmake
+
+ENV BUILD_DIR /home/mpf/component_build
+
+ENV SRC_DIR /home/mpf/component_src
+
+WORKDIR $SRC_DIR
 
 
-################################################################################
-# Labels                                                                       #
-################################################################################
-
-# Set labels
-LABEL org.label-schema.license="GPLv2" \
-      org.label-schema.name="OpenMPF ActiveMQ" \
+LABEL org.label-schema.license="Apache 2.0" \
+      org.label-schema.name="OpenMPF C++ Component Builder" \
       org.label-schema.schema-version="1.0" \
       org.label-schema.url="https://openmpf.github.io" \
-      org.label-schema.vcs-url="https://github.com/openmpf" \
+      org.label-schema.vcs-url="https://github.com/openmpf/openmpf-cpp-component-sdk" \
       org.label-schema.vendor="MITRE"

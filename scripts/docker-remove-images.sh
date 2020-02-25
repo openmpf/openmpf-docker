@@ -30,7 +30,7 @@ printUsage() {
   echo "Usages:"
   echo "docker-remove-images.sh [--dry-run] <--partial|--exact> -n <image-name>"
   echo "docker-remove-images.sh [--dry-run] <--partial|--exact> -t <image-tag>"
-  exit -1
+  exit 1
 }
 
 if [ $# = 3 ]; then

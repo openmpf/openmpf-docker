@@ -33,7 +33,7 @@
 printUsage() {
   echo "Usages:"
   echo "docker-swarm-run-on-all-nodes.sh [--ask-pass] \"<command>\""
-  exit -1
+  exit 1
 }
 
 if [ $# -eq 1 ]; then

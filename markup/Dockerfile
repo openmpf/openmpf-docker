@@ -24,29 +24,49 @@
 # limitations under the License.                                            #
 #############################################################################
 
-FROM webcenter/activemq
+ARG BUILD_REGISTRY
+ARG BUILD_TAG=latest
+FROM ${BUILD_REGISTRY}openmpf_build:${BUILD_TAG} as openmpf_build
 
-ENV ACTIVE_MQ_PROFILE=default
-
-COPY activemq-*.xml /opt/activemq/conf/
-COPY env.* /opt/activemq/bin/
-
-COPY docker-entrypoint.sh /opt/activemq/bin/entrypoint.sh.tmp
-# The following tr command deletes the carriage return character '\r', converting CRLF to LF.
-RUN tr -d '\r' < /opt/activemq/bin/entrypoint.sh.tmp > /opt/activemq/bin/docker-entrypoint.sh
-RUN chmod 755 /opt/activemq/bin/docker-entrypoint.sh
-
-ENTRYPOINT ["/opt/activemq/bin/docker-entrypoint.sh"]
+# Docker COPY only preserves symlinks when copying an entire directory so we copy the files and their symlinks in to
+# a temporary directory
+RUN mkdir /root/copy_libs64 \
+    && cp --preserve=links --no-dereference /build-artifacts/install/lib/libopencv* /root/copy_libs64/
 
 
-################################################################################
-# Labels                                                                       #
-################################################################################
+FROM centos:7
+SHELL ["/bin/bash", "-o", "errexit", "-o", "pipefail", "-c"]
 
-# Set labels
-LABEL org.label-schema.license="GPLv2" \
-      org.label-schema.name="OpenMPF ActiveMQ" \
+RUN yum update --assumeyes; \
+    yum install --assumeyes https://download1.rpmfusion.org/free/el/rpmfusion-free-release-7.noarch.rpm; \
+    yum install --assumeyes java-11-openjdk ffmpeg; \
+    yum clean all; \
+    rm -rf /var/cache/yum/*;
+
+COPY --from=openmpf_build /root/copy_libs64 /usr/lib64/
+
+COPY --from=openmpf_build /build-artifacts/install/lib/libmpfopencvjni.so /usr/lib64/
+
+COPY --from=openmpf_build /build-artifacts/install/lib/libmpfDetectionComponentApi.so /usr/lib64/
+
+ENV MPF_HOME /opt/mpf
+
+COPY --from=openmpf_build /build-artifacts/markup/*.jar $MPF_HOME/jars/
+
+ENV ACTIVE_MQ_HOST activemq
+ENV ACTIVE_MQ_BROKER_URI="failover://(tcp://$ACTIVE_MQ_HOST:61616)?jms.prefetchPolicy.all=0&startupMaxReconnectAttempts=1"
+ENV MPF_LOG_PATH $MPF_HOME/share/logs
+ENV THIS_MPF_NODE markup
+
+WORKDIR $MPF_HOME/jars
+
+COPY docker-entrypoint.sh /scripts/docker-entrypoint.sh
+ENTRYPOINT ["/scripts/docker-entrypoint.sh"]
+
+
+LABEL org.label-schema.license="Apache 2.0" \
+      org.label-schema.name="OpenMPF Markup" \
       org.label-schema.schema-version="1.0" \
       org.label-schema.url="https://openmpf.github.io" \
-      org.label-schema.vcs-url="https://github.com/openmpf" \
+      org.label-schema.vcs-url="https://github.com/openmpf/openmpf" \
       org.label-schema.vendor="MITRE"

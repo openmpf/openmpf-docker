@@ -165,7 +165,7 @@ Bash, which is part of [Git for Windows](https://gitforwindows.org/), or
 
 ### Build the OpenMPF Docker Images
 
-Note that this process can take 1.5 - 2 hours if you're starting from scratch.
+Note that this process can take an hour if you're starting from scratch.
 
 #### Setup
 
@@ -191,49 +191,31 @@ please refer to the [Contribution Guide](CONTRIBUTING.md).
 Run the following command from within the `openmpf-docker` directory to create
 the OpenMPF build image:
 
-- `docker build openmpf_build/ -t openmpf_build:latest`
+- `DOCKER_BUILDKIT=1 docker build -f openmpf_build/Dockerfile path/to/openmpf-projects -t openmpf_build`
 
-This image has not yet built OpenMPF, rather, it is an environment in which
-OpenMPF will be built in the next step.
 
-#### Generate the OpenMPF Build Artifacts
+#### Build the OpenMPF Component Executor Docker Images
+<span id="component-executors-build-commands"></span>
 
-Next, decide where you would like to store the Maven dependencies on your host
-system. On Linux systems, they are usually stored in `/home/<user>/.m2`. Create
-a new `.m2` directory if necessary.
+Run the commands in this section from within the `openmpf-docker/components` directory.
 
-The first time OpenMPF is built it will download 300+ MB of Maven dependencies.
-It is most efficient to store them all on the host system so that they do not
-need to be downloaded again if and when you rebuild OpenMPF.
+Run the following command to create the OpenMPF Python component build image:
+- `DOCKER_BUILDKIT=1 docker build . -f python_component_build/Dockerfile -t openmpf_python_component_build`
 
-<span id="docker-run-command"></span>
-Perform the build using the following command:
+Run the following command to create the OpenMPF Python component executor image:
+- `DOCKER_BUILDKIT=1 docker build . -f python_executor/Dockerfile -t openmpf_python_executor`
 
-```
-docker run \
-  --mount type=bind,source=<path-to-.m2-dir>,target=/root/.m2 \
-  --mount type=bind,source=<path-to-openmpf-projects>,target=/mnt/openmpf-projects \
-  --mount type=bind,source="$(pwd)"/openmpf_runtime/build_artifacts,target=/mnt/build_artifacts \
-  openmpf_build
-```
+Run the following command to create the OpenMPF C++ component build image:
+- `DOCKER_BUILDKIT=1 docker build . -f cpp_component_build/Dockerfile -t openmpf_cpp_component_build`
 
-If that command does not output `BUILD SUCCESS` then you may try to run it again.
-Sometimes Maven will time out while trying to download dependencies within a
-Docker container.
+Run the following command to create the OpenMPF C++ component executor image:
+- `DOCKER_BUILDKIT=1 docker build . -f cpp_executor/Dockerfile -t openmpf_cpp_executor`
 
-#### Build the OpenMPF Component Executor Docker Image
+Run the following command to create the OpenMPF Java component build image:
+- `DOCKER_BUILDKIT=1 docker build . -f java_component_build/Dockerfile -t openmpf_java_component_build`
 
-Run the following command from within the `openmpf-docker/openmpf_runtime`
-directory to create the OpenMPF Python component executor image:
-- `docker build . -f python-executor/Dockerfile -t openmpf_python-executor`
-
-Run the following command from within the `openmpf-docker/openmpf_runtime`
-directory to create the OpenMPF C++ component build image:
-- `docker build . -f cpp-component-build/Dockerfile -t openmpf_cpp-component-build`
-
-Run the following command from within the `openmpf-docker/openmpf_runtime`
-directory to create the OpenMPF C++ component executor image:
-- `docker build . -f cpp-executor/Dockerfile -t openmpf_cpp-executor`
+Run the following command to create the OpenMPF Java component executor image:
+- `DOCKER_BUILDKIT=1 docker build . -f java_executor/Dockerfile -t openmpf_java_executor`
 
 #### Generate docker-compose.yml
 
@@ -296,32 +278,15 @@ container:
 
 > INFO: Server startup in 26967 ms
 
-#### Log into the Workflow Manager and Configure Nodes
+#### Log into the Workflow Manager
 
 You can reach the Workflow Manager at the following URL:
 
 `http://<ip-address-or-hostname-of-docker-host>:8080/workflow-manager`
 
-Once you have logged in, go to the Nodes web UI and check that one node is
-shown. The name of the node ends in a unique ID. That number corresponds
-to the ID of the Docker container. Optionally, modify the service configuration
-for that node if you want.
-
-By default, the following system properties are set in the Workflow Manager
-Docker image:
-
-- `node.auto.config.enabled`=true
-- `node.auto.unconfig.enabled`=true
-- `node.auto.config.num.services.per.component`=1
-
-With these settings, the Workflow Manager will automatically add the available
-node to the OpenMPF cluster and configure it with one service per type of
-component.
-
-If you set the first two properties to false, then when you restart the Docker
-Compose deployment you will need to manually add the node to the OpenMPF
-cluster using the Nodes UI and configure it. The service configuration is not
-persisted between deployments.
+After logging in, you can see which components are registered by clicking on 
+the "Configuration" dropdown from the top menu bar and then clicking on 
+"Component Registration".
 
 #### Monitor the Containers
 
@@ -346,10 +311,6 @@ Alternatively, you can run the following command in a different terminal:
 - `docker-compose stop`
 
 Both approaches preserve the Docker volumes.
-
-Note that any changes made through the Nodes web UI to configure services will
-not be preserved. You will need to configure services again the next time you
-deploy OpenMPF.
 
 **Clean Slate**
 
@@ -459,6 +420,18 @@ After you launch OpenMPF with the NVIDIA runtime specified, you need to login
 and go to the Properties page under Configuration in the top menu bar, then set
 the `detection.cuda.device.id property` to 0, or the CUDA index of your GPU
 device.
+
+### (Optional) Running Tests
+Build the `openmpf_cpp_component_build`, `openmpf_cpp_executor`, and `openmpf_python_executor` 
+images as directed [above](#component-executors-build-commands). Then, from within the `openmpf-docker` directory run:
+```shell script
+docker build -f openmpf_build/Dockerfile path/to/openmpf-projects -t openmpf_build --build-arg RUN_TESTS=true
+export COMPOSE_FILE='docker-compose.integration.test.yml:docker-compose.components.yml'
+docker-compose build --build-arg RUN_TESTS=true
+docker-compose up --exit-code-from workflow-manager
+docker-compose down -v
+unset COMPOSE_FILE
+```
 
 ## Project Website
 

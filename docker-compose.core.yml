@@ -24,9 +24,6 @@
 # limitations under the License.                                            #
 #############################################################################
 
-# Use this file in conjunction with docker-compose.http.yml or
-# docker-compose.https.yml.
-
 version: '3.7'
 
 services:
@@ -38,8 +35,6 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
     volumes:
       - db_data:/var/lib/postgresql/data
-    networks:
-      - overlay
     deploy:
       placement:
         constraints:
@@ -47,57 +42,40 @@ services:
 
   activemq:
     image: ${REGISTRY}openmpf_activemq:${TAG}
-    build:
-      context: ./activemq
+    build: activemq
     environment:
       # Set which configuration files are used at runtime:
       - ACTIVE_MQ_PROFILE=${ACTIVE_MQ_PROFILE}
     ports:
       - "8161:8161"
-    networks:
-      - overlay
 
   redis:
     image: redis:alpine
-    networks:
-      - overlay
 
   workflow-manager:
-    image: ${REGISTRY}openmpf_workflow-manager:${TAG}
-    build:
-      context: ./openmpf_runtime
-      dockerfile: workflow-manager/Dockerfile
+    image: ${REGISTRY}openmpf_workflow_manager:${TAG}
+    build: workflow_manager
     depends_on:
       - db
       - redis
       - activemq
-    restart: always
     ports:
       - "8080:8080"
     volumes:
       - shared_data:/opt/mpf/share
-    networks:
-      - overlay
     deploy:
       placement:
         constraints:
           - node.role == manager
 
-  node-manager:
-    image: ${REGISTRY}openmpf_node-manager:${TAG}
-    build:
-      context: ./openmpf_runtime
-      dockerfile: node-manager/Dockerfile
+  markup:
+    image: ${REGISTRY}openmpf_markup:${TAG}
+    build: markup
     volumes:
       - shared_data:/opt/mpf/share
-    networks:
-      - overlay
     deploy:
       mode: global
 
 volumes:
   shared_data:
   db_data:
-
-networks:
-  overlay:

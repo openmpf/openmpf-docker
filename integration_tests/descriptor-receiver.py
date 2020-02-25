@@ -1,3 +1,5 @@
+#! /usr/bin/env python
+
 #############################################################################
 # NOTICE                                                                    #
 #                                                                           #
@@ -24,29 +26,53 @@
 # limitations under the License.                                            #
 #############################################################################
 
-FROM webcenter/activemq
 
-ENV ACTIVE_MQ_PROFILE=default
+from __future__ import print_function, division
 
-COPY activemq-*.xml /opt/activemq/conf/
-COPY env.* /opt/activemq/bin/
+import BaseHTTPServer
+import json
+import os
 
-COPY docker-entrypoint.sh /opt/activemq/bin/entrypoint.sh.tmp
-# The following tr command deletes the carriage return character '\r', converting CRLF to LF.
-RUN tr -d '\r' < /opt/activemq/bin/entrypoint.sh.tmp > /opt/activemq/bin/docker-entrypoint.sh
-RUN chmod 755 /opt/activemq/bin/docker-entrypoint.sh
-
-ENTRYPOINT ["/opt/activemq/bin/docker-entrypoint.sh"]
+# Creates an endpoint where Docker components can register their descriptors for use in integration tests.
+def main():
+    server = BaseHTTPServer.HTTPServer(('', 8080), RequestHandler)
+    server.serve_forever()
 
 
-################################################################################
-# Labels                                                                       #
-################################################################################
+class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
+    error_content_type = 'application/json'
+    error_message_format = '{"message": "%(message)s"}'
 
-# Set labels
-LABEL org.label-schema.license="GPLv2" \
-      org.label-schema.name="OpenMPF ActiveMQ" \
-      org.label-schema.schema-version="1.0" \
-      org.label-schema.url="https://openmpf.github.io" \
-      org.label-schema.vcs-url="https://github.com/openmpf" \
-      org.label-schema.vendor="MITRE"
+    def do_POST(self):
+        try:
+            content_len = int(self.headers.getheader('Content-Length'))
+            post_body = self.rfile.read(content_len)
+            descriptor = json.loads(post_body)
+            component_name = descriptor['componentName']
+        except (ValueError, KeyError):
+            self.send_error(400, 'Failed to parse component descriptor.')
+            raise
+
+        print('Received descriptor for', component_name)
+
+        descriptor_dir = os.path.join(os.getenv('MPF_HOME', '/opt/mpf'), 'plugins', component_name, 'descriptor')
+
+        if not os.path.exists(descriptor_dir):
+            os.makedirs(descriptor_dir)
+
+        descriptor_path = os.path.join(descriptor_dir, 'descriptor.json')
+        if os.path.exists(descriptor_path):
+            print('Replacing descriptor at:', descriptor_path)
+        else:
+            print('Saving descriptor at:', descriptor_path)
+
+        with open(descriptor_path, 'w') as f:
+            f.write(post_body)
+
+        self.send_response(200)
+        self.end_headers()
+        self.wfile.write('{"message": "Descriptor stored."}')
+
+
+if __name__ == '__main__':
+    main()

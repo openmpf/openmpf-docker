@@ -24,29 +24,46 @@
 # limitations under the License.                                            #
 #############################################################################
 
-FROM webcenter/activemq
+version: '3.7'
 
-ENV ACTIVE_MQ_PROFILE=default
+services:
+  db:
+    image: postgres:alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-mpf}
+      POSTGRES_USER: ${POSTGRES_USER:-mpf}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
 
-COPY activemq-*.xml /opt/activemq/conf/
-COPY env.* /opt/activemq/bin/
+  activemq:
+    image: ${REGISTRY}openmpf_activemq:${TAG:-latest}
+    environment:
+      # Set which configuration files are used at runtime:
+      - ACTIVE_MQ_PROFILE=default
 
-COPY docker-entrypoint.sh /opt/activemq/bin/entrypoint.sh.tmp
-# The following tr command deletes the carriage return character '\r', converting CRLF to LF.
-RUN tr -d '\r' < /opt/activemq/bin/entrypoint.sh.tmp > /opt/activemq/bin/docker-entrypoint.sh
-RUN chmod 755 /opt/activemq/bin/docker-entrypoint.sh
+  redis:
+    image: redis:latest
 
-ENTRYPOINT ["/opt/activemq/bin/docker-entrypoint.sh"]
+  workflow-manager:
+    image: ${REGISTRY}openmpf_integration_tests:${TAG:-latest}
+    build: integration_tests
+    depends_on:
+      - db
+      - redis
+      - activemq
+    environment:
+      - EXTRA_MVN_OPTIONS=$EXTRA_MVN_OPTIONS
+    volumes:
+      - shared_data:/opt/mpf/share
+      - ./test-reports:/test-reports
 
+  markup:
+    image: ${REGISTRY}openmpf_markup:${TAG}
+    build: markup
+    volumes:
+      - shared_data:/opt/mpf/share
+    deploy:
+      mode: global
 
-################################################################################
-# Labels                                                                       #
-################################################################################
+volumes:
+  shared_data:
 
-# Set labels
-LABEL org.label-schema.license="GPLv2" \
-      org.label-schema.name="OpenMPF ActiveMQ" \
-      org.label-schema.schema-version="1.0" \
-      org.label-schema.url="https://openmpf.github.io" \
-      org.label-schema.vcs-url="https://github.com/openmpf" \
-      org.label-schema.vendor="MITRE"

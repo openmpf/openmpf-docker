@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+
 #############################################################################
 # NOTICE                                                                    #
 #                                                                           #
@@ -24,29 +26,19 @@
 # limitations under the License.                                            #
 #############################################################################
 
-FROM webcenter/activemq
+set -o errexit -o pipefail
 
-ENV ACTIVE_MQ_PROFILE=default
+# NOTE: $HOSTNAME is not known until runtime.
+export THIS_MPF_NODE="${THIS_MPF_NODE}_id_${HOSTNAME}"
 
-COPY activemq-*.xml /opt/activemq/conf/
-COPY env.* /opt/activemq/bin/
+# Wait for ActiveMQ service.
+echo 'Waiting for ActiveMQ to become available ...'
+until curl --head "$ACTIVE_MQ_HOST:8161" >> /dev/null 2>&1; do
+    echo 'ActiveMQ is unavailable. Sleeping.'
+    sleep 5
+done
+echo 'ActiveMQ is up'
 
-COPY docker-entrypoint.sh /opt/activemq/bin/entrypoint.sh.tmp
-# The following tr command deletes the carriage return character '\r', converting CRLF to LF.
-RUN tr -d '\r' < /opt/activemq/bin/entrypoint.sh.tmp > /opt/activemq/bin/docker-entrypoint.sh
-RUN chmod 755 /opt/activemq/bin/docker-entrypoint.sh
+set -o xtrace
 
-ENTRYPOINT ["/opt/activemq/bin/docker-entrypoint.sh"]
-
-
-################################################################################
-# Labels                                                                       #
-################################################################################
-
-# Set labels
-LABEL org.label-schema.license="GPLv2" \
-      org.label-schema.name="OpenMPF ActiveMQ" \
-      org.label-schema.schema-version="1.0" \
-      org.label-schema.url="https://openmpf.github.io" \
-      org.label-schema.vcs-url="https://github.com/openmpf" \
-      org.label-schema.vendor="MITRE"
+exec java -jar mpf-markup-*.jar "$ACTIVE_MQ_BROKER_URI"

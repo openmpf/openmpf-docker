@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+
 #############################################################################
 # NOTICE                                                                    #
 #                                                                           #
@@ -24,29 +26,12 @@
 # limitations under the License.                                            #
 #############################################################################
 
-FROM webcenter/activemq
+set -o errexit -o pipefail -o xtrace
 
-ENV ACTIVE_MQ_PROFILE=default
+src_dir="${SRC_DIR:-/home/mpf/component_src}"
+build_dir="${BUILD_DIR:-/home/mpf/component_build}"
 
-COPY activemq-*.xml /opt/activemq/conf/
-COPY env.* /opt/activemq/bin/
-
-COPY docker-entrypoint.sh /opt/activemq/bin/entrypoint.sh.tmp
-# The following tr command deletes the carriage return character '\r', converting CRLF to LF.
-RUN tr -d '\r' < /opt/activemq/bin/entrypoint.sh.tmp > /opt/activemq/bin/docker-entrypoint.sh
-RUN chmod 755 /opt/activemq/bin/docker-entrypoint.sh
-
-ENTRYPOINT ["/opt/activemq/bin/docker-entrypoint.sh"]
-
-
-################################################################################
-# Labels                                                                       #
-################################################################################
-
-# Set labels
-LABEL org.label-schema.license="GPLv2" \
-      org.label-schema.name="OpenMPF ActiveMQ" \
-      org.label-schema.schema-version="1.0" \
-      org.label-schema.url="https://openmpf.github.io" \
-      org.label-schema.vcs-url="https://github.com/openmpf" \
-      org.label-schema.vendor="MITRE"
+mkdir --parents "$build_dir"
+cd "$build_dir"
+cmake3 "$src_dir"
+make --jobs "$(nproc)"

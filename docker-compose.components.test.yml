@@ -24,29 +24,55 @@
 # limitations under the License.                                            #
 #############################################################################
 
-FROM webcenter/activemq
 
-ENV ACTIVE_MQ_PROFILE=default
+version: '3.7'
 
-COPY activemq-*.xml /opt/activemq/conf/
-COPY env.* /opt/activemq/bin/
+x-build-args:
+  &test-args
+  build:
+    args:
+      RUN_TESTS: 'true'
 
-COPY docker-entrypoint.sh /opt/activemq/bin/entrypoint.sh.tmp
-# The following tr command deletes the carriage return character '\r', converting CRLF to LF.
-RUN tr -d '\r' < /opt/activemq/bin/entrypoint.sh.tmp > /opt/activemq/bin/docker-entrypoint.sh
-RUN chmod 755 /opt/activemq/bin/docker-entrypoint.sh
+services:
+  darknet-detection:
+    <<: *test-args
 
-ENTRYPOINT ["/opt/activemq/bin/docker-entrypoint.sh"]
+  dlib-face-detection:
+    <<: *test-args
 
+  east-text-detection:
+    <<: *test-args
 
-################################################################################
-# Labels                                                                       #
-################################################################################
+  mog-motion-detection:
+    <<: *test-args
 
-# Set labels
-LABEL org.label-schema.license="GPLv2" \
-      org.label-schema.name="OpenMPF ActiveMQ" \
-      org.label-schema.schema-version="1.0" \
-      org.label-schema.url="https://openmpf.github.io" \
-      org.label-schema.vcs-url="https://github.com/openmpf" \
-      org.label-schema.vendor="MITRE"
+  oalpr-license-plate-text-detection:
+    <<: *test-args
+
+  ocv-dnn-detection:
+    <<: *test-args
+
+  ocv-face-detection:
+    <<: *test-args
+
+  ocv-person-detection:
+    <<: *test-args
+
+  scene-change-detection:
+    <<: *test-args
+
+  sphinx-speech-detection:
+    <<: *test-args
+
+  subsense-motion-detection:
+    <<: *test-args
+
+  tesseract-ocr-text-detection:
+    <<: *test-args
+
+  tika-image-detection:
+    <<: *test-args
+
+  tika-text-detection:
+    <<: *test-args
+

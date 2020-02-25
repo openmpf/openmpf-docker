@@ -31,12 +31,9 @@ set -Ee
 printUsage() {
   echo "Usages:"
   echo "docker-swarm-clean-shared-volume.sh [dir]"
-  exit -1
+  exit 1
 }
 
-finally() {
-    docker rm -f openmpf_helper > /dev/null
-}
 
 subDir="*" # by default, remove everything
 
@@ -51,14 +48,9 @@ dataDir="/data/$subDir"
 # Check if the shared volume exists. If not, this returns a non-zero exit code.
 docker volume inspect openmpf_shared_data > /dev/null
 
-# Ensure that we clean up the helper container that we'll be creating next.
-trap finally EXIT
-
-# Create a helper container that mounts the shared volume. Use an image that we know exists.
+# Create a helper container that mounts the shared volume. Use an image that we know exists on the user's machine.
 # The exact image is not important.
-docker run -d --rm --entrypoint bash -v openmpf_shared_data:/data --name openmpf_helper redis -c "sleep infinity" > /dev/null
-
-docker exec openmpf_helper bash -c "rm -rf $dataDir"
+docker run --rm -v openmpf_shared_data:/data --entrypoint sh redis:alpine -c "rm -rf $dataDir"
 
 if [ "$subDir" = "*" ]; then
     echo "Cleared the contents of the shared volume."

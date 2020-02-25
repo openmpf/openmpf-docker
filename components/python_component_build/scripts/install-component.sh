@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+
 #############################################################################
 # NOTICE                                                                    #
 #                                                                           #
@@ -24,29 +26,35 @@
 # limitations under the License.                                            #
 #############################################################################
 
-FROM webcenter/activemq
+set -o errexit -o pipefail -o xtrace
 
-ENV ACTIVE_MQ_PROFILE=default
+src_dir="${SRC_DIR:-/home/mpf/component_src}"
 
-COPY activemq-*.xml /opt/activemq/conf/
-COPY env.* /opt/activemq/bin/
+descriptor_path=$src_dir/plugin-files/descriptor/descriptor.json
 
-COPY docker-entrypoint.sh /opt/activemq/bin/entrypoint.sh.tmp
-# The following tr command deletes the carriage return character '\r', converting CRLF to LF.
-RUN tr -d '\r' < /opt/activemq/bin/entrypoint.sh.tmp > /opt/activemq/bin/docker-entrypoint.sh
-RUN chmod 755 /opt/activemq/bin/docker-entrypoint.sh
+if [ ! -e "$descriptor_path" ]; then
+    echo "Error: Expected $descriptor_path to exist. Did you forget to COPY or bind mount your component source code?"
+    exit 3
+fi
 
-ENTRYPOINT ["/opt/activemq/bin/docker-entrypoint.sh"]
+component_name=$(python -c "import json; print json.load(open('$descriptor_path'))['componentName']")
+mkdir --parents "$MPF_HOME/plugins/$component_name"
+
+if [ -e "$src_dir/setup.py" ]; then
+    echo 'Installing setuptools plugin'
+    cp --recursive "$src_dir"/plugin-files/* "$MPF_HOME/plugins/$component_name/"
 
 
-################################################################################
-# Labels                                                                       #
-################################################################################
+    if [ -d "$src_dir/plugin-files/wheelhouse" ]; then
+        "$COMPONENT_VIRTUALENV/bin/pip" install \
+            --find-links "$src_dir/plugin-files/wheelhouse" \
+            --no-cache-dir "$src_dir"
+    else
+        "$COMPONENT_VIRTUALENV/bin/pip" install \
+            --no-cache-dir "$src_dir"
+    fi
+else
+    echo 'Installing basic component'
+    cp --recursive "$src_dir"/* "$MPF_HOME/plugins/$component_name/"
+fi
 
-# Set labels
-LABEL org.label-schema.license="GPLv2" \
-      org.label-schema.name="OpenMPF ActiveMQ" \
-      org.label-schema.schema-version="1.0" \
-      org.label-schema.url="https://openmpf.github.io" \
-      org.label-schema.vcs-url="https://github.com/openmpf" \
-      org.label-schema.vendor="MITRE"

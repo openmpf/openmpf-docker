@@ -24,29 +24,7 @@
 # limitations under the License.                                            #
 #############################################################################
 
-FROM webcenter/activemq
+**/Dockerfile
+.dockerignore
 
-ENV ACTIVE_MQ_PROFILE=default
-
-COPY activemq-*.xml /opt/activemq/conf/
-COPY env.* /opt/activemq/bin/
-
-COPY docker-entrypoint.sh /opt/activemq/bin/entrypoint.sh.tmp
-# The following tr command deletes the carriage return character '\r', converting CRLF to LF.
-RUN tr -d '\r' < /opt/activemq/bin/entrypoint.sh.tmp > /opt/activemq/bin/docker-entrypoint.sh
-RUN chmod 755 /opt/activemq/bin/docker-entrypoint.sh
-
-ENTRYPOINT ["/opt/activemq/bin/docker-entrypoint.sh"]
-
-
-################################################################################
-# Labels                                                                       #
-################################################################################
-
-# Set labels
-LABEL org.label-schema.license="GPLv2" \
-      org.label-schema.name="OpenMPF ActiveMQ" \
-      org.label-schema.schema-version="1.0" \
-      org.label-schema.url="https://openmpf.github.io" \
-      org.label-schema.vcs-url="https://github.com/openmpf" \
-      org.label-schema.vendor="MITRE"
+**/README.md

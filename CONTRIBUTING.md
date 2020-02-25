@@ -37,12 +37,3 @@ steps in that section to build the Docker images. Then, run the steps in the
 [Run OpenMPF using Docker Compose](README.md#run-openmpf-using-docker-compose)
 section to deploy them. Repeat these steps, starting with the `docker run`
 command, each time you make a change to your component code and want to run it.
-
-If you wish to use a different `openmpf-*-package.json` file that includes an
-entry for your component, for example, `openmpf-with-my-component-package.json`,
-then place that file in the same directory as
-`openmpf-open-source-package.json`. Then, when executing the [command that
-starts with `docker run`](README.md#docker-run-command), include the `-e
-BUILD_PACKAGE_JSON=openmpf-with-my-component-package.json` option at the end of
-the command. By convention, the name of your file should start with `openmpf-`
-and end with `-package.json`.

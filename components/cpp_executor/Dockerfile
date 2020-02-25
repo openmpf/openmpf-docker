@@ -1,3 +1,5 @@
+# syntax=docker/dockerfile:experimental
+
 #############################################################################
 # NOTICE                                                                    #
 #                                                                           #
@@ -24,29 +26,57 @@
 # limitations under the License.                                            #
 #############################################################################
 
-FROM webcenter/activemq
 
-ENV ACTIVE_MQ_PROFILE=default
-
-COPY activemq-*.xml /opt/activemq/conf/
-COPY env.* /opt/activemq/bin/
-
-COPY docker-entrypoint.sh /opt/activemq/bin/entrypoint.sh.tmp
-# The following tr command deletes the carriage return character '\r', converting CRLF to LF.
-RUN tr -d '\r' < /opt/activemq/bin/entrypoint.sh.tmp > /opt/activemq/bin/docker-entrypoint.sh
-RUN chmod 755 /opt/activemq/bin/docker-entrypoint.sh
-
-ENTRYPOINT ["/opt/activemq/bin/docker-entrypoint.sh"]
+ARG BUILD_REGISTRY
+ARG BUILD_TAG=latest
+FROM ${BUILD_REGISTRY}openmpf_build:${BUILD_TAG} as openmpf_build
 
 
-################################################################################
-# Labels                                                                       #
-################################################################################
+FROM centos:7
 
-# Set labels
-LABEL org.label-schema.license="GPLv2" \
-      org.label-schema.name="OpenMPF ActiveMQ" \
+SHELL ["/bin/bash", "-o", "errexit", "-o", "pipefail", "-c"]
+
+RUN yum update --assumeyes; \
+    yum install --assumeyes https://download1.rpmfusion.org/free/el/rpmfusion-free-release-7.noarch.rpm; \
+    yum install --assumeyes ffmpeg; \
+    yum clean all; \
+    rm --recursive /var/cache/yum/*;
+
+ENV MPF_HOME /opt/mpf
+
+WORKDIR $MPF_HOME
+
+# Use mount and cp shell command because the docker COPY command resolves symlinks which then causes duplicate copies
+# of the libraries to be added to the image.
+RUN --mount=type=bind,from=openmpf_build,source=/build-artifacts/install/lib,target=/tmp/mpf-libs \
+    cd /tmp/mpf-libs; \
+    # component executor binary's dependencies
+    cp --preserve=links --no-dereference liblog4cxx* libactivemq-cpp* libQtCore* libapr* libXext* \
+        /usr/lib64;
+
+# component executor binary
+COPY --from=openmpf_build /build-artifacts/install/bin/amq_detection_component $MPF_HOME/bin/amq_detection_component
+
+# component executor log config
+COPY --from=openmpf_build /build-artifacts/install/config/Log4cxxConfig.xml $MPF_HOME/config/
+
+
+ENV MPF_LOG_PATH $MPF_HOME/share/logs
+
+ENV PYTHONUNBUFFERED 1
+
+ENV BUILD_DIR /home/mpf/component_build
+
+ENV PLUGINS_DIR $MPF_HOME/plugins
+
+COPY docker-executor-entrypoint.py /scripts/docker-entrypoint.py
+
+ENTRYPOINT ["python", "/scripts/docker-entrypoint.py"]
+
+
+LABEL org.label-schema.license="Apache 2.0" \
+      org.label-schema.name="OpenMPF C++ Component Executor" \
       org.label-schema.schema-version="1.0" \
       org.label-schema.url="https://openmpf.github.io" \
-      org.label-schema.vcs-url="https://github.com/openmpf" \
+      org.label-schema.vcs-url="https://github.com/openmpf/openmpf-cpp-component-sdk" \
       org.label-schema.vendor="MITRE"
