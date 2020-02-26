@@ -383,6 +383,18 @@ docker-compose \
 If configuring your deployment with custom user password settings, you will also
 need to add `-f docker-compose.users.yml` to the above command.
 
+
+### (Optional) Use Kibana for Log Viewing and Aggregation
+To use Kibana to view OpenMPF logs, you will need to add 
+`-f docker-compose.elk.yml` to your `docker-compose config` command. After
+running `docker-compose up`, Kibana can be accessed at 
+`http://<ip-address-or-hostname-of-docker-host>:5601`. Kibana comes with
+many apps, but the only ones likely to be useful are 
+Logs (`http://<ip-address-or-hostname-of-docker-host>:5601/app/infra#/logs`)
+and 
+Discover (`http://<ip-address-or-hostname-of-docker-host>:5601/app/kibana#/discover`).
+
+
 ### (Optional) Add GPU support with NVIDIA CUDA
 
 To run OpenMPF components that use the NVIDIA GPUs, you must

@@ -1,0 +1,59 @@
+version: '3.7'
+
+services:
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.6.0
+    command:
+      - elasticsearch
+      - -E
+      - logger.level=error
+    environment:
+      discovery.type: single-node
+    volumes:
+      - elastic_search_data:/usr/share/elasticsearch/data
+
+  kibana:
+    image: ${REGISTRY}openmpf_kibana:${TAG}
+    build: kibana
+    environment:
+      ELASTICSEARCH_HOSTS: http://elasticsearch:9200
+      LOGGING_QUIET: 'true'
+      KIBANA_DEFAULTAPPID: discover
+      # Disable Kibana apps we don't use. Not all Kibana apps can be disabled.
+      TELEMETRY_OPTIN: 'false'
+      TELEMETRY_ENABLED: 'false'
+      XPACK_APM_UI_ENABLED: 'false'
+      XPACK_ML_ENABLED: 'false'
+      XPACK_MONITORING_ENABLED: 'false'
+      XPACK_REPORTING_ENABLED: 'false'
+      XPACK_GRAPH_ENABLED: 'false'
+      NEWSFEED_ENABLED: 'false'
+    ports:
+      - '5601:5601'
+    depends_on:
+      - elasticsearch
+
+  filebeat:
+    image: docker.elastic.co/beats/filebeat:7.6.0
+    command:
+      # Allow filebeat's own logs to be collected
+      - -e
+      - -E
+      - logging.level=warning
+      - -E
+      - 'filebeat.autodiscover.providers=[{type: docker, hints.enabled: true}]'
+      - -E
+      - output.elasticsearch.hosts=elasticsearch:9200
+    # Need to be root to interact with Docker socket
+    user: root
+    volumes:
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    deploy:
+      mode: global
+    depends_on:
+      - elasticsearch
+
+
+volumes:
+  elastic_search_data:
