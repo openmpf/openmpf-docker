@@ -384,7 +384,7 @@ If configuring your deployment with custom user password settings, you will also
 need to add `-f docker-compose.users.yml` to the above command.
 
 
-### (Optional) Use Kibana for Log Viewing and Aggregation
+### (Optional) Use [Kibana](https://www.elastic.co/kibana) for Log Viewing and Aggregation
 To use Kibana to view OpenMPF logs, you will need to add 
 `-f docker-compose.elk.yml` to your `docker-compose config` command. After
 running `docker-compose up`, Kibana can be accessed at 
