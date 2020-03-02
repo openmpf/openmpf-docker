@@ -384,15 +384,28 @@ If configuring your deployment with custom user password settings, you will also
 need to add `-f docker-compose.users.yml` to the above command.
 
 
-### (Optional) Use [Kibana](https://www.elastic.co/kibana) for Log Viewing and Aggregation
-To use Kibana to view OpenMPF logs, you will need to add 
-`-f docker-compose.elk.yml` to your `docker-compose config` command. After
-running `docker-compose up`, Kibana can be accessed at 
+### (Optional) Use Kibana for Log Viewing and Aggregation
+To use [Kibana](https://www.elastic.co/kibana) to view OpenMPF logs, 
+you will need to add `-f docker-compose.elk.yml` to your 
+`docker-compose config` command. After running `docker-compose up`, 
+Kibana can be accessed at 
 `http://<ip-address-or-hostname-of-docker-host>:5601`. Kibana comes with
 many apps, but the only ones likely to be useful are 
 Logs (`http://<ip-address-or-hostname-of-docker-host>:5601/app/infra#/logs`)
 and 
 Discover (`http://<ip-address-or-hostname-of-docker-host>:5601/app/kibana#/discover`).
+
+If you have Docker configured to use a non-standard root directory,
+then you will need to change the volume configuration for the 
+filebeat service in docker-compose.elk.yml from 
+`/var/lib/docker/containers:/var/lib/docker/containers:ro` to 
+`/path/to/docker-dir/containers:/var/lib/docker/containers:ro`.
+
+If you have Docker configured to use a non-standard location for 
+the Docker socket, then you will need to change the volume configuration 
+for the filebeat service in docker-compose.elk.yml from 
+`/var/run/docker.sock:/var/run/docker.sock:ro` to 
+`/path/to/docker.sock:/var/run/docker.sock:ro`.
 
 
 ### (Optional) Add GPU support with NVIDIA CUDA
