@@ -41,7 +41,7 @@ services:
       - ACTIVE_MQ_PROFILE=default
 
   redis:
-    image: redis:latest
+    image: redis:alpine
 
   workflow-manager:
     image: ${REGISTRY}openmpf_integration_tests:${TAG:-latest}
