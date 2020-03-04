@@ -397,13 +397,13 @@ Discover (`http://<ip-address-or-hostname-of-docker-host>:5601/app/kibana#/disco
 
 If you have Docker configured to use a non-standard root directory,
 then you will need to change the volume configuration for the 
-filebeat service in docker-compose.elk.yml from 
+filebeat service in `docker-compose.elk.yml` from 
 `/var/lib/docker/containers:/var/lib/docker/containers:ro` to 
 `/path/to/docker-dir/containers:/var/lib/docker/containers:ro`.
 
 If you have Docker configured to use a non-standard location for 
 the Docker socket, then you will need to change the volume configuration 
-for the filebeat service in docker-compose.elk.yml from 
+for the filebeat service in `docker-compose.elk.yml` from 
 `/var/run/docker.sock:/var/run/docker.sock:ro` to 
 `/path/to/docker.sock:/var/run/docker.sock:ro`.
 
