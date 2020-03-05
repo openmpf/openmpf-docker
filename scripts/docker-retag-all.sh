@@ -26,6 +26,8 @@
 # limitations under the License.                                            #
 #############################################################################
 
+set -o errexit -o pipefail
+
 printUsage() {
     echo "Usages:"
     echo "docker-retag-all.sh [--push] <old-registry> <old-tag> <new-registry> <new-tag>"
@@ -36,13 +38,12 @@ printUsage() {
 
 push=0
 args=()
-while test $# -gt 0
-do
+while [ $# -gt 0 ]; do
     case "$1" in
         --push)
             push=1
             ;;
-        --*)
+        -*)
             echo "Bad option \"$1\""
             printUsage
             ;;
@@ -70,22 +71,22 @@ else
 fi
 
 if [ "${oldReg: -1}" == "/" ]; then
-    oldReg="${oldReg:0:$length-1}"
+    oldReg="${oldReg:0:-1}"
 fi
 
 if [ "${newReg: -1}" == "/" ]; then
-    newReg="${newReg:0:$length-1}"
+    newReg="${newReg:0:-1}"
 fi
 
 if [ -z "$oldReg" ]; then
-    filter="--filter=reference=openmpf**:$oldTag"
+    filter="--filter=reference=openmpf*:$oldTag"
 else
-    filter="--filter=reference=$oldReg/openmpf**:$oldTag"
+    filter="--filter=reference=$oldReg/openmpf*:$oldTag"
 fi
 
-IFS=' ' read -r -a oldImages <<< $(docker images "$filter" --format="{{.Repository}}:{{.Tag}}")
+readarray -t oldImages < <(docker images "$filter" --format="{{.Repository}}:{{.Tag}}")
 
-if [ -z "$oldImages" ]; then
+if [ "${#oldImages[@]}" -eq 0 ]; then
     echo "No images found."
     exit 1
 fi
@@ -113,9 +114,9 @@ for oldImage in "${oldImages[@]}"; do
     else
         newImage="$newReg/$name:$newTag"
     fi
-    command="docker tag $oldImage $newImage"
-    echo "$command"
-    eval "$command"
+    command=(docker tag "$oldImage" "$newImage")
+    echo "${command[@]}"
+    "${command[@]}"
     newImages+=("$newImage")
 done
 
@@ -123,8 +124,8 @@ if [ "$push" == 1 ]; then
     echo
     echo "Pushing images:"
     for newImage in "${newImages[@]}"; do
-        command="docker push $newImage"
-    echo "$command"
-    eval "$command"
+        command=(docker push "$newImage")
+        echo "${command[@]}"
+        "${command[@]}"
     done
 fi
