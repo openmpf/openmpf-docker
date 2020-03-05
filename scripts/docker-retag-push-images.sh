@@ -30,43 +30,59 @@ set -o errexit -o pipefail
 
 printUsage() {
     echo "Usages:"
-    echo "docker-retag-all.sh [--push] <old-registry> <old-tag> <new-registry> <new-tag>"
-    echo "docker-retag-all.sh [--push] <old-tag> <new-registry> <new-tag>"
-    echo "docker-retag-all.sh [--push] <old-tag> <new-tag>"
+    echo "docker-retag-push-images.sh [--push] [--old-registry] --old-tag [--new-registry] --new-tag"
+    echo "docker-retag-push-images.sh --push [--old-registry] --old-tag"
     exit 1
 }
 
+# pushImages(1: images)
+pushImages() {
+    for pushImage in "$@"; do
+        command=(docker push "$pushImage")
+        echo "${command[@]}"
+        "${command[@]}"
+    done
+}
+
 push=0
-args=()
 while [ $# -gt 0 ]; do
     case "$1" in
         --push)
             push=1
+            ;;
+        --old-registry)
+            oldReg="$2"
+            shift
+            ;;
+        --old-tag)
+            oldTag="$2"
+            shift
+            ;;
+        --new-registry)
+            newReg="$2"
+            shift
+            ;;
+        --new-tag)
+            newTag="$2"
+            shift
             ;;
         -*)
             echo "Bad option \"$1\""
             printUsage
             ;;
         *)
-            args+=("$1")
+            echo "Unexpected argument \"$1\""
+            printUsage
             ;;
     esac
     shift
 done
 
-if [ "${#args[@]}" -eq 4 ]; then
-    oldReg="${args[0]}"
-    oldTag="${args[1]}"
-    newReg="${args[2]}"
-    newTag="${args[3]}"
-elif [ "${#args[@]}" -eq 3 ]; then
-    oldTag="${args[0]}"
-    newReg="${args[1]}"
-    newTag="${args[2]}"
-elif [ "${#args[@]}" -eq 2 ]; then
-    oldTag="${args[0]}"
-    newTag="${args[1]}"
-else
+if [ -z "$oldTag" ]; then
+    printUsage
+fi
+
+if [ -z "$newTag" ] && [ "$push" == 0 ]; then
     printUsage
 fi
 
@@ -103,29 +119,31 @@ if [[ ! $REPLY =~ ^[Yy]$ ]]; then
     exit 0
 fi
 
-echo
-echo "Tagging images:"
-newImages=()
-for oldImage in "${oldImages[@]}"; do
-    repo="${oldImage%:*}"
-    name="${repo##*/}"
-    if [ -z "$newReg" ]; then
-        newImage="$name:$newTag"
-    else
-        newImage="$newReg/$name:$newTag"
-    fi
-    command=(docker tag "$oldImage" "$newImage")
-    echo "${command[@]}"
-    "${command[@]}"
-    newImages+=("$newImage")
-done
+if [ ! -z "$newTag" ]; then
+    echo
+    echo "Tagging images:"
+    newImages=()
+    for oldImage in "${oldImages[@]}"; do
+        repo="${oldImage%:*}"
+        name="${repo##*/}"
+        if [ -z "$newReg" ]; then
+            newImage="$name:$newTag"
+        else
+            newImage="$newReg/$name:$newTag"
+        fi
+        command=(docker tag "$oldImage" "$newImage")
+        echo "${command[@]}"
+        "${command[@]}"
+        newImages+=("$newImage")
+    done
+fi
 
 if [ "$push" == 1 ]; then
     echo
     echo "Pushing images:"
-    for newImage in "${newImages[@]}"; do
-        command=(docker push "$newImage")
-        echo "${command[@]}"
-        "${command[@]}"
-    done
+    if [ "${#newImages[@]}" -ne 0 ]; then
+        pushImages "${newImages[@]}"
+    else
+        pushImages "${oldImages[@]}"
+    fi
 fi
