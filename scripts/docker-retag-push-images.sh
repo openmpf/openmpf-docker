@@ -30,23 +30,42 @@ set -o errexit -o pipefail
 
 printUsage() {
     echo "Usages:"
-    echo "docker-retag-push-images.sh [--push] [--old-registry] --old-tag [--new-registry] --new-tag"
-    echo "docker-retag-push-images.sh --push [--old-registry] --old-tag"
+    echo "docker-retag-push-images.sh [--clean-old-tags] [--push] [--old-registry] --old-tag [--new-registry] --new-tag"
+    echo "docker-retag-push-images.sh [--clean-old-tags] --push [--registry] --tag"
     exit 1
+}
+
+#cleanOldTags(1: images)
+cleanOldTags() {
+    for image in "$@"; do
+        allTagsStr="$(docker inspect $image --format={{.RepoTags}})"
+        allTagsStr="${allTagsStr:1:-1}" # strip off brackets
+        declare -a allTags=( $allTagsStr ) # split on whitespace
+        for tag in "${allTags[@]}"; do
+            if []; then
+                
+            fi
+            echo "$tag" # DEBUG
+        done
+    done
 }
 
 # pushImages(1: images)
 pushImages() {
-    for pushImage in "$@"; do
-        command=(docker push "$pushImage")
+    for image in "$@"; do
+        command=(docker push "$image")
         echo "${command[@]}"
-        "${command[@]}"
+        #"${command[@]}"
     done
 }
 
+cleanOldTags=0
 push=0
 while [ $# -gt 0 ]; do
     case "$1" in
+        --clean-old-tags)
+            cleanOldTags=1
+            ;;
         --push)
             push=1
             ;;
@@ -133,9 +152,19 @@ if [ ! -z "$newTag" ]; then
         fi
         command=(docker tag "$oldImage" "$newImage")
         echo "${command[@]}"
-        "${command[@]}"
+        #"${command[@]}"
         newImages+=("$newImage")
     done
+fi
+
+if [ "$cleanOldTags" == 1 ]; then
+    echo
+    echo "Cleaning old tags:"
+    if [ "${#newImages[@]}" -ne 0 ]; then
+        cleanOldTags "${newImages[@]}"
+    else
+        cleanOldTags "${oldImages[@]}"
+    fi
 fi
 
 if [ "$push" == 1 ]; then
