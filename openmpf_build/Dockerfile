@@ -100,12 +100,12 @@ RUN yum -y localinstall --nogpgcheck /apps/bin/jdk-*-linux-x64.rpm && \
 # Install Apache Tomcat                                                        #
 ################################################################################
 
-# Apache Tomcat 7.0.72:
-RUN wget -nv -O /apps/bin/apache/apache-tomcat-7.0.72.tar.gz \
-    "http://archive.apache.org/dist/tomcat/tomcat-7/v7.0.72/bin/apache-tomcat-7.0.72.tar.gz" && \
-    cd /apps/bin/apache && tar xzf apache-tomcat-7.0.72.tar.gz && \
+# Apache Tomcat 7.0.76:
+RUN wget -nv -O /apps/bin/apache/apache-tomcat-7.0.76.tar.gz \
+    "http://archive.apache.org/dist/tomcat/tomcat-7/v7.0.76/bin/apache-tomcat-7.0.76.tar.gz" && \
+    cd /apps/bin/apache && tar xzf apache-tomcat-7.0.76.tar.gz && \
     mkdir -p /usr/share/apache-tomcat && \
-    cp -Rf /apps/bin/apache/apache-tomcat-7.0.72/* /usr/share/apache-tomcat/ && \
+    cp -Rf /apps/bin/apache/apache-tomcat-7.0.76/* /usr/share/apache-tomcat/ && \
     chown -R mpf /usr/share/apache-tomcat && chmod -R 755 /usr/share/apache-tomcat && \
     ln -s /usr/share/apache-tomcat /opt/apache-tomcat && \
     perl -i -p0e 's/<!--\n    <Manager pathname="" \/>\n      -->.*?/<!-- -->\n    <Manager pathname="" \/>/s' \
