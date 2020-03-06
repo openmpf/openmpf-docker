@@ -48,10 +48,12 @@ USER_PROPERTIES_PATH=
 KEYSTORE_PATH=
 KEYSTORE_PASSWORD=
 
-
 # Optional database configuration options.
 # Uncomment and modify to customize database configuration.
 # JDBC_URL=jdbc:postgresql://db:5432/mpf
 # POSTGRES_USER=mpf
 # POSTGRES_PASSWORD=password
 # POSTGRES_DB=mpf
+
+# Set this if using "docker-compose.stress.test.yml".
+EXTRA_TEST_DATA_PATH=
