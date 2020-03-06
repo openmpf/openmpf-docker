@@ -30,8 +30,8 @@ set -o errexit -o pipefail
 
 printUsage() {
     echo "Usages:"
-    echo "docker-retag-push-images.sh [--dry-run] [--remove-old-tags] [--push] [--old-registry] --old-tag [--new-registry] --new-tag"
-    echo "docker-retag-push-images.sh [--dry-run] [--remove-old-tags] --push [--old-registry] --old-tag"
+    echo "docker-retag-push-images.sh [--dry-run] [--remove-old-tags] [--push] [--registry] --tag [--new-registry] --new-tag"
+    echo "docker-retag-push-images.sh [--dry-run] [--remove-old-tags] --push [--registry] --tag"
     exit 1
 }
 
@@ -60,11 +60,11 @@ while [ $# -gt 0 ]; do
         --push)
             push=1
             ;;
-        --old-registry)
+        --registry)
             oldReg="$2"
             shift
             ;;
-        --old-tag)
+        --tag)
             oldTag="$2"
             shift
             ;;
