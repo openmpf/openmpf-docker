@@ -44,7 +44,7 @@ def pollReposAndEndBuild = env.poll_repos_and_end_build?.toBoolean() ?: false
 def postBuildStatusEnabled = 'post_build_status' in env ? env.post_build_status.toBoolean() : true
 def githubAuthToken = env.github_auth_token
 def emailRecipients = env.email_recipients
-def extraTestDataPath = env.extra_test_data_path ?: ''
+def testDataPath = env.extra_test_data_path ?: ''
 
 
 class Repo {
@@ -321,8 +321,8 @@ try {
     stage('Run Integration Tests') {
         dir('openmpf-docker') {
             def composeFiles = "docker-compose.integration.test.yml:$componentComposeFiles"
-            echo "extraTestDataPath: $extraTestDataPath" // DEBUG
-            if (extraTestDataPath) {
+            echo "testDataPath: $testDataPath" // DEBUG
+            if (testDataPath) {
                 echo "Add docker-compose.stress.test.yml" // DEBUG
                 composeFiles = "docker-compose.stress.test.yml:$composeFiles"
             }
@@ -338,7 +338,7 @@ try {
 
             withEnv(["TAG=$inProgressTag",
                      "EXTRA_MVN_OPTIONS=$mvnTestOptions",
-                     "EXTRA_TEST_DATA_PATH=$extraTestDataPath",
+                     "EXTRA_TEST_DATA_PATH=$testDataPath",
                      // Use custom project name to allow multiple builds on same machine
                      "COMPOSE_PROJECT_NAME=openmpf_$buildId",
                      "COMPOSE_FILE=$composeFiles"]) {
@@ -346,7 +346,7 @@ try {
                     sh "echo EXTRA_TEST_DATA_PATH: $EXTRA_TEST_DATA_PATH" // DEBUG
                     sh "printenv"
 
-                    sh "export EXTRA_TEST_DATA_PATH=$extraTestDataPath"
+                    // sh "export EXTRA_TEST_DATA_PATH=$testDataPath"
 
                     sh "docker-compose config" // DEBUG
                     sh "docker-compose up --exit-code-from workflow-manager $scaleArgs"
