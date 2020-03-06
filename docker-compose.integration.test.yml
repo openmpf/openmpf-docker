@@ -52,7 +52,6 @@ services:
       - activemq
     environment:
       - EXTRA_MVN_OPTIONS=$EXTRA_MVN_OPTIONS
-      - EXTRA_TEST_DATA_PATH=$EXTRA_TEST_DATA_PATH
     volumes:
       - shared_data:/opt/mpf/share
       - ./test-reports:/test-reports

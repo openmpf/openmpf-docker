@@ -341,7 +341,6 @@ try {
                      "COMPOSE_PROJECT_NAME=openmpf_$buildId",
                      "COMPOSE_FILE=$composeFiles"]) {
                 try {
-                    sh "docker-compose config" // DEBUG
                     sh "docker-compose up --exit-code-from workflow-manager $scaleArgs"
                     sh 'docker-compose down --volumes'
                 }
