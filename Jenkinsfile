@@ -324,7 +324,7 @@ try {
             echo "extraTestDataPath: $extraTestDataPath" // DEBUG
             if (extraTestDataPath) {
                 echo "Add docker-compose.stress.test.yml" // DEBUG
-                composeFiles += ":docker-compose.stress.test.yml"
+                composeFiles = "docker-compose.stress.test.yml:$composeFiles"
             }
 
             def nproc = shOutput('nproc') as int
