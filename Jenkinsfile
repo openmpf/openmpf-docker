@@ -44,7 +44,7 @@ def pollReposAndEndBuild = env.poll_repos_and_end_build?.toBoolean() ?: false
 def postBuildStatusEnabled = 'post_build_status' in env ? env.post_build_status.toBoolean() : true
 def githubAuthToken = env.github_auth_token
 def emailRecipients = env.email_recipients
-def extraTestDataPath = env.extra_test_data_path
+def extraTestDataPath = env.extra_test_data_path ?: ''
 
 
 class Repo {
@@ -321,7 +321,9 @@ try {
     stage('Run Integration Tests') {
         dir('openmpf-docker') {
             def composeFiles = "docker-compose.integration.test.yml:$componentComposeFiles"
+            echo "extraTestDataPath: $extraTestDataPath" // DEBUG
             if (extraTestDataPath) {
+                echo "Add docker-compose.stress.test.yml" // DEBUG
                 composeFiles += ":docker-compose.stress.test.yml"
             }
 
