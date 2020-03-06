@@ -29,8 +29,4 @@ version: '3.7'
 services:
   workflow-manager:
     volumes:
-      - extra_data:/mpfdata:ro
-
-volumes:
-  extra_data:
-    name: ${EXTRA_TEST_DATA_PATH}
+      - ${EXTRA_TEST_DATA_PATH}:/mpfdata:ro

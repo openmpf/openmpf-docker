@@ -321,9 +321,7 @@ try {
     stage('Run Integration Tests') {
         dir('openmpf-docker') {
             def composeFiles = "docker-compose.integration.test.yml:$componentComposeFiles"
-            echo "testDataPath: $testDataPath" // DEBUG
             if (testDataPath) {
-                echo "Add docker-compose.stress.test.yml" // DEBUG
                 composeFiles = "docker-compose.stress.test.yml:$composeFiles"
             }
 
@@ -343,11 +341,6 @@ try {
                      "COMPOSE_PROJECT_NAME=openmpf_$buildId",
                      "COMPOSE_FILE=$composeFiles"]) {
                 try {
-                    sh "echo EXTRA_TEST_DATA_PATH: $EXTRA_TEST_DATA_PATH" // DEBUG
-                    sh "printenv"
-
-                    // sh "export EXTRA_TEST_DATA_PATH=$testDataPath"
-
                     sh "docker-compose config" // DEBUG
                     sh "docker-compose up --exit-code-from workflow-manager $scaleArgs"
                     sh 'docker-compose down --volumes'
