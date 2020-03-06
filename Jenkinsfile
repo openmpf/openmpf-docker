@@ -344,7 +344,7 @@ try {
                      "COMPOSE_FILE=$composeFiles"]) {
                 try {
                     echo "echo EXTRA_TEST_DATA_PATH: $EXTRA_TEST_DATA_PATH" // DEBUG
-                    docker-compose config // DEBUG
+                    sh "docker-compose config" // DEBUG
                     sh "docker-compose up --exit-code-from workflow-manager $scaleArgs"
                     sh 'docker-compose down --volumes'
                 }
