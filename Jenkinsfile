@@ -44,7 +44,7 @@ def pollReposAndEndBuild = env.poll_repos_and_end_build?.toBoolean() ?: false
 def postBuildStatusEnabled = 'post_build_status' in env ? env.post_build_status.toBoolean() : true
 def githubAuthToken = env.github_auth_token
 def emailRecipients = env.email_recipients
-def testDataPath = env.extra_test_data_path ?: ''
+def testDataPath = env.test_data_path ?: ''
 
 
 class Repo {
