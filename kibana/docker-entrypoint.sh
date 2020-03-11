@@ -1,3 +1,5 @@
+#!/bin/bash
+
 #############################################################################
 # NOTICE                                                                    #
 #                                                                           #
@@ -5,11 +7,11 @@
 # under contract, and is subject to the Rights in Data-General Clause       #
 # 52.227-14, Alt. IV (DEC 2007).                                            #
 #                                                                           #
-# Copyright 2019 The MITRE Corporation. All Rights Reserved.                #
+# Copyright 2020 The MITRE Corporation. All Rights Reserved.                #
 #############################################################################
 
 #############################################################################
-# Copyright 2019 The MITRE Corporation                                      #
+# Copyright 2020 The MITRE Corporation                                      #
 #                                                                           #
 # Licensed under the Apache License, Version 2.0 (the "License");           #
 # you may not use this file except in compliance with the License.          #
@@ -24,46 +26,30 @@
 # limitations under the License.                                            #
 #############################################################################
 
-version: '3.7'
+set -o errexit -o pipefail
 
-services:
-  db:
-    image: postgres:alpine
-    environment:
-      POSTGRES_DB: ${POSTGRES_DB:-mpf}
-      POSTGRES_USER: ${POSTGRES_USER:-mpf}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
+{
+    until curl --silent --fail --head 'http://localhost:5601' > /dev/null ; do
+        echo 'Kibana is unavailable. Sleeping.'
+        sleep 5
+    done
 
-  activemq:
-    image: ${REGISTRY}openmpf_activemq:${TAG:-latest}
-    environment:
-      # Set which configuration files are used at runtime:
-      - ACTIVE_MQ_PROFILE=default
+    echo 'Checking if index pattern exists...'
+    index_url='http://localhost:5601/api/saved_objects/index-pattern/filebeat-index'
+    if curl --silent --fail --head "$index_url"; then
+        echo 'Index pattern already exists.'
+        exit 0
+    fi
 
-  redis:
-    image: redis:alpine
+    echo 'Creating index pattern...'
+    curl --silent --fail "$index_url" \
+        --header 'Content-Type: application/json' \
+        --header 'kbn-xsrf: true' \
+        --data '{"attributes":{"title":"filebeat-*","timeFieldName":"@timestamp"}}'
+    echo 'Successfully created index pattern'
+} &
 
-  workflow-manager:
-    image: ${REGISTRY}openmpf_integration_tests:${TAG:-latest}
-    build: integration_tests
-    depends_on:
-      - db
-      - redis
-      - activemq
-    environment:
-      - EXTRA_MVN_OPTIONS=$EXTRA_MVN_OPTIONS
-    volumes:
-      - shared_data:/opt/mpf/share
-      - ./test-reports:/test-reports
+set -o xtrace
 
-  markup:
-    image: ${REGISTRY}openmpf_markup:${TAG}
-    build: markup
-    volumes:
-      - shared_data:/opt/mpf/share
-    deploy:
-      mode: global
-
-volumes:
-  shared_data:
-
+# Call base image's entry point
+exec /usr/local/bin/dumb-init -- "$@"
