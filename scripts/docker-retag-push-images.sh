@@ -30,8 +30,8 @@ set -o errexit -o pipefail
 
 printUsage() {
     echo "Usages:"
-    echo "docker-retag-push-images.sh [--dry-run] [--remove-old-tags] [--push] [--registry] --tag [--new-registry] --new-tag"
-    echo "docker-retag-push-images.sh [--dry-run] [--remove-old-tags] --push [--registry] --tag"
+    echo "docker-retag-push-images.sh [--dry-run] [--remove-other-tags] [--push] [--registry] --tag [--new-registry] --new-tag"
+    echo "docker-retag-push-images.sh [--dry-run] [--remove-other-tags] --push [--registry] --tag"
     exit 1
 }
 
@@ -47,15 +47,15 @@ pushImages() {
 }
 
 dryRun=0
-removeOldTags=0
+removeOtherTags=0
 push=0
 while [ $# -gt 0 ]; do
     case "$1" in
         --dry-run)
             dryRun=1
             ;;
-        --remove-old-tags)
-            removeOldTags=1
+        --remove-other-tags)
+            removeOtherTags=1
             ;;
         --push)
             push=1
@@ -89,10 +89,17 @@ while [ $# -gt 0 ]; do
 done
 
 if [ -z "$oldTag" ]; then
+    echo "Missing --tag."
+    printUsage
+fi
+
+if [ "$newReg" ] && [ -z "$newTag" ]; then
+    echo "When specifying --new-registry you must also specify --new-tag."
     printUsage
 fi
 
 if [ -z "$newTag" ] && [ "$push" == 0 ]; then
+    echo "Since --new-tag is missing we assume you want to only push images, not retag them, but you're missing --push."
     printUsage
 fi
 
@@ -150,13 +157,11 @@ if [ ! -z "$newTag" ]; then
     done
 fi
 
-if [ "$removeOldTags" == 1 ]; then
+if [ "$removeOtherTags" == 1 ]; then
     echo
-    echo "Removing old tags:"
+    echo "Removing other tags:"
     for ((i = 0; i < "${#oldImages[@]}"; i++)); do
-        allTagsStr="$(docker inspect "${oldImages[i]}" --format={{.RepoTags}})"
-        allTagsStr="${allTagsStr:1:-1}" # strip off brackets
-        declare -a allTags=( $allTagsStr ) # split on whitespace
+        readarray -t allTags < <(docker inspect "${oldImages[i]}" '--format={{join .RepoTags "\n"}}')
         if [ "${#newImages[@]}" -ne 0 ]; then
             keepImage="${newImages[i]}"
         else
