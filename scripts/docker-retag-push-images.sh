@@ -125,8 +125,20 @@ if [ "${#oldImages[@]}" -eq 0 ]; then
 fi
 
 echo "Found images:"
-echo
-docker images "$filter"
+printf "%s\n" "${oldImages[@]}"
+
+customImages=()
+for oldImage in "${oldImages[@]}"; do
+    if [[ $(docker image inspect "$oldImage" \
+            --format '{{index .Config.Labels "org.label-schema.vcs-ref"}}') == *"custom"* ]]; then
+        customImages+=("$oldImage")
+    fi
+done
+if [ "${#customImages[@]}" -ne 0 ]; then
+    echo
+    echo "WARNING: The following images have \"custom\" repo in the VCS label:"
+    printf "%s\n" "${customImages[@]}"
+fi
 
 echo
 read -p "Continue [y/N]? " -r
