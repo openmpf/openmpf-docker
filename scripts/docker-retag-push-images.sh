@@ -136,7 +136,7 @@ for oldImage in "${oldImages[@]}"; do
 done
 if [ "${#customImages[@]}" -ne 0 ]; then
     echo
-    echo "WARNING: The following images have \"custom\" repo in the VCS label:"
+    echo "WARNING: The following images have a \"custom\" repo in the VCS label:"
     printf "%s\n" "${customImages[@]}"
 fi
 
