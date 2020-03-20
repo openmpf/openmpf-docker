@@ -290,7 +290,7 @@ try {
                 if (buildCustomComponents) {
                     componentComposeFiles += ":../$customComponentsRepo.path/docker-compose.custom-components.yml"
                 }
-                runtimeComposeFiles = "docker-compose.core.yml:$componentComposeFiles"
+                runtimeComposeFiles = "docker-compose.core.yml:$componentComposeFiles:docker-compose.elk.yml"
 
                 withEnv(["TAG=$inProgressTag", "COMPOSE_FILE=$runtimeComposeFiles", 'COMPOSE_DOCKER_CLI_BUILD=1']) {
                     sh "docker-compose build $commonBuildArgs --build-arg RUN_TESTS --parallel"
@@ -434,6 +434,10 @@ def addVcsRefLabels(composeYaml, openmpfRepo, openmpfDockerRepo) {
         if (serviceName == 'workflow-manager' || serviceName == 'markup') {
             addLabelToImage(service.image, 'org.label-schema.vcs-ref', commonVcsRefs)
             continue
+        }
+        if (serviceName == 'kibana') {
+            prependImageLabel(service.image, 'org.label-schema.vcs-ref', formatVcsRefs([openmpfDockerRepo]))
+            continue;
         }
 
         def contextDir = service.build.context
