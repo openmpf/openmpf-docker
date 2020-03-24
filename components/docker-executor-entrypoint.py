@@ -32,7 +32,7 @@ import base64
 import collections
 import errno
 import glob
-import httplib
+import http.client
 import json
 import os
 import pipes
@@ -44,7 +44,8 @@ import subprocess
 import sys
 import time
 import traceback
-import urllib2
+import urllib.error
+import urllib.request
 
 
 def main():
@@ -111,7 +112,7 @@ def find_descriptor(mpf_home):
 def wait_for_activemq(activemq_host):
     while True:
         try:
-            conn = httplib.HTTPConnection(activemq_host, 8161)
+            conn = http.client.HTTPConnection(activemq_host, 8161)
             conn.request('HEAD', '/')
             resp = conn.getresponse()
             if 200 <= resp.status <= 299:
@@ -132,9 +133,10 @@ def register_component(descriptor_path, wfm_base_url, wfm_user, wfm_password):
     if not wfm_user or not wfm_password:
         raise RuntimeError('The WFM_USER and WFM_PASSWORD environment variables must both be set.')
 
-    url = wfm_base_url + '/rest/components/registerUnmanaged'
+    auth_info_bytes = (wfm_user + ':' + wfm_password).encode('utf-8')
+    base64_bytes = base64.b64encode(auth_info_bytes)
     headers = {
-        'Authorization': 'Basic ' + base64.b64encode(wfm_user + ':' + wfm_password),
+        'Authorization': 'Basic ' + base64_bytes.decode('utf-8'),
         'Content-Length': os.stat(descriptor_path).st_size,
         'Content-Type': 'application/json',
         'Accept': 'application/json'
@@ -142,10 +144,11 @@ def register_component(descriptor_path, wfm_base_url, wfm_user, wfm_password):
     ssl_ctx = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
     ssl_ctx.verify_mode = ssl.CERT_NONE
 
+    url = wfm_base_url + '/rest/components/registerUnmanaged'
     print('Registering component by posting', descriptor_path, 'to', url)
     try:
         post_descriptor_with_retry(descriptor_path, url, headers, ssl_ctx)
-    except urllib2.HTTPError as err:
+    except urllib.error.HTTPError as err:
         handle_registration_error(err)
 
 
@@ -154,7 +157,7 @@ def post_descriptor_with_retry(descriptor_path, url, headers, ssl_ctx):
         try:
             post_descriptor(descriptor_path, url, headers, ssl_ctx)
             return
-        except httplib.BadStatusLine:
+        except http.client.BadStatusLine:
             new_url = url.replace('http://', 'https://')
             print('Initial registration response failed due to an invalid status line in the HTTP response. '
                   'This usually means that the server is using HTTPS, but an "http://" URL was used. '
@@ -162,7 +165,7 @@ def post_descriptor_with_retry(descriptor_path, url, headers, ssl_ctx):
             post_descriptor(descriptor_path, new_url, headers, ssl_ctx)
             return
 
-        except urllib2.HTTPError as err:
+        except urllib.error.HTTPError as err:
             if err.url != url:
                 # This generally means the provided WFM url used HTTP, but WFM was configured to use HTTPS
                 print('Initial registration response failed. Trying with redirected url: ', err.url)
@@ -174,7 +177,7 @@ def post_descriptor_with_retry(descriptor_path, url, headers, ssl_ctx):
                   'Workflow Manager is still deploying or because the wrong URL was used for the WFM_BASE_URL(={}) '
                   'environment variable. Registration will be re-attempted in 5 seconds.'.format(err, url))
 
-        except urllib2.URLError as err:
+        except urllib.error.URLError as err:
             reason = err.reason
             should_retry_immediately = isinstance(reason, ssl.SSLError) and reason.reason == 'UNKNOWN_PROTOCOL'
             if should_retry_immediately:
@@ -198,8 +201,8 @@ def post_descriptor_with_retry(descriptor_path, url, headers, ssl_ctx):
 
 def post_descriptor(descriptor_path, url, headers, ssl_ctx):
     with open(descriptor_path, 'r') as descriptor_file:
-        request = urllib2.Request(url, descriptor_file, headers=headers)
-        response = urllib2.urlopen(request, context=ssl_ctx).read()
+        request = urllib.request.Request(url, descriptor_file, headers=headers)
+        response = urllib.request.urlopen(request, context=ssl_ctx).read()
         print('Registration response:', response)
 
 
@@ -247,7 +250,8 @@ def start_executor(descriptor, mpf_home, activemq_host, node_name):
     executor_proc = subprocess.Popen(executor_command,
                                      env=executor_env,
                                      cwd=os.path.join(mpf_home, 'plugins', descriptor['componentName']),
-                                     stdin=subprocess.PIPE)
+                                     stdin=subprocess.PIPE,
+                                     text=True)
 
     # Handle ctrl-c
     signal.signal(signal.SIGINT, lambda sig, frame: stop_executor(executor_proc))
@@ -278,7 +282,8 @@ def stop_executor(executor_proc):
     if still_running:
         print('Sending quit to component executor')
         # Write "q\n" to executor's stdin to request orderly shutdown.
-        executor_proc.communicate('q\n')
+        executor_proc.stdin.write('q\n')
+        executor_proc.stdin.flush()
 
 
 def tail_log_if_needed(log_dir, component_log_name, source_language, executor_pid):
@@ -364,4 +369,3 @@ def format_command_list(command):
 
 if __name__ == '__main__':
     main()
-

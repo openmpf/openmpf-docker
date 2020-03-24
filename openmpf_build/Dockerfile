@@ -34,14 +34,31 @@ SHELL ["/bin/bash", "-o", "errexit", "-o", "pipefail", "-c"]
 RUN yum update --assumeyes; \
     yum install --assumeyes epel-release https://download1.rpmfusion.org/free/el/rpmfusion-free-release-7.noarch.rpm; \
     yum install --assumeyes cmake3 make gcc gcc-c++ qt-devel log4cxx-devel boost-devel ffmpeg ffmpeg-devel gtest-devel \
-            java-11-openjdk-devel python-pip python-devel activemq-cpp-devel protobuf-static protobuf-devel; \
+            java-11-openjdk-devel activemq-cpp-devel protobuf-static protobuf-devel \
+            # Python build deps
+            openssl-devel libffi-devel; \
     yum clean all; \
     rm --recursive /var/cache/yum/*; \
-    pip install --upgrade --no-cache-dir pip wheel; \
     # For protobuf maven plugin
     ln --symbolic /usr/bin/protoc /usr/local/bin/protoc;
 
 ENV JAVA_HOME=/etc/alternatives/java_sdk
+
+RUN mkdir /tmp/python; \
+    cd /tmp/python; \
+    curl 'https://www.python.org/ftp/python/3.8.2/Python-3.8.2.tar.xz' \
+        | tar --extract --xz; \
+    cd Python-3.8.2; \
+    ./configure --enable-optimizations --with-lto --enable-shared; \
+    make --jobs "$(nproc)"; \
+    make install; \
+    ln -s /usr/local/lib/libpython3.8.so.1.0 /usr/lib64/libpython3.8.so.1.0; \
+    pip3 install --upgrade --no-cache-dir pip; \
+    pip3 install --upgrade --no-cache-dir wheel; \
+    # find commands taken from official Python Dockerfile
+    find /usr/local/lib/python3.8 -depth -type d -a \( -name test -o -name tests -o -name idle_test \) -exec rm -rf '{}' + ; \
+    find /usr/local/lib/python3.8 -depth -type f -a \( -name '*.pyc' -o -name '*.pyo' \) -exec rm -rf '{}' + ; \
+    rm --recursive /tmp/python;
 
 
 RUN mkdir /tmp/opencv; \
@@ -51,7 +68,8 @@ RUN mkdir /tmp/opencv; \
     cd opencv-3.4.7; \
     mkdir build; \
     cd build; \
-    cmake3 -DCMAKE_INSTALL_PREFIX:PATH="/opt/opencv-3.4.7" -DWITH_IPP:BOOL="0" ..; \
+    cmake3 -DCMAKE_INSTALL_PREFIX:PATH="/opt/opencv-3.4.7" -DWITH_IPP=false \
+        -DBUILD_EXAMPLES=false -DBUILD_TESTS=false -DBUILD_PERF_TESTS=false ..; \
     make --jobs "$(nproc)" install; \
     ln --symbolic /opt/opencv-3.4.7/include/opencv2 /usr/local/include/opencv2; \
     ln --symbolic /opt/opencv-3.4.7/include/opencv /usr/local/include/opencv; \
@@ -61,7 +79,6 @@ RUN mkdir /tmp/opencv; \
 RUN curl --location 'https://archive.apache.org/dist/maven/maven-3/3.3.3/binaries/apache-maven-3.3.3-bin.tar.gz' \
         | tar --extract --gzip --directory /opt; \
     ln --symbolic /opt/apache-maven-3.3.3/bin/mvn /usr/local/bin;
-
 
 COPY . /home/mpf/openmpf-projects
 

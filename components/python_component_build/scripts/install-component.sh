@@ -37,7 +37,7 @@ if [ ! -e "$descriptor_path" ]; then
     exit 3
 fi
 
-component_name=$(python -c "import json; print json.load(open('$descriptor_path'))['componentName']")
+component_name=$(python -c "import json; print(json.load(open('$descriptor_path'))['componentName'])")
 mkdir --parents "$MPF_HOME/plugins/$component_name"
 
 if [ -e "$src_dir/setup.py" ]; then

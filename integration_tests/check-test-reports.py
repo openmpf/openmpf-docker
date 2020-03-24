@@ -26,12 +26,9 @@
 # limitations under the License.                                            #
 #############################################################################
 
-from __future__ import print_function, division
-
 import os
 import sys
 import xml.etree.ElementTree
-
 
 
 def main():

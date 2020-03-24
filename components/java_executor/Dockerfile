@@ -33,6 +33,22 @@ FROM centos:7
 
 SHELL ["/bin/bash", "-o", "errexit", "-o", "pipefail", "-c"]
 
+COPY --from=openmpf_build /usr/local/bin/python3.8 /usr/local/bin/python3.8-config \
+    /usr/local/bin/pip /usr/local/bin/pip3 /usr/local/bin/pip3.8 /usr/local/bin/wheel \
+    /usr/local/bin/
+
+COPY --from=openmpf_build /usr/local/lib/python3.8 /usr/local/lib/python3.8
+
+COPY --from=openmpf_build /usr/local/lib/libpython3.8.so.1.0 /usr/local/lib/libpython3.8.so.1.0
+
+RUN cd /usr/local/bin; \
+    ln --symbolic python3.8 python3; \
+    ln --symbolic python3.8-config python3-config; \
+    cd /usr/local/lib; \
+    ln --symbolic libpython3.8.so.1.0 libpython3.8.so; \
+    ln --symbolic /usr/local/lib/libpython3.8.so.1.0 /usr/lib64/libpython3.8.so.1.0;
+
+
 RUN yum update --assumeyes; \
     yum install --assumeyes https://download1.rpmfusion.org/free/el/rpmfusion-free-release-7.noarch.rpm; \
     yum install --assumeyes java-11-openjdk ffmpeg; \
@@ -49,7 +65,7 @@ COPY --from=openmpf_build /build-artifacts/java-executor/*.jar $MPF_HOME/jars/
 
 COPY docker-executor-entrypoint.py /scripts/docker-entrypoint.py
 
-ENTRYPOINT ["python", "-u", "/scripts/docker-entrypoint.py"]
+ENTRYPOINT ["python3", "-u", "/scripts/docker-entrypoint.py"]
 
 
 LABEL org.label-schema.license="Apache 2.0" \

@@ -35,6 +35,22 @@ FROM centos:7
 
 SHELL ["/bin/bash", "-o", "errexit", "-o", "pipefail", "-c"]
 
+COPY --from=openmpf_build /usr/local/bin/python3.8 /usr/local/bin/python3.8-config \
+    /usr/local/bin/pip /usr/local/bin/pip3 /usr/local/bin/pip3.8 /usr/local/bin/wheel \
+    /usr/local/bin/
+
+COPY --from=openmpf_build /usr/local/lib/python3.8 /usr/local/lib/python3.8
+
+COPY --from=openmpf_build /usr/local/lib/libpython3.8.so.1.0 /usr/local/lib/libpython3.8.so.1.0
+
+RUN cd /usr/local/bin; \
+    ln --symbolic python3.8 python3; \
+    ln --symbolic python3.8-config python3-config; \
+    cd /usr/local/lib; \
+    ln --symbolic libpython3.8.so.1.0 libpython3.8.so; \
+    ln --symbolic /usr/local/lib/libpython3.8.so.1.0 /usr/lib64/libpython3.8.so.1.0;
+
+
 ENV MPF_HOME /opt/mpf
 
 ENV COMPONENT_VIRTUALENV $MPF_HOME/plugin-venv
@@ -43,18 +59,18 @@ ENV PATH $COMPONENT_VIRTUALENV/bin:/scripts:$PATH
 
 RUN yum update --assumeyes; \
     yum install --assumeyes https://download1.rpmfusion.org/free/el/rpmfusion-free-release-7.noarch.rpm; \
-    yum install --assumeyes ffmpeg python-pip; \
+    yum install --assumeyes ffmpeg; \
     yum clean all; \
-    rm --recursive /var/cache/yum/*; \
-    pip install --no-cache-dir --upgrade pip; \
-    pip install --no-cache-dir --upgrade virtualenv; \
-    virtualenv "$COMPONENT_VIRTUALENV";
+    rm --recursive /var/cache/yum/*;
+
+RUN python3 -m venv "$COMPONENT_VIRTUALENV"; \
+    pip3 install --no-cache-dir --upgrade pip;
 
 
 # Use mount so the source files don't end up in image
 RUN --mount=type=bind,from=openmpf_build,source=/home/mpf/openmpf-projects/openmpf-python-component-sdk/detection,target=/tmp/python \
-    pip install --no-cache-dir /tmp/python/api /tmp/python/component_util; \
-    python /tmp/python/component_util/tests/__main__.py;
+    pip3 install --no-cache-dir /tmp/python/api /tmp/python/component_util; \
+    python3 -m unittest discover --verbose --buffer --start-directory /tmp/python/component_util
 
 ENV SRC_DIR /home/mpf/component_src
 
