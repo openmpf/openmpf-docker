@@ -26,8 +26,6 @@
 # limitations under the License.                                            #
 #############################################################################
 
-from __future__ import print_function, division
-
 import base64
 import collections
 import errno
@@ -49,6 +47,16 @@ import urllib.request
 
 
 def main():
+    executor_proc, tail_proc = init()
+    exit_code = executor_proc.wait()
+    if tail_proc:
+        tail_proc.wait()
+
+    print('Executor exit code =', exit_code)
+    sys.exit(exit_code)
+
+
+def init():
     # Optional configurable environment variables
     wfm_user = os.getenv('WFM_USER', 'admin')
     wfm_password = os.getenv('WFM_PASSWORD', 'mpfadm')
@@ -64,18 +72,19 @@ def main():
 
 
     descriptor_path = find_descriptor(mpf_home)
+    print('Loading descriptor from', descriptor_path)
+    with open(descriptor_path, 'rb') as descriptor_file:
+        unparsed_descriptor = descriptor_file.read()
 
     if disable_component_registration:
         print('Component registration disabled because the '
               '"DISABLE_COMPONENT_REGISTRATION" environment variable was set.')
     else:
-        register_component(descriptor_path, wfm_base_url, wfm_user, wfm_password)
+        register_component(unparsed_descriptor, wfm_base_url, wfm_user, wfm_password)
 
     wait_for_activemq(activemq_host)
 
-    with open(descriptor_path, 'r') as descriptor_file:
-        descriptor = json.load(descriptor_file)
-
+    descriptor = json.loads(unparsed_descriptor)
     if not node_name:
         component_name = descriptor['componentName']
         node_name = '{}_id_{}'.format(component_name, os.getenv('HOSTNAME'))
@@ -85,12 +94,7 @@ def main():
     tail_proc = tail_log_if_needed(log_dir, component_log_name, descriptor['sourceLanguage'].lower(),
                                    executor_proc.pid)
 
-    exit_code = executor_proc.wait()
-    if tail_proc:
-        tail_proc.wait()
-
-    print('Executor exit code =', exit_code)
-    sys.exit(exit_code)
+    return executor_proc, tail_proc
 
 
 def find_descriptor(mpf_home):
@@ -129,7 +133,7 @@ def wait_for_activemq(activemq_host):
 
 
 
-def register_component(descriptor_path, wfm_base_url, wfm_user, wfm_password):
+def register_component(unparsed_descriptor, wfm_base_url, wfm_user, wfm_password):
     if not wfm_user or not wfm_password:
         raise RuntimeError('The WFM_USER and WFM_PASSWORD environment variables must both be set.')
 
@@ -137,7 +141,7 @@ def register_component(descriptor_path, wfm_base_url, wfm_user, wfm_password):
     base64_bytes = base64.b64encode(auth_info_bytes)
     headers = {
         'Authorization': 'Basic ' + base64_bytes.decode('utf-8'),
-        'Content-Length': os.stat(descriptor_path).st_size,
+        'Content-Length': len(unparsed_descriptor),
         'Content-Type': 'application/json',
         'Accept': 'application/json'
     }
@@ -145,31 +149,31 @@ def register_component(descriptor_path, wfm_base_url, wfm_user, wfm_password):
     ssl_ctx.verify_mode = ssl.CERT_NONE
 
     url = wfm_base_url + '/rest/components/registerUnmanaged'
-    print('Registering component by posting', descriptor_path, 'to', url)
+    print('Registering component by posting descriptor to', url)
     try:
-        post_descriptor_with_retry(descriptor_path, url, headers, ssl_ctx)
+        post_descriptor_with_retry(unparsed_descriptor, url, headers, ssl_ctx)
     except urllib.error.HTTPError as err:
         handle_registration_error(err)
 
 
-def post_descriptor_with_retry(descriptor_path, url, headers, ssl_ctx):
+def post_descriptor_with_retry(unparsed_descriptor, url, headers, ssl_ctx):
     while True:
         try:
-            post_descriptor(descriptor_path, url, headers, ssl_ctx)
+            post_descriptor(unparsed_descriptor, url, headers, ssl_ctx)
             return
         except http.client.BadStatusLine:
             new_url = url.replace('http://', 'https://')
             print('Initial registration response failed due to an invalid status line in the HTTP response. '
                   'This usually means that the server is using HTTPS, but an "http://" URL was used. '
                   'Trying again with:', new_url)
-            post_descriptor(descriptor_path, new_url, headers, ssl_ctx)
+            post_descriptor(unparsed_descriptor, new_url, headers, ssl_ctx)
             return
 
         except urllib.error.HTTPError as err:
             if err.url != url:
                 # This generally means the provided WFM url used HTTP, but WFM was configured to use HTTPS
                 print('Initial registration response failed. Trying with redirected url: ', err.url)
-                post_descriptor(descriptor_path, err.url, headers, ssl_ctx)
+                post_descriptor(unparsed_descriptor, err.url, headers, ssl_ctx)
                 return
             if err.code != 404:
                 raise
@@ -199,11 +203,11 @@ def post_descriptor_with_retry(descriptor_path, url, headers, ssl_ctx):
         time.sleep(5)
 
 
-def post_descriptor(descriptor_path, url, headers, ssl_ctx):
-    with open(descriptor_path, 'r') as descriptor_file:
-        request = urllib.request.Request(url, descriptor_file, headers=headers)
-        response = urllib.request.urlopen(request, context=ssl_ctx).read()
-        print('Registration response:', response)
+def post_descriptor(unparsed_descriptor, url, headers, ssl_ctx):
+    request = urllib.request.Request(url, unparsed_descriptor, headers=headers)
+    with urllib.request.urlopen(request, context=ssl_ctx) as response:
+        body = response.read()
+    print('Registration response:', body)
 
 
 def handle_registration_error(http_error):
