@@ -43,6 +43,9 @@ x-detection-component-base:
   deploy:
     mode: replicated
     replicas: 2
+    restart_policy:
+      max_attempts: 3
+      window: 30s
 
 services:
   darknet-detection:
