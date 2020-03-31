@@ -37,10 +37,6 @@ x-common-deploy:
   &common-deploy
   mode: replicated
   replicas: 2
-  restart_policy:
-    condition: any
-    max_attempts: 3
-    window: 30s
 
 x-detection-component-base:
   &detection-component-base
