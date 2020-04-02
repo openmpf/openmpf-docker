@@ -419,9 +419,9 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
         postBuildStatus("openmpf", openmpfBranch, openmpfSha, buildStatus, githubAuthToken)
         postBuildStatus("openmpf-components", openmpfComponentsBranch, openmpfComponentsSha, buildStatus, githubAuthToken)
         postBuildStatus("openmpf-contrib-components", openmpfContribComponentsBranch, openmpfContribComponentsSha, buildStatus, githubAuthToken)
-        postBuildStatus("openmpf-cpp-components-sdk", openmpfCppComponentSdkBranch, openmpfCppComponentSdkSha, buildStatus, githubAuthToken)
-        postBuildStatus("openmpf-java-components-sdk", openmpfJavaComponentSdkBranch, openmpfJavaComponentSdkSha, buildStatus, githubAuthToken)
-        postBuildStatus("openmpf-python-components-sdk", openmpfPythonComponentSdkBranch, openmpfPythonComponentSdkSha, buildStatus, githubAuthToken)
+        postBuildStatus("openmpf-cpp-component-sdk", openmpfCppComponentSdkBranch, openmpfCppComponentSdkSha, buildStatus, githubAuthToken)
+        postBuildStatus("openmpf-java-component-sdk", openmpfJavaComponentSdkBranch, openmpfJavaComponentSdkSha, buildStatus, githubAuthToken)
+        postBuildStatus("openmpf-python-component-sdk", openmpfPythonComponentSdkBranch, openmpfPythonComponentSdkSha, buildStatus, githubAuthToken)
         postBuildStatus("openmpf-build-tools", openmpfBuildToolsBranch, openmpfBuildToolsSha, buildStatus, githubAuthToken)
     }
 

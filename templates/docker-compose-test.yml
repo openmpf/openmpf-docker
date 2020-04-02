@@ -104,7 +104,7 @@ services:
     # ports:
     #  - "8008:8008"
     volumes:
-      - shared_data:/opt/mpf/shar
+      - shared_data:/opt/mpf/share
     networks:
       - overlay
 
