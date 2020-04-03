@@ -43,20 +43,24 @@ RUN yum update --assumeyes; \
 
 ENV JAVA_HOME=/etc/alternatives/java_sdk
 
-
-RUN mkdir /tmp/opencv; \
+RUN mkdir /tmp/opencv-contrib; \
+    cd /tmp/opencv-contrib; \
+    curl --location 'https://github.com/opencv/opencv_contrib/archive/3.4.7.tar.gz' \
+        | tar --extract --gzip; \
+    mkdir /tmp/opencv; \
     cd  /tmp/opencv; \
     curl --location 'https://github.com/opencv/opencv/archive/3.4.7.tar.gz' \
         | tar --extract --gzip; \
     cd opencv-3.4.7; \
     mkdir build; \
     cd build; \
-    cmake3 -DCMAKE_INSTALL_PREFIX:PATH="/opt/opencv-3.4.7" -DWITH_IPP:BOOL="0" ..; \
+    cmake3 -DCMAKE_INSTALL_PREFIX:PATH="/opt/opencv-3.4.7" -DWITH_IPP=false \
+        -DBUILD_EXAMPLES=false -DBUILD_TESTS=false -DBUILD_PERF_TESTS=false \
+        -DOPENCV_EXTRA_MODULES_PATH=/tmp/opencv-contrib/opencv_contrib-3.4.7/modules ..; \
     make --jobs "$(nproc)" install; \
     ln --symbolic /opt/opencv-3.4.7/include/opencv2 /usr/local/include/opencv2; \
     ln --symbolic /opt/opencv-3.4.7/include/opencv /usr/local/include/opencv; \
-    rm --recursive /tmp/opencv;
-
+    rm --recursive /tmp/opencv /tmp/opencv-contrib;
 
 RUN curl --location 'https://archive.apache.org/dist/maven/maven-3/3.3.3/binaries/apache-maven-3.3.3-bin.tar.gz' \
         | tar --extract --gzip --directory /opt; \
