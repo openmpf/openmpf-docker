@@ -115,6 +115,15 @@ ENV PATH /usr/local/nvidia/bin:/usr/local/cuda/bin:${PATH}
 ENV LD_LIBRARY_PATH /usr/local/nvidia/lib:/usr/local/nvidia/lib64
 
 ################################################################################
+# wait-for-it setup                                                            #
+################################################################################
+
+RUN mkdir /scripts; \
+    curl --location https://raw.githubusercontent.com/vishnubob/wait-for-it/master/wait-for-it.sh \
+        > /scripts/wait-for-it.sh; \
+    chmod +x /scripts/wait-for-it.sh;
+
+################################################################################
 # Copy Files                                                                   #
 ################################################################################
 
@@ -192,9 +201,14 @@ RUN echo "export JAVA_HOME=/usr" >> /etc/profile.d/mpf.sh; \
 # If any build steps change the data within the volume after it has been declared, those changes will be discarded.
 VOLUME $MPF_HOME/share
 
-COPY node_manager/docker-entrypoint.sh /home/mpf
-RUN dos2unix -q /home/mpf/docker-entrypoint.sh
-ENTRYPOINT ["/home/mpf/docker-entrypoint.sh"]
+# print()'ed messsages from docker-entrypoint.py were not being shown at the right time.
+# Only applies to stdin, stdout and stderr
+ENV PYTHONUNBUFFERED 1
+
+COPY node_manager/docker-entrypoint.py /home/mpf/
+RUN dos2unix -q /home/mpf/docker-entrypoint.py
+
+ENTRYPOINT ["python", "/home/mpf/docker-entrypoint.py"]
 
 ################################################################################
 # Labels                                                                       #
