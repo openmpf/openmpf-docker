@@ -29,7 +29,7 @@ from __future__ import print_function, division
 
 import base64
 import errno
-import fnmatch
+import glob
 import httplib
 import json
 import os
@@ -44,13 +44,30 @@ import urllib2
 
 
 def main():
-    # Environment variables that are required at runtime
-    wfm_user = os.getenv('WFM_USER')
-    wfm_password = os.getenv('WFM_PASSWORD')
-
     # Optional configurable environment variables
+    wfm_user = os.getenv('WFM_USER', 'admin')
+    wfm_password = os.getenv('WFM_PASSWORD', 'mpfadm')
     wfm_base_url = os.getenv('WFM_BASE_URL', 'http://workflow_manager:8080/workflow-manager')
 
+    # Environment variables from base Docker image
+    this_mpf_node = os.getenv('THIS_MPF_NODE')
+    mpf_home = os.getenv('MPF_HOME', '/opt/mpf')
+
+    # Environment variables at runtime
+    hostname = os.getenv('HOSTNAME')
+
+    wait_for_workflow_manager(wfm_base_url, wfm_user, wfm_password)
+
+    node_name = '{}_id_{}'.format(this_mpf_node, hostname)
+    node_manager_proc = start_node_manager(mpf_home, node_name, hostname)
+
+    exit_code = node_manager_proc.wait()
+
+    print('node-manager exit code =', exit_code)
+    sys.exit(exit_code)
+
+
+def wait_for_workflow_manager(wfm_base_url, wfm_user, wfm_password):
     if not wfm_user or not wfm_password:
         raise RuntimeError('The WFM_USER and WFM_PASSWORD environment variables must both be set.')
 
@@ -66,25 +83,6 @@ def main():
         get_info_with_retry(url, headers, ssl_ctx)
     except urllib2.HTTPError as err:
         handle_get_info_error(err)
-
-    this_mpf_node = os.getenv('THIS_MPF_NODE')
-    hostname = os.getenv('HOSTNAME')
-    node_name = '{}_id_{}'.format(this_mpf_node, hostname)
-
-    # Environment variables from base Docker image
-    mpf_home = os.getenv('MPF_HOME', '/opt/mpf')
-    base_log_path = os.getenv('MPF_LOG_PATH', os.path.join(mpf_home, 'share/logs'))
-
-    log_dir = os.path.join(base_log_path, node_name, 'log')
-
-    node_manager_proc = start_node_manager(mpf_home, node_name, hostname)
-    #tail_proc = tail_log(log_dir, node_manager_proc.pid)
-
-    exit_code = node_manager_proc.wait()
-    #tail_proc.wait()
-
-    print('node-manager exit code =', exit_code)
-    sys.exit(exit_code)
 
 
 def get_info_with_retry(url, headers, ssl_ctx):
@@ -159,25 +157,11 @@ def handle_get_info_error(http_error):
 
 
 def start_node_manager(mpf_home, node_name, hostname):
-    jar_files = find_files(os.path.join(mpf_home, 'jars'), 'mpf-nodemanager-*.jar')
-    if len(jar_files) == 0:
-        raise RuntimeError('Could not find: ' + os.path.join(mpf_home, 'jars', 'mpf-nodemanager-*.jar'))
-
-    if len(jar_files) > 1:
-        raise RuntimeError('Found multiple node-manager jars: ' + ', '.join(jar_files))
-
-    jar_file = os.path.join(mpf_home, 'jars', jar_files[0])
-    java_bin = os.path.join(os.getenv('JAVA_HOME'), 'bin/java')
-
-    # jar process will manage its own log; log will be rotated every night at midnight
-    # nohup  ${javabin} -jar ${jarfile} > /dev/null & #2>&1 #now displaying std err
-
-    node_manager_command = (java_bin, '-jar', jar_file)
+    node_manager_command = ('java', '-jar', find_node_manager_jar(mpf_home))
     print('Starting node-manager with command:', format_command_list(node_manager_command))
     node_manager_proc = subprocess.Popen(node_manager_command,
-                                     env=get_node_manager_env_vars(node_name, hostname),
-                                     #stdout=open(os.devnull, 'wb'),  # use if tailing to prevent duplicate output lines
-                                     cwd='/')  # node-manager might cwd when it executes a service)
+                                         env=get_node_manager_env_vars(node_name, hostname),
+                                         cwd='/')  # node-manager might cwd when it executes a service
 
     # Handle ctrl-c
     signal.signal(signal.SIGINT, lambda sig, frame: stop_node_manager(node_manager_proc))
@@ -193,34 +177,12 @@ def stop_node_manager(node_manager_proc):
         node_manager_proc.kill()
 
 
-def find_files(base, pattern):
-    '''Return list of files matching pattern in base folder.'''
-    return [n for n in fnmatch.filter(os.listdir(base), pattern) if
-            os.path.isfile(os.path.join(base, n))]
-
-
-def tail_log(log_dir, node_manager_pid):
-    if not os.path.exists(log_dir):
-        os.makedirs(log_dir)
-
-    node_log_file = os.path.join(log_dir, 'node-manager.log')
-
-    if not os.path.exists(node_log_file):
-        # Create file if it doesn't exist.
-        open(node_log_file, 'a').close()
-
-    tail_command = (
-                       'tail',
-                       # Follow by name to handle log rollover.
-                       '--follow=name',
-                       # Watch node-manager process and exit when node-manager exits.
-                       '--pid', str(node_manager_pid),
-                       node_log_file)
-
-    print('Displaying log with command: ', format_command_list(tail_command))
-    # Use preexec_fn=os.setpgrp to prevent ctrl-c from killing tail since
-    # node-manager may write to log file when shutting down.
-    return subprocess.Popen(tail_command, preexec_fn=os.setpgrp)
+def find_node_manager_jar(mpf_home):
+    node_manager_path_with_glob = os.path.join(mpf_home, 'jars', 'mpf-nodemanager-*.jar')
+    glob_matches = glob.glob(node_manager_path_with_glob)
+    if not glob_matches:
+        raise RuntimeError('Did not find the OpenMPF Node Manager jar at "{}".'.format(node_manager_path_with_glob))
+    return glob_matches[0]
 
 
 def get_node_manager_env_vars(node_name, hostname):
