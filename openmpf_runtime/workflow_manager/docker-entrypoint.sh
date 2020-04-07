@@ -52,7 +52,7 @@ updateOrAddProperty() {
 # NOTE: node-manager containers wait until the [GET] /rest/info endpoint is
 # accessible before starting the node-manager process, so we can clear out the
 # old discovery files without running into a race condition on startup.
-rm -rf "$MPF_HOME/share/nodes/*"
+rm -rf "$MPF_HOME/share/nodes"
 
 # NOTE: Docker assigns each Node Manager container a hostname that is a 12-digit
 # hash. For each container, we set THIS_MPF_NODE="node_manager_id_<hash>".
