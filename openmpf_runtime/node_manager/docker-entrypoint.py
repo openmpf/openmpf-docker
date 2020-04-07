@@ -61,7 +61,7 @@ def main():
     ssl_ctx = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
     ssl_ctx.verify_mode = ssl.CERT_NONE
 
-    print('Checking if Workflow Manager is running by accessing', url)
+    print('Checking if Workflow Manager is running at', url)
     try:
         get_info_with_retry(url, headers, ssl_ctx)
     except urllib2.HTTPError as err:
@@ -71,10 +71,6 @@ def main():
     hostname = os.getenv('HOSTNAME')
     node_name = '{}_id_{}'.format(this_mpf_node, hostname)
 
-    # with open('/etc/profile.d/mpf.sh', 'a') as profile:
-    #    profile.write('export THIS_MPF_NODE=' + node_name)
-    #    profile.write('export JGROUPS_TCP_ADDRESS=' + hostname)
-
     # Environment variables from base Docker image
     mpf_home = os.getenv('MPF_HOME', '/opt/mpf')
     base_log_path = os.getenv('MPF_LOG_PATH', os.path.join(mpf_home, 'share/logs'))
@@ -82,10 +78,10 @@ def main():
     log_dir = os.path.join(base_log_path, node_name, 'log')
 
     node_manager_proc = start_node_manager(mpf_home, node_name, hostname)
-    tail_proc = tail_log(log_dir, node_manager_proc.pid)
+    #tail_proc = tail_log(log_dir, node_manager_proc.pid)
 
     exit_code = node_manager_proc.wait()
-    tail_proc.wait()
+    #tail_proc.wait()
 
     print('node-manager exit code =', exit_code)
     sys.exit(exit_code)
@@ -167,20 +163,21 @@ def start_node_manager(mpf_home, node_name, hostname):
     if len(jar_files) == 0:
         raise RuntimeError('Could not find: ' + os.path.join(mpf_home, 'jars', 'mpf-nodemanager-*.jar'))
 
-    if len(jar_files) > 0:
+    if len(jar_files) > 1:
         raise RuntimeError('Found multiple node-manager jars: ' + ', '.join(jar_files))
 
-    java_bin = os.path.join(os.getenv('JAVA_HOME'), '/bin/java')
+    jar_file = os.path.join(mpf_home, 'jars', jar_files[0])
+    java_bin = os.path.join(os.getenv('JAVA_HOME'), 'bin/java')
 
     # jar process will manage its own log; log will be rotated every night at midnight
     # nohup  ${javabin} -jar ${jarfile} > /dev/null & #2>&1 #now displaying std err
 
-    node_manager_command = (java_bin, '-jar', jar_files[0])
+    node_manager_command = (java_bin, '-jar', jar_file)
     print('Starting node-manager with command:', format_command_list(node_manager_command))
     node_manager_proc = subprocess.Popen(node_manager_command,
                                      env=get_node_manager_env_vars(node_name, hostname),
-                                     cwd='/', # node-manager might cwd when it executes a service
-                                     stdin=subprocess.PIPE)
+                                     #stdout=open(os.devnull, 'wb'),  # use if tailing to prevent duplicate output lines
+                                     cwd='/')  # node-manager might cwd when it executes a service)
 
     # Handle ctrl-c
     signal.signal(signal.SIGINT, lambda sig, frame: stop_node_manager(node_manager_proc))
@@ -217,7 +214,8 @@ def tail_log(log_dir, node_manager_pid):
                        # Follow by name to handle log rollover.
                        '--follow=name',
                        # Watch node-manager process and exit when node-manager exits.
-                       '--pid', str(node_manager_pid)) + node_log_file
+                       '--pid', str(node_manager_pid),
+                       node_log_file)
 
     print('Displaying log with command: ', format_command_list(tail_command))
     # Use preexec_fn=os.setpgrp to prevent ctrl-c from killing tail since
