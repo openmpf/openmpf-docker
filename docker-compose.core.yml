@@ -88,9 +88,6 @@ services:
     build:
       context: ./openmpf_runtime
       dockerfile: node_manager/Dockerfile
-    environment:
-      - WFM_USER=${WFM_USER}
-      - WFM_PASSWORD=${WFM_PASSWORD}
     depends_on:
       - workflow_manager
     volumes:

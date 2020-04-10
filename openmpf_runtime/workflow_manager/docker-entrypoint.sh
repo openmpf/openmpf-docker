@@ -49,9 +49,9 @@ updateOrAddProperty() {
 # Initial Setup                                                                #
 ################################################################################
 
-# NOTE: node-manager containers wait until the [GET] /rest/info endpoint is
-# accessible before starting the node-manager process, so we can clear out the
-# old discovery files without running into a race condition on startup.
+# NOTE: node-manager containers wait until WFM is accessible over the network
+# before starting the node-manager process, so we can clear out the old
+# discovery files without running into a race condition on startup.
 rm -rf "$MPF_HOME/share/nodes"
 
 # NOTE: Docker assigns each Node Manager container a hostname that is a 12-digit
