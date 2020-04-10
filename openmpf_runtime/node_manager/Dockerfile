@@ -188,14 +188,9 @@ ENV LOGNAME=mpf
 # If any build steps change the data within the volume after it has been declared, those changes will be discarded.
 VOLUME $MPF_HOME/share
 
-# print()'ed messsages from docker-entrypoint.py were not being shown at the right time.
-# Only applies to stdin, stdout and stderr
-ENV PYTHONUNBUFFERED 1
-
-COPY node_manager/docker-entrypoint.py /home/mpf/
-RUN dos2unix -q /home/mpf/docker-entrypoint.py
-
-ENTRYPOINT ["python", "/home/mpf/docker-entrypoint.py"]
+COPY node_manager/docker-entrypoint.sh /home/mpf
+RUN dos2unix -q /home/mpf/docker-entrypoint.sh
+ENTRYPOINT ["/home/mpf/docker-entrypoint.sh"]
 
 ################################################################################
 # Labels                                                                       #
