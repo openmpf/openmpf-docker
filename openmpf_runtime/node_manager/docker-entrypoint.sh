@@ -26,8 +26,6 @@
 # limitations under the License.                                            #
 #############################################################################
 
-#!/usr/bin/bash
-
 set -Ee -o pipefail -o xtrace
 
 export THIS_MPF_NODE="${THIS_MPF_NODE}_id_${HOSTNAME}"
