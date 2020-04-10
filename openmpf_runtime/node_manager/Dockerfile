@@ -177,7 +177,7 @@ ENV MPF_LOG_PATH=$MPF_HOME/share/logs
 ENV MASTER_MPF_NODE=workflow_manager
 ENV MAIL=/var/spool/mail/mpf
 ENV PATH=$PATH:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin:$MPF_HOME/bin:/usr/bin/
-ENV JAVA_HOME=/usr/bin/java
+ENV JAVA_HOME=/usr/java/latest
 ENV HOME=/home/mpf
 ENV LOGNAME=mpf
 
