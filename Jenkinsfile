@@ -446,11 +446,13 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                         sh 'sed -i "/^.*published:.*/d" docker-compose-test.yml'
                         sh 'sed -i "/^.*target:.*/d" docker-compose-test.yml'
 
-                        withEnv(['WFM_PORT=8181']) {
-                            // Run supporting containers in background.
-                            sh 'docker-compose -f docker-compose-test.yml up -d' +
-                                    ' --scale workflow_manager=0'
-                        }
+                        // Add WFM_PORT for node-manager
+                        sh 'cat docker-compose-test.yml | docker run --rm -i mikefarah/yq' +
+                                ' yq w - services.node_manager.environment.WFM_PORT 8181 > docker-compose-test.yml'
+
+                        // Run supporting containers in background.
+                        sh 'docker-compose -f docker-compose-test.yml up -d' +
+                                ' --scale workflow_manager=0'
 
                         mvnTestsRetval = sh(script: 'docker exec' +
                                 ' -e EXTRA_MVN_OPTIONS=\"' + mvnTestOptions + '\" ' +
