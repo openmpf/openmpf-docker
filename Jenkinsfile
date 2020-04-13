@@ -446,9 +446,11 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                         sh 'sed -i "/^.*published:.*/d" docker-compose-test.yml'
                         sh 'sed -i "/^.*target:.*/d" docker-compose-test.yml'
 
-                        // Run supporting containers in background.
-                        sh 'WFM_PORT=8181 docker-compose -f docker-compose-test.yml up -d' +
-                                ' --scale workflow_manager=0'
+                        withEnv(['WFM_PORT=8181']) {
+                            // Run supporting containers in background.
+                            sh 'docker-compose -f docker-compose-test.yml up -d' +
+                                    ' --scale workflow_manager=0'
+                        }
 
                         mvnTestsRetval = sh(script: 'docker exec' +
                                 ' -e EXTRA_MVN_OPTIONS=\"' + mvnTestOptions + '\" ' +
