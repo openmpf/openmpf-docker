@@ -448,7 +448,8 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
 
                         // Add WFM_PORT for node-manager
                         sh 'cat docker-compose-test.yml | docker run --rm -i mikefarah/yq' +
-                                ' yq w - services.node_manager.environment.WFM_PORT 8181 > docker-compose-test.yml'
+                                ' yq w - services.node_manager.environment.WFM_PORT 8181 > tmp.yml'
+                        sh 'mv tmp.yml docker-compose-test.yml'
 
                         // Run supporting containers in background.
                         sh 'docker-compose -f docker-compose-test.yml up -d' +
