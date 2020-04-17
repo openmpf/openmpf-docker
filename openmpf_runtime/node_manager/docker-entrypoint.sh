@@ -31,6 +31,8 @@ set -Ee -o pipefail -o xtrace
 export THIS_MPF_NODE="${THIS_MPF_NODE}_id_${HOSTNAME}"
 export JGROUPS_TCP_ADDRESS=$HOSTNAME
 
-/scripts/wait-for-it.sh "workflow_manager:${WFM_PORT:-8080}" --timeout=0
+if [ "${RUN_TESTS,,}" != true ]; then
+    /scripts/wait-for-it.sh workflow_manager:8080 --timeout=0
+fi
 
 exec java -jar "${MPF_HOME}"/jars/mpf-nodemanager-*.jar

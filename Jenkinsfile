@@ -446,9 +446,9 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                         sh 'sed -i "/^.*published:.*/d" docker-compose-test.yml'
                         sh 'sed -i "/^.*target:.*/d" docker-compose-test.yml'
 
-                        // Add WFM_PORT for node-manager
+                        // Add RUN_TESTS to node-manager
                         sh 'cat docker-compose-test.yml | docker run --rm -i mikefarah/yq' +
-                                ' yq w - services.node_manager.environment.WFM_PORT 8181 > tmp.yml'
+                                ' yq w - services.node_manager.environment.RUN_TESTS true > tmp.yml'
                         sh 'mv tmp.yml docker-compose-test.yml'
 
                         // Run supporting containers in background.
