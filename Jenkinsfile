@@ -328,7 +328,7 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                 // DEBUG
                 // Add RUN_TESTS to node-manager
                 sh 'cat docker-compose.yml | docker run --rm -i mikefarah/yq' +
-                        ' yq w - services.node_manager.environment.RUN_TESTS \\\"true\\\" > tmp.yml'
+                        ' yq w - services.node_manager.environment.RUN_TESTS \\\\\"true\\\\\" > tmp.yml'
                 exit(1)
 
                 sh 'cp .env.tpl .env'
