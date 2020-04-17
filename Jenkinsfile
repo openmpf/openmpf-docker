@@ -79,6 +79,11 @@ def openmpfConfigDockerBranch = env.getProperty("openmpf_config_docker_branch")
 def postOpenmpfDockerBuildStatus = env.getProperty("post_openmpf_docker_build_status").toBoolean()
 def githubAuthToken = env.getProperty("github_auth_token")
 
+// These properties add optional user-defined labels to the Docker images
+def imageUrl = env.getProperty("image_url")
+def imageVersion = env.getProperty("image_version")
+def customLabel = env.getProperty("custom_label") ?: "custom"
+
 // SHAs
 def openmpfDockerSha
 def openmpfSha
@@ -232,8 +237,8 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
 
             stage('Build base image') {
                 sh 'docker build openmpf_build/' +
+                        ' --build-arg BUILD_TAG=' + imageTag +
                         ' --build-arg BUILD_DATE=' + buildDate +
-                        ' --build-arg BUILD_VERSION=' + imageTag +
                         ' --build-arg BUILD_SHAS=\"' + buildShas + '\"' +
                         ' -t ' + buildImageName
 
@@ -246,8 +251,8 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                     // components. This overwrites the original build image tag.
                     sh 'docker build openmpf_custom_build/' +
                             ' --build-arg BUILD_IMAGE_NAME=' + buildImageName +
+                            ' --build-arg BUILD_TAG=' + imageTag +
                             ' --build-arg BUILD_DATE=' + buildDate +
-                            ' --build-arg BUILD_VERSION=' + imageTag +
                             ' --build-arg BUILD_SHAS=\"' + buildShas + '\"' +
                             ' -t ' + buildImageName
                 }
@@ -302,9 +307,17 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                     when (buildRuntimeImages) { // if false, don't show this step in the Stage View UI
                         sh 'docker-compose build' +
                                 ' --build-arg BUILD_IMAGE_NAME=' + buildImageName +
+                                ' --build-arg BUILD_VERSION=' + imageVersion +
+                                ' --build-arg BUILD_TAG=' + imageTag +
                                 ' --build-arg BUILD_DATE=' + buildDate +
-                                ' --build-arg BUILD_VERSION=' + imageTag +
                                 ' --build-arg BUILD_SHAS=\"' + buildShas + '\"'
+
+                        def composeYaml = readYaml(text: shOutput('cat docker-compose.yml'))
+                        addUserDefinedLabels(composeYaml, imageUrl, imageVersion)
+
+                        if (buildCustomComponents) {
+                            addLabelToImage(remoteImageTagPrefix + 'openmpf_node_manager:' + imageTag, customLabel, "")
+                        }
                     }
                 }
 
@@ -368,10 +381,12 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                     // to the original Workflow Manager image without the custom config.
                     sh 'docker build openmpf_custom_config/workflow_manager' +
                             ' --build-arg BUILD_IMAGE_NAME=' + workflowManagerImageName +
+                            ' --build-arg BUILD_TAG=' + imageTag +
                             ' --build-arg BUILD_DATE=' + buildDate +
-                            ' --build-arg BUILD_VERSION=' + imageTag +
                             ' --build-arg BUILD_SHAS=\"' + buildShas + '\"' +
                             ' -t ' + workflowManagerImageName
+
+                    addLabelToImage(workflowManagerImageName, customLabel, "")
                 }
             }
 
@@ -525,4 +540,25 @@ def removeDockerNetwork(network) {
     if (sh(script: 'docker network inspect ' + network + ' > /dev/null 2>&1', returnStatus: true) == 0) {
         sh 'docker network rm ' + network
     }
+}
+
+def addUserDefinedLabels(composeYaml, imageUrl, imageVersion) {
+    for (def serviceName in composeYaml.services.keySet()) {
+        def service = composeYaml.services[serviceName]
+        if (!service.build) {
+            echo "Not labeling $service.image since we didn't build it"
+            continue
+        }
+
+        if (imageUrl) {
+            addLabelToImage(service.image, 'org.label-schema.url', imageUrl)
+        }
+        if (imageVersion) {
+            addLabelToImage(service.image, 'org.label-schema.version', imageVersion)
+        }
+    }
+}
+
+def addLabelToImage(imageName, labelName, labelValue) {
+    sh "echo 'FROM $imageName' | docker build - -t $imageName --label '$labelName=$labelValue'"
 }
