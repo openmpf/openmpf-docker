@@ -328,12 +328,6 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                 sh 'cp .env.tpl .env'
                 sh "${dockerComposeConfigCommand}"
 
-                // DEBUG
-                // Add RUN_TESTS to node-manager
-                sh 'cat docker-compose.yml | docker run --rm -i mikefarah/yq' +
-                        ' yq w - --tag \'!!str\' services.node_manager.environment.RUN_TESTS true'
-                sh 'exit 1'
-
                 // TODO: Attempt to pull images in separate stage so that they are not
                 // built from scratch on a clean Jenkins node.
 
@@ -454,7 +448,7 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
 
                         // Add RUN_TESTS to node-manager
                         sh 'cat docker-compose-test.yml | docker run --rm -i mikefarah/yq' +
-                                ' yq w - services.node_manager.environment.RUN_TESTS \'true\' > tmp.yml'
+                                ' yq w - --tag \'!!str\' services.node_manager.environment.RUN_TESTS true > tmp.yml'
                         sh 'mv tmp.yml docker-compose-test.yml'
 
                         // Run supporting containers in background.
