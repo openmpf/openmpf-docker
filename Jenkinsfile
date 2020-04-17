@@ -331,7 +331,7 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                 // DEBUG
                 // Add RUN_TESTS to node-manager
                 sh 'cat docker-compose.yml | docker run --rm -i mikefarah/yq' +
-                        ' yq w - services.node_manager.environment.RUN_TESTS \'true\''
+                        ' yq w - services.node_manager.environment.RUN_TESTS \\\'true\\\''
                 sh 'exit 1'
 
                 // TODO: Attempt to pull images in separate stage so that they are not
