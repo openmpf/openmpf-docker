@@ -5,11 +5,11 @@
 # under contract, and is subject to the Rights in Data-General Clause       #
 # 52.227-14, Alt. IV (DEC 2007).                                            #
 #                                                                           #
-# Copyright 2019 The MITRE Corporation. All Rights Reserved.                #
+# Copyright 2020 The MITRE Corporation. All Rights Reserved.                #
 #############################################################################
 
 #############################################################################
-# Copyright 2019 The MITRE Corporation                                      #
+# Copyright 2020 The MITRE Corporation                                      #
 #                                                                           #
 # Licensed under the Apache License, Version 2.0 (the "License");           #
 # you may not use this file except in compliance with the License.          #
@@ -24,36 +24,9 @@
 # limitations under the License.                                            #
 #############################################################################
 
-COMPOSE_PROJECT_NAME=openmpf
+version: '3.7'
 
-# Relative path to the "openmpf-projects" repository.
-OPENMPF_PROJECTS_PATH=../openmpf-projects
-
-# Takes the form: "<registry-host>:<registry-port>/<repository>/", where
-# <repository> is usually "openmpf". Make sure to include the "/" at the end.
-# Leave blank to use images on the local host or Docker Hub.
-REGISTRY=
-
-TAG=latest
-
-WFM_USER=admin
-WFM_PASSWORD=mpfadm
-
-ACTIVE_MQ_PROFILE=default
-
-# Set this if using "docker-compose.users.yml".
-USER_PROPERTIES_PATH=
-
-# Set these if using "docker-compose.https.yml".
-KEYSTORE_PATH=
-KEYSTORE_PASSWORD=
-
-# Optional database configuration options.
-# Uncomment and modify to customize database configuration.
-# JDBC_URL=jdbc:postgresql://db:5432/mpf
-# POSTGRES_USER=mpf
-# POSTGRES_PASSWORD=password
-# POSTGRES_DB=mpf
-
-# Set this if using "docker-compose.stress.test.yml".
-EXTRA_TEST_DATA_PATH=
+services:
+  workflow-manager:
+    volumes:
+      - ${EXTRA_TEST_DATA_PATH}:/mpfdata:ro
