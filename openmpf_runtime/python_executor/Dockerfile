@@ -38,7 +38,8 @@ RUN yum install -y epel-release \
     && rm -rf /var/cache/yum/*
 
 # Virtualenv must be in exact same directory as in the final image because virtualenvs are not relocatable.
-RUN pip install --no-cache-dir --upgrade pip virtualenv \
+RUN pip install --no-cache-dir --upgrade pip \
+    && pip install --no-cache-dir virtualenv \
     && virtualenv "$COMPONENT_VIRTUALENV"
 
 WORKDIR /root/install_files

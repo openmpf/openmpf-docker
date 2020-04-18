@@ -88,6 +88,8 @@ services:
     build:
       context: ./openmpf_runtime
       dockerfile: node_manager/Dockerfile
+    depends_on:
+      - workflow_manager
     volumes:
       - shared_data:/opt/mpf/share
     networks:

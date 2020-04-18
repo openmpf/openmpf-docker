@@ -49,8 +49,10 @@ updateOrAddProperty() {
 # Initial Setup                                                                #
 ################################################################################
 
-# Cleanup
-rm -f $MPF_HOME/share/nodes/MPF_Channel/*-MPF-MasterNode.list
+# NOTE: node-manager containers wait until WFM is accessible over the network
+# before starting the node-manager process, so we can clear out the old
+# discovery files without running into a race condition on startup.
+rm -rf "$MPF_HOME/share/nodes"
 
 # NOTE: Docker assigns each Node Manager container a hostname that is a 12-digit
 # hash. For each container, we set THIS_MPF_NODE="node_manager_id_<hash>".
@@ -63,11 +65,6 @@ rm -f $MPF_HOME/share/nodes/MPF_Channel/*-MPF-MasterNode.list
 if grep -q "node_manager_id_*" "$MPF_HOME/share/data/nodeManagerConfig.xml"; then
   rm "$MPF_HOME/share/data/nodeManagerConfig.xml"
 fi
-
-# NOTE: We cannot reliably determine which Node Manager logs belong to the
-# current deployment, and which belong to the previous deployment due to the
-# order in which Docker services are started/restarted. Removing the logs is
-# best left to the user.
 
 # NOTE: $HOSTNAME is not known until runtime.
 export JGROUPS_TCP_ADDRESS="$HOSTNAME"

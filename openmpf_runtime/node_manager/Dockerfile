@@ -115,6 +115,15 @@ ENV PATH /usr/local/nvidia/bin:/usr/local/cuda/bin:${PATH}
 ENV LD_LIBRARY_PATH /usr/local/nvidia/lib:/usr/local/nvidia/lib64
 
 ################################################################################
+# wait-for-it setup                                                            #
+################################################################################
+
+RUN mkdir /scripts; \
+    curl --location https://raw.githubusercontent.com/vishnubob/wait-for-it/master/wait-for-it.sh \
+        > /scripts/wait-for-it.sh; \
+    chmod +x /scripts/wait-for-it.sh;
+
+################################################################################
 # Copy Files                                                                   #
 ################################################################################
 
@@ -131,7 +140,6 @@ ENV LD_LIBRARY_PATH /usr/local/nvidia/lib:/usr/local/nvidia/lib64
 COPY --from=openmpf_build /apps/install/bin/ffmpeg /apps/install/bin/ffprobe \
      /apps/install/bin/ffserver $MPF_HOME/bin/
 COPY --from=openmpf_build /etc/ld.so.conf.d/ /etc/ld.so.conf.d/
-COPY --from=openmpf_build /etc/profile.d/mpf.sh /etc/profile.d/mpf.sh
 
 # Link FFmpeg:
 RUN ln -s $MPF_HOME/bin/ffmpeg /usr/bin/ffmpeg && \
@@ -140,8 +148,6 @@ RUN ln -s $MPF_HOME/bin/ffmpeg /usr/bin/ffmpeg && \
 
 COPY build_artifacts/install.tar /home/mpf/
 RUN cd /home/mpf && tar -xzf install.tar -C $MPF_HOME && rm install.tar
-
-RUN cp $MPF_HOME/libexec/node-manager /etc/init.d/
 
 COPY build_artifacts/plugin-packages $MPF_HOME/share/components
 
@@ -171,19 +177,9 @@ ENV MPF_LOG_PATH=$MPF_HOME/share/logs
 ENV MASTER_MPF_NODE=workflow_manager
 ENV MAIL=/var/spool/mail/mpf
 ENV PATH=$PATH:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin:$MPF_HOME/bin:/usr/bin/
-ENV JAVA_HOME=/usr/bin/java
+ENV JAVA_HOME=/usr/java/latest
 ENV HOME=/home/mpf
 ENV LOGNAME=mpf
-
-# TODO: This shouldn't be needed, but for some reason the node-manager script is
-#   not able to see the ENV variables:
-RUN echo "export JAVA_HOME=/usr" >> /etc/profile.d/mpf.sh; \
-    echo "export MPF_HOME=$MPF_HOME" >> /etc/profile.d/mpf.sh; \
-    echo "export USER=root" >> /etc/profile.d/mpf.sh; \
-    echo "export THIS_MPF_NODE=$THIS_MPF_NODE" >> /etc/profile.d/mpf.sh; \
-    echo "export MASTER_MPF_NODE=$MASTER_MPF_NODE" >> /etc/profile.d/mpf.sh; \
-    echo "export MPF_LOG_PATH=$MPF_LOG_PATH" >> /etc/profile.d/mpf.sh; \
-    echo "export JGROUPS_FILE_PING_LOCATION=$JGROUPS_FILE_PING_LOCATION" >> /etc/profile.d/mpf.sh
 
 ################################################################################
 # Prepare Entrypoint                                                           #

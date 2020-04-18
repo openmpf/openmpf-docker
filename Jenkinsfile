@@ -372,6 +372,7 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
 
                         // Run container as daemon in background.
                         buildContainerId = sh(script: 'docker run --rm --entrypoint sleep -t -d ' +
+                                '--name workflow_manager ' +
                                 '-p 20160:20160 ' +
                                 '--mount type=bind,source=/home/jenkins/.m2,target=/root/.m2 ' +
                                 '--mount type=bind,source="$(pwd)"/openmpf_runtime/build_artifacts,target=/mnt/build_artifacts ' +
@@ -444,6 +445,11 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                         sh 'sed -i "/^.*ports:.*/d" docker-compose-test.yml'
                         sh 'sed -i "/^.*published:.*/d" docker-compose-test.yml'
                         sh 'sed -i "/^.*target:.*/d" docker-compose-test.yml'
+
+                        // Add RUN_TESTS to node-manager
+                        sh 'cat docker-compose-test.yml | docker run --rm -i mikefarah/yq' +
+                                ' yq w - --tag \'!!str\' services.node_manager.environment.RUN_TESTS true > tmp.yml'
+                        sh 'mv tmp.yml docker-compose-test.yml'
 
                         // Run supporting containers in background.
                         sh 'docker-compose -f docker-compose-test.yml up -d' +
