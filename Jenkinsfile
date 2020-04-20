@@ -766,11 +766,11 @@ def getBuildShasStr(repos) {
 }
 
 def addLabelsToImage(imageName, labels) {
-    labels.each{label -> addLabelToImage(imageName, "$label.key", "$label.value")}
-}
-
-def addLabelToImage(imageName, labelName, labelValue) {
-    sh "echo 'FROM $imageName' | docker build - -t $imageName --label '$labelName=$labelValue'"
+    if (!labels.isEmpty()) {
+        def command = "echo 'FROM $imageName' | docker build - -t $imageName"
+        labels.each{label -> command += " --label $label.key=$label.value"}
+        sh "$command"
+    }
 }
 
 def shOutput(script) {
