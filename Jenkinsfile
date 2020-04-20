@@ -772,3 +772,7 @@ def addLabelsToImage(imageName, labels) {
 def addLabelToImage(imageName, labelName, labelValue) {
     sh "echo 'FROM $imageName' | docker build - -t $imageName --label '$labelName=$labelValue'"
 }
+
+def shOutput(script) {
+    return sh(script: script, returnStdout: true).trim()
+}
