@@ -333,6 +333,8 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                 sh 'cp .env.tpl .env'
                 sh "${dockerComposeConfigCommand}"
 
+                return // DEBUG
+
                 // TODO: Attempt to pull images in separate stage so that they are not
                 // built from scratch on a clean Jenkins node.
 
@@ -367,6 +369,8 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
 
             try {
                 stage('Build OpenMPF') {
+                    return // DEBUG
+
                     if (!buildOpenmpf) {
                         echo 'SKIPPING OPENMPF BUILD'
                     }
@@ -394,6 +398,8 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                 }
 
                 stage('Run Google tests') {
+                    return // DEBUG
+
                     if (!runGTests) {
                         echo 'SKIPPING GOOGLE TESTS'
                     }
@@ -410,6 +416,8 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                 }
 
                 stage('Build runtime images') {
+                    return // DEBUG
+
                     if (!buildRuntimeImages) {
                         echo 'SKIPPING BUILD OF RUNTIME IMAGES'
                     }
@@ -433,6 +441,8 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                 }
 
                 stage('Run Maven tests') {
+                    return // DEBUG
+
                     if (!buildOpenmpf || !buildRuntimeImages || !runMvnTests) {
                         echo 'SKIPPING MAVEN TESTS'
                     }
@@ -494,6 +504,8 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
             }
 
             stage('Apply custom config') {
+                return // DEBUG
+
                 if (!applyCustomConfig) {
                     echo 'SKIPPING CUSTOM CONFIGURATION'
                 }
@@ -576,6 +588,8 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
             }
 
             stage('Push runtime images') {
+                return // DEBUG
+
                 if (!pushRuntimeImages) {
                     echo 'SKIPPING PUSH OF RUNTIME IMAGES'
                 }
