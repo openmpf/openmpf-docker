@@ -81,6 +81,11 @@ def openmpfConfigDockerBranch = env.getProperty("openmpf_config_docker_branch")
 def postOpenmpfDockerBuildStatus = env.getProperty("post_openmpf_docker_build_status").toBoolean()
 def githubAuthToken = env.getProperty("github_auth_token")
 
+// These properties add optional user-defined labels to the Docker images
+def imageUrl = env.getProperty("image_url")
+def imageVersion = env.getProperty("image_version")
+def customLabel = env.getProperty("custom_label") ?: "custom"
+
 // Labels
 def buildDate
 def buildShas
@@ -517,6 +522,59 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                 }
             }
 
+            stage('Add user-defined labels') {
+                def baseLabels = [:]
+                if (imageUrl) {
+                    baseLabels["org.label-schema.url"] = imageUrl
+                }
+                if (imageVersion) {
+                    baseLabels["org.label-schema.version"] = imageVersion
+                }
+
+                def customLabels = baseLabels.clone()
+                customLabels["$customLabel"] = '';
+
+                // Update component builders and executors, which are not customized
+                addLabelsToImage(pythonExecutorImageName, baseLabels)
+
+                def customComponentServices = []
+                if (buildCustomComponents) {
+                    customComponentServices =
+                            readYaml(text: shOutput('cat openmpf_custom_build/docker-compose.custom-components.yml'))
+                                    .services.keySet()
+                    addLabelsToImage(buildImageName, customLabels)
+                } else {
+                    addLabelsToImage(buildImageName, baseLabels)
+                }
+
+                def composeYaml = readYaml(text: shOutput('cat docker-compose.yml'))
+
+                for (def serviceName in composeYaml.services.keySet()) {
+                    def service = composeYaml.services[serviceName]
+                    if (!service.build) {
+                        echo "Not labeling $service.image since we didn't build it"
+                        continue
+                    }
+
+                    if (customComponentServices.contains(serviceName)) {
+                        addLabelsToImage(service.image, customLabels)
+                        continue
+                    }
+
+                    if (buildCustomComponents && serviceName == 'node_manager') {
+                        addLabelsToImage(service.image, customLabels)
+                        continue
+                    }
+
+                    if (applyCustomConfig && (serviceName == 'workflow_manager' || serviceName == 'activemq')) {
+                        addLabelsToImage(service.image, customLabels)
+                        continue
+                    }
+
+                    addLabelsToImage(service.image, baseLabels)
+                }
+            }
+
             stage('Push runtime images') {
                 if (!pushRuntimeImages) {
                     echo 'SKIPPING PUSH OF RUNTIME IMAGES'
@@ -691,4 +749,12 @@ def getBuildShasStr(repos) {
         buildShas += repo.name + ': ' + repo.newSha
     }
     return buildShas
+}
+
+def addLabelsToImage(imageName, labels) {
+    labels.each{label -> addLabelToImage(imageName, "$label.key", "$label.value")}
+}
+
+def addLabelToImage(imageName, labelName, labelValue) {
+    sh "echo 'FROM $imageName' | docker build - -t $imageName --label '$labelName=$labelValue'"
 }
