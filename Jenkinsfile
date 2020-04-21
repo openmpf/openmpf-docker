@@ -423,7 +423,8 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                                 ' --build-arg BUILD_REGISTRY=' + remoteImageTagPrefix +
                                 ' --build-arg BUILD_TAG=' + imageTag +
                                 ' --build-arg BUILD_DATE=' + buildDate +
-                                ' --build-arg BUILD_SHAS=\"' + buildShas + '\"'
+                                ' --build-arg BUILD_SHAS=\"' + buildShas + '\"' +
+                                ' --build-arg RUN_TESTS=true'
                     }
                 }
 
