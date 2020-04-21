@@ -447,7 +447,7 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                         }
 
                         addUserDefinedLabels(composeYaml, customComponentServices,
-                                imageUrl, imageVersion,customLabelKey)
+                                imageUrl, imageVersion, customLabelKey)
                     }
                 }
 
