@@ -356,7 +356,7 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
 
                     buildShas += ', ' + getBuildShasStr(customComponentRepos)
 
-                    def customlabelArg = getCustomLabelArg(customLabelKey)
+                    def customLabelArg = getCustomLabelArg(customLabelKey)
 
                     // Build the new build image for custom components using the original build image for open source
                     // components. This overwrites the original build image tag.
@@ -366,7 +366,7 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                             ' --build-arg BUILD_TAG=' + imageTag +
                             ' --build-arg BUILD_DATE=' + buildDate +
                             ' --build-arg BUILD_SHAS=\"' + buildShas + '\"' +
-                            " $customlabelArg" +
+                            " $customLabelArg" +
                             ' -t ' + buildImageName
                 }
             }
