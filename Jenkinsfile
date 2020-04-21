@@ -84,7 +84,7 @@ def githubAuthToken = env.getProperty("github_auth_token")
 // These properties add optional user-defined labels to the Docker images
 def imageUrl = env.getProperty("image_url")
 def imageVersion = env.getProperty("image_version")
-def customLabel = env.getProperty("custom_label") ?: "custom"
+def customLabelKey = env.getProperty("custom_label_key") ?: "custom"
 
 // Labels
 def buildDate
@@ -365,7 +365,7 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                             ' --build-arg BUILD_SHAS=\"' + buildShas + '\"' +
                             ' -t ' + buildImageName
 
-                    addLabelsToImage(buildImageName, getCustomLabel())
+                    addLabelsToImage(buildImageName, getCustomLabel(customLabelKey))
                 }
             }
 
@@ -446,7 +446,8 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                                             .services.keySet()
                         }
 
-                        addUserDefinedLabels(composeYaml, customComponentServices, imageUrl, imageVersion, customLabel)
+                        addUserDefinedLabels(composeYaml, customComponentServices,
+                                imageUrl, imageVersion,customLabelKey)
                     }
                 }
 
@@ -529,7 +530,7 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                             ' --build-arg BUILD_SHAS=\"' + buildShas + '\"' +
                             ' -t ' + workflowManagerImageName
 
-                    addLabelsToImage(workflowManagerImageName, getCustomLabel())
+                    addLabelsToImage(workflowManagerImageName, getCustomLabel(customLabelKey))
 
                     // Build and tag the new ActiveMQ image with the image tag used in the compose files.
                     sh 'docker build openmpf_custom_config/active_mq' +
@@ -540,7 +541,7 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                             ' --build-arg BUILD_SHAS=\"' + buildShas + '\"' +
                             ' -t ' + activeMqImageName
 
-                    addLabelsToImage(activeMqImageName, getCustomLabel())
+                    addLabelsToImage(activeMqImageName, getCustomLabel(customLabelKey))
                 }
             }
 
@@ -720,9 +721,9 @@ def getBuildShasStr(repos) {
     return buildShas
 }
 
-def addUserDefinedLabels(composeYaml, customComponentServices, imageUrl, imageVersion, customLabel) {
+def addUserDefinedLabels(composeYaml, customComponentServices, imageUrl, imageVersion, customLabelKey) {
     def commonLabels = getUserDefinedLabels(imageUrl, imageVersion)
-    def customLabels = getUserDefinedLabels(imageUrl, imageVersion, customLabel)
+    def customLabels = getUserDefinedLabels(imageUrl, imageVersion, customLabelKey)
 
     for (def serviceName in composeYaml.services.keySet()) {
         def service = composeYaml.services[serviceName]
@@ -747,8 +748,8 @@ def addUserDefinedLabels(composeYaml, customComponentServices, imageUrl, imageVe
     }
 }
 
-def getUserDefinedLabels(imageUrl, imageVersion, customLabel) {
-    return getUserDefinedLabels(imageUrl, imageVersion) << getCustomLabel()
+def getUserDefinedLabels(imageUrl, imageVersion, customLabelKey) {
+    return getUserDefinedLabels(imageUrl, imageVersion) << getCustomLabel(customLabelKey)
 }
 
 def getUserDefinedLabels(imageUrl, imageVersion) {
@@ -762,8 +763,8 @@ def getUserDefinedLabels(imageUrl, imageVersion) {
     return labels
 }
 
-def getCustomLabel(customLabel) {
-    return ["$customLabel": '']
+def getCustomLabel(customLabelKey) {
+    return ["$customLabelKey": '']
 }
 
 def addLabelsToImage(imageName, labels) {
