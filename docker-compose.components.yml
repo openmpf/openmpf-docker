@@ -51,3 +51,9 @@ services:
       resources:
         limits:
           cpus: "2.0"
+
+  azure_ocr:
+    <<: *detection-component-base
+    image: ${REGISTRY}openmpf_azure_ocr:${TAG}
+    build:
+      context: ${OPENMPF_PROJECTS_PATH}/openmpf-components/python/AzureOcr
