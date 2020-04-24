@@ -34,20 +34,25 @@ set -Ee -o pipefail -o xtrace
 
 # updateOrAddProperty(1: file, 2: key, 3: value)
 updateOrAddProperty() {
-  file="$1"
-  key="$2"
-  value="$3"
+    file="$1"
+    key="$2"
+    value="$3"
 
-  if grep -q "^$key=" "$file"; then
-    sed -i "/$key=/s/=.*/=$value/" "$file"
-  else
-    echo "$key=$value" >> "$file"
-  fi
+    if grep -q "^$key=" "$file"; then
+        sed -i "/$key=/s/=.*/=$value/" "$file"
+    else
+        echo "$key=$value" >> "$file"
+    fi
 }
 
 ################################################################################
 # Initial Setup                                                                #
 ################################################################################
+
+# If empty, unset MPF_VERSION so that the default value is used by the WFM.
+if [ -z "$MPF_VERSION" ]; then
+    unset MPF_VERSION
+fi
 
 # NOTE: node-manager containers wait until WFM is accessible over the network
 # before starting the node-manager process, so we can clear out the old
@@ -63,7 +68,7 @@ rm -rf "$MPF_HOME/share/nodes"
 
 # Remove nodeManagerConfig.xml so that it can be regenerated.
 if grep -q "node_manager_id_*" "$MPF_HOME/share/data/nodeManagerConfig.xml"; then
-  rm "$MPF_HOME/share/data/nodeManagerConfig.xml"
+    rm "$MPF_HOME/share/data/nodeManagerConfig.xml"
 fi
 
 # NOTE: $HOSTNAME is not known until runtime.
@@ -80,15 +85,15 @@ markerFile="$MPF_HOME/share/config/.docker-entrypoint-init"
 # runtime or post-deployment.
 
 if [ ! -f "$markerFile" ]; then
-  mkdir -p "$MPF_HOME/share/config"
+    mkdir -p "$MPF_HOME/share/config"
 
-  mpfCustomPropertiesFile="$MPF_HOME/share/config/mpf-custom.properties"
+    mpfCustomPropertiesFile="$MPF_HOME/share/config/mpf-custom.properties"
 
-  updateOrAddProperty "$mpfCustomPropertiesFile" "node.auto.config.enabled" "true"
-  updateOrAddProperty "$mpfCustomPropertiesFile" "node.auto.unconfig.enabled" "true"
+    updateOrAddProperty "$mpfCustomPropertiesFile" "node.auto.config.enabled" "true"
+    updateOrAddProperty "$mpfCustomPropertiesFile" "node.auto.unconfig.enabled" "true"
 
-  # Update WFM segment size
-  updateOrAddProperty "$mpfCustomPropertiesFile" "detection.segment.target.length" "1000"
+    # Update WFM segment size
+    updateOrAddProperty "$mpfCustomPropertiesFile" "detection.segment.target.length" "1000"
 fi
 
 ################################################################################
@@ -97,7 +102,7 @@ fi
 
 # If this is a custom build, run the custom entrypoint steps.
 if [ -f /home/mpf/docker-custom-entrypoint.sh ]; then
-  /home/mpf/docker-custom-entrypoint.sh
+    /home/mpf/docker-custom-entrypoint.sh
 fi
 
 ################################################################################
@@ -106,8 +111,7 @@ fi
 
 rm -f "$MPF_HOME/config/user.properties"
 
-if [ -f /run/secrets/user_properties ]
-then
+if [ -f /run/secrets/user_properties ]; then
     mkdir -p "$MPF_HOME/config"
     ln -s /run/secrets/user_properties "$MPF_HOME/config/user.properties"
 fi

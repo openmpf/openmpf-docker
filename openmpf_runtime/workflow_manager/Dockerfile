@@ -154,9 +154,6 @@ ENV JDBC_URL=jdbc:postgresql://db:5432/mpf
 RUN echo '[mpf-child]' >> /etc/ansible/hosts; \
     echo $THIS_MPF_NODE >> /etc/ansible/hosts;
 
-# If empty, unset MPF_VERSION so that the default value is used by the WFM.
-RUN if [ -z "$MPF_VERSION" ]; then unset MPF_VERSION; fi
-
 ################################################################################
 # Prepare Entrypoint                                                           #
 ################################################################################
