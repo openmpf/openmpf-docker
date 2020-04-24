@@ -127,3 +127,22 @@ services:
     image: ${REGISTRY}openmpf_tika_text_detection:${TAG}
     build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/java/TikaTextDetection
 
+  trtis-detection:
+    <<: *detection-component-base
+    image: ${REGISTRY}openmpf_trtis_detection:${TAG}
+    build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/cpp/TrtisDetection
+
+  trtis-detection-server:
+    <<: *detection-component-base
+    image: ${REGISTRY}openmpf_trtis_detection_server:${TAG}
+    build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/cpp/TrtisDetection/trtserver_dockerfile
+    ports:
+      - "8000:8000"  # server port
+      - "8001:8001"  # management port
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+    # Uncomment to attach custom models.
+    # Currently server is prebuilt with the coco model.
+    #volumes:
+    #  - "${OPENMPF_PROJECTS_PATH}/openmpf-components/cpp/TrtisDetection/plugin-files/models:/models"
+    command: [trtserver,--model-store=/models]
