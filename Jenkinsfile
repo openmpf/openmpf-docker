@@ -767,9 +767,7 @@ def getCustomLabelArg(customLabelKey) {
 }
 
 def getLabelArgs(labels) {
-    return labels.inject([]) { result, label ->
-        result <<  "--label ${label.key}=${label.value}"
-    }.join(' ')
+    return labels.collect { "--label ${it.key}=${it.value}" }.join(' ')
 }
 
 def getUserDefinedLabels(imageUrl, imageVersion, customLabelKey) {
