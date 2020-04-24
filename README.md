@@ -458,6 +458,41 @@ docker-compose down -v
 unset COMPOSE_FILE
 ```
 
+### (Optional) Restrict Media Types That a Component Can Process
+Component services can be configured to only process certain types of media.
+This is done by setting a component service's `RESTRICT_MEDIA_TYPES` 
+environment variable in `docker-compose.components.yml` to a comma-separated 
+list containing one or more of `VIDEO`, `IMAGE`, `AUDIO`, `UNKNOWN`. 
+If you want different instances of a particular component to process different 
+media types, you can add multiple entries for that component to 
+`docker-compose.components.yml`.
+For example:
+```yaml
+services:
+  ocv-face-detection-image-only:
+    <<: *detection-component-base
+    image: ${REGISTRY}openmpf_ocv_face_detection:${TAG}
+    build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/cpp/OcvFaceDetection
+    environment:
+      <<: *common-env-vars
+      RESTRICT_MEDIA_TYPES: IMAGE
+
+  ocv-face-detection-image-video-only:
+    <<: *detection-component-base
+    image: ${REGISTRY}openmpf_ocv_face_detection:${TAG}
+    build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/cpp/OcvFaceDetection
+    environment:
+      <<: *common-env-vars
+      RESTRICT_MEDIA_TYPES: VIDEO, IMAGE
+
+  # This instance will process all media types
+  ocv-face-detection:
+    <<: *detection-component-base
+    image: ${REGISTRY}openmpf_ocv_face_detection:${TAG}
+    build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/cpp/OcvFaceDetection
+```
+
+
 ## Project Website
 
 For more information about OpenMPF, including documentation, guides, and other material, visit our [website](https://openmpf.github.io/).
