@@ -81,6 +81,11 @@ def openmpfConfigDockerBranch = env.getProperty("openmpf_config_docker_branch")
 def postOpenmpfDockerBuildStatus = env.getProperty("post_openmpf_docker_build_status").toBoolean()
 def githubAuthToken = env.getProperty("github_auth_token")
 
+// These properties add optional user-defined labels to the Docker images
+def imageUrl = env.getProperty("image_url")
+def imageVersion = env.getProperty("image_version")
+def customLabelKey = env.getProperty("custom_label_key") ?: "custom"
+
 // Labels
 def buildDate
 def buildShas
@@ -334,12 +339,15 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                 buildShas = 'openmpf-docker: ' + openmpfDockerRepo.newSha
                 buildShas += ', ' + getBuildShasStr(coreRepos)
 
+                def labelArgs = getUserDefinedLabelArgs(imageUrl, imageVersion)
+
                 sh 'docker build openmpf_build/' +
                         (buildNoCache ? ' --no-cache' : '' ) +
                         ' --build-arg BUILD_REGISTRY=' + remoteImageTagPrefix +
                         ' --build-arg BUILD_TAG=' + imageTag +
                         ' --build-arg BUILD_DATE=' + buildDate +
                         ' --build-arg BUILD_SHAS=\"' + buildShas + '\"' +
+                        " $labelArgs" +
                         ' -t ' + buildImageName
 
                 if (buildCustomComponents) {
@@ -347,6 +355,8 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                     sh 'cp -u /data/openmpf/custom-build-files/* openmpf_custom_build'
 
                     buildShas += ', ' + getBuildShasStr(customComponentRepos)
+
+                    def customLabelArg = getCustomLabelArg(customLabelKey)
 
                     // Build the new build image for custom components using the original build image for open source
                     // components. This overwrites the original build image tag.
@@ -356,6 +366,7 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                             ' --build-arg BUILD_TAG=' + imageTag +
                             ' --build-arg BUILD_DATE=' + buildDate +
                             ' --build-arg BUILD_SHAS=\"' + buildShas + '\"' +
+                            " $customLabelArg" +
                             ' -t ' + buildImageName
                 }
             }
@@ -409,6 +420,8 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                         echo 'SKIPPING BUILD OF RUNTIME IMAGES'
                     }
                     when (buildRuntimeImages) { // if false, don't show this step in the Stage View UI
+                        def labelArgs = getUserDefinedLabelArgs(imageUrl, imageVersion)
+
                         sh 'DOCKER_BUILDKIT=1 docker build openmpf_runtime' +
                                 ' --file openmpf_runtime/python_executor/Dockerfile ' +
                                 (buildNoCache ? ' --no-cache' : '' ) +
@@ -416,14 +429,28 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                                 ' --build-arg BUILD_TAG=' + imageTag +
                                 ' --build-arg BUILD_DATE=' + buildDate +
                                 ' --build-arg BUILD_SHAS=\"' + buildShas + '\"' +
-                                " -t '${pythonExecutorImageName}'"
+                                " $labelArgs" +
+                                " -t $pythonExecutorImageName"
 
                         sh 'docker-compose build' +
                                 (buildNoCache ? ' --no-cache' : '' ) +
                                 ' --build-arg BUILD_REGISTRY=' + remoteImageTagPrefix +
                                 ' --build-arg BUILD_TAG=' + imageTag +
                                 ' --build-arg BUILD_DATE=' + buildDate +
-                                ' --build-arg BUILD_SHAS=\"' + buildShas + '\"'
+                                ' --build-arg BUILD_SHAS=\"' + buildShas + '\"' +
+                                ' --build-arg BUILD_VERSION=' + imageVersion
+
+                        def composeYaml = readYaml(text: shOutput('cat docker-compose.yml'))
+
+                        def customComponentServices = []
+                        if (buildCustomComponents) {
+                            customComponentServices =
+                                    readYaml(text: shOutput('cat openmpf_custom_build/docker-compose.custom-components.yml'))
+                                            .services.keySet()
+                        }
+
+                        addUserDefinedLabels(composeYaml, customComponentServices,
+                                imageUrl, imageVersion, customLabelKey)
                     }
                 }
 
@@ -495,6 +522,8 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                 when (applyCustomConfig) { // if false, don't show this step in the Stage View UI
                     buildShas += ', openmpf-custom-config: ' + customConfigRepo.newSha
 
+                    def customLabelArg = getCustomLabelArg(customLabelKey)
+
                     // Build and tag the new Workflow Manager image with the image tag used in the compose files.
                     // That way, we do not have to modify the compose files. This overwrites the tag that referred
                     // to the original Workflow Manager image without the custom config.
@@ -504,6 +533,7 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                             ' --build-arg BUILD_TAG=' + imageTag +
                             ' --build-arg BUILD_DATE=' + buildDate +
                             ' --build-arg BUILD_SHAS=\"' + buildShas + '\"' +
+                            " $customLabelArg" +
                             ' -t ' + workflowManagerImageName
 
                     // Build and tag the new ActiveMQ image with the image tag used in the compose files.
@@ -513,6 +543,7 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                             ' --build-arg BUILD_TAG=' + imageTag +
                             ' --build-arg BUILD_DATE=' + buildDate +
                             ' --build-arg BUILD_SHAS=\"' + buildShas + '\"' +
+                            " $customLabelArg" +
                             ' -t ' + activeMqImageName
                 }
             }
@@ -691,4 +722,73 @@ def getBuildShasStr(repos) {
         buildShas += repo.name + ': ' + repo.newSha
     }
     return buildShas
+}
+
+def addUserDefinedLabels(composeYaml, customComponentServices, imageUrl, imageVersion, customLabelKey) {
+    def commonLabels = getUserDefinedLabels(imageUrl, imageVersion)
+    def customLabels = getUserDefinedLabels(imageUrl, imageVersion, customLabelKey)
+
+    for (def serviceName in composeYaml.services.keySet()) {
+        def service = composeYaml.services[serviceName]
+        if (!service.build) {
+            echo "Not labeling $service.image since we didn't build it"
+            continue
+        }
+
+        if (customComponentServices.contains(serviceName)) {
+            addLabelsToImage(service.image, customLabels)
+            continue
+        }
+
+        // Both the WFM and node-manager images contain component packages.
+        if (!customComponentServices.isEmpty() &&
+                (serviceName == 'workflow_manager' || serviceName == 'node_manager')) {
+            addLabelsToImage(service.image, customLabels)
+            continue
+        }
+
+        addLabelsToImage(service.image, commonLabels)
+    }
+}
+
+def addLabelsToImage(imageName, labels) {
+    if (!labels.isEmpty()) {
+        def labelArgs = getLabelArgs(labels)
+        sh "echo 'FROM $imageName' | docker build - -t $imageName $labelArgs"
+    }
+}
+
+def getUserDefinedLabelArgs(imageUrl, imageVersion) {
+    return getLabelArgs(getUserDefinedLabels(imageUrl, imageVersion))
+}
+
+def getCustomLabelArg(customLabelKey) {
+    return getLabelArgs(getCustomLabel(customLabelKey))
+}
+
+def getLabelArgs(labels) {
+    return labels.collect { "--label ${it.key}=${it.value}" }.join(' ')
+}
+
+def getUserDefinedLabels(imageUrl, imageVersion, customLabelKey) {
+    return getUserDefinedLabels(imageUrl, imageVersion) << getCustomLabel(customLabelKey)
+}
+
+def getUserDefinedLabels(imageUrl, imageVersion) {
+    def labels = [:]
+    if (imageUrl) {
+        labels["org.label-schema.url"] = imageUrl
+    }
+    if (imageVersion) {
+        labels["org.label-schema.version"] = imageVersion
+    }
+    return labels
+}
+
+def getCustomLabel(customLabelKey) {
+    return ["$customLabelKey": '']
+}
+
+def shOutput(script) {
+    return sh(script: script, returnStdout: true).trim()
 }
