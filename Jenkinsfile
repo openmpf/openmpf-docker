@@ -45,6 +45,10 @@ def postBuildStatusEnabled = 'post_build_status' in env ? env.post_build_status.
 def githubAuthToken = env.github_auth_token
 def emailRecipients = env.email_recipients
 
+// These properties add optional user-defined labels to the Docker images
+def imageUrl = env.getProperty("image_url")
+def imageVersion = env.getProperty("image_version")
+def customLabelKey = env.getProperty("custom_label_key") ?: "custom"
 
 
 class Repo {
@@ -231,10 +235,12 @@ try {
         withEnv(['DOCKER_BUILDKIT=1', 'RUN_TESTS=true']) {
             def noCacheArg = buildNoCache ? '--no-cache' : ''
             def commonBuildArgs = " --build-arg BUILD_TAG='$inProgressTag' $noCacheArg "
+            def labelArgs = getUserDefinedLabelArgs(imageUrl, imageVersion)
+            def customLabelArg = getCustomLabelArg(customLabelKey)
 
             dir ('openmpf-docker') {
                 sh 'docker build -f openmpf_build/Dockerfile ../openmpf-projects --build-arg RUN_TESTS ' +
-                        "$commonBuildArgs -t openmpf_build:$inProgressTag"
+                        "$commonBuildArgs $labelArgs -t openmpf_build:$inProgressTag"
 
                 // --no-cache needs to be handled differently for the openmpf_integration_tests image because it
                 // expects that openmpf_build will populate the mvn_cache cache mount. When you run a
@@ -253,33 +259,33 @@ try {
             }
 
             if (buildCustomComponents) {
-                sh "docker build $customSystemTestsRepo.path $commonBuildArgs " +
+                sh "docker build $customSystemTestsRepo.path $commonBuildArgs $customLabelArg " +
                         " -t openmpf_integration_tests:$inProgressTag "
             }
 
 
             dir('openmpf-docker/components') {
                 def cppShas = getVcsRefLabelArg([openmpfCppSdkRepo])
-                sh "docker build . -f cpp_component_build/Dockerfile $commonBuildArgs $cppShas " +
+                sh "docker build . -f cpp_component_build/Dockerfile $commonBuildArgs $labelArgs $cppShas " +
                         " -t openmpf_cpp_component_build:$inProgressTag"
 
-                sh "docker build . -f cpp_executor/Dockerfile $commonBuildArgs $cppShas " +
+                sh "docker build . -f cpp_executor/Dockerfile $commonBuildArgs $labelArgs $cppShas " +
                         " -t openmpf_cpp_executor:$inProgressTag"
 
 
                 def javaShas = getVcsRefLabelArg([openmpfJavaSdkRepo])
-                sh "docker build . -f java_component_build/Dockerfile $commonBuildArgs $javaShas " +
+                sh "docker build . -f java_component_build/Dockerfile $commonBuildArgs $labelArgs $javaShas " +
                         " -t openmpf_java_component_build:$inProgressTag"
 
-                sh "docker build . -f java_executor/Dockerfile $commonBuildArgs $javaShas " +
+                sh "docker build . -f java_executor/Dockerfile $commonBuildArgs $labelArgs $javaShas " +
                         " -t openmpf_java_executor:$inProgressTag"
 
 
                 def pythonShas = getVcsRefLabelArg([openmpfPythonSdkRepo])
-                sh "docker build . -f python_component_build/Dockerfile $commonBuildArgs $pythonShas " +
+                sh "docker build . -f python_component_build/Dockerfile $commonBuildArgs $labelArgs $pythonShas " +
                         " -t openmpf_python_component_build:$inProgressTag"
 
-                sh "docker build . -f python_executor/Dockerfile $commonBuildArgs $pythonShas " +
+                sh "docker build . -f python_executor/Dockerfile $commonBuildArgs $labelArgs $pythonShas " +
                         " -t openmpf_python_executor:$inProgressTag"
             }
 
@@ -287,9 +293,16 @@ try {
                 sh 'cp .env.tpl .env'
 
                 componentComposeFiles = 'docker-compose.components.yml'
+                def customComponentServices = []
+
                 if (buildCustomComponents) {
-                    componentComposeFiles += ":../$customComponentsRepo.path/docker-compose.custom-components.yml"
+                    def customComponentsComposeFile =
+                            "../$customComponentsRepo.path/docker-compose.custom-components.yml"
+                    componentComposeFiles += ":$customComponentsComposeFile"
+                    customComponentServices =
+                            readYaml(text: shOutput("cat $customComponentsComposeFile")).services.keySet()
                 }
+
                 runtimeComposeFiles = "docker-compose.core.yml:$componentComposeFiles:docker-compose.elk.yml"
 
                 withEnv(["TAG=$inProgressTag", "COMPOSE_FILE=$runtimeComposeFiles", 'COMPOSE_DOCKER_CLI_BUILD=1']) {
@@ -297,6 +310,7 @@ try {
 
                     def composeYaml = readYaml(text: shOutput('docker-compose config'))
                     addVcsRefLabels(composeYaml, openmpfRepo, openmpfDockerRepo)
+                    addUserDefinedLabels(composeYaml, customComponentServices, imageUrl, imageVersion, customLabelKey)
                 }
             }
 
@@ -304,11 +318,11 @@ try {
                 echo 'APPLYING CUSTOM CONFIGURATION'
                 dir(customConfigRepo.path) {
                     def wfmShasArg = getVcsRefLabelArg([openmpfRepo, openmpfDockerRepo, customConfigRepo])
-                    sh "docker build workflow_manager $commonBuildArgs $wfmShasArg " +
+                    sh "docker build workflow_manager $commonBuildArgs $customLabelArg $wfmShasArg " +
                             " -t openmpf_workflow_manager:$inProgressTag"
 
                     def amqShasArg = getVcsRefLabelArg([openmpfDockerRepo, customConfigRepo])
-                    sh "docker build activemq $commonBuildArgs $amqShasArg " +
+                    sh "docker build activemq $commonBuildArgs $customLabelArg $amqShasArg " +
                             " -t openmpf_activemq:$inProgressTag"
                 }
             }
@@ -470,6 +484,65 @@ def formatVcsRefs(repos) {
 def getVcsRefLabelArg(repos) {
     def shas = formatVcsRefs(repos)
     return " --label org.label-schema.vcs-ref='$shas'"
+}
+
+
+def addUserDefinedLabels(composeYaml, customComponentServices, imageUrl, imageVersion, customLabelKey) {
+    def commonLabels = getUserDefinedLabels(imageUrl, imageVersion)
+    def customLabels = getUserDefinedLabels(imageUrl, imageVersion, customLabelKey)
+
+    for (def serviceName in composeYaml.services.keySet()) {
+        def service = composeYaml.services[serviceName]
+        if (!service.build) {
+            echo "Not labeling $service.image since we didn't build it"
+            continue
+        }
+
+        if (customComponentServices.contains(serviceName)) {
+            addLabelsToImage(service.image, customLabels)
+            continue
+        }
+
+        addLabelsToImage(service.image, commonLabels)
+    }
+}
+
+def addLabelsToImage(imageName, labels) {
+    if (!labels.isEmpty()) {
+        def labelArgs = getLabelArgs(labels)
+        sh "echo 'FROM $imageName' | docker build - -t $imageName $labelArgs"
+    }
+}
+
+def getUserDefinedLabelArgs(imageUrl, imageVersion) {
+    return getLabelArgs(getUserDefinedLabels(imageUrl, imageVersion))
+}
+
+def getCustomLabelArg(customLabelKey) {
+    return getLabelArgs(getCustomLabel(customLabelKey))
+}
+
+def getLabelArgs(labels) {
+    return labels.collect { "--label ${it.key}=${it.value}" }.join(' ')
+}
+
+def getUserDefinedLabels(imageUrl, imageVersion, customLabelKey) {
+    return getUserDefinedLabels(imageUrl, imageVersion) << getCustomLabel(customLabelKey)
+}
+
+def getUserDefinedLabels(imageUrl, imageVersion) {
+    def labels = [:]
+    if (imageUrl) {
+        labels["org.label-schema.url"] = imageUrl
+    }
+    if (imageVersion) {
+        labels["org.label-schema.version"] = imageVersion
+    }
+    return labels
+}
+
+def getCustomLabel(customLabelKey) {
+    return ["$customLabelKey": '']
 }
 
 
