@@ -33,4 +33,10 @@ ENTRYPOINT ["/scripts/docker-entrypoint.sh"]
 # Taken from base image
 CMD ["/usr/local/bin/kibana-docker"]
 
-
+# Inherit "license", "org.label-schema.license", and "org.label-schema.usage" from base image.
+LABEL org.label-schema.build-date="" \
+      org.label-schema.name="OpenMPF Kibana" \
+      org.label-schema.schema-version="1.0" \
+      org.label-schema.url="https://openmpf.github.io" \
+      org.label-schema.vcs-url="https://github.com/openmpf" \
+      org.label-schema.vendor="MITRE"
