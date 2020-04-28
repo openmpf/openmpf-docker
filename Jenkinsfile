@@ -234,7 +234,8 @@ try {
 
         withEnv(['DOCKER_BUILDKIT=1', 'RUN_TESTS=true']) {
             def noCacheArg = buildNoCache ? '--no-cache' : ''
-            def commonBuildArgs = " --build-arg BUILD_TAG='$inProgressTag' $noCacheArg "
+            def commonBuildArgs = " --build-arg BUILD_TAG=$inProgressTag --build-arg BUILD_VERSION=$imageVersion " +
+                    "$noCacheArg "
             def labelArgs = getUserDefinedLabelArgs(imageUrl, imageVersion)
             def customLabelArg = getCustomLabelArg(customLabelKey)
 
@@ -260,7 +261,7 @@ try {
 
             if (buildCustomComponents) {
                 sh "docker build $customSystemTestsRepo.path $commonBuildArgs $customLabelArg " +
-                        " -t openmpf_integration_tests:$inProgressTag "
+                        " -t openmpf_integration_tests:$inProgressTag"
             }
 
 
