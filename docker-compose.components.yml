@@ -55,7 +55,7 @@ services:
         limits:
           cpus: "2.0"
 
-  azure_ocr:
+  azure_ocr_text_detection:
     <<: *detection-component-base
     image: ${REGISTRY}openmpf_azure_ocr_text_detection:${TAG}
     build:
