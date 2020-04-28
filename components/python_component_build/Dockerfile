@@ -62,7 +62,8 @@ WORKDIR $SRC_DIR
 
 COPY python_component_build/scripts /scripts
 
-LABEL org.label-schema.license="Apache 2.0" \
+LABEL org.label-schema.build-date="" \
+      org.label-schema.license="Apache 2.0" \
       org.label-schema.name="OpenMPF Python Component Builder" \
       org.label-schema.schema-version="1.0" \
       org.label-schema.url="https://openmpf.github.io" \

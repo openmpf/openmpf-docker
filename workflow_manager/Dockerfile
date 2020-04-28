@@ -87,8 +87,8 @@ COPY mpf-users.sh /usr/local/bin/mpf-users
 
 ENTRYPOINT ["/scripts/docker-entrypoint.sh"]
 
-
-LABEL org.label-schema.license="Mixed" \
+LABEL org.label-schema.build-date="" \
+      org.label-schema.license="Mixed" \
       org.label-schema.name="OpenMPF Workflow Manager" \
       org.label-schema.schema-version="1.0" \
       org.label-schema.url="https://openmpf.github.io" \

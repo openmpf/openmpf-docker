@@ -113,8 +113,8 @@ RUN ln --symbolic /home/mpf/openmpf-projects/openmpf/trunk/workflow-manager/targ
     ln --symbolic /home/mpf/openmpf-projects/openmpf/trunk/install; \
     ln --symbolic /root/mpf-sdk-install;
 
-
-LABEL org.label-schema.license="Mixed" \
+LABEL org.label-schema.build-date="" \
+      org.label-schema.license="Mixed" \
       org.label-schema.name="OpenMPF Build Environment" \
       org.label-schema.schema-version="1.0" \
       org.label-schema.url="https://openmpf.github.io" \

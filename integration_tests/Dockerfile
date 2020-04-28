@@ -115,5 +115,4 @@ COPY docker-entrypoint.sh /scripts/docker-entrypoint.sh
 
 ENTRYPOINT ["/scripts/docker-entrypoint.sh"]
 
-
 LABEL org.label-schema.name="OpenMPF Integration Tests"

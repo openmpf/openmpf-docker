@@ -64,8 +64,8 @@ ENV SRC_DIR /home/mpf/component_src
 
 WORKDIR $SRC_DIR
 
-
-LABEL org.label-schema.license="Apache 2.0" \
+LABEL org.label-schema.build-date="" \
+      org.label-schema.license="Apache 2.0" \
       org.label-schema.name="OpenMPF C++ Component Builder" \
       org.label-schema.schema-version="1.0" \
       org.label-schema.url="https://openmpf.github.io" \
