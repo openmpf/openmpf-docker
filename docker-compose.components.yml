@@ -28,11 +28,14 @@
 
 version: '3.7'
 
+x-common-env-vars:
+  &common-env-vars
+  WFM_USER: ${WFM_USER}
+  WFM_PASSWORD: ${WFM_PASSWORD}
+
 x-detection-component-base:
   &detection-component-base
-  environment:
-    - WFM_USER=${WFM_USER}
-    - WFM_PASSWORD=${WFM_PASSWORD}
+  environment: *common-env-vars
   depends_on:
     - workflow_manager
   volumes:
@@ -51,3 +54,15 @@ services:
       resources:
         limits:
           cpus: "2.0"
+
+  azure_ocr_text_detection:
+    <<: *detection-component-base
+    image: ${REGISTRY}openmpf_azure_ocr_text_detection:${TAG}
+    build:
+      context: ${OPENMPF_PROJECTS_PATH}/openmpf-components/python/AzureOcrTextDetection
+    environment:
+      <<: *common-env-vars
+      # ACS_URL and ACS_SUBSCRIPTION_KEY can also be provided as job properties.
+      # Job properties take precedence over the environment variables set here.
+      ACS_URL: ${ACS_OCR_URL}
+      ACS_SUBSCRIPTION_KEY: ${ACS_OCR_SUBSCRIPTION_KEY}

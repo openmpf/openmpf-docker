@@ -438,7 +438,8 @@ wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color
                                 ' --build-arg BUILD_TAG=' + imageTag +
                                 ' --build-arg BUILD_DATE=' + buildDate +
                                 ' --build-arg BUILD_SHAS=\"' + buildShas + '\"' +
-                                ' --build-arg BUILD_VERSION=' + imageVersion
+                                ' --build-arg BUILD_VERSION=' + imageVersion +
+                                ' --build-arg RUN_TESTS=true'
 
                         def composeYaml = readYaml(text: shOutput('cat docker-compose.yml'))
 
