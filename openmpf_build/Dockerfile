@@ -61,7 +61,11 @@ RUN mkdir /tmp/python; \
     rm --recursive /tmp/python;
 
 
-RUN mkdir /tmp/opencv; \
+RUN mkdir /tmp/opencv-contrib; \
+    cd /tmp/opencv-contrib; \
+    curl --location 'https://github.com/opencv/opencv_contrib/archive/3.4.7.tar.gz' \
+        | tar --extract --gzip; \
+    mkdir /tmp/opencv; \
     cd  /tmp/opencv; \
     curl --location 'https://github.com/opencv/opencv/archive/3.4.7.tar.gz' \
         | tar --extract --gzip; \
@@ -69,12 +73,12 @@ RUN mkdir /tmp/opencv; \
     mkdir build; \
     cd build; \
     cmake3 -DCMAKE_INSTALL_PREFIX:PATH="/opt/opencv-3.4.7" -DWITH_IPP=false \
-        -DBUILD_EXAMPLES=false -DBUILD_TESTS=false -DBUILD_PERF_TESTS=false ..; \
+        -DBUILD_EXAMPLES=false -DBUILD_TESTS=false -DBUILD_PERF_TESTS=false \
+        -DOPENCV_EXTRA_MODULES_PATH=/tmp/opencv-contrib/opencv_contrib-3.4.7/modules ..; \
     make --jobs "$(nproc)" install; \
     ln --symbolic /opt/opencv-3.4.7/include/opencv2 /usr/local/include/opencv2; \
     ln --symbolic /opt/opencv-3.4.7/include/opencv /usr/local/include/opencv; \
-    rm --recursive /tmp/opencv;
-
+    rm --recursive /tmp/opencv /tmp/opencv-contrib;
 
 RUN curl --location 'https://archive.apache.org/dist/maven/maven-3/3.3.3/binaries/apache-maven-3.3.3-bin.tar.gz' \
         | tar --extract --gzip --directory /opt; \
@@ -126,8 +130,8 @@ RUN ln --symbolic /home/mpf/openmpf-projects/openmpf/trunk/workflow-manager/targ
     ln --symbolic /home/mpf/openmpf-projects/openmpf/trunk/install; \
     ln --symbolic /root/mpf-sdk-install;
 
-
-LABEL org.label-schema.license="Mixed" \
+LABEL org.label-schema.build-date="" \
+      org.label-schema.license="Mixed" \
       org.label-schema.name="OpenMPF Build Environment" \
       org.label-schema.schema-version="1.0" \
       org.label-schema.url="https://openmpf.github.io" \

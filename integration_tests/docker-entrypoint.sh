@@ -29,6 +29,11 @@
 
 set -o errexit -o pipefail -o xtrace
 
+# If empty, unset MPF_VERSION so that the default value is used by the WFM.
+if [ -z "$MPF_VERSION" ]; then
+    unset MPF_VERSION
+fi
+
 # Remove old test reports since /test-reports gets bind mounted in compose file.
 rm --recursive --force /test-reports/*
 

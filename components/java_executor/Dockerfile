@@ -67,8 +67,8 @@ COPY docker-executor-entrypoint.py /scripts/docker-entrypoint.py
 
 ENTRYPOINT ["python3", "-u", "/scripts/docker-entrypoint.py"]
 
-
-LABEL org.label-schema.license="Apache 2.0" \
+LABEL org.label-schema.build-date="" \
+      org.label-schema.license="Apache 2.0" \
       org.label-schema.name="OpenMPF Java Component Executor" \
       org.label-schema.schema-version="1.0" \
       org.label-schema.url="https://openmpf.github.io" \

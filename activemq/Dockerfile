@@ -38,13 +38,8 @@ RUN chmod 755 /opt/activemq/bin/docker-entrypoint.sh
 
 ENTRYPOINT ["/opt/activemq/bin/docker-entrypoint.sh"]
 
-
-################################################################################
-# Labels                                                                       #
-################################################################################
-
-# Set labels
-LABEL org.label-schema.license="GPLv2" \
+LABEL org.label-schema.build-date="" \
+      org.label-schema.license="GPLv2" \
       org.label-schema.name="OpenMPF ActiveMQ" \
       org.label-schema.schema-version="1.0" \
       org.label-schema.url="https://openmpf.github.io" \

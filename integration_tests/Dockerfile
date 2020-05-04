@@ -115,10 +115,4 @@ COPY docker-entrypoint.sh /scripts/docker-entrypoint.sh
 
 ENTRYPOINT ["/scripts/docker-entrypoint.sh"]
 
-
-LABEL org.label-schema.license="Apache 2.0" \
-      org.label-schema.name="OpenMPF Integration Tests" \
-      org.label-schema.schema-version="1.0" \
-      org.label-schema.url="https://openmpf.github.io" \
-      org.label-schema.vcs-url="https://github.com/openmpf/openmpf" \
-      org.label-schema.vendor="MITRE"
+LABEL org.label-schema.name="OpenMPF Integration Tests"
