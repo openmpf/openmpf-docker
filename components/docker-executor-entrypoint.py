@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 #############################################################################
 # NOTICE                                                                    #
@@ -307,9 +307,10 @@ def tail_log_if_needed(log_dir, component_log_name, source_language, executor_pi
     log_files = []
     if not is_java:
         log_files.append(os.path.join(log_dir, 'detection.log'))
+
     if component_log_name:
         log_files.append(os.path.join(log_dir, component_log_name))
-    else:
+    elif source_language == 'c++':
         print('WARNING: No component log file specified. Only component executor\'s log will appear.')
 
     for log_file in log_files:

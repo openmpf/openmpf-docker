@@ -35,6 +35,8 @@ FROM centos:7 as download_dependencies
 
 SHELL ["/bin/bash", "-o", "errexit", "-o", "pipefail", "-c"]
 
+ENV LANG en_US.UTF-8
+
 RUN yum install -y java-11-openjdk; \
     yum clean all; \
     rm -rf /var/cache/yum/*;
@@ -72,6 +74,8 @@ RUN mvn dependency:get -Dartifact=org.apache.maven.plugins:maven-surefire-plugin
 FROM ${BUILD_REGISTRY}openmpf_build:${BUILD_TAG} as integration_tests
 
 SHELL ["/bin/bash", "-o", "errexit", "-o", "pipefail", "-c"]
+
+ENV LANG en_US.UTF-8
 
 # Copy Maven repository out of cache mount so that the Maven dependencies can be used when running the
 # integration tests. This is necessary because the cache mount is only available at build time and the

@@ -35,7 +35,10 @@ RUN mkdir /root/copy_libs64 \
 
 
 FROM centos:7
+
 SHELL ["/bin/bash", "-o", "errexit", "-o", "pipefail", "-c"]
+
+ENV LANG en_US.UTF-8
 
 RUN yum update --assumeyes; \
     yum install --assumeyes https://download1.rpmfusion.org/free/el/rpmfusion-free-release-7.noarch.rpm; \

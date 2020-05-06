@@ -33,6 +33,8 @@ FROM centos:7
 
 SHELL ["/bin/bash", "-o", "errexit", "-o", "pipefail", "-c"]
 
+ENV LANG en_US.UTF-8
+
 COPY --from=openmpf_build /usr/local/bin/python3.8 /usr/local/bin/python3.8-config \
     /usr/local/bin/pip /usr/local/bin/pip3 /usr/local/bin/pip3.8 /usr/local/bin/wheel \
     /usr/local/bin/

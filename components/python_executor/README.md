@@ -86,10 +86,6 @@ COPY --from=build_component $COMPONENT_VIRTUALENV $COMPONENT_VIRTUALENV
 # This copies over any files in your plugin's plugin-files directory.
 # Minimally, this will include your component's descriptor.
 COPY --from=build_component $PLUGINS_DIR/MyFaceDetection $PLUGINS_DIR/MyFaceDetection
-
-# Set the COMPONENT_LOG_NAME environment variable so that your component's log 
-# file can be printed to standard out when running the image. 
-ENV COMPONENT_LOG_NAME my-face-detection.log
 ```
 
 Your Dockerfile may use more than the two stages shown above, but the final stage in the Dockerfile must be the

@@ -31,6 +31,8 @@ FROM centos:7 as openmpf_build
 
 SHELL ["/bin/bash", "-o", "errexit", "-o", "pipefail", "-c"]
 
+ENV LANG en_US.UTF-8
+
 RUN yum update --assumeyes; \
     yum install --assumeyes epel-release https://download1.rpmfusion.org/free/el/rpmfusion-free-release-7.noarch.rpm; \
     yum install --assumeyes cmake3 make gcc gcc-c++ qt-devel log4cxx-devel boost-devel ffmpeg ffmpeg-devel gtest-devel \
