@@ -299,10 +299,10 @@ RUN wget -nv -O /apps/source/config4cpp.tar.gz "http://www.config4star.org/downl
     cd dlib-18.18/dlib && mkdir build && cd build && cmake3 ../ && \
     cmake3 --build . --config Release && make install
 
-# ImageMagick6:
+# ImageMagick:
 RUN yum install -y http://rpms.remirepo.net/enterprise/remi-release-7.rpm && \
-    yum --enablerepo=remi install -y ImageMagick6 ImageMagick6-c++ \
-    ImageMagick6-c++-devel ImageMagick6-devel ImageMagick6-libs \
+    yum --enablerepo=remi install -y ImageMagick ImageMagick-c++ \
+    ImageMagick-c++-devel ImageMagick-devel ImageMagick-libs \
     libgif libjpeg libpng libtiff zlib ghostscript && \
     yum clean all && rm -rf /var/cache/yum/*
 
