@@ -39,6 +39,7 @@ RUN yum update --assumeyes; \
     rm --recursive /var/cache/yum/*; \
     pip install --upgrade pip;
 
+ENV JAVA_HOME /etc/alternatives/jre
 
 RUN mkdir /scripts; \
     curl --location https://raw.githubusercontent.com/vishnubob/wait-for-it/master/wait-for-it.sh \
