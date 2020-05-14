@@ -168,11 +168,6 @@ Bash, which is part of [Git for Windows](https://gitforwindows.org/), or
 Note that this process can take an hour if you're starting from scratch.
 
 #### Setup
-
-Clone the [openmpf-docker repository](https://github.com/openmpf/openmpf-docker):
-
-- `git clone https://github.com/openmpf/openmpf-docker.git`
-
 Clone the [openmpf-projects
 repository](https://github.com/openmpf/openmpf-projects) somewhere on your host
 system:
@@ -191,7 +186,7 @@ please refer to the [Contribution Guide](CONTRIBUTING.md).
 Run the following command from within the `openmpf-docker` directory to create
 the OpenMPF build image:
 
-- `DOCKER_BUILDKIT=1 docker build -f openmpf_build/Dockerfile path/to/openmpf-projects -t openmpf_build`
+- `DOCKER_BUILDKIT=1 docker build -f openmpf_build/Dockerfile .. -t openmpf_build`
 
 
 #### Build the OpenMPF Component Executor Docker Images
