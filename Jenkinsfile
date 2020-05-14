@@ -285,7 +285,7 @@ try {
 
                 if (buildCustomComponents) {
                     def customComponentsComposeFile =
-                            "../$customComponentsRepo.path/docker-compose.custom-components.yml"
+                            "../../$customComponentsRepo.path/docker-compose.custom-components.yml"
                     componentComposeFiles += ":$customComponentsComposeFile"
                     customComponentServices =
                             readYaml(text: shOutput("cat $customComponentsComposeFile")).services.keySet()
