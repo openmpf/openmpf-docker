@@ -162,6 +162,9 @@ try {
             }
         }
 
+        // Directory may not exist. In that case the command doesn't do anything.
+        sh "rm -rf $openmpfDockerRepo.path/test-reports/*"
+
         if (!fileExists(openmpfProjectsRepo.path)) {
             sh "git clone --recurse-submodules $openmpfProjectsRepo.url"
         }
