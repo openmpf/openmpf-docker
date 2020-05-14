@@ -411,7 +411,6 @@ finally {
     }
 
     if (postBuildStatusEnabled) {
-//        postBuildStatus(openmpfDockerRepo, buildStatus, githubAuthToken)
         for (repo in projectsSubRepos) {
             postBuildStatus(repo, buildStatus, githubAuthToken)
         }
