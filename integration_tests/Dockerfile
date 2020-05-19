@@ -112,6 +112,7 @@ ENV CATALINA_OPTS "-Dtransport.guarantee='NONE' -Dweb.rest.protocol='http'"
 ENV TOMCAT_BASE_URL=http://localhost:8181
 # Default for JDBC configuration. Can be overridden at runtime.
 ENV JDBC_URL=jdbc:postgresql://db:5432/mpf
+ENV PYTHONUNBUFFERED 1
 
 COPY descriptor-receiver.py /scripts/descriptor-receiver.py
 COPY check-test-reports.py /scripts/check-test-reports.py
