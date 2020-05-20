@@ -358,7 +358,7 @@ try {
                     junit 'test-reports/*-reports/*.xml'
                 }
             } // withEnv
-        } // dir('openmpf-docker')
+        } // dir(openmpfDockerRepo.path)
     } // stage('Run Integration Tests')
 
     stage('Re-Tag Images') {
