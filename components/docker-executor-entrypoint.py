@@ -145,35 +145,38 @@ def register_component(unparsed_descriptor, wfm_base_url, wfm_user, wfm_password
         'Content-Type': 'application/json',
         'Accept': 'application/json'
     }
-    ssl_ctx = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
-    ssl_ctx.verify_mode = ssl.CERT_NONE
 
     url = wfm_base_url + '/rest/components/registerUnmanaged'
     print('Registering component by posting descriptor to', url)
     try:
-        post_descriptor_with_retry(unparsed_descriptor, url, headers, ssl_ctx)
+        post_descriptor_with_retry(unparsed_descriptor, url, headers)
     except urllib.error.HTTPError as err:
         handle_registration_error(err)
 
 
-def post_descriptor_with_retry(unparsed_descriptor, url, headers, ssl_ctx):
+def post_descriptor_with_retry(unparsed_descriptor, url, headers):
+
+    ssl_ctx = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
+    ssl_ctx.verify_mode = ssl.CERT_NONE
+    opener = urllib.request.build_opener(ThrowingRedirectHandler(), urllib.request.HTTPSHandler(context=ssl_ctx))
+
     while True:
         try:
-            post_descriptor(unparsed_descriptor, url, headers, ssl_ctx)
+            post_descriptor(unparsed_descriptor, url, headers, opener)
             return
         except http.client.BadStatusLine:
             new_url = url.replace('http://', 'https://')
             print('Initial registration response failed due to an invalid status line in the HTTP response. '
                   'This usually means that the server is using HTTPS, but an "http://" URL was used. '
                   'Trying again with:', new_url)
-            post_descriptor(unparsed_descriptor, new_url, headers, ssl_ctx)
+            post_descriptor(unparsed_descriptor, new_url, headers, opener)
             return
 
         except urllib.error.HTTPError as err:
             if err.url != url:
                 # This generally means the provided WFM url used HTTP, but WFM was configured to use HTTPS
                 print('Initial registration response failed. Trying with redirected url: ', err.url)
-                post_descriptor(unparsed_descriptor, err.url, headers, ssl_ctx)
+                post_descriptor(unparsed_descriptor, err.url, headers, opener)
                 return
             if err.code != 404:
                 raise
@@ -203,9 +206,23 @@ def post_descriptor_with_retry(unparsed_descriptor, url, headers, ssl_ctx):
         time.sleep(5)
 
 
-def post_descriptor(unparsed_descriptor, url, headers, ssl_ctx):
+# The default urllib.request.HTTPRedirectHandler converts POST requests to GET requests.
+# This subclass just throws an exception so we can post to the new URL ourselves.
+class ThrowingRedirectHandler(urllib.request.HTTPRedirectHandler):
+    def http_error_302(self, req, fp, code, msg, headers):
+        if 'location' in headers:
+            new_url = headers['location']
+        elif 'uri' in headers:
+            new_url = headers['uri']
+        else:
+            raise RuntimeError('Received HTTP redirect response with no location header.')
+
+        raise urllib.error.HTTPError(new_url, code, msg, headers, fp)
+
+
+def post_descriptor(unparsed_descriptor, url, headers, opener):
     request = urllib.request.Request(url, unparsed_descriptor, headers=headers)
-    with urllib.request.urlopen(request, context=ssl_ctx) as response:
+    with opener.open(request) as response:
         body = response.read()
     print('Registration response:', body)
 
