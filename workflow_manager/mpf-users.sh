@@ -39,9 +39,10 @@ run_user_command() {
 
     local mpf_subcommand=$1
     shift
+
     export PYTHONPATH=/home/mpf/mpf-scripts-install
-    python "$PYTHONPATH/mpf/command_line.py" \
-        "$mpf_subcommand" --sql-host "$jdbc_host_port" --sql-user "$POSTGRES_USER" --sql-password "$POSTGRES_PASSWORD" \
+    python3 "$PYTHONPATH/bin/mpf" "$mpf_subcommand" \
+        --sql-host "$jdbc_host_port" --sql-user "$POSTGRES_USER" --sql-password "$POSTGRES_PASSWORD" \
         --skip-sql-start "$@"
 }
 

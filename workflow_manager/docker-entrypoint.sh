@@ -68,28 +68,19 @@ fi
 
 if [ "$KEYSTORE_PASSWORD" ]; then
     export CATALINA_OPTS="$CATALINA_OPTS -Dtransport.guarantee='CONFIDENTIAL' -Dweb.rest.protocol='https'"
-    python << EndOfPythonScript
+    python3 << EndOfPythonScript
 import xml.etree.ElementTree as ET
 import os
 
-class CommentPreservingTreeBuilder(ET.XMLTreeBuilder):
-    def __init__(self, *args, **kwargs):
-        super(CommentPreservingTreeBuilder, self).__init__(*args, **kwargs)
-        self._parser.CommentHandler = self.handle_comment
-
-    def handle_comment(self, data):
-        self._target.start(ET.Comment, {})
-        self._target.data(data)
-        self._target.end(ET.Comment)
-
-
 keystore_password = os.getenv('KEYSTORE_PASSWORD')
 server_xml_path = '/opt/apache-tomcat/conf/server.xml'
-tree = ET.parse(server_xml_path, CommentPreservingTreeBuilder())
+
+tree_builder = ET.TreeBuilder(insert_comments=True)
+tree = ET.parse(server_xml_path, ET.XMLParser(target=tree_builder))
 https_connector = tree.find('./Service/Connector[@sslProtocol="TLS"][@scheme="https"]')
 
 if https_connector is None:
-    print 'Enabling HTTPS'
+    print('Enabling HTTPS')
     ssl_connector_element = ET.Element('Connector',
         SSLEnabled='true',
         acceptCount='100',
@@ -108,7 +99,7 @@ if https_connector is None:
     tree.find('Service').insert(8, ssl_connector_element)
     tree.write(server_xml_path)
 else:
-    print 'HTTPS already enabled'
+    print('HTTPS already enabled')
 EndOfPythonScript
 else
     export CATALINA_OPTS="$CATALINA_OPTS -Dtransport.guarantee='NONE' -Dweb.rest.protocol='http'"

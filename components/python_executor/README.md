@@ -53,7 +53,7 @@ FROM openmpf_python_component_build:latest as build_component
 # or build the dependencies here. Adding the dependencies prior the copying in your source code 
 # allows you to take advantage of the Docker build cache to avoid re-installing the dependencies 
 # every time your source code changes.
-# e.g. RUN pip install --no-cache-dir 'opencv-python>=3.4.7' 'tensorflow>=2.1.0'
+# e.g. RUN pip3 install --no-cache-dir 'opencv-python>=3.4.7' 'tensorflow>=2.1.0'
 
 # Copy in your source code
 COPY . .
@@ -86,10 +86,6 @@ COPY --from=build_component $COMPONENT_VIRTUALENV $COMPONENT_VIRTUALENV
 # This copies over any files in your plugin's plugin-files directory.
 # Minimally, this will include your component's descriptor.
 COPY --from=build_component $PLUGINS_DIR/MyFaceDetection $PLUGINS_DIR/MyFaceDetection
-
-# Set the COMPONENT_LOG_NAME environment variable so that your component's log 
-# file can be printed to standard out when running the image. 
-ENV COMPONENT_LOG_NAME my-face-detection.log
 ```
 
 Your Dockerfile may use more than the two stages shown above, but the final stage in the Dockerfile must be the
