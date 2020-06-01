@@ -103,6 +103,11 @@ services:
     image: ${REGISTRY}openmpf_ocv_face_detection:${TAG}
     build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/cpp/OcvFaceDetection
 
+  ocv-ssd-face-detection:
+    <<: *detection-component-base
+    image: ${REGISTRY}openmpf_ocv_ssd_face_detection:${TAG}
+    build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/cpp/OcvSsdFaceDetection
+
   ocv-person-detection:
     <<: *detection-component-base
     image: ${REGISTRY}openmpf_ocv_person_detection:${TAG}
