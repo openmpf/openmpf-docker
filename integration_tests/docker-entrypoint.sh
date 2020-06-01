@@ -29,11 +29,16 @@
 
 set -o errexit -o pipefail -o xtrace
 
+# If empty, unset MPF_VERSION so that the default value is used by the WFM.
+if [ -z "$MPF_VERSION" ]; then
+    unset MPF_VERSION
+fi
+
 # Remove old test reports since /test-reports gets bind mounted in compose file.
 rm --recursive --force /test-reports/*
 
 
-python -u /scripts/descriptor-receiver.py &
+python3 -u /scripts/descriptor-receiver.py &
 descriptor_receiver_pid=$!
 
 cd /home/mpf/openmpf-projects/openmpf
@@ -112,7 +117,7 @@ chmod -R 777 /test-reports
 
 
 # Maven doesn't exit with error when tests in certain Maven modules fail.
-python /scripts/check-test-reports.py /test-reports
+python3 /scripts/check-test-reports.py /test-reports
 check_reports_exit_code=$?
 
 if [ "$maven_exit_code" -ne 0 ]; then

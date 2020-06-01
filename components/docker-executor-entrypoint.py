@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 #############################################################################
 # NOTICE                                                                    #
@@ -26,13 +26,11 @@
 # limitations under the License.                                            #
 #############################################################################
 
-from __future__ import print_function, division
-
 import base64
 import collections
 import errno
 import glob
-import httplib
+import http.client
 import json
 import os
 import pipes
@@ -44,10 +42,21 @@ import subprocess
 import sys
 import time
 import traceback
-import urllib2
+import urllib.error
+import urllib.request
 
 
 def main():
+    executor_proc, tail_proc = init()
+    exit_code = executor_proc.wait()
+    if tail_proc:
+        tail_proc.wait()
+
+    print('Executor exit code =', exit_code)
+    sys.exit(exit_code)
+
+
+def init():
     # Optional configurable environment variables
     wfm_user = os.getenv('WFM_USER', 'admin')
     wfm_password = os.getenv('WFM_PASSWORD', 'mpfadm')
@@ -63,18 +72,19 @@ def main():
 
 
     descriptor_path = find_descriptor(mpf_home)
+    print('Loading descriptor from', descriptor_path)
+    with open(descriptor_path, 'rb') as descriptor_file:
+        unparsed_descriptor = descriptor_file.read()
 
     if disable_component_registration:
         print('Component registration disabled because the '
               '"DISABLE_COMPONENT_REGISTRATION" environment variable was set.')
     else:
-        register_component(descriptor_path, wfm_base_url, wfm_user, wfm_password)
+        register_component(unparsed_descriptor, wfm_base_url, wfm_user, wfm_password)
 
     wait_for_activemq(activemq_host)
 
-    with open(descriptor_path, 'r') as descriptor_file:
-        descriptor = json.load(descriptor_file)
-
+    descriptor = json.loads(unparsed_descriptor)
     if not node_name:
         component_name = descriptor['componentName']
         node_name = '{}_id_{}'.format(component_name, os.getenv('HOSTNAME'))
@@ -84,12 +94,7 @@ def main():
     tail_proc = tail_log_if_needed(log_dir, component_log_name, descriptor['sourceLanguage'].lower(),
                                    executor_proc.pid)
 
-    exit_code = executor_proc.wait()
-    if tail_proc:
-        tail_proc.wait()
-
-    print('Executor exit code =', exit_code)
-    sys.exit(exit_code)
+    return executor_proc, tail_proc
 
 
 def find_descriptor(mpf_home):
@@ -111,7 +116,7 @@ def find_descriptor(mpf_home):
 def wait_for_activemq(activemq_host):
     while True:
         try:
-            conn = httplib.HTTPConnection(activemq_host, 8161)
+            conn = http.client.HTTPConnection(activemq_host, 8161)
             conn.request('HEAD', '/')
             resp = conn.getresponse()
             if 200 <= resp.status <= 299:
@@ -128,45 +133,50 @@ def wait_for_activemq(activemq_host):
 
 
 
-def register_component(descriptor_path, wfm_base_url, wfm_user, wfm_password):
+def register_component(unparsed_descriptor, wfm_base_url, wfm_user, wfm_password):
     if not wfm_user or not wfm_password:
         raise RuntimeError('The WFM_USER and WFM_PASSWORD environment variables must both be set.')
 
-    url = wfm_base_url + '/rest/components/registerUnmanaged'
+    auth_info_bytes = (wfm_user + ':' + wfm_password).encode('utf-8')
+    base64_bytes = base64.b64encode(auth_info_bytes)
     headers = {
-        'Authorization': 'Basic ' + base64.b64encode(wfm_user + ':' + wfm_password),
-        'Content-Length': os.stat(descriptor_path).st_size,
+        'Authorization': 'Basic ' + base64_bytes.decode('utf-8'),
+        'Content-Length': len(unparsed_descriptor),
         'Content-Type': 'application/json',
         'Accept': 'application/json'
     }
-    ssl_ctx = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
-    ssl_ctx.verify_mode = ssl.CERT_NONE
 
-    print('Registering component by posting', descriptor_path, 'to', url)
+    url = wfm_base_url + '/rest/components/registerUnmanaged'
+    print('Registering component by posting descriptor to', url)
     try:
-        post_descriptor_with_retry(descriptor_path, url, headers, ssl_ctx)
-    except urllib2.HTTPError as err:
+        post_descriptor_with_retry(unparsed_descriptor, url, headers)
+    except urllib.error.HTTPError as err:
         handle_registration_error(err)
 
 
-def post_descriptor_with_retry(descriptor_path, url, headers, ssl_ctx):
+def post_descriptor_with_retry(unparsed_descriptor, url, headers):
+
+    ssl_ctx = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
+    ssl_ctx.verify_mode = ssl.CERT_NONE
+    opener = urllib.request.build_opener(ThrowingRedirectHandler(), urllib.request.HTTPSHandler(context=ssl_ctx))
+
     while True:
         try:
-            post_descriptor(descriptor_path, url, headers, ssl_ctx)
+            post_descriptor(unparsed_descriptor, url, headers, opener)
             return
-        except httplib.BadStatusLine:
+        except http.client.BadStatusLine:
             new_url = url.replace('http://', 'https://')
             print('Initial registration response failed due to an invalid status line in the HTTP response. '
                   'This usually means that the server is using HTTPS, but an "http://" URL was used. '
                   'Trying again with:', new_url)
-            post_descriptor(descriptor_path, new_url, headers, ssl_ctx)
+            post_descriptor(unparsed_descriptor, new_url, headers, opener)
             return
 
-        except urllib2.HTTPError as err:
+        except urllib.error.HTTPError as err:
             if err.url != url:
                 # This generally means the provided WFM url used HTTP, but WFM was configured to use HTTPS
                 print('Initial registration response failed. Trying with redirected url: ', err.url)
-                post_descriptor(descriptor_path, err.url, headers, ssl_ctx)
+                post_descriptor(unparsed_descriptor, err.url, headers, opener)
                 return
             if err.code != 404:
                 raise
@@ -174,7 +184,7 @@ def post_descriptor_with_retry(descriptor_path, url, headers, ssl_ctx):
                   'Workflow Manager is still deploying or because the wrong URL was used for the WFM_BASE_URL(={}) '
                   'environment variable. Registration will be re-attempted in 5 seconds.'.format(err, url))
 
-        except urllib2.URLError as err:
+        except urllib.error.URLError as err:
             reason = err.reason
             should_retry_immediately = isinstance(reason, ssl.SSLError) and reason.reason == 'UNKNOWN_PROTOCOL'
             if should_retry_immediately:
@@ -196,11 +206,25 @@ def post_descriptor_with_retry(descriptor_path, url, headers, ssl_ctx):
         time.sleep(5)
 
 
-def post_descriptor(descriptor_path, url, headers, ssl_ctx):
-    with open(descriptor_path, 'r') as descriptor_file:
-        request = urllib2.Request(url, descriptor_file, headers=headers)
-        response = urllib2.urlopen(request, context=ssl_ctx).read()
-        print('Registration response:', response)
+# The default urllib.request.HTTPRedirectHandler converts POST requests to GET requests.
+# This subclass just throws an exception so we can post to the new URL ourselves.
+class ThrowingRedirectHandler(urllib.request.HTTPRedirectHandler):
+    def http_error_302(self, req, fp, code, msg, headers):
+        if 'location' in headers:
+            new_url = headers['location']
+        elif 'uri' in headers:
+            new_url = headers['uri']
+        else:
+            raise RuntimeError('Received HTTP redirect response with no location header.')
+
+        raise urllib.error.HTTPError(new_url, code, msg, headers, fp)
+
+
+def post_descriptor(unparsed_descriptor, url, headers, opener):
+    request = urllib.request.Request(url, unparsed_descriptor, headers=headers)
+    with opener.open(request) as response:
+        body = response.read()
+    print('Registration response:', body)
 
 
 def handle_registration_error(http_error):
@@ -247,7 +271,8 @@ def start_executor(descriptor, mpf_home, activemq_host, node_name):
     executor_proc = subprocess.Popen(executor_command,
                                      env=executor_env,
                                      cwd=os.path.join(mpf_home, 'plugins', descriptor['componentName']),
-                                     stdin=subprocess.PIPE)
+                                     stdin=subprocess.PIPE,
+                                     text=True)
 
     # Handle ctrl-c
     signal.signal(signal.SIGINT, lambda sig, frame: stop_executor(executor_proc))
@@ -278,7 +303,8 @@ def stop_executor(executor_proc):
     if still_running:
         print('Sending quit to component executor')
         # Write "q\n" to executor's stdin to request orderly shutdown.
-        executor_proc.communicate('q\n')
+        executor_proc.stdin.write('q\n')
+        executor_proc.stdin.flush()
 
 
 def tail_log_if_needed(log_dir, component_log_name, source_language, executor_pid):
@@ -298,9 +324,10 @@ def tail_log_if_needed(log_dir, component_log_name, source_language, executor_pi
     log_files = []
     if not is_java:
         log_files.append(os.path.join(log_dir, 'detection.log'))
+
     if component_log_name:
         log_files.append(os.path.join(log_dir, component_log_name))
-    else:
+    elif source_language == 'c++':
         print('WARNING: No component log file specified. Only component executor\'s log will appear.')
 
     for log_file in log_files:
@@ -364,4 +391,3 @@ def format_command_list(command):
 
 if __name__ == '__main__':
     main()
-

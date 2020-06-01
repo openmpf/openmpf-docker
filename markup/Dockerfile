@@ -35,7 +35,10 @@ RUN mkdir /root/copy_libs64 \
 
 
 FROM centos:7
+
 SHELL ["/bin/bash", "-o", "errexit", "-o", "pipefail", "-c"]
+
+ENV LANG en_US.UTF-8
 
 RUN yum update --assumeyes; \
     yum install --assumeyes https://download1.rpmfusion.org/free/el/rpmfusion-free-release-7.noarch.rpm; \
@@ -63,8 +66,8 @@ WORKDIR $MPF_HOME/jars
 COPY docker-entrypoint.sh /scripts/docker-entrypoint.sh
 ENTRYPOINT ["/scripts/docker-entrypoint.sh"]
 
-
-LABEL org.label-schema.license="Apache 2.0" \
+LABEL org.label-schema.build-date="" \
+      org.label-schema.license="Apache 2.0" \
       org.label-schema.name="OpenMPF Markup" \
       org.label-schema.schema-version="1.0" \
       org.label-schema.url="https://openmpf.github.io" \

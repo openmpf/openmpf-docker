@@ -35,6 +35,8 @@ FROM centos:7 as download_dependencies
 
 SHELL ["/bin/bash", "-o", "errexit", "-o", "pipefail", "-c"]
 
+ENV LANG en_US.UTF-8
+
 RUN yum install -y java-11-openjdk; \
     yum clean all; \
     rm -rf /var/cache/yum/*;
@@ -73,6 +75,8 @@ FROM ${BUILD_REGISTRY}openmpf_build:${BUILD_TAG} as integration_tests
 
 SHELL ["/bin/bash", "-o", "errexit", "-o", "pipefail", "-c"]
 
+ENV LANG en_US.UTF-8
+
 # Copy Maven repository out of cache mount so that the Maven dependencies can be used when running the
 # integration tests. This is necessary because the cache mount is only available at build time and the
 # integration tests run at run time.
@@ -108,6 +112,7 @@ ENV CATALINA_OPTS "-Dtransport.guarantee='NONE' -Dweb.rest.protocol='http'"
 ENV TOMCAT_BASE_URL=http://localhost:8181
 # Default for JDBC configuration. Can be overridden at runtime.
 ENV JDBC_URL=jdbc:postgresql://db:5432/mpf
+ENV PYTHONUNBUFFERED 1
 
 COPY descriptor-receiver.py /scripts/descriptor-receiver.py
 COPY check-test-reports.py /scripts/check-test-reports.py
@@ -115,10 +120,4 @@ COPY docker-entrypoint.sh /scripts/docker-entrypoint.sh
 
 ENTRYPOINT ["/scripts/docker-entrypoint.sh"]
 
-
-LABEL org.label-schema.license="Apache 2.0" \
-      org.label-schema.name="OpenMPF Integration Tests" \
-      org.label-schema.schema-version="1.0" \
-      org.label-schema.url="https://openmpf.github.io" \
-      org.label-schema.vcs-url="https://github.com/openmpf/openmpf" \
-      org.label-schema.vendor="MITRE"
+LABEL org.label-schema.name="OpenMPF Integration Tests"

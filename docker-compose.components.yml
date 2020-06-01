@@ -49,6 +49,18 @@ x-detection-component-base:
 
 
 services:
+  azure_ocr_text_detection:
+    <<: *detection-component-base
+    image: ${REGISTRY}openmpf_azure_ocr_text_detection:${TAG}
+    build:
+      context: ${OPENMPF_PROJECTS_PATH}/openmpf-components/python/AzureOcrTextDetection
+    environment:
+      <<: *common-env-vars
+      # ACS_URL and ACS_SUBSCRIPTION_KEY can also be provided as job properties.
+      # Job properties take precedence over the environment variables set here.
+      ACS_URL: ${ACS_OCR_URL}
+      ACS_SUBSCRIPTION_KEY: ${ACS_OCR_SUBSCRIPTION_KEY}
+
   darknet-detection:
     <<: *detection-component-base
     image: ${REGISTRY}openmpf_darknet_detection:${TAG}

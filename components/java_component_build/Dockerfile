@@ -34,6 +34,8 @@ FROM centos:7
 
 SHELL ["/bin/bash", "-o", "errexit", "-o", "pipefail", "-c"]
 
+ENV LANG en_US.UTF-8
+
 RUN yum update --assumeyes; \
     yum install --assumeyes https://download1.rpmfusion.org/free/el/rpmfusion-free-release-7.noarch.rpm; \
     yum install --assumeyes java-11-openjdk-devel ffmpeg; \
@@ -84,12 +86,12 @@ COPY --from=openmpf_build /home/mpf/openmpf-projects/openmpf-java-component-sdk/
 # We don't use a cache mount here since the component developer will likely need most of the libraries downloaded.
 RUN mvn install
 
-
 ENV SRC_DIR /home/mpf/component_src
 
 WORKDIR $SRC_DIR
 
-LABEL org.label-schema.license="Apache 2.0" \
+LABEL org.label-schema.build-date="" \
+      org.label-schema.license="Apache 2.0" \
       org.label-schema.name="OpenMPF Java Component Builder" \
       org.label-schema.schema-version="1.0" \
       org.label-schema.url="https://openmpf.github.io" \

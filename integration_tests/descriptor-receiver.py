@@ -1,4 +1,4 @@
-#! /usr/bin/env python
+#! /usr/bin/env python3
 
 #############################################################################
 # NOTICE                                                                    #
@@ -26,26 +26,23 @@
 # limitations under the License.                                            #
 #############################################################################
 
-
-from __future__ import print_function, division
-
-import BaseHTTPServer
+import http.server
 import json
 import os
 
 # Creates an endpoint where Docker components can register their descriptors for use in integration tests.
 def main():
-    server = BaseHTTPServer.HTTPServer(('', 8080), RequestHandler)
+    http.server.HTTPServer.request_queue_size = 100
+    server = http.server.HTTPServer(('', 8080), RequestHandler)
     server.serve_forever()
 
-
-class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
+class RequestHandler(http.server.BaseHTTPRequestHandler):
     error_content_type = 'application/json'
     error_message_format = '{"message": "%(message)s"}'
 
     def do_POST(self):
         try:
-            content_len = int(self.headers.getheader('Content-Length'))
+            content_len = int(self.headers['Content-Length'])
             post_body = self.rfile.read(content_len)
             descriptor = json.loads(post_body)
             component_name = descriptor['componentName']
@@ -67,11 +64,11 @@ class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
             print('Saving descriptor at:', descriptor_path)
 
         with open(descriptor_path, 'w') as f:
-            f.write(post_body)
+            f.write(post_body.decode())
 
         self.send_response(200)
         self.end_headers()
-        self.wfile.write('{"message": "Descriptor stored."}')
+        self.wfile.write('{"message": "Descriptor stored."}'.encode())
 
 
 if __name__ == '__main__':
