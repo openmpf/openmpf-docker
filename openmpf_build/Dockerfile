@@ -368,15 +368,14 @@ RUN wget -nv -O /apps/source/apache_sources/activemq-cpp-library-3.9.0-src.tar.g
 # NVIDIA CUDA toolkit setup                                                    #
 ################################################################################
 
-RUN mkdir -p /apps/source/cuda && cd /apps/source/cuda && \
-    wget -nv -O cuda_9.0.176_384.81_linux.run \
-    "https://developer.nvidia.com/compute/cuda/9.0/Prod/local_installers/cuda_9.0.176_384.81_linux-run" && \
-    cd /apps/source/cuda && sh cuda_9.0.176_384.81_linux.run --toolkit \
-    --toolkitpath=/apps/install/cuda-9.0 --silent --verbose && \
-    ls -l /usr/local/cuda /apps/install/cuda-9.0 && \
-    echo "PATH=\$PATH:/usr/local/cuda/bin" >> /etc/profile.d/mpf.sh && \
-    . /etc/profile.d/mpf.sh && echo "/usr/local/cuda/lib64" >> \
-    /etc/ld.so.conf.d/mpf-x86_64.conf
+RUN yum-config-manager --add-repo http://developer.download.nvidia.com/compute/cuda/repos/rhel7/x86_64 \
+    && VERSION=9-0-9.0.176-1 \
+    && yum install -y --nogpgcheck cuda-minimal-build-$VERSION cuda-cublas-dev-$VERSION cuda-curand-dev-$VERSION \
+    && yum clean all \
+    && rm -rf /var/cache/yum/* \
+    && ln -s cuda-9.0 /usr/local/cuda \
+    && echo '/usr/local/cuda/lib64' >> /etc/ld.so.conf.d/cuda.conf
+
 
 ################################################################################
 # Build Google Test Framework                                                  #
