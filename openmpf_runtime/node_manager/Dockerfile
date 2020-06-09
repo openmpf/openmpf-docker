@@ -102,17 +102,15 @@ RUN sed -i "/^override_install_lang/d" /etc/yum.conf && \
 # NVIDIA CUDA runtime setup                                                    #
 ################################################################################
 
-ENV CUDA_VERSION 9.1.85
+RUN yum-config-manager --add-repo http://developer.download.nvidia.com/compute/cuda/repos/rhel7/x86_64 \
+    && yum install -y --nogpgcheck cuda-cudart-9-0-9.0.176-1 \
+    && yum clean all \
+    && rm -rf /var/cache/yum/* \
+    && ln -s cuda-9.0 /usr/local/cuda \
+    && echo '/usr/local/cuda/lib64' >> /etc/ld.so.conf.d/cuda.conf
 
-# nvidia-docker 1.0
-LABEL com.nvidia.volumes.needed="nvidia_driver"
-LABEL com.nvidia.cuda.version="${CUDA_VERSION}"
-
-RUN echo "/usr/local/nvidia/lib" >> /etc/ld.so.conf.d/nvidia.conf && \
-    echo "/usr/local/nvidia/lib64" >> /etc/ld.so.conf.d/nvidia.conf
-
-ENV PATH /usr/local/nvidia/bin:/usr/local/cuda/bin:${PATH}
-ENV LD_LIBRARY_PATH /usr/local/nvidia/lib:/usr/local/nvidia/lib64
+ENV NVIDIA_VISIBLE_DEVICES all
+ENV NVIDIA_DRIVER_CAPABILITIES compute,utility
 
 ################################################################################
 # wait-for-it setup                                                            #
