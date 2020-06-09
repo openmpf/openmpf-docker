@@ -47,7 +47,7 @@ def emailRecipients = env.email_recipients
 
 // These properties add optional user-defined labels to the Docker images
 def imageUrl = env.getProperty("image_url")
-def imageVersion = env.getProperty("image_version")
+def imageVersion = env.getProperty("image_version") ?: ""
 def customLabelKey = env.getProperty("custom_label_key") ?: "custom"
 
 
