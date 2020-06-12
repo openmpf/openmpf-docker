@@ -33,6 +33,12 @@ SHELL ["/bin/bash", "-o", "errexit", "-o", "pipefail", "-c"]
 
 ENV LANG en_US.UTF-8
 
+# Disable Python bytecode generation because it was causing build cache issues. It may slightly increase start up
+# time, but once everything is imported, there is no difference in performance. If the bytecode files were critical,
+# it is unlikely that the official Python Docker images would explicitly delete them. It also saves 86MB of space.
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PIP_COMPILE=0
+
 RUN yum update --assumeyes; \
     yum install --assumeyes epel-release https://download1.rpmfusion.org/free/el/rpmfusion-free-release-7.noarch.rpm; \
     yum install --assumeyes cmake3 make gcc gcc-c++ qt-devel log4cxx-devel boost-devel ffmpeg ffmpeg-devel gtest-devel \
@@ -80,10 +86,7 @@ RUN mkdir /tmp/opencv-contrib; \
     make --jobs "$(nproc)" install; \
     ln --symbolic /opt/opencv-3.4.7/include/opencv2 /usr/local/include/opencv2; \
     ln --symbolic /opt/opencv-3.4.7/include/opencv /usr/local/include/opencv; \
-    rm --recursive /tmp/opencv /tmp/opencv-contrib; \
-    # The OpenCV build must be using Python somewhere because this step was also creating .pyc files.
-    # These .pyc files were preventing build cacheing in the component builds.
-    find /usr/local/lib/python3.8 -depth -type f -a \( -name '*.pyc' -o -name '*.pyo' \) -exec rm -rf '{}' + ;
+    rm --recursive /tmp/opencv /tmp/opencv-contrib;
 
 RUN curl --location 'https://archive.apache.org/dist/maven/maven-3/3.3.3/binaries/apache-maven-3.3.3-bin.tar.gz' \
         | tar --extract --gzip --directory /opt; \
@@ -105,10 +108,7 @@ RUN --mount=type=cache,id=mvn_cache,target=/root/.m2/repository,sharing=private 
         -Dcomponents.build.make.jobs="$(nproc)"; \
     mkdir --parents /build-artifacts/mvn/mpf; \
     # Move mpf artifacts out of Maven repo so they won't be in the cache mount when another build is started
-    mv /root/.m2/repository/org/mitre/mpf /build-artifacts/mvn; \
-    # Python tests are run as part of the Maven build and that was causing .pyc files to be left behind.
-    # These .pyc files were preventing build cacheing in the component builds.
-    find /usr/local/lib/python3.8 -depth -type f -a \( -name '*.pyc' -o -name '*.pyo' \) -exec rm -rf '{}' + ;
+    mv /root/.m2/repository/org/mitre/mpf /build-artifacts/mvn;
 
 ARG RUN_TESTS=false
 RUN \[ "${RUN_TESTS,,}" = true ] || exit 0; \
@@ -122,11 +122,7 @@ RUN \[ "${RUN_TESTS,,}" = true ] || exit 0; \
             ./"$(basename "$test_executable")"; \
             cd "$build_root"; \
         done; \
-    done; \
-    # The Python executor tests cause .pyc files to be left behind.
-    # These .pyc files were preventing build cacheing in the component builds.
-    rm --recursive /home/mpf/openmpf-projects/openmpf/trunk/build/detection/executor/cpp/batch/test/test_python_components/__pycache__; \
-    find /usr/local/lib/python3.8 -depth -type f -a \( -name '*.pyc' -o -name '*.pyo' \) -exec rm -rf '{}' + ;
+    done;
 
 WORKDIR /build-artifacts
 
