@@ -76,7 +76,7 @@ WORKDIR $MPF_HOME
 RUN --mount=type=bind,from=openmpf_build,source=/build-artifacts/install/lib,target=/tmp/mpf-libs \
     cd /tmp/mpf-libs; \
     # component executor binary's dependencies
-    cp --preserve=links --no-dereference liblog4cxx* libactivemq-cpp* libQtCore* libapr* libXext* \
+    cp --preserve=links --no-dereference liblog4cxx* libactivemq-cpp* libapr* libXext* \
         /usr/lib64;
 
 # component executor binary
