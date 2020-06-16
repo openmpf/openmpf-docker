@@ -62,6 +62,7 @@ RUN yum update --assumeyes; \
     yum clean all; \
     rm --recursive /var/cache/yum/*;
 
+ENV JAVA_HOME /etc/alternatives/jre
 
 RUN mkdir /scripts; \
     curl --location https://raw.githubusercontent.com/vishnubob/wait-for-it/master/wait-for-it.sh \
