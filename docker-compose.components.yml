@@ -66,3 +66,19 @@ services:
       # Job properties take precedence over the environment variables set here.
       ACS_URL: ${ACS_OCR_URL}
       ACS_SUBSCRIPTION_KEY: ${ACS_OCR_SUBSCRIPTION_KEY}
+
+  azure_speech_detection:
+    <<: *detection-component-base
+    image: ${REGISTRY}openmpf_azure_speech_detection:${TAG}
+    build:
+      context: ${OPENMPF_PROJECTS_PATH}/openmpf-components/python/AzureSpeechDetection
+    environment:
+      <<: *common-env-vars
+      # The following can also be provided as job properties.
+      # Job properties take precedence over the environment variables set here.
+      ACS_URL: ${ACS_SPEECH_URL}
+      ACS_ACCOUNT_NAME: ${ACS_SPEECH_ACCOUNT_NAME}
+      ACS_SUBSCRIPTION_KEY: ${ACS_SPEECH_SUBSCRIPTION_KEY}
+      ACS_SPEECH_KEY: ${ACS_SPEECH_SERVICE_KEY}
+      ACS_CONTAINER_NAME: ${ACS_SPEECH_CONTAINER_NAME}
+      ACS_ENDPOINT_SUFFIX: ${ACS_SPEECH_ENDPOINT_SUFFIX}
