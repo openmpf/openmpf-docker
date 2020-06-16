@@ -32,12 +32,35 @@ FROM centos:7
 
 SHELL ["/bin/bash", "-o", "errexit", "-o", "pipefail", "-c"]
 
+ENV LANG en_US.UTF-8
+
+# Disable Python bytecode generation because it was causing build cache issues. It may slightly increase start up
+# time, but once everything is imported, there is no difference in performance. If the bytecode files were critical,
+# it is unlikely that the official Python Docker images would explicitly delete them. It also saves 86MB of space.
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PIP_COMPILE=0
+
+COPY --from=openmpf_build /usr/local/bin/python3.8 /usr/local/bin/python3.8-config \
+    /usr/local/bin/pip /usr/local/bin/pip3 /usr/local/bin/pip3.8 /usr/local/bin/wheel \
+    /usr/local/bin/
+
+COPY --from=openmpf_build /usr/local/lib/python3.8 /usr/local/lib/python3.8
+
+COPY --from=openmpf_build /usr/local/lib/libpython3.8.so.1.0 /usr/local/lib/libpython3.8.so.1.0
+
+RUN cd /usr/local/bin; \
+    ln --symbolic python3.8 python3; \
+    ln --symbolic python3.8-config python3-config; \
+    cd /usr/local/lib; \
+    ln --symbolic libpython3.8.so.1.0 libpython3.8.so; \
+    ln --symbolic /usr/local/lib/libpython3.8.so.1.0 /usr/lib64/libpython3.8.so.1.0;
+
+
 RUN yum update --assumeyes; \
     yum install --assumeyes --nogpgcheck https://download1.rpmfusion.org/free/el/rpmfusion-free-release-7.noarch.rpm; \
-    yum install --assumeyes java-11-openjdk ffmpeg tomcat-native python-pip; \
+    yum install --assumeyes java-11-openjdk ffmpeg tomcat-native; \
     yum clean all; \
-    rm --recursive /var/cache/yum/*; \
-    pip install --upgrade pip;
+    rm --recursive /var/cache/yum/*;
 
 ENV JAVA_HOME /etc/alternatives/jre
 
@@ -60,7 +83,7 @@ RUN curl --location 'http://archive.apache.org/dist/tomcat/tomcat-8/v8.5.41/bin/
 COPY --from=openmpf_build /build-artifacts/mpf-scripts /home/mpf/mpf-scripts
 # Make sure mpf-scripts is not globally installed and that the mpf command in not on the $PATH
 RUN mkdir --parents /home/mpf/mpf-scripts-install; \
-    pip install --no-cache --target /home/mpf/mpf-scripts-install /home/mpf/mpf-scripts
+    pip3 install --no-cache --target /home/mpf/mpf-scripts-install /home/mpf/mpf-scripts
 
 COPY --from=openmpf_build /build-artifacts/workflow-manager /opt/apache-tomcat/webapps/workflow-manager
 

@@ -36,6 +36,31 @@ FROM centos:7
 
 SHELL ["/bin/bash", "-o", "errexit", "-o", "pipefail", "-c"]
 
+ENV LANG en_US.UTF-8
+
+# Disable Python bytecode generation because it was causing build cache issues. It may slightly increase start up
+# time, but once everything is imported, there is no difference in performance. If the bytecode files were critical,
+# it is unlikely that the official Python Docker images would explicitly delete them. It also saves 86MB of space.
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PIP_COMPILE=0
+
+COPY --from=openmpf_build /usr/local/bin/python3.8 /usr/local/bin/python3.8-config \
+    /usr/local/bin/pip /usr/local/bin/pip3 /usr/local/bin/pip3.8 /usr/local/bin/wheel \
+    /usr/local/bin/
+
+COPY --from=openmpf_build /usr/local/lib/python3.8 /usr/local/lib/python3.8
+
+COPY --from=openmpf_build /usr/local/lib/libpython3.8.so.1.0 /usr/local/lib/libpython3.8.so.1.0
+
+RUN cd /usr/local/bin; \
+    ln --symbolic python3.8 python3; \
+    ln --symbolic python3.8-config python3-config; \
+    cd /usr/local/lib; \
+    ln --symbolic libpython3.8.so.1.0 libpython3.8.so; \
+    ln --symbolic /usr/local/lib/libpython3.8.so.1.0 /usr/lib64/libpython3.8.so.1.0;
+
+
+
 RUN yum update --assumeyes; \
     yum install --assumeyes https://download1.rpmfusion.org/free/el/rpmfusion-free-release-7.noarch.rpm; \
     yum install --assumeyes ffmpeg; \
@@ -51,7 +76,7 @@ WORKDIR $MPF_HOME
 RUN --mount=type=bind,from=openmpf_build,source=/build-artifacts/install/lib,target=/tmp/mpf-libs \
     cd /tmp/mpf-libs; \
     # component executor binary's dependencies
-    cp --preserve=links --no-dereference liblog4cxx* libactivemq-cpp* libQtCore* libapr* libXext* \
+    cp --preserve=links --no-dereference liblog4cxx* libactivemq-cpp* libapr* libXext* \
         /usr/lib64;
 
 # component executor binary
@@ -71,7 +96,7 @@ ENV PLUGINS_DIR $MPF_HOME/plugins
 
 COPY docker-executor-entrypoint.py /scripts/docker-entrypoint.py
 
-ENTRYPOINT ["python", "/scripts/docker-entrypoint.py"]
+ENTRYPOINT ["python3", "/scripts/docker-entrypoint.py"]
 
 LABEL org.label-schema.build-date="" \
       org.label-schema.license="Apache 2.0" \

@@ -31,17 +31,43 @@ FROM centos:7 as openmpf_build
 
 SHELL ["/bin/bash", "-o", "errexit", "-o", "pipefail", "-c"]
 
+ENV LANG en_US.UTF-8
+
+# Disable Python bytecode generation because it was causing build cache issues. It may slightly increase start up
+# time, but once everything is imported, there is no difference in performance. If the bytecode files were critical,
+# it is unlikely that the official Python Docker images would explicitly delete them. It also saves 86MB of space.
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PIP_COMPILE=0
+
 RUN yum update --assumeyes; \
     yum install --assumeyes epel-release https://download1.rpmfusion.org/free/el/rpmfusion-free-release-7.noarch.rpm; \
     yum install --assumeyes cmake3 make gcc gcc-c++ qt-devel log4cxx-devel boost-devel ffmpeg ffmpeg-devel gtest-devel \
-            java-11-openjdk-devel python-pip python-devel activemq-cpp-devel protobuf-static protobuf-devel; \
+            java-11-openjdk-devel activemq-cpp-devel protobuf-static protobuf-devel \
+            # Python build deps
+            openssl-devel libffi-devel; \
     yum clean all; \
     rm --recursive /var/cache/yum/*; \
-    pip install --upgrade --no-cache-dir pip wheel; \
     # For protobuf maven plugin
     ln --symbolic /usr/bin/protoc /usr/local/bin/protoc;
 
 ENV JAVA_HOME=/etc/alternatives/java_sdk
+
+RUN mkdir /tmp/python; \
+    cd /tmp/python; \
+    curl 'https://www.python.org/ftp/python/3.8.2/Python-3.8.2.tar.xz' \
+        | tar --extract --xz; \
+    cd Python-3.8.2; \
+    ./configure --enable-optimizations --with-lto --enable-shared; \
+    make --jobs "$(nproc)"; \
+    make install; \
+    ln -s /usr/local/lib/libpython3.8.so.1.0 /usr/lib64/libpython3.8.so.1.0; \
+    pip3 install --upgrade --no-cache-dir pip; \
+    pip3 install --upgrade --no-cache-dir wheel; \
+    # find commands taken from official Python Dockerfile
+    find /usr/local/lib/python3.8 -depth -type d -a \( -name test -o -name tests -o -name idle_test \) -exec rm -rf '{}' + ; \
+    find /usr/local/lib/python3.8 -depth -type f -a \( -name '*.pyc' -o -name '*.pyo' \) -exec rm -rf '{}' + ; \
+    rm --recursive /tmp/python;
+
 
 RUN mkdir /tmp/opencv-contrib; \
     cd /tmp/opencv-contrib; \
@@ -65,7 +91,6 @@ RUN mkdir /tmp/opencv-contrib; \
 RUN curl --location 'https://archive.apache.org/dist/maven/maven-3/3.3.3/binaries/apache-maven-3.3.3-bin.tar.gz' \
         | tar --extract --gzip --directory /opt; \
     ln --symbolic /opt/apache-maven-3.3.3/bin/mvn /usr/local/bin;
-
 
 COPY . /home/mpf/openmpf-projects
 

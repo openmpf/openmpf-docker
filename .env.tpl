@@ -27,7 +27,7 @@
 COMPOSE_PROJECT_NAME=openmpf
 
 # Relative path to the "openmpf-projects" repository.
-OPENMPF_PROJECTS_PATH=../openmpf-projects
+OPENMPF_PROJECTS_PATH=..
 
 # Takes the form: "<registry-host>:<registry-port>/<repository>/", where
 # <repository> is usually "openmpf". Make sure to include the "/" at the end.

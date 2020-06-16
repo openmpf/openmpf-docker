@@ -33,6 +33,8 @@ FROM centos:7
 
 SHELL ["/bin/bash", "-o", "errexit", "-o", "pipefail", "-c"]
 
+ENV LANG en_US.UTF-8
+
 # Change config because the centos:7 image sets this yum property to en_US.utf8 which prevents other locales
 # (including other English locales) from being installed with GCC.
 RUN yum-config-manager --setopt=override_install_langs='' --save; \

@@ -37,7 +37,7 @@ if [ ! -e "$descriptor_path" ]; then
     exit 3
 fi
 
-component_name=$(python -c "import json; print json.load(open('$descriptor_path'))['componentName']")
+component_name=$(python3 -c "import json; print(json.load(open('$descriptor_path'))['componentName'])")
 mkdir --parents "$MPF_HOME/plugins/$component_name"
 
 if [ -e "$src_dir/setup.py" ]; then
@@ -46,11 +46,11 @@ if [ -e "$src_dir/setup.py" ]; then
 
 
     if [ -d "$src_dir/plugin-files/wheelhouse" ]; then
-        "$COMPONENT_VIRTUALENV/bin/pip" install \
+        "$COMPONENT_VIRTUALENV/bin/pip3" install \
             --find-links "$src_dir/plugin-files/wheelhouse" \
             --no-cache-dir "$src_dir"
     else
-        "$COMPONENT_VIRTUALENV/bin/pip" install \
+        "$COMPONENT_VIRTUALENV/bin/pip3" install \
             --no-cache-dir "$src_dir"
     fi
 else
