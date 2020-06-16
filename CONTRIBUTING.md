@@ -18,22 +18,13 @@ your component name. If not already there, place this directory within the
 appropriate language-specific directory (e.g. `cpp`, `java`, `python`) that
 exists within the `openmpf-projects/openmpf-components` or
 `openmpf-projects/openmpf-contrib-components` directories. Next, add an entry to
-`openmpf-projects/openmpf/trunk/jenkins/scripts/config_files/openmpf-open-source-package.json`
-for your component.
+`docker-compose.components.yml` for your component. 
 
-Next, refer back to the steps listed in the [Build the OpenMPF Docker Images
-](README.md#build-the-openmpf-docker-images) section in the README. If your
-component requires a special SDK, tools, or other additions to the build
-environment, then you will need to make modifications to the
-`openmpf-docker/openmpf-build/Dockerfile` and run the [command that starts with
-`docker build openmpf_build`](README.md#docker-build-command) again to recreate
-the `openmpf_build` image. If not, then don't run that command.
-
-Execute the [command that starts with `docker
-run`](README.md#docker-run-command) to build OpenMPF with your code. Skip the
-step to run `docker-generate-compose-files.sh`. That should not be necessary
-unless you want to use a new registry or image tag. Then, follow the rest of the
-steps in that section to build the Docker images. Then, run the steps in the
+Next, run `docker-compose build` from within the `openmpf-docker` directory to 
+build your component's Docker image along with the rest of OpenMPF.
+Then, run the steps in the
 [Run OpenMPF using Docker Compose](README.md#run-openmpf-using-docker-compose)
-section to deploy them. Repeat these steps, starting with the `docker run`
-command, each time you make a change to your component code and want to run it.
+section to deploy them. Repeat these steps, starting with the 
+`docker-compose build` command, each time you make a change to your 
+component code and want to run it.
+
