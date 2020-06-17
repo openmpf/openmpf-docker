@@ -388,7 +388,7 @@ callbacks.
 
 To import additional root certificates add an entry for `MPF_CA_CERTS` to
 the `workflow-manager` service's environment variables in 
-`docker-compose.core.yml`. `MPF_CA_CERTS` must contain a colon delimited list 
+`docker-compose.core.yml`. `MPF_CA_CERTS` must contain a colon-delimited list 
 of absolute file paths. Each entry in `MPF_CA_CERTS` will be added to 
 Workflow Manager's trust store. This feature is intended to be used with
 a volume mounted to the Workflow Manager container containing the certificates, 
