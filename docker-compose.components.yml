@@ -76,7 +76,7 @@ services:
       <<: *common-env-vars
       # The following can also be provided as job properties.
       # Job properties take precedence over the environment variables set here.
-      ACS_ENDPOINT_URL: ${ACS_SPEECH_ENDPOINT_URL}
-      ACS_CONTAINER_URL: ${ACS_SPEECH_CONTAINER_URL}
+      ACS_URL: ${ACS_SPEECH_URL}
       ACS_SUBSCRIPTION_KEY: ${ACS_SPEECH_SUBSCRIPTION_KEY}
-      ACS_SERVICE_KEY: ${ACS_SPEECH_SERVICE_KEY}
+      ACS_BLOB_CONTAINER_URL: ${ACS_SPEECH_BLOB_CONTAINER_URL}
+      ACS_BLOB_SERVICE_KEY: ${ACS_SPEECH_BLOB_SERVICE_KEY}
