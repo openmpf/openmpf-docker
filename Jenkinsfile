@@ -225,7 +225,7 @@ try {
         }
 
         if (preDockerBuildScriptPath) {
-            sh 'sh preDockerBuildScriptPath'
+            sh "sh '${preDockerBuildScriptPath}'"
         }
 
         withEnv(['DOCKER_BUILDKIT=1', 'RUN_TESTS=true']) {
