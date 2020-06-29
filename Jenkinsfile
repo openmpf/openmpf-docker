@@ -333,7 +333,7 @@ try {
         dir(openmpfDockerRepo.path) {
             def composeFiles = "docker-compose.integration.test.yml:$componentComposeFiles"
 
-            def nproc = shOutput('nproc') as int
+            def nproc = Math.min((shOutput('nproc') as int), 6)
             def servicesInSystemTests = ['ocv-face-detection', 'darknet-detection', 'dlib-face-detection',
                                         'ocv-dnn-detection', 'oalpr-license-plate-text-detection',
                                         'ocv-person-detection', 'mog-motion-detection', 'subsense-motion-detection']
