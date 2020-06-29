@@ -224,7 +224,7 @@ try {
             sh "docker pull '$externalImage'"
         }
 
-        if (fileExists(preDockerBuildScriptPath)) {
+        if (preDockerBuildScriptPath) {
             sh preDockerBuildScriptPath
         }
 
