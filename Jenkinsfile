@@ -50,6 +50,8 @@ def imageUrl = env.getProperty("image_url")
 def imageVersion = env.getProperty("image_version") ?: ""
 def customLabelKey = env.getProperty("custom_label_key") ?: "custom"
 
+def preDockerBuildScriptPath = env.pre_docker_build_script_path
+
 
 class Repo {
     String name
@@ -220,6 +222,10 @@ try {
         // Make sure we are using most recent version of external images
         for (externalImage in ['centos:7', 'webcenter/activemq', 'postgres:alpine', 'redis:alpine']) {
             sh "docker pull '$externalImage'"
+        }
+
+        if (fileExists(preDockerBuildScriptPath)) {
+            sh preDockerBuildScriptPath
         }
 
         withEnv(['DOCKER_BUILDKIT=1', 'RUN_TESTS=true']) {
