@@ -614,7 +614,7 @@ def dockerCleanUp() {
             // - "2020-06-29T12:47:45.512019992-04:00"
             def quotedTagTimeString = shOutput "docker image inspect --format '{{json .Metadata.LastTagTime}}' $image"
             def tagTimeString = quotedTagTimeString[1..-2]
-            def tagTime = timestampFormatter.parse(tagTimeString, java.time.Instant::from)
+            def tagTime = java.time.Instant.from(timestampFormatter.parse(tagTimeString))
 
             def daysSinceLastTag = tagTime.until(now, java.time.temporal.ChronoUnit.DAYS)
             if (daysSinceLastTag > daysUntilRemoval) {
