@@ -41,7 +41,7 @@ def pushRuntimeImages = env.push_runtime_images?.toBoolean() ?: false
 
 def pollReposAndEndBuild = env.poll_repos_and_end_build?.toBoolean() ?: false
 
-def postBuildStatusEnabled = 'post_build_status' in env ? env.post_build_status.toBoolean() : true
+def postBuildStatusEnabled = env.post_build_status?.toBoolean()  ?: false
 def githubAuthToken = env.github_auth_token
 def emailRecipients = env.email_recipients
 
