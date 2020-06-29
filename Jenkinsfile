@@ -601,8 +601,6 @@ def dockerCleanUp() {
         def images = shOutput("docker images --filter 'dangling=false' --format '{{.Repository}}:{{.Tag}}'")\
                         .split("\n")
 
-        def timestampFormatter = java.time.format.DateTimeFormatter.ISO_OFFSET_DATE_TIME.withZone(
-                                        java.time.ZoneId.systemDefault());
         def now = java.time.Instant.now()
         for (image in images) {
             if (!image.contains('deleteme')) {
@@ -614,7 +612,7 @@ def dockerCleanUp() {
             // - "2020-06-29T12:47:45.512019992-04:00"
             def quotedTagTimeString = shOutput "docker image inspect --format '{{json .Metadata.LastTagTime}}' $image"
             def tagTimeString = quotedTagTimeString[1..-2]
-            def tagTime = java.time.Instant.from(timestampFormatter.parse(tagTimeString))
+            def tagTime = parseDate(tagTimeString)
 
             def daysSinceLastTag = tagTime.until(now, java.time.temporal.ChronoUnit.DAYS)
             if (daysSinceLastTag > daysUntilRemoval) {
@@ -630,6 +628,16 @@ def dockerCleanUp() {
     }
 }
 
+
+// Need @NonCPS because DateTimeFormatter is not serizalizable
+@NonCPS
+def parseDate(dateString) {
+    def timestampFormatter =
+            java.time.format.DateTimeFormatter.ISO_OFFSET_DATE_TIME.withZone(
+            java.time.ZoneId.systemDefault());
+
+    return java.time.Instant.from(timestampFormatter.parse(dateString))
+}
 
 def shOutput(script) {
     return sh(script: script, returnStdout: true).trim()
