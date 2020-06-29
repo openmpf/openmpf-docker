@@ -601,16 +601,20 @@ def dockerCleanUp() {
         def images = shOutput("docker images --filter 'dangling=false' --format '{{.Repository}}:{{.Tag}}'")\
                         .split("\n")
 
+        def timestampFormatter = java.time.format.DateTimeFormatter.ISO_OFFSET_DATE_TIME.withZone(
+                                        java.time.ZoneId.systemDefault());
         def now = java.time.Instant.now()
         for (image in images) {
             if (!image.contains('deleteme')) {
                 continue;
             }
 
-            // Time format from Docker (it includes quotes at beginning and end): "2019-11-18T18:58:33.990718123Z"
+            // Time formats from Docker (includes quotes at beginning and end):
+            // - "2019-11-18T18:58:33.990718123Z"
+            // - "2020-06-29T12:47:45.512019992-04:00"
             def quotedTagTimeString = shOutput "docker image inspect --format '{{json .Metadata.LastTagTime}}' $image"
             def tagTimeString = quotedTagTimeString[1..-2]
-            def tagTime = java.time.Instant.parse(tagTimeString)
+            def tagTime = timestampFormatter.parse(tagTimeString, java.time.Instant::from)
 
             def daysSinceLastTag = tagTime.until(now, java.time.temporal.ChronoUnit.DAYS)
             if (daysSinceLastTag > daysUntilRemoval) {
