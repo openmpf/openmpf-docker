@@ -41,7 +41,7 @@ def pushRuntimeImages = env.push_runtime_images?.toBoolean() ?: false
 
 def pollReposAndEndBuild = env.poll_repos_and_end_build?.toBoolean() ?: false
 
-def postBuildStatusEnabled = 'post_build_status' in env ? env.post_build_status.toBoolean() : true
+def postBuildStatusEnabled = env.post_build_status?.toBoolean()  ?: false
 def githubAuthToken = env.github_auth_token
 def emailRecipients = env.email_recipients
 
@@ -49,6 +49,8 @@ def emailRecipients = env.email_recipients
 def imageUrl = env.getProperty("image_url")
 def imageVersion = env.getProperty("image_version") ?: ""
 def customLabelKey = env.getProperty("custom_label_key") ?: "custom"
+
+def preDockerBuildScriptPath = env.pre_docker_build_script_path
 
 
 class Repo {
@@ -222,6 +224,10 @@ try {
             sh "docker pull '$externalImage'"
         }
 
+        if (preDockerBuildScriptPath) {
+            sh preDockerBuildScriptPath
+        }
+
         withEnv(['DOCKER_BUILDKIT=1', 'RUN_TESTS=true']) {
             def noCacheArg = buildNoCache ? '--no-cache' : ''
             def commonBuildArgs = " --build-arg BUILD_TAG=$inProgressTag --build-arg BUILD_VERSION=$imageVersion " +
@@ -327,7 +333,7 @@ try {
         dir(openmpfDockerRepo.path) {
             def composeFiles = "docker-compose.integration.test.yml:$componentComposeFiles"
 
-            def nproc = shOutput('nproc') as int
+            def nproc = Math.min((shOutput('nproc') as int), 6)
             def servicesInSystemTests = ['ocv-face-detection', 'darknet-detection', 'dlib-face-detection',
                                         'ocv-dnn-detection', 'oalpr-license-plate-text-detection',
                                         'ocv-person-detection', 'mog-motion-detection', 'subsense-motion-detection']
@@ -601,10 +607,12 @@ def dockerCleanUp() {
                 continue;
             }
 
-            // Time format from Docker (it includes quotes at beginning and end): "2019-11-18T18:58:33.990718123Z"
+            // Time formats from Docker (includes quotes at beginning and end):
+            // - "2019-11-18T18:58:33.990718123Z"
+            // - "2020-06-29T12:47:45.512019992-04:00"
             def quotedTagTimeString = shOutput "docker image inspect --format '{{json .Metadata.LastTagTime}}' $image"
             def tagTimeString = quotedTagTimeString[1..-2]
-            def tagTime = java.time.Instant.parse(tagTimeString)
+            def tagTime = parseDate(tagTimeString)
 
             def daysSinceLastTag = tagTime.until(now, java.time.temporal.ChronoUnit.DAYS)
             if (daysSinceLastTag > daysUntilRemoval) {
@@ -620,6 +628,16 @@ def dockerCleanUp() {
     }
 }
 
+
+// Need @NonCPS because DateTimeFormatter is not serizalizable
+@NonCPS
+def parseDate(dateString) {
+    def timestampFormatter =
+            java.time.format.DateTimeFormatter.ISO_OFFSET_DATE_TIME.withZone(
+            java.time.ZoneId.systemDefault());
+
+    return java.time.Instant.from(timestampFormatter.parse(dateString))
+}
 
 def shOutput(script) {
     return sh(script: script, returnStdout: true).trim()
