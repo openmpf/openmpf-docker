@@ -61,6 +61,20 @@ services:
       ACS_URL: ${ACS_OCR_URL}
       ACS_SUBSCRIPTION_KEY: ${ACS_OCR_SUBSCRIPTION_KEY}
 
+  azure_speech_detection:
+    <<: *detection-component-base
+    image: ${REGISTRY}openmpf_azure_speech_detection:${TAG}
+    build:
+      context: ${OPENMPF_PROJECTS_PATH}/openmpf-components/python/AzureSpeechDetection
+    environment:
+      <<: *common-env-vars
+      # The following can also be provided as job properties.
+      # Job properties take precedence over the environment variables set here.
+      ACS_URL: ${ACS_SPEECH_URL}
+      ACS_SUBSCRIPTION_KEY: ${ACS_SPEECH_SUBSCRIPTION_KEY}
+      ACS_BLOB_CONTAINER_URL: ${ACS_SPEECH_BLOB_CONTAINER_URL}
+      ACS_BLOB_SERVICE_KEY: ${ACS_SPEECH_BLOB_SERVICE_KEY}
+
   darknet-detection:
     <<: *detection-component-base
     image: ${REGISTRY}openmpf_darknet_detection:${TAG}
@@ -142,5 +156,4 @@ services:
     <<: *detection-component-base
     image: ${REGISTRY}openmpf_tika_text_detection:${TAG}
     build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/java/TikaTextDetection
-
 
