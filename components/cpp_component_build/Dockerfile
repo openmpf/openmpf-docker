@@ -35,17 +35,27 @@ SHELL ["/bin/bash", "-o", "errexit", "-o", "pipefail", "-c"]
 
 ENV LANG en_US.UTF-8
 
-# Change config because the centos:7 image sets this yum property to en_US.utf8 which prevents other locales
-# (including other English locales) from being installed with GCC.
-RUN yum-config-manager --setopt=override_install_langs='' --save; \
+# Change override_install_langs because the centos:7 image sets this yum property to en_US.utf8 which prevents other
+# locales (including other English locales) from being installed with GCC.
+RUN yum-config-manager --setopt=override_install_langs='' --setopt=skip_missing_names_on_install=False --save; \
     yum update --assumeyes; \
+    yum-config-manager --add-repo http://developer.download.nvidia.com/compute/cuda/repos/rhel7/x86_64; \
     yum install --assumeyes epel-release \
-            https://download1.rpmfusion.org/free/el/rpmfusion-free-release-7.noarch.rpm; \
-    yum install --assumeyes cmake3 make gcc gcc-c++ qt-devel log4cxx-devel boost-devel ffmpeg gtest-devel; \
+            https://download1.rpmfusion.org/free/el/rpmfusion-free-release-7.noarch.rpm \
+            http://developer.download.nvidia.com/compute/machine-learning/repos/rhel7/x86_64/nvidia-machine-learning-repo-rhel7-1.0.0-1.x86_64.rpm; \
+    yum install --assumeyes  --nogpgcheck cmake3 make gcc gcc-c++ qt-devel log4cxx-devel boost-devel ffmpeg \
+            gtest-devel openblas-devel cuda-minimal-build-10-2 \
+            libcublas-devel-10.2.2.89-1 libcudnn7-devel-7.6.5.33-1.cuda10.2; \
     yum clean all; \
-    rm --recursive /var/cache/yum/*;
+    rm --recursive /var/cache/yum/*; \
+    ln --symbolic cuda-10.2 /usr/local/cuda; \
+    # Opencv doesn't use the statically compiled CUDA libraries
+    rm /usr/local/cuda/lib64/*.a /usr/lib64/libcudnn*.a /usr/lib64/libcublas*.a; \
+    echo '/usr/local/cuda/lib64' >> /etc/ld.so.conf.d/cuda.conf; \
+    ldconfig;
 
-COPY --from=openmpf_build /opt/opencv-3.4.7 /opt/opencv-3.4.7
+
+COPY --from=openmpf_build /opt/opencv-4.3.0 /opt/opencv-4.3.0
 
 # Normally components' CMakeList.txt file includes include(../ComponentSetup.cmake) but since that is outside of the
 # components' build context we create it here.

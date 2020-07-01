@@ -31,7 +31,13 @@ FROM ${BUILD_REGISTRY}openmpf_build:${BUILD_TAG} as openmpf_build
 # Docker COPY only preserves symlinks when copying an entire directory so we copy the files and their symlinks in to
 # a temporary directory
 RUN mkdir /root/copy_libs64 \
-    && cp --preserve=links --no-dereference /build-artifacts/install/lib/libopencv* /root/copy_libs64/
+    && cd /build-artifacts/install/lib \
+    && cp --preserve=links --no-dereference \
+            libopencv* \
+            libopenblas* \
+            libgfortran* \
+            libquadmath* \
+            /root/copy_libs64/
 
 
 FROM centos:7
