@@ -7,11 +7,11 @@
 # under contract, and is subject to the Rights in Data-General Clause       #
 # 52.227-14, Alt. IV (DEC 2007).                                            #
 #                                                                           #
-# Copyright 2019 The MITRE Corporation. All Rights Reserved.                #
+# Copyright 2020 The MITRE Corporation. All Rights Reserved.                #
 #############################################################################
 
 #############################################################################
-# Copyright 2019 The MITRE Corporation                                      #
+# Copyright 2020 The MITRE Corporation                                      #
 #                                                                           #
 # Licensed under the Apache License, Version 2.0 (the "License");           #
 # you may not use this file except in compliance with the License.          #
@@ -37,6 +37,12 @@ FROM centos:7
 SHELL ["/bin/bash", "-o", "errexit", "-o", "pipefail", "-c"]
 
 ENV LANG en_US.UTF-8
+
+# Disable Python bytecode generation because it was causing build cache issues. It may slightly increase start up
+# time, but once everything is imported, there is no difference in performance. If the bytecode files were critical,
+# it is unlikely that the official Python Docker images would explicitly delete them. It also saves 86MB of space.
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PIP_COMPILE=0
 
 COPY --from=openmpf_build /usr/local/bin/python3.8 /usr/local/bin/python3.8-config \
     /usr/local/bin/pip /usr/local/bin/pip3 /usr/local/bin/pip3.8 /usr/local/bin/wheel \
@@ -65,7 +71,7 @@ RUN yum update --assumeyes; \
 RUN --mount=type=bind,from=openmpf_build,source=/build-artifacts/install/lib,target=/tmp/mpf-libs \
     cd /tmp/mpf-libs; \
     # component executor binary's dependencies
-    cp --preserve=links --no-dereference liblog4cxx* libactivemq-cpp* libQtCore* libapr* libXext* \
+    cp --preserve=links --no-dereference liblog4cxx* libactivemq-cpp* libapr* libXext* \
         /usr/lib64;
 
 ENV MPF_HOME /opt/mpf
