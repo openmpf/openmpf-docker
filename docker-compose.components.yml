@@ -28,24 +28,18 @@
 
 version: '3.7'
 
-x-common-env-vars:
-  &common-env-vars
-  WFM_USER: ${WFM_USER}
-  WFM_PASSWORD: ${WFM_PASSWORD}
-
-x-common-deploy:
-  &common-deploy
-  mode: replicated
-  replicas: 2
-
 x-detection-component-base:
   &detection-component-base
-  environment: *common-env-vars
+  environment: &common-env-vars
+    WFM_USER: ${WFM_USER}
+    WFM_PASSWORD: ${WFM_PASSWORD}
   depends_on:
     - workflow-manager
   volumes:
     - shared_data:/opt/mpf/share
-  deploy: *common-deploy
+  deploy: &common-deploy
+    mode: replicated
+    replicas: 2
 
 
 services:
