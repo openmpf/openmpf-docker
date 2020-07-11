@@ -147,6 +147,9 @@ services:
     <<: *detection-component-base
     image: ${REGISTRY}openmpf_trtis_detection:${TAG}
     build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/cpp/TrtisDetection
+    environment:
+      # Specifies container and port of TRTIS server.
+      - TRTIS_SERVER=trtis-detection-server:8001
 
   trtis-detection-server:
     <<: *detection-component-base
