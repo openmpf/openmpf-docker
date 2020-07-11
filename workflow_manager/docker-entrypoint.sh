@@ -7,11 +7,11 @@
 # under contract, and is subject to the Rights in Data-General Clause       #
 # 52.227-14, Alt. IV (DEC 2007).                                            #
 #                                                                           #
-# Copyright 2019 The MITRE Corporation. All Rights Reserved.                #
+# Copyright 2020 The MITRE Corporation. All Rights Reserved.                #
 #############################################################################
 
 #############################################################################
-# Copyright 2019 The MITRE Corporation                                      #
+# Copyright 2020 The MITRE Corporation                                      #
 #                                                                           #
 # Licensed under the Apache License, Version 2.0 (the "License");           #
 # you may not use this file except in compliance with the License.          #
@@ -58,9 +58,27 @@ then
     mkdir -p "$MPF_HOME/config"
     ln -s /run/secrets/user_properties "$MPF_HOME/config/user.properties"
 fi
-
 # else, the user.properties template will be moved to
 # "$MPF_HOME/config/user.properties" by the WFM
+
+
+################################################################################
+# Import CA Certs                                                              #
+################################################################################
+
+IFS=':' read -r -a ca_certs <<< "$MPF_CA_CERTS"
+# Use counter to create unique alias names because each key in a keystore needs to have a unique alias.
+cert_counter=1
+for cert in "${ca_certs[@]}"; do
+    # If there are leading colons, trailing colons, or two colons in a row, $cert wil contain the empty string.
+    [ ! "$cert" ] && continue
+
+    "$JAVA_HOME/bin/keytool" -import -alias "mpf_imported_$((cert_counter++))" -file "$cert" -cacerts \
+            -storepass changeit -noprompt
+
+    cp "$cert" /etc/pki/ca-trust/source/anchors/
+done
+
 
 ################################################################################
 # Configure HTTP or HTTPS                                                      #
