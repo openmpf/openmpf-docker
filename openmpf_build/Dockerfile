@@ -105,8 +105,6 @@ RUN mkdir /tmp/opencv-contrib; \
         -DWITH_CUDA=true \
         -DCUDA_ARCH_BIN=3.0 \
         -DCUDA_ARCH_PTX=3.0 \
-        -DENABLE_FAST_MATH=true \
-        -DCUDA_FAST_MATH=true \
         -DWITH_CUBLAS=true \
         -DWITH_CUDNN=true \
         -DOPENCV_DNN_CUDA=true \
