@@ -46,7 +46,8 @@ services:
           - node.role == manager
 
   activemq:
-    image: ${REGISTRY}openmpf_active_mq:${TAG}
+#    image: ${REGISTRY}openmpf_active_mq:${TAG}
+    image: my_openmpf_active_mq:latest
     build:
       context: ./active_mq
     environment:
@@ -64,9 +65,9 @@ services:
 
   workflow_manager:
     image: ${REGISTRY}openmpf_workflow_manager:${TAG}
-    build:
-      context: ./openmpf_runtime
-      dockerfile: workflow_manager/Dockerfile
+#    build:
+#      context: ./openmpf_runtime
+#      dockerfile: workflow_manager/Dockerfile
     depends_on:
       - db
       - redis
@@ -85,9 +86,9 @@ services:
 
   node_manager:
     image: ${REGISTRY}openmpf_node_manager:${TAG}
-    build:
-      context: ./openmpf_runtime
-      dockerfile: node_manager/Dockerfile
+#    build:
+#      context: ./openmpf_runtime
+#      dockerfile: node_manager/Dockerfile
     depends_on:
       - workflow_manager
     volumes:
