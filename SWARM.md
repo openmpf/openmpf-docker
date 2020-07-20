@@ -269,7 +269,7 @@ the command that begins with `docker stack deploy` the same job information, log
 files, custom property settings, custom pipelines, etc., are used, then run the
 following command from within the `openmpf-docker` directory:
 
-- `./scripts/docker-swarm-cleanup.sh --no-volumes`
+- `./scripts/docker-swarm-cleanup.sh openmpf`
 
 This preserves all of the Docker volumes.
 
@@ -288,12 +288,13 @@ that begins with `docker stack deploy`, as though you had never deployed the
 stack before, then run the following command from within the `openmpf-docker`
 directory:
 
-- `./scripts/docker-swarm-cleanup.sh --db-volume --remove-shared-data`
+- `./scripts/docker-swarm-cleanup.sh openmpf --rm-all`
+- `./scripts/docker-swarm-run-on-all-nodes.sh 'docker volume rm openmpf_db_data'`
 
 As a convenience, this does not remove the shared volume so that you don't have
 to recreate it on all of the nodes the next time you deploy the stack.
 
-The `--remove-shared-data` option will delete the contents the shared volume,
+The `--rm-all` option will delete the contents the shared volume,
 which may include extracted artifacts, log files, markup, remote media, etc.
 If you wish to preserve the contents of the shared volume, then omit that
 option. If you wish to remove the contents of the shared volume at a later time,
