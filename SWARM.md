@@ -307,6 +307,7 @@ then run:
 To remove all of the OpenMPF Docker containers, volumes, and networks, then run
 the following command from within the `openmpf-docker` directory:
 
-- `./scripts/docker-swarm-cleanup.sh --all-volumes --remove-shared-data`
+- `./scripts/docker-swarm-cleanup.sh openmpf --rm-all`
+- `./scripts/docker-swarm-run-on-all-nodes.sh 'docker volume rm openmpf_shared_data openmpf_db_data'`
 
 This does not remove the Docker images.
