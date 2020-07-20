@@ -65,6 +65,7 @@ main() {
         print_usage
     fi
 
+    local stack_name=$1
     destroy_stack "$stack_name"
 
     if [ "$remove_logs" ] || [ "$remove_job_output" ] || [ "$remove_all" ]; then
