@@ -285,7 +285,7 @@ following command to archive and remove the old log files, where
 
 If you would like to start from a clean slate the next time you run the command
 that begins with `docker stack deploy`, as though you had never deployed the
-stack before, then run the following command from within the `openmpf-docker`
+stack before, then run the following commands from within the `openmpf-docker`
 directory:
 
 - `./scripts/docker-swarm-cleanup.sh openmpf --rm-all`
@@ -305,7 +305,7 @@ then run:
 **Remove All Volumes**
 
 To remove all of the OpenMPF Docker containers, volumes, and networks, then run
-the following command from within the `openmpf-docker` directory:
+the following commands from within the `openmpf-docker` directory:
 
 - `./scripts/docker-swarm-cleanup.sh openmpf --rm-all`
 - `./scripts/docker-swarm-run-on-all-nodes.sh 'docker volume rm openmpf_shared_data openmpf_db_data'`
