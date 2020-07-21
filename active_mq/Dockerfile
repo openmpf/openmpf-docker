@@ -50,7 +50,7 @@ RUN curl --location https://archive.apache.org/dist/activemq/5.16.0/apache-activ
     rm --recursive docs examples webapps-demo;
 
 
-EXPOSE 8161
+EXPOSE 8161 61616
 
 COPY activemq-*.xml /opt/activemq/conf/
 
