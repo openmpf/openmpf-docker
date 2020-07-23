@@ -61,6 +61,7 @@ RUN mkdir /tmp/python; \
     make --jobs "$(nproc)"; \
     make install; \
     ln -s /usr/local/lib/libpython3.8.so.1.0 /usr/lib64/libpython3.8.so.1.0; \
+    rm --recursive /usr/local/lib/python3.8/config-3.8-x86_64-linux-gnu; \
     pip3 install --upgrade --no-cache-dir pip; \
     pip3 install --upgrade --no-cache-dir wheel; \
     # find commands taken from official Python Dockerfile
