@@ -119,7 +119,7 @@ def wait_for_activemq(activemq_host):
             conn = http.client.HTTPConnection(activemq_host, 8161)
             conn.request('HEAD', '/')
             resp = conn.getresponse()
-            if 200 <= resp.status <= 299:
+            if 200 <= resp.status <= 299 or resp.status == 401:
                 return
             print('Received non-success status code of {} when trying to connect to ActiveMQ. '
                   'This is either because ActiveMQ is still starting or the wrong host name was used for the '

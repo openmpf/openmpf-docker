@@ -28,18 +28,16 @@
 
 set -Ee -o pipefail -o xtrace
 
-################################################################################
-# Custom Steps                                                                 #
-################################################################################
+active_mq_profile=${ACTIVE_MQ_PROFILE:-default}
 
 cd /opt/activemq/conf
-# Put the appropriate activemq.xml file into place
-cp /opt/activemq/conf/activemq-$ACTIVE_MQ_PROFILE.xml activemq.xml
+cp "activemq-${active_mq_profile}.xml" activemq.xml
 
-# Put the appropriate env file in place
 cd /opt/activemq/bin
-cp env.$ACTIVE_MQ_PROFILE env
+if [ -f "env.$active_mq_profile" ]; then
+    cp "env.$active_mq_profile" env
+fi
 
-# This script from the webcenter/activemq image runs activemq under supervisord.
-exec /app/run.sh
+
+exec /opt/activemq/bin/activemq console
 

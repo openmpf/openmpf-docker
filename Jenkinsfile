@@ -220,7 +220,7 @@ try {
 
     stage('Build images') {
         // Make sure we are using most recent version of external images
-        for (externalImage in ['centos:7', 'webcenter/activemq', 'postgres:alpine', 'redis:alpine']) {
+        for (externalImage in ['centos:7', 'postgres:alpine', 'redis:alpine']) {
             sh "docker pull '$externalImage'"
         }
 
