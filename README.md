@@ -430,7 +430,7 @@ instructions
 
 Once you have the drivers installed on the host OS, you need to install the
 NVIDIA Docker runtime. Follow
-[this](https://github.com/NVIDIA/nvidia-container-runtime)
+[this](https://github.com/NVIDIA/nvidia-container-runtime/blob/master/README.md#centos-distributions)
 installation guide.
 
 To get the nodes in your swarm cluster to use the NVIDIA Docker runtime, you
