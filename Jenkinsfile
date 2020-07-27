@@ -331,6 +331,8 @@ try {
 
     stage('Run Integration Tests') {
         dir(openmpfDockerRepo.path) {
+            test_cli_runner(inProgressTag)
+
             def composeFiles = "docker-compose.integration.test.yml:$componentComposeFiles"
 
             def nproc = Math.min((shOutput('nproc') as int), 6)
@@ -626,6 +628,14 @@ def dockerCleanUp() {
     catch (e) {
         echo "Docker clean up failed due to: $e"
     }
+}
+
+
+def test_cli_runner(inProgressTag) {
+    sh "docker build components/cli_runner/tests -t openmpf_cli_runner_tests:$inProgressTag"
+
+    sh "docker run --rm --env TEST_IMG_TAG=$inProgressTag --volume /var/run/docker.sock:/var/run/docker.sock " +
+            " openmpf_cli_runner_tests:$inProgressTag"
 }
 
 

@@ -60,7 +60,8 @@ RUN mkdir /tmp/python; \
     ./configure --enable-optimizations --with-lto --enable-shared; \
     make --jobs "$(nproc)"; \
     make install; \
-    ln -s /usr/local/lib/libpython3.8.so.1.0 /usr/lib64/libpython3.8.so.1.0; \
+    ln --symbolic /usr/local/lib/libpython3.8.so.1.0 /usr/lib64/libpython3.8.so.1.0; \
+    rm /usr/local/lib/python3.8/config-3.8-x86_64-linux-gnu/libpython3.8.a; \
     pip3 install --upgrade --no-cache-dir pip; \
     pip3 install --upgrade --no-cache-dir wheel; \
     # find commands taken from official Python Dockerfile

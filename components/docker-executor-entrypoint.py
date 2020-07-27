@@ -91,8 +91,7 @@ def init():
     log_dir = os.path.join(base_log_path, node_name, 'log')
 
     executor_proc = start_executor(descriptor, mpf_home, activemq_host, node_name)
-    tail_proc = tail_log_if_needed(log_dir, component_log_name, descriptor['sourceLanguage'].lower(),
-                                   executor_proc.pid)
+    tail_proc = tail_log_if_needed(log_dir, component_log_name, executor_proc.pid)
 
     return executor_proc, tail_proc
 
@@ -307,9 +306,8 @@ def stop_executor(executor_proc):
         executor_proc.stdin.flush()
 
 
-def tail_log_if_needed(log_dir, component_log_name, source_language, executor_pid):
-    is_java = source_language == 'java'
-    if is_java and not component_log_name:
+def tail_log_if_needed(log_dir, component_log_name, executor_pid):
+    if not component_log_name:
         return None
 
     if not os.path.exists(log_dir):
@@ -321,28 +319,18 @@ def tail_log_if_needed(log_dir, component_log_name, source_language, executor_pi
             if e.errno != errno.EEXIST:
                 raise
 
-    log_files = []
-    if not is_java:
-        log_files.append(os.path.join(log_dir, 'detection.log'))
+    component_log_full_path = os.path.join(log_dir, component_log_name)
+    if not os.path.exists(component_log_full_path):
+        # Create file if it doesn't exist.
+        open(component_log_full_path, 'a').close()
 
-    if component_log_name:
-        log_files.append(os.path.join(log_dir, component_log_name))
-    elif source_language == 'c++':
-        print('WARNING: No component log file specified. Only component executor\'s log will appear.')
-
-    for log_file in log_files:
-        if not os.path.exists(log_file):
-            # Create file if it doesn't exist.
-            open(log_file, 'a').close()
-
-    tail_command = [
+    tail_command = (
         'tail',
         # Follow by name to handle log rollover.
         '--follow=name',
         # Watch executor process and exit when executor exists.
         '--pid', str(executor_pid),
-        # Don't output file name headers which tail does by default when tailing multiple files.
-        '--quiet'] + log_files
+        component_log_full_path)
 
     print('Displaying logs with command: ', format_command_list(tail_command))
     # Use preexec_fn=os.setpgrp to prevent ctrl-c from killing tail since
@@ -355,6 +343,7 @@ def get_executor_env_vars(mpf_home, descriptor, node_name):
     executor_env = os.environ.copy()
     executor_env['THIS_MPF_NODE'] = node_name
     executor_env['SERVICE_NAME'] = descriptor['componentName']
+    executor_env['COMPONENT_NAME'] = descriptor['componentName']
 
     for json_env_var in descriptor.get('environmentVariables', ()):
         var_name = json_env_var['name']

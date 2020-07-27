@@ -24,9 +24,14 @@
 # limitations under the License.                                            #
 #############################################################################
 
-**/Dockerfile
-.dockerignore
+FROM python:3.8-alpine
 
-**/README.md
-**/__pycache__
-cli_runner/tests
+RUN apk add --no-cache docker-cli
+
+WORKDIR /root
+
+COPY data data
+
+COPY test_cli_runner.py .
+
+ENTRYPOINT ["python", "test_cli_runner.py"]

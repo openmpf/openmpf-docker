@@ -38,11 +38,6 @@ SHELL ["/bin/bash", "-o", "errexit", "-o", "pipefail", "-c"]
 
 ENV LANG en_US.UTF-8
 
-# Disable Python bytecode generation because it was causing build cache issues. It may slightly increase start up
-# time, but once everything is imported, there is no difference in performance. If the bytecode files were critical,
-# it is unlikely that the official Python Docker images would explicitly delete them. It also saves 86MB of space.
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PIP_COMPILE=0
 
 COPY --from=openmpf_build /usr/local/bin/python3.8 /usr/local/bin/python3.8-config \
     /usr/local/bin/pip /usr/local/bin/pip3 /usr/local/bin/pip3.8 /usr/local/bin/wheel \
@@ -85,6 +80,9 @@ COPY --from=openmpf_build /build-artifacts/install/bin/amq_detection_component $
 # component executor log config
 COPY --from=openmpf_build /build-artifacts/install/config/Log4cxxConfig.xml $MPF_HOME/config/
 
+COPY --from=openmpf_build /build-artifacts/install/lib/mpf_cpp_sdk.cpython-38-x86_64-linux-gnu.so \
+                          /usr/local/lib/python3.8/lib-dynload/
+
 
 ENV MPF_LOG_PATH $MPF_HOME/share/logs
 
@@ -94,9 +92,14 @@ ENV BUILD_DIR /home/mpf/component_build
 
 ENV PLUGINS_DIR $MPF_HOME/plugins
 
-COPY docker-executor-entrypoint.py /scripts/docker-entrypoint.py
 
-ENTRYPOINT ["python3", "/scripts/docker-entrypoint.py"]
+COPY docker-entrypoint.sh docker-executor-entrypoint.py /scripts/
+
+COPY cli_runner /scripts/cli_runner
+
+RUN ln --symbolic /scripts/cli_runner/mpf_cli_runner.py /usr/bin/runner
+
+ENTRYPOINT ["/scripts/docker-entrypoint.sh"]
 
 LABEL org.label-schema.build-date="" \
       org.label-schema.license="Apache 2.0" \

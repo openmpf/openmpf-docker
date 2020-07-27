@@ -24,9 +24,53 @@
 # limitations under the License.                                            #
 #############################################################################
 
-**/Dockerfile
-.dockerignore
+import collections
+import enum
+import string
+from types import ModuleType
+from typing import Mapping, Protocol, ClassVar, Iterable
 
-**/README.md
-**/__pycache__
-cli_runner/tests
+
+class MediaType(enum.Enum):
+    IMAGE = enum.auto()
+    VIDEO = enum.auto()
+    AUDIO = enum.auto()
+    GENERIC = enum.auto()
+
+
+class ComponentHandle(Protocol):
+    """
+    Manages the lifetime of a language specific component.
+    """
+
+    # The type of detection produced by the component.
+    detection_type: str
+
+    # A reference to the module containing the MPF job and result objects.
+    # The classes and fields are named identically in mpf_cpp_sdk and mpf_component_api so the
+    # common runner code can use them interchangeably.
+    sdk_module: ClassVar[ModuleType]
+
+    def supports(self, media_type: MediaType) -> bool:
+        """
+        Indicates whether or not the component supports the given media type.
+        :param media_type: Media type to inquire about
+        :return: True if the component can process the given media type, otherwise False.
+        """
+        ...
+
+    def run_job(self, job) -> Iterable:
+        """
+        Invokes the component code to run the given job.
+        :param job: The language specific (C++ or Python) job object describing the job.
+        :return: An iterable containing the results of running the component on the given job.
+                 Contents of result iterable are dependent on the job type and component language.
+        """
+        ...
+
+
+def expand_env_vars(raw_str: str, env: Mapping[str, str]) -> str:
+    # dict that returns empty string when key is missing.
+    defaults = collections.defaultdict(str)
+    # In the call to substitute the keyword arguments (**env) take precedence.
+    return string.Template(raw_str).substitute(defaults, **env)
