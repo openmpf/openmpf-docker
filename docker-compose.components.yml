@@ -167,6 +167,7 @@ services:
       - "8000:8000"  # server port
       - "8001:8001"  # management port
     environment:
+      # Use "NVIDIA_VISIBLE_DEVICES=" (no value) for CPU mode.
       - NVIDIA_VISIBLE_DEVICES=all
     # Uncomment to attach custom models.
     # Currently server is prebuilt with the coco model.
