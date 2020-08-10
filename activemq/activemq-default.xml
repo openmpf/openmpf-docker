@@ -71,6 +71,7 @@
             <policyMap>
               <policyEntries>
                 <policyEntry queue=">" prioritizedMessages="true" useCache="false" expireMessagesPeriod="0" queuePrefetch="0" />
+
                 <policyEntry topic=">" >
                     <!-- The constantPendingMessageLimitStrategy is used to prevent
                          slow topic consumers to block producers and affect other consumers
@@ -87,6 +88,7 @@
               </policyEntries>
             </policyMap>
         </destinationPolicy>
+
 
         <!--
             The managementContext is used to configure how ActiveMQ is exposed in
