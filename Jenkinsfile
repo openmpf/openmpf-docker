@@ -338,7 +338,7 @@ try {
         dir(openmpfDockerRepo.path) {
             def skipComponents = env.docker_services_build_only
             println "${skipComponents}"
-            skipComponents.split(',').collect { it.replaceAll("\\s","") }.findAll{ !it.isBlank() }.collect{ "--scale $it=0"  }.join(' ')
+            skipComponents.split(',').collect{ it.replaceAll("\\s","") }.findAll{ !it.isEmpty() }.collect{ "--scale $it=0"  }.join(' ')
             println "${skipComponents}"
             def composeFiles = "docker-compose.integration.test.yml:$componentComposeFiles"
 
