@@ -190,7 +190,12 @@ try {
                     branches: [[name: repo.branch]],
                     extensions: [
                             [$class: 'CleanBeforeCheckout'],
-                            [$class: 'RelativeTargetDirectory', relativeTargetDir: repo.path]])
+                            [$class: 'RelativeTargetDirectory', relativeTargetDir: repo.path]],
+                            [$class: 'SubmoduleOption',
+                                      disableSubmodules: false,
+                                      parentCredentials: true,
+                                      recursiveSubmodules: true,
+                                      trackingSubmodules: false])
         }
 
         for (repo in allRepos) {
