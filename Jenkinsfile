@@ -338,8 +338,8 @@ try {
         dir(openmpfDockerRepo.path) {
             def skipComponents = env.docker_services_build_only
             println "${skipComponents}"
-            skipComponents.split(',').collect{ it.replaceAll("\\s","") }.findAll{ !it.isEmpty() }.collect{ "--scale $it=0"  }.join(' ')
-            println "${skipComponents}"
+            def skipArgs = skipComponents.split(',').collect{ it.replaceAll("\\s","") }.findAll{ !it.isEmpty() }.collect{ "--scale $it=0"  }.join(' ')
+            println "${skipArgs}"
             def composeFiles = "docker-compose.integration.test.yml:$componentComposeFiles"
 
             def nproc = Math.min((shOutput('nproc') as int), 6)
@@ -357,7 +357,7 @@ try {
                      "COMPOSE_PROJECT_NAME=openmpf_$buildId",
                      "COMPOSE_FILE=$composeFiles"]) {
                 try {
-                    sh "docker-compose up --exit-code-from workflow-manager $scaleArgs $skipComponents"
+                    sh "docker-compose up --exit-code-from workflow-manager $scaleArgs $skipArgs"
                     sh 'docker-compose down --volumes'
                 }
                 catch (e) {
