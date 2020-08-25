@@ -336,6 +336,7 @@ try {
 
     stage('Run Integration Tests') {
         dir(openmpfDockerRepo.path) {
+            def skipComponents = env.docker_services_build_only.split(',').collect { it.replaceAll("\\s","") }.findAll{ !it.isBlank() }.collect{ "--scale $it=0"  }.join(' ')
             def composeFiles = "docker-compose.integration.test.yml:$componentComposeFiles"
 
             def nproc = Math.min((shOutput('nproc') as int), 6)
@@ -353,7 +354,7 @@ try {
                      "COMPOSE_PROJECT_NAME=openmpf_$buildId",
                      "COMPOSE_FILE=$composeFiles"]) {
                 try {
-                    sh "docker-compose up --exit-code-from workflow-manager $scaleArgs"
+                    sh "docker-compose up --exit-code-from workflow-manager $scaleArgs $skipComponents"
                     sh 'docker-compose down --volumes'
                 }
                 catch (e) {
