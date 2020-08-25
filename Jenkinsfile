@@ -195,7 +195,7 @@ try {
                                       disableSubmodules: false,
                                       parentCredentials: true,
                                       recursiveSubmodules: true,
-                                      trackingSubmodules: false])
+                                      trackingSubmodules: false]])
         }
 
         for (repo in allRepos) {
