@@ -336,7 +336,10 @@ try {
 
     stage('Run Integration Tests') {
         dir(openmpfDockerRepo.path) {
-            def skipComponents = env.docker_services_build_only.split(',').collect { it.replaceAll("\\s","") }.findAll{ !it.isBlank() }.collect{ "--scale $it=0"  }.join(' ')
+            def skipComponents = env.docker_services_build_only
+            println "${skipComponents}"
+            skipComponents.split(',').collect { it.replaceAll("\\s","") }.findAll{ !it.isBlank() }.collect{ "--scale $it=0"  }.join(' ')
+            println "${skipComponents}"
             def composeFiles = "docker-compose.integration.test.yml:$componentComposeFiles"
 
             def nproc = Math.min((shOutput('nproc') as int), 6)
