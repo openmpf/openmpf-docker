@@ -169,11 +169,13 @@ services:
     build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/cpp/TrtisDetection/trtserver_dockerfile
     deploy:
       mode: global
-    ports:
-      - "8002:8002"  # (optional) Prometheus metrics at http://<host>:<this-port>/metrics
+    # ports:
+    #  - "8002:8002"  # (optional) Prometheus metrics at http://<host>:<this-port>/metrics
     environment:
       # Use "NVIDIA_VISIBLE_DEVICES=" (no value) for CPU mode.
-      - NVIDIA_VISIBLE_DEVICES=all
+      # Set to "all" to use all available GPUs.
+      - NVIDIA_VISIBLE_DEVICES=
+
     # Uncomment to attach custom models.
     # Currently server is prebuilt with the coco model.
     #volumes:
