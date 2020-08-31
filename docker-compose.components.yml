@@ -175,7 +175,6 @@ services:
       # Use "NVIDIA_VISIBLE_DEVICES=" (no value) for CPU mode.
       # Set to "all" to use all available GPUs.
       - NVIDIA_VISIBLE_DEVICES=
-
     # Uncomment to attach custom models.
     # Currently server is prebuilt with the coco model.
     #volumes:
