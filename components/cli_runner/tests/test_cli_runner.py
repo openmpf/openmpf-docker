@@ -459,13 +459,13 @@ class TestPythonCliRunner(BaseTestCliRunner):
         self.assertEqual(126, detection1['y'])
         self.assertEqual(111, detection1['width'])
         self.assertEqual(33, detection1['height'])
-        self.assertAlmostEqual(0.9999814, detection1['confidence'])
+        self.assertAlmostEqual(0.9999814, detection1['confidence'], places=2)
 
 
         track2 = tracks[1]
         self.assertAlmostEqual(0.9999863, track2['confidence'])
         self.assertEqual(2, len(track2['trackProperties']))
-        self.assertAlmostEqual(1.181158, float(track2['trackProperties']['ROTATION']))
+        self.assertAlmostEqual(1.181158, float(track2['trackProperties']['ROTATION']), places=2)
         self.assertEqual('STRUCTURED', track1['trackProperties']['TEXT_TYPE'])
 
         detection2 = track2['detections'][0]
@@ -473,7 +473,7 @@ class TestPythonCliRunner(BaseTestCliRunner):
         self.assertEqual(125, detection2['y'])
         self.assertEqual(88, detection2['width'])
         self.assertEqual(35, detection2['height'])
-        self.assertAlmostEqual(0.9999863, detection2['confidence'])
+        self.assertAlmostEqual(0.9999863, detection2['confidence'], places=2)
 
 
     def test_can_run_image_job_with_job_properties(self):
@@ -486,7 +486,7 @@ class TestPythonCliRunner(BaseTestCliRunner):
 
         self.assertEqual(1, len(tracks))
         track = tracks[0]
-        self.assertAlmostEqual(0.99997675, track['confidence'])
+        self.assertAlmostEqual(0.99997675, track['confidence'], places=2)
         self.assertEqual(2, len(track['trackProperties']))
         self.assertAlmostEqual(4.490200000000016, float(track['trackProperties']['ROTATION']))
         self.assertEqual('UNSTRUCTURED', track['trackProperties']['TEXT_TYPE'])
@@ -496,7 +496,7 @@ class TestPythonCliRunner(BaseTestCliRunner):
         self.assertEqual(124, detection['y'])
         self.assertEqual(221, detection['width'])
         self.assertEqual(52, detection['height'])
-        self.assertAlmostEqual(0.99997675, detection['confidence'])
+        self.assertAlmostEqual(0.99997675, detection['confidence'], places=2)
 
 
     def test_can_run_video_job(self):
@@ -527,7 +527,7 @@ class TestPythonCliRunner(BaseTestCliRunner):
         self.assertEqual(143, exemplar1['y'])
         self.assertEqual(88, exemplar1['width'])
         self.assertEqual(34, exemplar1['height'])
-        self.assertAlmostEqual(0.99997926, exemplar1['confidence'])
+        self.assertAlmostEqual(0.99997926, exemplar1['confidence'], places=2)
         self.assertEqual(2, len(exemplar1['detectionProperties']))
         self.assertAlmostEqual(1.243963, float(exemplar1['detectionProperties']['ROTATION']))
         self.assertEqual('UNSTRUCTURED', exemplar1['detectionProperties']['TEXT_TYPE'])
@@ -538,7 +538,7 @@ class TestPythonCliRunner(BaseTestCliRunner):
         self.assertEqual(1, track2['stopOffsetFrame'])
         self.assertEqual(1000, track2['startOffsetTime'])
         self.assertEqual(1000, track2['stopOffsetTime'])
-        self.assertAlmostEqual(0.9999789, track2['confidence'])
+        self.assertAlmostEqual(0.9999789, track2['confidence'], places=2)
         self.assertEqual(2, len(track2['trackProperties']))
         self.assertAlmostEqual(1.2030252, float(track2['trackProperties']['ROTATION']))
         self.assertEqual('UNSTRUCTURED', track2['trackProperties']['TEXT_TYPE'])
@@ -552,7 +552,7 @@ class TestPythonCliRunner(BaseTestCliRunner):
         self.assertEqual(143, exemplar2['y'])
         self.assertEqual(88, exemplar2['width'])
         self.assertEqual(34, exemplar2['height'])
-        self.assertAlmostEqual(0.9999789, exemplar2['confidence'])
+        self.assertAlmostEqual(0.9999789, exemplar2['confidence'], places=2)
         self.assertEqual(2, len(exemplar2['detectionProperties']))
         self.assertAlmostEqual(1.2030252, float(exemplar2['detectionProperties']['ROTATION']))
         self.assertEqual('UNSTRUCTURED', exemplar2['detectionProperties']['TEXT_TYPE'])
@@ -563,7 +563,7 @@ class TestPythonCliRunner(BaseTestCliRunner):
         self.assertEqual(2, track3['stopOffsetFrame'])
         self.assertEqual(2000, track3['startOffsetTime'])
         self.assertEqual(2000, track3['stopOffsetTime'])
-        self.assertAlmostEqual(0.9999789, track3['confidence'])
+        self.assertAlmostEqual(0.9999789, track3['confidence'], places=2)
         self.assertEqual(2, len(track3['trackProperties']))
         self.assertAlmostEqual(1.2030252, float(track3['trackProperties']['ROTATION']))
         self.assertEqual('UNSTRUCTURED', track3['trackProperties']['TEXT_TYPE'])
@@ -577,7 +577,7 @@ class TestPythonCliRunner(BaseTestCliRunner):
         self.assertEqual(143, exemplar3['y'])
         self.assertEqual(88, exemplar3['width'])
         self.assertEqual(34, exemplar3['height'])
-        self.assertAlmostEqual(0.9999789, exemplar3['confidence'])
+        self.assertAlmostEqual(0.9999789, exemplar3['confidence'], places=2)
         self.assertEqual(2, len(exemplar3['detectionProperties']))
         self.assertAlmostEqual(1.2030252, float(exemplar3['detectionProperties']['ROTATION']))
         self.assertEqual('UNSTRUCTURED', exemplar3['detectionProperties']['TEXT_TYPE'])
