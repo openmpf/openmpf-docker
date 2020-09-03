@@ -43,42 +43,42 @@ x-detection-component-base:
 
 
 services:
-#  azure_ocr_text_detection:
-#    <<: *detection-component-base
-#    image: ${REGISTRY}openmpf_azure_ocr_text_detection:${TAG}
-#    build:
-#      context: ${OPENMPF_PROJECTS_PATH}/openmpf-components/python/AzureOcrTextDetection
-#    environment:
-#      <<: *common-env-vars
-#      # ACS_URL and ACS_SUBSCRIPTION_KEY can also be provided as job properties.
-#      # Job properties take precedence over the environment variables set here.
-#      ACS_URL: ${ACS_OCR_URL}
-#      ACS_SUBSCRIPTION_KEY: ${ACS_OCR_SUBSCRIPTION_KEY}
-#
-#  azure_speech_detection:
-#    <<: *detection-component-base
-#    image: ${REGISTRY}openmpf_azure_speech_detection:${TAG}
-#    build:
-#      context: ${OPENMPF_PROJECTS_PATH}/openmpf-components/python/AzureSpeechDetection
-#    environment:
-#      <<: *common-env-vars
-#      # The following can also be provided as job properties.
-#      # Job properties take precedence over the environment variables set here.
-#      ACS_URL: ${ACS_SPEECH_URL}
-#      ACS_SUBSCRIPTION_KEY: ${ACS_SPEECH_SUBSCRIPTION_KEY}
-#      ACS_BLOB_CONTAINER_URL: ${ACS_SPEECH_BLOB_CONTAINER_URL}
-#      ACS_BLOB_SERVICE_KEY: ${ACS_SPEECH_BLOB_SERVICE_KEY}
-#
-#  darknet-detection:
-#    <<: *detection-component-base
-#    image: ${REGISTRY}openmpf_darknet_detection:${TAG}
-#    build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/cpp/DarknetDetection
-#
-#  dlib-face-detection:
-#    <<: *detection-component-base
-#    image: ${REGISTRY}openmpf_dlib_face_detection:${TAG}
-#    build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/cpp/DlibFaceDetection
-#
+  azure_ocr_text_detection:
+    <<: *detection-component-base
+    image: ${REGISTRY}openmpf_azure_ocr_text_detection:${TAG}
+    build:
+      context: ${OPENMPF_PROJECTS_PATH}/openmpf-components/python/AzureOcrTextDetection
+    environment:
+      <<: *common-env-vars
+      # ACS_URL and ACS_SUBSCRIPTION_KEY can also be provided as job properties.
+      # Job properties take precedence over the environment variables set here.
+      ACS_URL: ${ACS_OCR_URL}
+      ACS_SUBSCRIPTION_KEY: ${ACS_OCR_SUBSCRIPTION_KEY}
+
+  azure_speech_detection:
+    <<: *detection-component-base
+    image: ${REGISTRY}openmpf_azure_speech_detection:${TAG}
+    build:
+      context: ${OPENMPF_PROJECTS_PATH}/openmpf-components/python/AzureSpeechDetection
+    environment:
+      <<: *common-env-vars
+      # The following can also be provided as job properties.
+      # Job properties take precedence over the environment variables set here.
+      ACS_URL: ${ACS_SPEECH_URL}
+      ACS_SUBSCRIPTION_KEY: ${ACS_SPEECH_SUBSCRIPTION_KEY}
+      ACS_BLOB_CONTAINER_URL: ${ACS_SPEECH_BLOB_CONTAINER_URL}
+      ACS_BLOB_SERVICE_KEY: ${ACS_SPEECH_BLOB_SERVICE_KEY}
+
+  darknet-detection:
+    <<: *detection-component-base
+    image: ${REGISTRY}openmpf_darknet_detection:${TAG}
+    build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/cpp/DarknetDetection
+
+  dlib-face-detection:
+    <<: *detection-component-base
+    image: ${REGISTRY}openmpf_dlib_face_detection:${TAG}
+    build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/cpp/DlibFaceDetection
+
   east-text-detection:
     <<: *detection-component-base
     image: ${REGISTRY}openmpf_east_text_detection:${TAG}
@@ -88,66 +88,66 @@ services:
       resources:
         limits:
           cpus: "2.0"
-#
-#  mog-motion-detection:
-#    <<: *detection-component-base
-#    image: ${REGISTRY}openmpf_mog_motion_detection:${TAG}
-#    build:
-#      context: ${OPENMPF_PROJECTS_PATH}/openmpf-contrib-components/cpp/motion
-#      dockerfile: MogMotionDetection/Dockerfile
-#
-#  oalpr-license-plate-text-detection:
-#    <<: *detection-component-base
-#    image: ${REGISTRY}openmpf_oalpr_license_plate_text_detection:${TAG}
-#    build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/cpp/OalprLicensePlateTextDetection
-#
-#  ocv-dnn-detection:
-#    <<: *detection-component-base
-#    image: ${REGISTRY}openmpf_ocv_dnn_detection:${TAG}
-#    build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/cpp/OcvDnnDetection
-#
+
+  mog-motion-detection:
+    <<: *detection-component-base
+    image: ${REGISTRY}openmpf_mog_motion_detection:${TAG}
+    build:
+      context: ${OPENMPF_PROJECTS_PATH}/openmpf-contrib-components/cpp/motion
+      dockerfile: MogMotionDetection/Dockerfile
+
+  oalpr-license-plate-text-detection:
+    <<: *detection-component-base
+    image: ${REGISTRY}openmpf_oalpr_license_plate_text_detection:${TAG}
+    build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/cpp/OalprLicensePlateTextDetection
+
+  ocv-dnn-detection:
+    <<: *detection-component-base
+    image: ${REGISTRY}openmpf_ocv_dnn_detection:${TAG}
+    build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/cpp/OcvDnnDetection
+
   ocv-face-detection:
     <<: *detection-component-base
     image: ${REGISTRY}openmpf_ocv_face_detection:${TAG}
     build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/cpp/OcvFaceDetection
-#
-#  ocv-person-detection:
-#    <<: *detection-component-base
-#    image: ${REGISTRY}openmpf_ocv_person_detection:${TAG}
-#    build: ${OPENMPF_PROJECTS_PATH}/openmpf-contrib-components/cpp/OcvPersonDetection
-#
-#  scene-change-detection:
-#    <<: *detection-component-base
-#    image: ${REGISTRY}openmpf_scene_change_detection:${TAG}
-#    build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/cpp/SceneChangeDetection
-#
-#  sphinx-speech-detection:
-#    <<: *detection-component-base
-#    image: ${REGISTRY}openmpf_sphinx_speech_detection:${TAG}
-#    build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/java/SphinxSpeechDetection
-#    environment:
-#      <<: *common-env-vars
-#      JAVA_TOOL_OPTIONS: -Xmx1g  # limit Java heap size to 1GB
-#
-#  subsense-motion-detection:
-#    <<: *detection-component-base
-#    image: ${REGISTRY}openmpf_subsense_motion_detection:${TAG}
-#    build:
-#      context: ${OPENMPF_PROJECTS_PATH}/openmpf-contrib-components/cpp/motion
-#      dockerfile: SubsenseMotionDetection/Dockerfile
-#
+
+  ocv-person-detection:
+    <<: *detection-component-base
+    image: ${REGISTRY}openmpf_ocv_person_detection:${TAG}
+    build: ${OPENMPF_PROJECTS_PATH}/openmpf-contrib-components/cpp/OcvPersonDetection
+
+  scene-change-detection:
+    <<: *detection-component-base
+    image: ${REGISTRY}openmpf_scene_change_detection:${TAG}
+    build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/cpp/SceneChangeDetection
+
+  sphinx-speech-detection:
+    <<: *detection-component-base
+    image: ${REGISTRY}openmpf_sphinx_speech_detection:${TAG}
+    build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/java/SphinxSpeechDetection
+    environment:
+      <<: *common-env-vars
+      JAVA_TOOL_OPTIONS: -Xmx1g  # limit Java heap size to 1GB
+
+  subsense-motion-detection:
+    <<: *detection-component-base
+    image: ${REGISTRY}openmpf_subsense_motion_detection:${TAG}
+    build:
+      context: ${OPENMPF_PROJECTS_PATH}/openmpf-contrib-components/cpp/motion
+      dockerfile: SubsenseMotionDetection/Dockerfile
+
   tesseract-ocr-text-detection:
     <<: *detection-component-base
     image: ${REGISTRY}openmpf_tesseract_ocr_text_detection:${TAG}
     build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/cpp/TesseractOCRTextDetection
-#
-#  tika-image-detection:
-#    <<: *detection-component-base
-#    image: ${REGISTRY}openmpf_tika_image_detection:${TAG}
-#    build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/java/TikaImageDetection
-#
-#  tika-text-detection:
-#    <<: *detection-component-base
-#    image: ${REGISTRY}openmpf_tika_text_detection:${TAG}
-#    build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/java/TikaTextDetection
+
+  tika-image-detection:
+    <<: *detection-component-base
+    image: ${REGISTRY}openmpf_tika_image_detection:${TAG}
+    build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/java/TikaImageDetection
+
+  tika-text-detection:
+    <<: *detection-component-base
+    image: ${REGISTRY}openmpf_tika_text_detection:${TAG}
+    build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/java/TikaTextDetection
 
