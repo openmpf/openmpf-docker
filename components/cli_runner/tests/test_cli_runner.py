@@ -451,7 +451,7 @@ class TestPythonCliRunner(BaseTestCliRunner):
         track1 = tracks[0]
         self.assertAlmostEqual(0.9999814, track1['confidence'])
         self.assertEqual(2, len(track1['trackProperties']))
-        self.assertAlmostEqual(1.2726791, float(track1['trackProperties']['ROTATION']))
+        self.assertAlmostEqual(1.2726791, float(track1['trackProperties']['ROTATION']), places=2)
         self.assertEqual('STRUCTURED', track1['trackProperties']['TEXT_TYPE'])
 
         detection1 = track1['detections'][0]
@@ -515,7 +515,7 @@ class TestPythonCliRunner(BaseTestCliRunner):
         self.assertEqual(0, track1['stopOffsetTime'])
         self.assertAlmostEqual(0.99997926, track1['confidence'])
         self.assertEqual(2, len(track1['trackProperties']))
-        self.assertAlmostEqual(1.243963, float(track1['trackProperties']['ROTATION']))
+        self.assertAlmostEqual(1.243963, float(track1['trackProperties']['ROTATION']), places=2)
         self.assertEqual('UNSTRUCTURED', track1['trackProperties']['TEXT_TYPE'])
 
         self.assertEqual(1, len(track1['detections']))
