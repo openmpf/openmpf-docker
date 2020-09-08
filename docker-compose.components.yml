@@ -151,3 +151,32 @@ services:
     image: ${REGISTRY}openmpf_tika_text_detection:${TAG}
     build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/java/TikaTextDetection
 
+  trtis-detection:
+    <<: *detection-component-base
+    image: ${REGISTRY}openmpf_trtis_detection:${TAG}
+    build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/cpp/TrtisDetection
+    environment:
+      <<: *common-env-vars
+      # Specifies container and port of TRTIS server.
+      TRTIS_SERVER: trtis-detection-server:8001
+    depends_on:
+      - workflow-manager
+      - trtis-detection-server
+
+  trtis-detection-server:
+    <<: *detection-component-base
+    image: ${REGISTRY}openmpf_trtis_detection_server:${TAG}
+    build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/cpp/TrtisDetection/trtserver_dockerfile
+    deploy:
+      mode: global
+    # ports:
+    #  - "8002:8002"  # (optional) Prometheus metrics at http://<host>:<this-port>/metrics
+    environment:
+      # Use "NVIDIA_VISIBLE_DEVICES=" (no value) for CPU mode.
+      # Set to "all" to use all available GPUs.
+      - NVIDIA_VISIBLE_DEVICES=
+    # Uncomment to attach custom models.
+    # Currently server is prebuilt with the coco model.
+    #volumes:
+    #  - "${OPENMPF_PROJECTS_PATH}/openmpf-components/cpp/TrtisDetection/plugin-files/models:/models"
+    command: [trtserver,--model-store=/models]
