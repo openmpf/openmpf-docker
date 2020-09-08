@@ -9,8 +9,6 @@ This image will:
 
 - Register your component with the Workflow Manager.
 - Execute your code using the OpenMPF component executor binary.
-- Tail log files so that they appear in the terminal window where you ran `docker run ..`
-  to start your component container.
   
   
 How to build the `openmpf_python_component_build` and `openmpf_python_executor` base images
@@ -36,11 +34,11 @@ You should put your Dockerfile in the component project's top level directory. F
 MyFaceDetection
 ├── Dockerfile
 ├── my_face_detection
-│   ├── __init__.py
-│   └── my_face_detection.py
+│   ├── __init__.py
+│   └── my_face_detection.py
 ├── plugin-files
-│   └── descriptor
-│       └── descriptor.json
+│   └── descriptor
+│       └── descriptor.json
 └── setup.py
 ```
 
