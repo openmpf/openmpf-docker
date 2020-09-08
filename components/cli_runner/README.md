@@ -39,7 +39,7 @@ docker run --rm -v "$(pwd)":/mpfdata openmpf_ocv_face_detection /mpfdata/face.jp
 
 
 Job properties can be set using the `-P` flag. In the example below we set two
-job properties. We set MIN_FACE_SIZE to 50 and OTHER_PROP to 5.
+job properties. We set MIN\_FACE\_SIZE to 50 and OTHER\_PROP to 5.
 ```shell script
 docker run --rm -i openmpf_ocv_face_detection -t image - -P MIN_FACE_SIZE=50 -P OTHER_PROP=5 < face.jpg
 ```
