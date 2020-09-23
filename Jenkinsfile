@@ -298,12 +298,16 @@ try {
                 def customComponentServices = []
 
                 if (buildCustomComponents) {
-                    def customComponentsComposeFiles =
-                            ["../../$customComponentsRepo.path/docker-compose.custom-components.yml",
-                            "../../$customComponentsRepo.path/docker-compose.custom-gpu-only-components.yml"]
-                    componentComposeFiles += ":$customComponentsComposeFiles"
+                    def customComponentsComposeFile =
+                            "../../$customComponentsRepo.path/docker-compose.custom-components.yml"
+                    componentComposeFiles += ":$customComponentsComposeFile"
+                    def customGpuOnlyComponentsComposeFile =
+                            "../../$customComponentsRepo.path/docker-compose.custom-gpu-only-components.yml"
+                    componentComposeFiles += ":$customGpuOnlyComponentsComposeFile"
                     customComponentServices =
-                            readYaml(text: shOutput("cat $customComponentsComposeFiles")).services.keySet()
+                            readYaml(text: shOutput("cat $customComponentsComposeFile")).services.keySet()
+                    customComponentServices += 
+                            readYaml(text: shOutput("cat $customGpuOnlyComponentsComposeFile")).services.keySet()
                 }
 
                 runtimeComposeFiles = "docker-compose.core.yml:$componentComposeFiles:docker-compose.elk.yml"
