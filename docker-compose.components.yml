@@ -43,17 +43,17 @@ x-detection-component-base:
 
 
 services:
-  azure_form_recognizer_detection:
+  azure_form_detection:
     <<: *detection-component-base
-    image: ${REGISTRY}openmpf_azure_form_recognizer_detection:${TAG}
+    image: ${REGISTRY}openmpf_azure_form_detection:${TAG}
     build:
-      context: ${OPENMPF_PROJECTS_PATH}/openmpf-components/python/AzureFormRecognizerDetection
+      context: ${OPENMPF_PROJECTS_PATH}/openmpf-components/python/AzureFormDetection
     environment:
       <<: *common-env-vars
       # ACS_URL and ACS_SUBSCRIPTION_KEY can also be provided as job properties.
       # Job properties take precedence over the environment variables set here.
-      ACS_URL: ${ACS_FORM_RECOGNIZER_URL}
-      ACS_SUBSCRIPTION_KEY: ${ACS_FORM_RECOGNIZER_SUBSCRIPTION_KEY}
+      ACS_URL: ${ACS_FORM_DETECTION_URL}
+      ACS_SUBSCRIPTION_KEY: ${ACS_FORM_DETECTION_SUBSCRIPTION_KEY}
 
   azure_ocr_text_detection:
     <<: *detection-component-base
