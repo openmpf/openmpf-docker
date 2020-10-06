@@ -190,7 +190,12 @@ try {
                     branches: [[name: repo.branch]],
                     extensions: [
                             [$class: 'CleanBeforeCheckout'],
-                            [$class: 'RelativeTargetDirectory', relativeTargetDir: repo.path]])
+                            [$class: 'RelativeTargetDirectory', relativeTargetDir: repo.path],
+                            [$class: 'SubmoduleOption',
+                                      disableSubmodules: false,
+                                      parentCredentials: true,
+                                      recursiveSubmodules: true,
+                                      trackingSubmodules: false]])
         }
 
         for (repo in allRepos) {
@@ -296,8 +301,13 @@ try {
                     def customComponentsComposeFile =
                             "../../$customComponentsRepo.path/docker-compose.custom-components.yml"
                     componentComposeFiles += ":$customComponentsComposeFile"
+                    def customGpuOnlyComponentsComposeFile =
+                            "../../$customComponentsRepo.path/docker-compose.custom-gpu-only-components.yml"
+                    componentComposeFiles += ":$customGpuOnlyComponentsComposeFile"
                     customComponentServices =
                             readYaml(text: shOutput("cat $customComponentsComposeFile")).services.keySet()
+                    customComponentServices += 
+                            readYaml(text: shOutput("cat $customGpuOnlyComponentsComposeFile")).services.keySet()
                 }
 
                 runtimeComposeFiles = "docker-compose.core.yml:$componentComposeFiles:docker-compose.elk.yml"
@@ -331,6 +341,7 @@ try {
 
     stage('Run Integration Tests') {
         dir(openmpfDockerRepo.path) {
+            def skipArgs = env.docker_services_build_only.split(',').collect{ it.replaceAll("\\s","") }.findAll{ !it.isEmpty() }.collect{ "--scale $it=0"  }.join(' ')
             def composeFiles = "docker-compose.integration.test.yml:$componentComposeFiles"
 
             def nproc = Math.min((shOutput('nproc') as int), 6)
@@ -348,7 +359,7 @@ try {
                      "COMPOSE_PROJECT_NAME=openmpf_$buildId",
                      "COMPOSE_FILE=$composeFiles"]) {
                 try {
-                    sh "docker-compose up --exit-code-from workflow-manager $scaleArgs"
+                    sh "docker-compose up --exit-code-from workflow-manager $scaleArgs $skipArgs"
                     sh 'docker-compose down --volumes'
                 }
                 catch (e) {
