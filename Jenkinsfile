@@ -306,14 +306,16 @@ try {
                     componentComposeFiles += ":$customGpuOnlyComponentsComposeFile"
                     customComponentServices =
                             readYaml(text: shOutput("cat $customComponentsComposeFile")).services.keySet()
-                    customComponentServices += 
+                    customComponentServices +=
                             readYaml(text: shOutput("cat $customGpuOnlyComponentsComposeFile")).services.keySet()
                 }
 
                 runtimeComposeFiles = "docker-compose.core.yml:$componentComposeFiles:docker-compose.elk.yml"
 
                 withEnv(["TAG=$inProgressTag", "COMPOSE_FILE=$runtimeComposeFiles", 'COMPOSE_DOCKER_CLI_BUILD=1']) {
-                    sh "docker-compose build $commonBuildArgs --build-arg RUN_TESTS --parallel"
+                    docker.withRegistry("http://$dockerRegistryHostAndPort", dockerRegistryCredId) {
+                        sh "docker-compose build $commonBuildArgs --build-arg RUN_TESTS --parallel"
+                    }
 
                     def composeYaml = readYaml(text: shOutput('docker-compose config'))
                     addVcsRefLabels(composeYaml, openmpfRepo, openmpfDockerRepo)
