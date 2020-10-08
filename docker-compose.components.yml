@@ -101,6 +101,11 @@ services:
         limits:
           cpus: "2.0"
 
+  keyword-tagger:
+    <<: *detection-component-base
+    image: ${REGISTRY}openmpf_keyword_tagging:${TAG}
+    build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/cpp/KeywordTagging
+
   mog-motion-detection:
     <<: *detection-component-base
     image: ${REGISTRY}openmpf_mog_motion_detection:${TAG}
