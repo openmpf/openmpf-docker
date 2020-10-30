@@ -79,6 +79,7 @@ RUN curl --location 'http://archive.apache.org/dist/tomcat/tomcat-8/v8.5.41/bin/
     sed --in-place '24s/.*/    <WatchedResource>$\{catalina\.ba\se\}\/conf\/web.xml<\/WatchedResource>\n    <Resources cachingAllowed="true" cacheMaxSize="100000" \/>/' \
         /opt/apache-tomcat/conf/context.xml;
 
+COPY --from=openmpf_build /usr/local/bin/pngdefry /usr/local/bin/pngdefry
 
 COPY --from=openmpf_build /build-artifacts/mpf-scripts /home/mpf/mpf-scripts
 # Make sure mpf-scripts is not globally installed and that the mpf command in not on the $PATH

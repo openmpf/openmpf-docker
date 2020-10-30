@@ -42,7 +42,7 @@ ENV LANG en_US.UTF-8
 
 RUN yum update --assumeyes; \
     yum install --assumeyes https://download1.rpmfusion.org/free/el/rpmfusion-free-release-7.noarch.rpm; \
-    yum install --assumeyes java-11-openjdk ffmpeg; \
+    yum install --assumeyes java-11-openjdk ffmpeg libheif; \
     yum clean all; \
     rm -rf /var/cache/yum/*;
 
