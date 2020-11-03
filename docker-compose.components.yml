@@ -101,7 +101,7 @@ services:
         limits:
           cpus: "2.0"
 
-  keyword-tagger:
+  keyword-tagging:
     <<: *detection-component-base
     image: ${REGISTRY}openmpf_keyword_tagging:${TAG}
     build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/cpp/KeywordTagging
