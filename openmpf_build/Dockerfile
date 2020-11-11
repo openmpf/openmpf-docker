@@ -42,7 +42,7 @@ ENV PIP_COMPILE=0
 RUN yum update --assumeyes; \
     yum install --assumeyes epel-release https://download1.rpmfusion.org/free/el/rpmfusion-free-release-7.noarch.rpm; \
     yum install --assumeyes cmake3 make gcc gcc-c++ qt-devel log4cxx-devel boost-devel ffmpeg ffmpeg-devel gtest-devel \
-            java-11-openjdk-devel activemq-cpp-devel protobuf-static protobuf-devel libheif-devel \
+            java-11-openjdk-devel activemq-cpp-devel protobuf-static protobuf-devel libheif-devel file \
             # Python build deps
             openssl-devel libffi-devel; \
     yum clean all; \
