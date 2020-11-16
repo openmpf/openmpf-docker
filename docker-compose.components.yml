@@ -43,6 +43,18 @@ x-detection-component-base:
 
 
 services:
+  azure_form_detection:
+    <<: *detection-component-base
+    image: ${REGISTRY}openmpf_azure_form_detection:${TAG}
+    build:
+      context: ${OPENMPF_PROJECTS_PATH}/openmpf-components/python/AzureFormDetection
+    environment:
+      <<: *common-env-vars
+      # ACS_URL and ACS_SUBSCRIPTION_KEY can also be provided as job properties.
+      # Job properties take precedence over the environment variables set here.
+      ACS_URL: ${ACS_FORM_DETECTION_URL}
+      ACS_SUBSCRIPTION_KEY: ${ACS_FORM_DETECTION_SUBSCRIPTION_KEY}
+
   azure_ocr_text_detection:
     <<: *detection-component-base
     image: ${REGISTRY}openmpf_azure_ocr_text_detection:${TAG}
@@ -100,6 +112,11 @@ services:
       resources:
         limits:
           cpus: "2.0"
+
+  keyword-tagging:
+    <<: *detection-component-base
+    image: ${REGISTRY}openmpf_keyword_tagging:${TAG}
+    build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/cpp/KeywordTagging
 
   mog-motion-detection:
     <<: *detection-component-base

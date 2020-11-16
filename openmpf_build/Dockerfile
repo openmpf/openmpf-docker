@@ -42,7 +42,7 @@ ENV PIP_COMPILE=0
 RUN yum update --assumeyes; \
     yum install --assumeyes epel-release https://download1.rpmfusion.org/free/el/rpmfusion-free-release-7.noarch.rpm; \
     yum install --assumeyes cmake3 make gcc gcc-c++ qt-devel log4cxx-devel boost-devel ffmpeg ffmpeg-devel gtest-devel \
-            java-11-openjdk-devel activemq-cpp-devel protobuf-static protobuf-devel \
+            java-11-openjdk-devel activemq-cpp-devel protobuf-static protobuf-devel libheif-devel file \
             # Python build deps
             openssl-devel libffi-devel; \
     yum clean all; \
@@ -87,6 +87,17 @@ RUN mkdir /tmp/opencv-contrib; \
     ln --symbolic /opt/opencv-3.4.7/include/opencv2 /usr/local/include/opencv2; \
     ln --symbolic /opt/opencv-3.4.7/include/opencv /usr/local/include/opencv; \
     rm --recursive /tmp/opencv /tmp/opencv-contrib;
+
+
+RUN mkdir /tmp/pngdefry; \
+    cd /tmp/pngdefry; \
+    curl --location 'https://github.com/openmpf/pngdefry/archive/v1.2.tar.gz' \
+        | tar --extract --gzip; \
+    cd pngdefry-1.2; \
+    gcc pngdefry.c -o pngdefry; \
+    mv pngdefry /usr/local/bin/pngdefry; \
+    rm --recursive /tmp/pngdefry;
+
 
 RUN curl --location 'https://archive.apache.org/dist/maven/maven-3/3.3.3/binaries/apache-maven-3.3.3-bin.tar.gz' \
         | tar --extract --gzip --directory /opt; \

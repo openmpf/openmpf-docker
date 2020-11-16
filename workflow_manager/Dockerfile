@@ -58,7 +58,7 @@ RUN cd /usr/local/bin; \
 
 RUN yum update --assumeyes; \
     yum install --assumeyes --nogpgcheck https://download1.rpmfusion.org/free/el/rpmfusion-free-release-7.noarch.rpm; \
-    yum install --assumeyes java-11-openjdk ffmpeg tomcat-native; \
+    yum install --assumeyes java-11-openjdk ffmpeg tomcat-native file; \
     yum clean all; \
     rm --recursive /var/cache/yum/*;
 
@@ -79,6 +79,7 @@ RUN curl --location 'http://archive.apache.org/dist/tomcat/tomcat-8/v8.5.41/bin/
     sed --in-place '24s/.*/    <WatchedResource>$\{catalina\.ba\se\}\/conf\/web.xml<\/WatchedResource>\n    <Resources cachingAllowed="true" cacheMaxSize="100000" \/>/' \
         /opt/apache-tomcat/conf/context.xml;
 
+COPY --from=openmpf_build /usr/local/bin/pngdefry /usr/local/bin/pngdefry
 
 COPY --from=openmpf_build /build-artifacts/mpf-scripts /home/mpf/mpf-scripts
 # Make sure mpf-scripts is not globally installed and that the mpf command in not on the $PATH
