@@ -89,9 +89,9 @@ services:
     environment:
       <<: *common-env-vars
       # ACS_URL and ACS_SUBSCRIPTION_KEY can also be provided as job properties.
-      # Job properties take precedence over the environment variables set here.
-      ACS_URL: ${ACS_TRANSLATION_URL}
-      ACS_SUBSCRIPTION_KEY: ${ACS_TRANSLATION_SUBSCRIPTION_KEY}
+      # The environment variables set here take precedence over all other job properties.
+      MPF_PROP_ACS_URL: ${ACS_TRANSLATION_URL}
+      MPF_PROP_ACS_SUBSCRIPTION_KEY: ${ACS_TRANSLATION_SUBSCRIPTION_KEY}
 
   darknet-detection:
     <<: *detection-component-base
