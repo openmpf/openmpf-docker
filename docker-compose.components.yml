@@ -90,6 +90,9 @@ services:
       <<: *common-env-vars
       # ACS_URL and ACS_SUBSCRIPTION_KEY can also be provided as job properties.
       # The environment variables set here take precedence over all other job properties.
+      # The URL should not end with /translate because two separate endpoints are used.
+      # ACS_URL + '/translate' is used for translation and ACS_URL + '/breaksentence' is used to
+      # break up long text.
       MPF_PROP_ACS_URL: ${ACS_TRANSLATION_URL}
       MPF_PROP_ACS_SUBSCRIPTION_KEY: ${ACS_TRANSLATION_SUBSCRIPTION_KEY}
 
