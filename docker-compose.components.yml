@@ -43,6 +43,18 @@ x-detection-component-base:
 
 
 services:
+  azure_form_detection:
+    <<: *detection-component-base
+    image: ${REGISTRY}openmpf_azure_form_detection:${TAG}
+    build:
+      context: ${OPENMPF_PROJECTS_PATH}/openmpf-components/python/AzureFormDetection
+    environment:
+      <<: *common-env-vars
+      # ACS_URL and ACS_SUBSCRIPTION_KEY can also be provided as job properties.
+      # Job properties take precedence over the environment variables set here.
+      ACS_URL: ${ACS_FORM_DETECTION_URL}
+      ACS_SUBSCRIPTION_KEY: ${ACS_FORM_DETECTION_SUBSCRIPTION_KEY}
+
   azure_ocr_text_detection:
     <<: *detection-component-base
     image: ${REGISTRY}openmpf_azure_ocr_text_detection:${TAG}
@@ -88,6 +100,11 @@ services:
       resources:
         limits:
           cpus: "2.0"
+
+  keyword-tagging:
+    <<: *detection-component-base
+    image: ${REGISTRY}openmpf_keyword_tagging:${TAG}
+    build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/cpp/KeywordTagging
 
   mog-motion-detection:
     <<: *detection-component-base
@@ -151,3 +168,32 @@ services:
     image: ${REGISTRY}openmpf_tika_text_detection:${TAG}
     build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/java/TikaTextDetection
 
+  trtis-detection:
+    <<: *detection-component-base
+    image: ${REGISTRY}openmpf_trtis_detection:${TAG}
+    build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/cpp/TrtisDetection
+    environment:
+      <<: *common-env-vars
+      # Specifies container and port of TRTIS server.
+      TRTIS_SERVER: trtis-detection-server:8001
+    depends_on:
+      - workflow-manager
+      - trtis-detection-server
+
+  trtis-detection-server:
+    <<: *detection-component-base
+    image: ${REGISTRY}openmpf_trtis_detection_server:${TAG}
+    build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/cpp/TrtisDetection/trtserver_dockerfile
+    deploy:
+      mode: global
+    # ports:
+    #  - "8002:8002"  # (optional) Prometheus metrics at http://<host>:<this-port>/metrics
+    environment:
+      # Use "NVIDIA_VISIBLE_DEVICES=" (no value) for CPU mode.
+      # Set to "all" to use all available GPUs.
+      - NVIDIA_VISIBLE_DEVICES=
+    # Uncomment to attach custom models.
+    # Currently server is prebuilt with the coco model.
+    #volumes:
+    #  - "${OPENMPF_PROJECTS_PATH}/openmpf-components/cpp/TrtisDetection/plugin-files/models:/models"
+    command: [trtserver,--model-store=/models]

@@ -36,6 +36,7 @@ def mvnTestOptions = env.mvn_test_options ?: ''
 def dockerRegistryHost = env.docker_registry_host
 def dockerRegistryPort = env.docker_registry_port
 def dockerRegistryPath = env.docker_registry_path ?: "/openmpf"
+def dockerBaseImagePullCredId = env.docker_base_image_pull_cred_id
 def dockerRegistryCredId = env.docker_registry_cred_id;
 def pushRuntimeImages = env.push_runtime_images?.toBoolean() ?: false
 
@@ -192,7 +193,12 @@ try {
                     branches: [[name: repo.branch]],
                     extensions: [
                             [$class: 'CleanBeforeCheckout'],
-                            [$class: 'RelativeTargetDirectory', relativeTargetDir: repo.path]])
+                            [$class: 'RelativeTargetDirectory', relativeTargetDir: repo.path],
+                            [$class: 'SubmoduleOption',
+                                      disableSubmodules: false,
+                                      parentCredentials: true,
+                                      recursiveSubmodules: true,
+                                      trackingSubmodules: false]])
         }
 
         for (repo in allRepos) {
@@ -221,9 +227,23 @@ try {
     def runtimeComposeFiles
 
     stage('Build images') {
-        // Make sure we are using most recent version of external images
-        for (externalImage in ['centos:7', 'postgres:alpine', 'redis:alpine']) {
-            sh "docker pull '$externalImage'"
+        docker.withRegistry(dockerBaseImagePullCredId) {
+            // Make sure we are using most recent version of external images
+            for (externalImage in ['docker/dockerfile:experimental', 'postgres:alpine',
+                                   'redis:alpine', 'centos:7']) {
+                try {
+                    sh "docker pull '$externalImage'"
+                }
+                catch (e) {
+                    if (buildNoCache) {
+                        throw e;
+                    }
+                    else {
+                        echo "WARNING: Could not pull latest $externalImage from DockerHub."
+                        e.printStackTrace()
+                    }
+                }
+            }
         }
 
         if (preDockerBuildScriptPath) {
@@ -297,14 +317,20 @@ try {
                 def customComponentsComposeFile =
                         "../../$customComponentsRepo.path/docker-compose.custom-components.yml"
                 componentComposeFiles += ":$customComponentsComposeFile"
-                customComponentServices =
+                def customGpuOnlyComponentsComposeFile =
+                            "../../$customComponentsRepo.path/docker-compose.custom-gpu-only-components.yml"
+                    componentComposeFiles += ":$customGpuOnlyComponentsComposeFile"customComponentServices =
                         readYaml(text: shOutput("cat $customComponentsComposeFile")).services.keySet()
-            }
+            customComponentServices +=
+                            readYaml(text: shOutput("cat $customGpuOnlyComponentsComposeFile")).services.keySet()
+                }
 
             runtimeComposeFiles = "docker-compose.core.yml:$componentComposeFiles:docker-compose.elk.yml"
 
             withEnv(["TAG=$inProgressTag", "COMPOSE_FILE=$runtimeComposeFiles"]) {
-                sh "docker-compose build $commonBuildArgs --build-arg RUN_TESTS=true --parallel"
+                docker.withRegistry("http://$dockerRegistryHostAndPort", dockerRegistryCredId) {
+                        sh "docker-compose build $commonBuildArgs --build-arg RUN_TESTS=true --parallel"
+                    }
 
                 def composeYaml = readYaml(text: shOutput('docker-compose config'))
                 addVcsRefLabels(composeYaml, openmpfRepo, openmpfDockerRepo)
@@ -333,6 +359,7 @@ try {
         dir(openmpfDockerRepo.path) {
             test_cli_runner(inProgressTag)
 
+            def skipArgs = env.docker_services_build_only.split(',').collect{ it.replaceAll("\\s","") }.findAll{ !it.isEmpty() }.collect{ "--scale $it=0"  }.join(' ')
             def composeFiles = "docker-compose.integration.test.yml:$componentComposeFiles"
 
             def nproc = Math.min((shOutput('nproc') as int), 6)
@@ -350,7 +377,7 @@ try {
                      "COMPOSE_PROJECT_NAME=openmpf_$buildId",
                      "COMPOSE_FILE=$composeFiles"]) {
                 try {
-                    sh "docker-compose up --exit-code-from workflow-manager $scaleArgs"
+                    sh "docker-compose up --exit-code-from workflow-manager $scaleArgs $skipArgs"
                     sh 'docker-compose down --volumes'
                 }
                 catch (e) {
