@@ -349,7 +349,6 @@ class TestCppCliRunnerWithTesseract(BaseTestCliRunner):
                                'COMBINE_OSD_SCRIPTS': 'true',
                                'ENABLE_OSD_AUTOMATION': 'true',
                                'ENABLE_OSD_FALLBACK': 'true',
-                               'FULL_REGEX_SEARCH': 'true',
                                'INVALID_MIN_IMAGE_SIZE': '3',
                                'INVERT': 'false',
                                'MAX_OSD_SCRIPTS': '1',
@@ -364,13 +363,14 @@ class TestCppCliRunnerWithTesseract(BaseTestCliRunner):
                                'MIN_OSD_TEXT_ORIENTATION_CONFIDENCE': '2.0',
                                'ROTATE_AND_DETECT': 'true',
                                'ROTATE_AND_DETECT_MIN_OCR_CONFIDENCE': '95.0',
+                               'ROTATION_FILL_COLOR': 'WHITE',
                                'STRUCTURED_TEXT_ENABLE_ADAPTIVE_HIST_EQUALIZATION': 'false',
                                'STRUCTURED_TEXT_ENABLE_ADAPTIVE_THRS': 'false',
                                'STRUCTURED_TEXT_ENABLE_HIST_EQUALIZATION': 'false',
                                'STRUCTURED_TEXT_ENABLE_OTSU_THRS': 'false',
                                'STRUCTURED_TEXT_SCALE': '1.6',
                                'STRUCTURED_TEXT_SHARPEN': '-1.0',
-                               'TAGGING_FILE': 'text-tags.json',
+                               'TESSDATA_MODELS_SUBDIRECTORY': 'TesseractOCRTextDetection/tessdata',
                                'TESSERACT_LANGUAGE': 'script/Latin',
                                'TESSERACT_OEM': '3',
                                'TESSERACT_PSM': '3',
@@ -401,11 +401,8 @@ class TestCppCliRunnerWithTesseract(BaseTestCliRunner):
             'OSD_TEXT_ORIENTATION_CONFIDENCE': '-1',
             'PAGE_NUM': '1',
             'ROTATION': '0',
-            'TAGS': '',
             'TEXT': 'Hello',
             'TEXT_LANGUAGE': 'script/Latin',
-            'TRIGGER_WORDS': '',
-            'TRIGGER_WORDS_OFFSET': ''
         }
         self.assertEqual(expected_properties, track['trackProperties'])
 
@@ -433,13 +430,14 @@ class TestPythonCliRunner(BaseTestCliRunner):
                                'MAX_SIDE_LENGTH': '-1',
                                'MERGE_MAX_ROTATION_DIFFERENCE': '10.0',
                                'MERGE_MAX_TEXT_HEIGHT_DIFFERENCE': '0.3',
-                               'MERGE_MIN_OVERLAP': '0.01',
+                               'MERGE_OVERLAP_THRESHOLD': '0.0',
                                'MERGE_REGIONS': 'TRUE',
                                'MIN_STRUCTURED_TEXT_THRESHOLD': '0.01',
                                'NMS_MIN_OVERLAP': '0.1',
                                'ROTATE_AND_DETECT': 'FALSE',
                                'SUPPRESS_VERTICAL': 'TRUE',
-                               'TEMPORARY_PADDING': '0.1'}
+                               'TEMPORARY_PADDING_X': '0.1',
+                               'TEMPORARY_PADDING_Y': '0.1'}
 
 
     def test_can_run_image_jobs(self):
