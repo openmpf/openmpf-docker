@@ -227,7 +227,7 @@ try {
     def runtimeComposeFiles
 
     stage('Build images') {
-        docker.withRegistry(dockerBaseImagePullCredId) {
+        docker.withRegistry('', dockerBaseImagePullCredId) {
             // Make sure we are using most recent version of external images
             for (externalImage in ['docker/dockerfile:experimental', 'postgres:alpine',
                                    'redis:alpine', 'centos:7']) {
