@@ -316,11 +316,18 @@ class JobRunner:
     @staticmethod
     def _get_combined_job_props(job_properties: Dict[str, str],
                                 descriptor: Dict[str, Any]) -> Dict[str, str]:
+        property_prefix = 'MPF_PROP_'
+        for var_name, var_value in os.environ.items():
+            if len(var_name) > len(property_prefix) and var_name.startswith(property_prefix):
+                prop_name = var_name[len(property_prefix):]
+                job_properties.setdefault(prop_name, var_value)
+
         descriptor_props_field = descriptor['algorithm']['providesCollection']['properties']
         for prop in descriptor_props_field:
             default_value = prop.get('defaultValue')
             if default_value is not None:
                 job_properties.setdefault(prop['name'], default_value)
+
         return sort_property_dict(job_properties)
 
 

@@ -27,9 +27,10 @@
 from datetime import datetime
 import os
 import json
+import shlex
 import subprocess
 import unittest
-from typing import Tuple, Dict, Any, List, ClassVar
+from typing import Dict, Any, List, ClassVar
 
 
 def get_test_media(file_name: str) -> str:
@@ -38,7 +39,6 @@ def get_test_media(file_name: str) -> str:
 
 class BaseTestCliRunner(unittest.TestCase):
     _container_id: ClassVar[str]
-    _docker_exec_args: ClassVar[Tuple[str, ...]]
     _test_start_time = datetime.now().astimezone()
 
     # Provided by subclass
@@ -48,15 +48,16 @@ class BaseTestCliRunner(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         full_image_name = cls._get_full_image_name()
-        proc = subprocess.run(
-            ('docker', 'run', '--rm', '-d', full_image_name, '-d'),
-            stdout=subprocess.PIPE, text=True, check=True)
+        command = ('docker', 'run', '--rm', '-d', full_image_name, '-d')
+        print('Starting test container with command: ', shlex.join(command))
+        proc = subprocess.run(command, stdout=subprocess.PIPE, text=True, check=True)
         cls._container_id = proc.stdout.strip()
-        cls._docker_exec_args = ('docker', 'exec', '-i', cls._container_id, 'runner')
 
     @classmethod
     def tearDownClass(cls):
-        subprocess.run(('docker', 'stop', cls._container_id), check=True)
+        command = ('docker', 'stop', cls._container_id)
+        print('Stopping test container with command: ', shlex.join(command))
+        subprocess.run(command, check=True)
 
     @classmethod
     def _get_full_image_name(cls):
@@ -75,9 +76,18 @@ class BaseTestCliRunner(unittest.TestCase):
 
     @classmethod
     def run_cli_runner_stdin_media(cls, media_path: str, *runner_args: str) -> Dict[str, Any]:
-        full_command = cls._docker_exec_args + runner_args
+        return cls.run_cli_runner_stdin_media_and_env_vars(media_path, {}, *runner_args)
+
+
+    @classmethod
+    def run_cli_runner_stdin_media_and_env_vars(cls, media_path: str, env_dict: Dict[str, str],
+                                                *runner_args: str) -> Dict[str, Any]:
+        env_params = (f'-e{k}={v}' for k, v in env_dict.items())
+        command = ['docker', 'exec', '-i', *env_params, cls._container_id, 'runner', *runner_args]
+        print('Running job with command: ', shlex.join(command))
+
         with open(media_path) as media_file, \
-                subprocess.Popen(full_command, stdin=media_file, stdout=subprocess.PIPE,
+                subprocess.Popen(command, stdin=media_file, stdout=subprocess.PIPE,
                                  text=True) as proc:
             return json.load(proc.stdout)
 
@@ -86,11 +96,14 @@ class BaseTestCliRunner(unittest.TestCase):
     def run_cli_runner(cls, media_path, *runner_args: str) -> Dict[str, Any]:
         file_name = os.path.basename(media_path)
         container_path = os.path.join('/root', file_name)
-        subprocess.run(('docker', 'cp', media_path, f'{cls._container_id}:{container_path}'),
-                       check=True)
+        cp_command = ('docker', 'cp', media_path, f'{cls._container_id}:{container_path}')
+        print('Copying media into container with command: ', shlex.join(cp_command))
+        subprocess.run(cp_command, check=True)
 
-        full_command = cls._docker_exec_args + (container_path,) + runner_args
-        with subprocess.Popen(full_command, stdout=subprocess.PIPE, text=True) as proc:
+        exec_command = ['docker', 'exec', '-i', cls._container_id, 'runner', container_path,
+                        *runner_args]
+        print('Running job with command: ', shlex.join(exec_command))
+        with subprocess.Popen(exec_command, stdout=subprocess.PIPE, text=True) as proc:
             return json.load(proc.stdout)
 
 
@@ -207,12 +220,19 @@ class TestCppCliRunnerWithOcvFace(BaseTestCliRunner):
 
 
     def test_can_run_job_with_job_properties_and_media_metadata(self):
-        output_object = self.run_cli_runner_stdin_media(
-            self._face_image,
+        env = {
+            'MPF_PROP_ROTATION': '100',
+            'MPF_PROP_HORIZONTAL_FLIP': 'false',
+            'NOT_A_JOB_PROP': 'asdf'
+        }
+        output_object = self.run_cli_runner_stdin_media_and_env_vars(
+            self._face_image, env,
             '-t', 'image', '-', '-P', 'ROTATION=40', '-P', 'TEST=5',
             '-M', 'META_KEY1=META_VAL1', '-M', 'META_KEY2=META_VAL2')
 
-        expected_job_props = {**self._default_job_properties, 'ROTATION': '40', 'TEST': '5'}
+        expected_job_props = {
+            **self._default_job_properties, 'ROTATION': '40', 'TEST': '5',
+            'HORIZONTAL_FLIP': 'false'}
         expected_media_metadata = {'META_KEY1': 'META_VAL1', 'META_KEY2': 'META_VAL2'}
         tracks = self.get_image_tracks(
             '/dev/stdin', 'image/octet-stream', expected_job_props, expected_media_metadata,
