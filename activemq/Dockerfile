@@ -24,22 +24,42 @@
 # limitations under the License.                                            #
 #############################################################################
 
-FROM webcenter/activemq
 
-ENV ACTIVE_MQ_PROFILE=default
+FROM centos:7
+
+SHELL ["/bin/bash", "-o", "errexit", "-o", "pipefail", "-c"]
+
+ENV LANG en_US.UTF-8
+
+RUN yum update --assumeyes; \
+    yum install --assumeyes java-11-openjdk-headless; \
+    yum clean all; \
+    rm -rf /var/cache/yum/*;
+
+ENV JAVA_HOME /etc/alternatives/jre
+
+
+RUN curl --location https://archive.apache.org/dist/activemq/5.16.0/apache-activemq-5.16.0-bin.tar.gz \
+        | tar --extract --gzip --directory /opt; \
+    ln --symbolic /opt/apache-activemq-5.16.0 /opt/activemq; \
+    # Originally line 119 was <property name="host" value="127.0.0.1"/>
+    # which prevented access to Web UI outside of container.
+    sed -i '119s/.*/        <property name="host" value="0.0.0.0"\/>/' \
+            /opt/activemq/conf/jetty.xml; \
+    cd /opt/activemq; \
+    rm --recursive docs examples webapps-demo;
+
+
+EXPOSE 8161 61616
 
 COPY activemq-*.xml /opt/activemq/conf/
-COPY env.* /opt/activemq/bin/
 
-COPY docker-entrypoint.sh /opt/activemq/bin/entrypoint.sh.tmp
-# The following tr command deletes the carriage return character '\r', converting CRLF to LF.
-RUN tr -d '\r' < /opt/activemq/bin/entrypoint.sh.tmp > /opt/activemq/bin/docker-entrypoint.sh
-RUN chmod 755 /opt/activemq/bin/docker-entrypoint.sh
+COPY docker-entrypoint.sh /scripts/docker-entrypoint.sh
 
-ENTRYPOINT ["/opt/activemq/bin/docker-entrypoint.sh"]
+ENTRYPOINT ["/scripts/docker-entrypoint.sh"]
 
 LABEL org.label-schema.build-date="" \
-      org.label-schema.license="GPLv2" \
+      org.label-schema.license="Apache 2.0" \
       org.label-schema.name="OpenMPF ActiveMQ" \
       org.label-schema.schema-version="1.0" \
       org.label-schema.url="https://openmpf.github.io" \

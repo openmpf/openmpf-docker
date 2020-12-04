@@ -49,8 +49,9 @@ RUN yum update --assumeyes; \
         http://developer.download.nvidia.com/compute/machine-learning/repos/rhel7/x86_64/nvidia-machine-learning-repo-rhel7-1.0.0-1.x86_64.rpm; \
     CU_VERSION=10-2; \
     yum install --assumeyes --nogpgcheck \
-            cmake3 make gcc gcc-c++ qt-devel log4cxx-devel boost-devel \
-            ffmpeg ffmpeg-devel gtest-devel java-11-openjdk-devel activemq-cpp-devel protobuf-static protobuf-devel \
+            cmake3 make gcc gcc-c++ qt-devel log4cxx-devel boost-devel ffmpeg ffmpeg-devel \
+            gtest-devel java-11-openjdk-devel activemq-cpp-devel protobuf-static protobuf-devel \
+            libheif-devel file \
             # Python build deps
             openssl-devel libffi-devel \
             # OpenCV build deps
@@ -114,6 +115,16 @@ RUN mkdir /tmp/opencv-contrib; \
     make --jobs "$(nproc)" install; \
     ln --symbolic /opt/opencv-4.3.0/include/opencv4/opencv2 /usr/local/include/opencv2; \
     rm --recursive /tmp/opencv /tmp/opencv-contrib;
+
+
+RUN mkdir /tmp/pngdefry; \
+    cd /tmp/pngdefry; \
+    curl --location 'https://github.com/openmpf/pngdefry/archive/v1.2.tar.gz' \
+        | tar --extract --gzip; \
+    cd pngdefry-1.2; \
+    gcc pngdefry.c -o pngdefry; \
+    mv pngdefry /usr/local/bin/pngdefry; \
+    rm --recursive /tmp/pngdefry;
 
 
 RUN curl --location 'https://archive.apache.org/dist/maven/maven-3/3.3.3/binaries/apache-maven-3.3.3-bin.tar.gz' \

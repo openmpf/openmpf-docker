@@ -26,173 +26,115 @@
 # limitations under the License.                                            #
 #############################################################################
 
-# NOTE: This script prioritizes convenience over security.
-# 1. StrictHostKeyChecking is turned off when using SSH.
-# 2. Optionally, sshpass is used to provide a password to the ssh command.
+set -o errexit -o pipefail
 
-printUsage() {
-  echo "Usages:"
-  echo "docker-swarm-cleanup.sh [--ask-pass] <--db-volume|--all-volumes|--no-volumes> [--remove-shared-data]"
-  exit 1
-}
 
-# parseVolumeType(1: volumeType)
-parseVolumeType() {
-  if [ "$1" == "--db-volume" ]; then
-    removeDbVolume=1
-  elif [ "$1" == "--all-volumes" ]; then
-    removeAllVolumes=1
-  elif [ "$1" != "--no-volumes" ]; then
-    printUsage
-  fi
-}
+main() {
+    if ! options=$(getopt --name "$0"  \
+            --options ajl \
+            --longoptions rm-all,rm-job-output,rm-logs \
+            -- "$@"); then
+        print_usage
+    fi
+    eval set -- "$options"
 
-# parseRemoveSharedData(1: option)
-parseRemoveSharedData() {
-  if [ "$1" == "--remove-shared-data" ]; then
-    removeSharedData=1
-  else
-    printUsage
-  fi
-}
-
-# cleanupContainers(1: sshCmd)
-cleanupContainers() {
-sshCmd="$1"
-"${sshCmd[@]}" << "EOF"
-containerIds=$(docker ps -a -f name=openmpf_ -q)
-if [ ! -z "$containerIds" ]; then
-  echo "Removing openmpf containers:"
-  docker container rm -f $containerIds;
-else \
-  echo "No openmpf containers running."
-fi
-echo
-exit
-EOF
-}
-
-# cleanupDbVolume(1: sshCmd)
-cleanupDbVolume() {
-sshCmd="$1"
-"${sshCmd[@]}" << "EOF"
-# Don't remove openmpf_shared_data.
-volumeIds=$(docker volume ls -f name=openmpf_db_data -q)
-if [ ! -z "$volumeIds" ]; then
-  echo "Removing openmpf volumes:"
-  docker volume rm -f $volumeIds;
-else
-  echo "No openmpf_db_data volume found."
-fi
-echo
-exit
-EOF
-}
-
-# cleanupAllVolumes(1: sshCmd)
-cleanupAllVolumes() {
-sshCmd="$1"
-"${sshCmd[@]}" << "EOF"
-volumeIds=$(docker volume ls -f name=openmpf -q)
-if [ ! -z "$volumeIds" ]; then
-  echo "Removing openmpf volumes:"
-  docker volume rm -f $volumeIds;
-else
-  echo "No openmpf volumes found."
-fi
-echo
-exit
-EOF
-}
-
-# forAllNodes(1: nodeIds, 2: function)
-forAllNodes() {
-  while read -r nodeId; do
-    nodeAddr=$(docker node inspect "$nodeId" --format '{{ .Status.Addr }}')
-    echo
-    echo "Connecting to $nodeAddr ..."
-
-    if [ "$askPass" = 0 ]; then
-      sshCmd=(ssh -oStrictHostKeyChecking=no "$nodeAddr" /bin/bash)
-    else
-      sshCmd=(sshpass -p "$sshPass" ssh -oStrictHostKeyChecking=no "$sshUser"@"$nodeAddr" /bin/bash)
+    while true; do
+        case "$1" in
+        --rm-logs | -l )
+            local remove_logs=true
+            ;;
+        --rm-job-output | -j )
+            local remove_job_output=true
+            ;;
+        --rm-all | -a )
+            local remove_all=true
+            ;;
+        -- )
+            shift
+            break
+            ;;
+        esac
+        shift
+    done
+    if [ $# -lt 1 ]; then
+        echo 'Error: The first parameter must be the name of the stack you want to clean up.'
+        print_usage
+    fi
+    if [ $# -gt 1 ]; then
+        echo "Error: multiple stacks provided: $*"
+        print_usage
     fi
 
-    $2 "$sshCmd"
-  done <<< "$1"
+    local stack_name=$1
+    destroy_stack "$stack_name"
+
+    if [ "$remove_logs" ] || [ "$remove_job_output" ] || [ "$remove_all" ]; then
+        clean_shared_volume "$stack_name" "$remove_logs" "$remove_job_output" "$remove_all"
+    fi
 }
 
-askPass=0
-removeDbVolume=0
-removeAllVolumes=0
-removeSharedData=0
 
-if [ $# -eq 1 ]; then
-  parseVolumeType "$1"
-elif [ $# -eq 2 ]; then
-  if [ "$1" == "--ask-pass" ]; then
-    askPass=1
-    parseVolumeType "$2"
-  else
-    parseVolumeType "$1"
-    parseRemoveSharedData "$2"
-  fi
-elif [ $# -eq 3 ]; then
-  if [ "$1" == "--ask-pass" ]; then
-    askPass=1
-  else
-    printUsage
-  fi
-  parseVolumeType "$2"
-  parseRemoveSharedData "$3"
-else
-  printUsage
-fi
+destroy_stack() {
+    local stack_name=$1
+    if ! docker stack ps -q "$stack_name" &> /dev/null; then
+        echo "The $stack_name stack has already been stopped."
+        return
+    fi
 
-# Abort early if the helper script doesn't exist.
-scriptPath="$(dirname $0)/docker-swarm-clean-shared-volume.sh"
-if [ ! -f "$scriptPath" ]; then
-  echo "Could not find \"$scriptPath\". Aborting."
-  exit 1
-fi
+    docker stack rm "$stack_name"
+    sleep 5
+    while docker stack ps "$stack_name" --format 'table {{.Name}} \t {{.CurrentState}} \t {{.Node}}' 2> /dev/null; do
+        echo -e '\nStack still partially up. Waiting for stack to be completely destroyed...\n'
+        sleep 5
+    done
+}
 
-if [ "$askPass" == 1 ]; then
-  read -s -p "Enter SSH user: " sshUser
-  echo
 
-  read -s -p "Enter SSH password: " sshPass
-  echo
-  echo
-fi
+clean_shared_volume() {
+    local stack_name=$1
+    local clean_logs=$2
+    local clean_job_output=$3
+    local remove_all=$4
 
-# Check if stack exists. If so, remove it.
-if docker stack ps openmpf > /dev/null 2>&1; then
-  # The following command does not always remove the stopped containers.
-  # Refer to https://github.com/moby/moby/issues/32620.
-  # According to the official docs: "Services, networks, and secrets associated with the stack will be removed."
-  docker stack rm openmpf
+    local shared_data_volume=${stack_name}_shared_data
+    if ! docker volume inspect "$shared_data_volume" &> /dev/null; then
+        echo "Could not clean the $shared_data_volume volume because it does not appear to exist."
+        exit 2
+    fi
 
-  # Give the previous command time to work.
-  sleep 10
-fi
+    local files_to_clear=''
+    if [ "$remove_all" ]; then
+        files_to_clear='*'
+    else
+        if [ "$clean_logs" ]; then
+            files_to_clear+='logs/* '
+        fi
+        if [ "$clean_job_output" ]; then
+            files_to_clear+='output-objects/* artifacts/* tmp/* markup/* remote-media/*'
+        fi
+    fi
 
-nodeIds=$(docker node ls | sed -n '1!p' | cut -d ' ' -f 1)
+    echo "Deleting the following files in the $shared_data_volume volume: $files_to_clear"
 
-forAllNodes "$nodeIds" cleanupContainers
+    # Create a helper container that mounts the shared volume. Use an image that we know exists on the user's machine.
+    # The exact image is not important.
+    docker run --rm -v "$shared_data_volume:/mpf_data" --workdir /mpf_data --entrypoint sh redis:alpine -c \
+            "rm -rf $files_to_clear" ||:
+}
 
-# Remove the shared data before the shared volume is removed.
-echo
-if [ "$removeSharedData" == 1 ]; then
-  # Remove everything.
-  sh "$scriptPath" || exit 1 # abort if script fails
-else
-  # Minimally, remove the "nodes" directory.
-  sh "$scriptPath" "nodes" || exit 1 # abort if script fails
-fi
-echo
 
-if [ "$removeAllVolumes" == 1 ]; then
-  forAllNodes "$nodeIds" cleanupAllVolumes
-elif [ "$removeDbVolume" == 1 ]; then
-  forAllNodes "$nodeIds" cleanupDbVolume
-fi
+print_usage() {
+    echo "Usage:
+$0 <stack-name> [--rm-logs|-l] [--rm-job-output|-j] [--rm-all|-a]
+
+Stops the specified Docker stack. Waits for all of the services in the stack to exit.
+Optionally clears parts of the shared data volume.
+    --rm-logs: rm -rf logs/*
+    --rm-job-output: rm -rf output-objects/* artifacts/* tmp/* markup/* remote-media/*
+    --rm-all: rm -rf share/*
+"
+    exit 1
+}
+
+main "$@"
+
