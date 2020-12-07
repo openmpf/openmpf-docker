@@ -81,6 +81,21 @@ services:
       ACS_BLOB_CONTAINER_URL: ${ACS_SPEECH_BLOB_CONTAINER_URL}
       ACS_BLOB_SERVICE_KEY: ${ACS_SPEECH_BLOB_SERVICE_KEY}
 
+  azure_translation:
+    <<: *detection-component-base
+    image: ${REGISTRY}openmpf_azure_translation:${TAG}
+    build:
+      context: ${OPENMPF_PROJECTS_PATH}/openmpf-components/python/AzureTranslation
+    environment:
+      <<: *common-env-vars
+      # ACS_URL and ACS_SUBSCRIPTION_KEY can also be provided as job properties.
+      # The environment variables set here take precedence over all other job properties.
+      # The URL should not end with /translate because two separate endpoints are used.
+      # ACS_URL + '/translate' is used for translation and ACS_URL + '/breaksentence' is used to
+      # break up long text.
+      MPF_PROP_ACS_URL: ${ACS_TRANSLATION_URL}
+      MPF_PROP_ACS_SUBSCRIPTION_KEY: ${ACS_TRANSLATION_SUBSCRIPTION_KEY}
+
   darknet-detection:
     <<: *detection-component-base
     image: ${REGISTRY}openmpf_darknet_detection:${TAG}
