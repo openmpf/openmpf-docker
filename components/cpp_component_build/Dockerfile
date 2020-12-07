@@ -54,8 +54,9 @@ RUN yum-config-manager --setopt=override_install_langs='' --setopt=skip_missing_
     echo '/usr/local/cuda/lib64' >> /etc/ld.so.conf.d/cuda.conf; \
     ldconfig;
 
+ENV OPENCV_VERSION 4.5.0
 
-COPY --from=openmpf_build /opt/opencv-4.3.0 /opt/opencv-4.3.0
+COPY --from=openmpf_build /opt/opencv-${OPENCV_VERSION} /opt/opencv-${OPENCV_VERSION}
 
 # Normally components' CMakeList.txt file includes include(../ComponentSetup.cmake) but since that is outside of the
 # components' build context we create it here.
