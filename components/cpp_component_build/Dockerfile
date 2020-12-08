@@ -49,8 +49,9 @@ RUN yum-config-manager --setopt=override_install_langs='' --setopt=skip_missing_
     yum clean all; \
     rm --recursive /var/cache/yum/*; \
     ln --symbolic cuda-10.2 /usr/local/cuda; \
-    # Opencv doesn't use the statically compiled CUDA libraries
-    rm /usr/local/cuda/lib64/*.a /usr/lib64/libcudnn*.a; \
+    # Opencv doesn't use the statically compiled CUDA libraries except for libcudart and they are relatively large.
+    find /usr/local/cuda/lib64/ -name '*.a' -not -name 'libcudart_static.a' -delete; \
+    rm /usr/lib64/libcudnn*.a; \
     echo '/usr/local/cuda/lib64' >> /etc/ld.so.conf.d/cuda.conf; \
     ldconfig;
 
