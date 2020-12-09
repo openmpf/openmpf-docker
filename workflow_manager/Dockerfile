@@ -57,6 +57,7 @@ RUN cd /usr/local/bin; \
 
 
 RUN yum update --assumeyes; \
+    yum-config-manager --setopt=skip_missing_names_on_install=False --save; \
     yum install --assumeyes --nogpgcheck https://download1.rpmfusion.org/free/el/rpmfusion-free-release-7.noarch.rpm; \
     yum install --assumeyes java-11-openjdk ffmpeg tomcat-native file; \
     yum clean all; \

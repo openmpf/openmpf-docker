@@ -66,6 +66,7 @@ ENV COMPONENT_VIRTUALENV $MPF_HOME/plugin-venv
 ENV PATH $COMPONENT_VIRTUALENV/bin:/scripts:$PATH
 
 RUN yum update --assumeyes; \
+    yum-config-manager --setopt=skip_missing_names_on_install=False --save; \
     yum install --assumeyes https://download1.rpmfusion.org/free/el/rpmfusion-free-release-7.noarch.rpm; \
     yum install --assumeyes ffmpeg; \
     yum clean all; \

@@ -86,20 +86,19 @@ RUN mkdir /tmp/python; \
     find /usr/local/lib/python3.8 -depth -type f -a \( -name '*.pyc' -o -name '*.pyo' \) -exec rm -rf '{}' + ; \
     rm --recursive /tmp/python;
 
-ENV OPENCV_VERSION 4.5.0
 
 RUN mkdir /tmp/opencv-contrib; \
     cd /tmp/opencv-contrib; \
-    curl --location "https://github.com/opencv/opencv_contrib/archive/${OPENCV_VERSION}.tar.gz" \
+    curl --location 'https://github.com/opencv/opencv_contrib/archive/4.5.0.tar.gz' \
         | tar --extract --gzip; \
     mkdir /tmp/opencv; \
     cd  /tmp/opencv; \
-    curl --location "https://github.com/opencv/opencv/archive/${OPENCV_VERSION}.tar.gz" \
+    curl --location 'https://github.com/opencv/opencv/archive/4.5.0.tar.gz' \
         | tar --extract --gzip; \
-    cd opencv-${OPENCV_VERSION}; \
+    cd opencv-4.5.0; \
     mkdir build; \
     cd build; \
-    cmake3 -DCMAKE_INSTALL_PREFIX:PATH="/opt/opencv-${OPENCV_VERSION}" \
+    cmake3 -DCMAKE_INSTALL_PREFIX:PATH='/opt/opencv-4.5.0' \
         -DWITH_IPP=false \
         -DBUILD_EXAMPLES=false \
         -DBUILD_TESTS=false \
@@ -111,10 +110,10 @@ RUN mkdir /tmp/opencv-contrib; \
         -DWITH_CUDNN=true \
         -DOPENCV_DNN_CUDA=true \
         -DBUILD_CUDA_STUBS=true \
-        -DOPENCV_EXTRA_MODULES_PATH=/tmp/opencv-contrib/opencv_contrib-${OPENCV_VERSION}/modules \
+        -DOPENCV_EXTRA_MODULES_PATH=/tmp/opencv-contrib/opencv_contrib-4.5.0/modules \
         -DOPENCV_ENABLE_NONFREE=true ..; \
     make --jobs "$(nproc)" install; \
-    ln --symbolic "/opt/opencv-${OPENCV_VERSION}/include/opencv4/opencv2" /usr/local/include/opencv2; \
+    ln --symbolic '/opt/opencv-4.5.0/include/opencv4/opencv2' /usr/local/include/opencv2; \
     rm --recursive /tmp/opencv /tmp/opencv-contrib;
 
 
