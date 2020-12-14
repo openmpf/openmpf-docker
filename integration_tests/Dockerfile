@@ -37,7 +37,8 @@ SHELL ["/bin/bash", "-o", "errexit", "-o", "pipefail", "-c"]
 
 ENV LANG en_US.UTF-8
 
-RUN yum install -y java-11-openjdk; \
+RUN yum-config-manager --setopt=skip_missing_names_on_install=False --save; \
+    yum install -y java-11-openjdk; \
     yum clean all; \
     rm -rf /var/cache/yum/*;
 

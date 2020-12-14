@@ -62,7 +62,7 @@ RUN yum update --assumeyes; \
     # For protobuf maven plugin
     ln --symbolic /usr/bin/protoc /usr/local/bin/protoc; \
     ln --symbolic cuda-10.2 /usr/local/cuda; \
-    # Opencv doesn't use the statically compiled CUDA libraries except for libcudart and they are relatively large.
+    # OpenCV doesn't use the statically compiled CUDA libraries except for libcudart and they are relatively large.
     find /usr/local/cuda/lib64/ -name '*.a' -not -name 'libcudart_static.a' -delete; \
     echo '/usr/local/cuda/lib64' >> /etc/ld.so.conf.d/cuda.conf; \
     ldconfig
@@ -111,7 +111,7 @@ RUN mkdir /tmp/opencv-contrib; \
         -DOPENCV_DNN_CUDA=true \
         -DBUILD_CUDA_STUBS=true \
         -DOPENCV_EXTRA_MODULES_PATH=/tmp/opencv-contrib/opencv_contrib-4.5.0/modules \
-        -DOPENCV_ENABLE_NONFREE=true ..; \
+        ..; \
     make --jobs "$(nproc)" install; \
     ln --symbolic '/opt/opencv-4.5.0/include/opencv4/opencv2' /usr/local/include/opencv2; \
     rm --recursive /tmp/opencv /tmp/opencv-contrib;
