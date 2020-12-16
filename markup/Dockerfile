@@ -1,3 +1,5 @@
+# syntax=docker/dockerfile:1.2
+
 #############################################################################
 # NOTICE                                                                    #
 #                                                                           #
@@ -28,12 +30,6 @@ ARG BUILD_REGISTRY
 ARG BUILD_TAG=latest
 FROM ${BUILD_REGISTRY}openmpf_build:${BUILD_TAG} as openmpf_build
 
-# Docker COPY only preserves symlinks when copying an entire directory so we copy the files and their symlinks in to
-# a temporary directory
-RUN mkdir /root/copy_libs64 \
-    && cp --preserve=links --no-dereference /build-artifacts/install/lib/libopencv* /root/copy_libs64/
-
-
 FROM centos:7
 
 SHELL ["/bin/bash", "-o", "errexit", "-o", "pipefail", "-c"]
@@ -41,12 +37,18 @@ SHELL ["/bin/bash", "-o", "errexit", "-o", "pipefail", "-c"]
 ENV LANG en_US.UTF-8
 
 RUN yum update --assumeyes; \
+    yum-config-manager --setopt=skip_missing_names_on_install=False --save; \
     yum install --assumeyes https://download1.rpmfusion.org/free/el/rpmfusion-free-release-7.noarch.rpm; \
     yum install --assumeyes java-11-openjdk ffmpeg libheif; \
     yum clean all; \
     rm -rf /var/cache/yum/*;
 
-COPY --from=openmpf_build /root/copy_libs64 /usr/lib64/
+# Use mount and cp shell command because the docker COPY command resolves symlinks which then
+# causes duplicate copies of the libraries to be added to the image.
+RUN --mount=type=bind,from=openmpf_build,source=/build-artifacts/install/lib,target=/tmp/mpf-libs \
+    cd /tmp/mpf-libs; \
+    cp --preserve=links --no-dereference libopencv* libopenblas* libgfortran* libquadmath* \
+        /usr/lib64;
 
 COPY --from=openmpf_build /build-artifacts/install/lib/libmpfopencvjni.so /usr/lib64/
 

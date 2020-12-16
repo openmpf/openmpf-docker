@@ -1,3 +1,5 @@
+# syntax=docker/dockerfile:1.2
+
 #############################################################################
 # NOTICE                                                                    #
 #                                                                           #
@@ -32,6 +34,7 @@ SHELL ["/bin/bash", "-o", "errexit", "-o", "pipefail", "-c"]
 ENV LANG en_US.UTF-8
 
 RUN yum update --assumeyes; \
+    yum-config-manager --setopt=skip_missing_names_on_install=False --save; \
     yum install --assumeyes java-11-openjdk-headless; \
     yum clean all; \
     rm -rf /var/cache/yum/*;

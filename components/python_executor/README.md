@@ -53,7 +53,7 @@ FROM openmpf_python_component_build:latest as build_component
 # or build the dependencies here. Adding the dependencies prior the copying in your source code 
 # allows you to take advantage of the Docker build cache to avoid re-installing the dependencies 
 # every time your source code changes.
-# e.g. RUN pip3 install --no-cache-dir 'opencv-python>=3.4.7' 'tensorflow>=2.1.0'
+# e.g. RUN pip3 install --no-cache-dir 'opencv-python>=4.4.0' 'tensorflow>=2.1.0'
 
 # Copy in your source code
 COPY . .

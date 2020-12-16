@@ -1,3 +1,5 @@
+# syntax=docker/dockerfile:1.2
+
 #############################################################################
 # NOTICE                                                                    #
 #                                                                           #
@@ -37,6 +39,7 @@ SHELL ["/bin/bash", "-o", "errexit", "-o", "pipefail", "-c"]
 ENV LANG en_US.UTF-8
 
 RUN yum update --assumeyes; \
+    yum-config-manager --setopt=skip_missing_names_on_install=False --save; \
     yum install --assumeyes https://download1.rpmfusion.org/free/el/rpmfusion-free-release-7.noarch.rpm; \
     yum install --assumeyes java-11-openjdk-devel ffmpeg; \
     yum clean all; \

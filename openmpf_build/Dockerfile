@@ -1,4 +1,4 @@
-# syntax=docker/dockerfile:experimental
+# syntax=docker/dockerfile:1.2
 
 #############################################################################
 # NOTICE                                                                    #
@@ -26,7 +26,6 @@
 # limitations under the License.                                            #
 #############################################################################
 
-
 FROM centos:7 as openmpf_build
 
 SHELL ["/bin/bash", "-o", "errexit", "-o", "pipefail", "-c"]
@@ -39,18 +38,37 @@ ENV LANG en_US.UTF-8
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PIP_COMPILE=0
 
+
+
 RUN yum update --assumeyes; \
-    yum install --assumeyes epel-release https://download1.rpmfusion.org/free/el/rpmfusion-free-release-7.noarch.rpm; \
-    yum install --assumeyes cmake3 make gcc gcc-c++ qt-devel log4cxx-devel boost-devel ffmpeg ffmpeg-devel gtest-devel \
-            java-11-openjdk-devel activemq-cpp-devel protobuf-static protobuf-devel libheif-devel file \
+    yum-config-manager --setopt=skip_missing_names_on_install=False --save; \
+    yum-config-manager --add-repo http://developer.download.nvidia.com/compute/cuda/repos/rhel7/x86_64; \
+    yum install --assumeyes \
+        epel-release \
+        https://download1.rpmfusion.org/free/el/rpmfusion-free-release-7.noarch.rpm \
+        http://developer.download.nvidia.com/compute/machine-learning/repos/rhel7/x86_64/nvidia-machine-learning-repo-rhel7-1.0.0-1.x86_64.rpm; \
+    CU_VERSION=10-2; \
+    yum install --assumeyes --nogpgcheck \
+            cmake3 make gcc gcc-c++ qt-devel log4cxx-devel boost-devel ffmpeg ffmpeg-devel \
+            gtest-devel java-11-openjdk-devel activemq-cpp-devel protobuf-static protobuf-devel \
+            libheif-devel file \
             # Python build deps
-            openssl-devel libffi-devel; \
+            openssl-devel libffi-devel \
+            # OpenCV build deps
+            openblas-devel cuda-minimal-build-$CU_VERSION cuda-cufft-dev-$CU_VERSION cuda-npp-dev-$CU_VERSION \
+            libcudnn7-devel-7.6.5.33-1.cuda10.2 libcublas-devel-10.2.2.89; \
     yum clean all; \
     rm --recursive /var/cache/yum/*; \
     # For protobuf maven plugin
-    ln --symbolic /usr/bin/protoc /usr/local/bin/protoc;
+    ln --symbolic /usr/bin/protoc /usr/local/bin/protoc; \
+    ln --symbolic cuda-10.2 /usr/local/cuda; \
+    # OpenCV doesn't use the statically compiled CUDA libraries except for libcudart and they are relatively large.
+    find /usr/local/cuda/lib64/ -name '*.a' -not -name 'libcudart_static.a' -delete; \
+    echo '/usr/local/cuda/lib64' >> /etc/ld.so.conf.d/cuda.conf; \
+    ldconfig
 
 ENV JAVA_HOME=/etc/alternatives/java_sdk
+
 
 RUN mkdir /tmp/python; \
     cd /tmp/python; \
@@ -71,21 +89,31 @@ RUN mkdir /tmp/python; \
 
 RUN mkdir /tmp/opencv-contrib; \
     cd /tmp/opencv-contrib; \
-    curl --location 'https://github.com/opencv/opencv_contrib/archive/3.4.7.tar.gz' \
+    curl --location 'https://github.com/opencv/opencv_contrib/archive/4.5.0.tar.gz' \
         | tar --extract --gzip; \
     mkdir /tmp/opencv; \
     cd  /tmp/opencv; \
-    curl --location 'https://github.com/opencv/opencv/archive/3.4.7.tar.gz' \
+    curl --location 'https://github.com/opencv/opencv/archive/4.5.0.tar.gz' \
         | tar --extract --gzip; \
-    cd opencv-3.4.7; \
+    cd opencv-4.5.0; \
     mkdir build; \
     cd build; \
-    cmake3 -DCMAKE_INSTALL_PREFIX:PATH="/opt/opencv-3.4.7" -DWITH_IPP=false \
-        -DBUILD_EXAMPLES=false -DBUILD_TESTS=false -DBUILD_PERF_TESTS=false \
-        -DOPENCV_EXTRA_MODULES_PATH=/tmp/opencv-contrib/opencv_contrib-3.4.7/modules ..; \
+    cmake3 -DCMAKE_INSTALL_PREFIX:PATH='/opt/opencv-4.5.0' \
+        -DWITH_IPP=false \
+        -DBUILD_EXAMPLES=false \
+        -DBUILD_TESTS=false \
+        -DBUILD_PERF_TESTS=false \
+        -DWITH_CUDA=true \
+        -DCUDA_ARCH_BIN=3.0 \
+        -DCUDA_ARCH_PTX=3.0 \
+        -DWITH_CUBLAS=true \
+        -DWITH_CUDNN=true \
+        -DOPENCV_DNN_CUDA=true \
+        -DBUILD_CUDA_STUBS=true \
+        -DOPENCV_EXTRA_MODULES_PATH=/tmp/opencv-contrib/opencv_contrib-4.5.0/modules \
+        ..; \
     make --jobs "$(nproc)" install; \
-    ln --symbolic /opt/opencv-3.4.7/include/opencv2 /usr/local/include/opencv2; \
-    ln --symbolic /opt/opencv-3.4.7/include/opencv /usr/local/include/opencv; \
+    ln --symbolic '/opt/opencv-4.5.0/include/opencv4/opencv2' /usr/local/include/opencv2; \
     rm --recursive /tmp/opencv /tmp/opencv-contrib;
 
 
