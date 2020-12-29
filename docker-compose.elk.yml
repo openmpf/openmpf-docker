@@ -36,12 +36,13 @@ services:
       XPACK_ML_ENABLED: 'false'
       XPACK_MONITORING_ENABLED: 'false'
       XPACK_REPORTING_ENABLED: 'false'
-      # Enable security yourself: https://www.elastic.co/guide/en/kibana/current/security-settings-kb.html
       XPACK_ROLLUP_ENABLED: 'false'
-      XPACK_SECURITY_ENABLED: 'false'
       XPACK_SPACES_ENABLED: 'false'
       NEWSFEED_ENABLED: 'false'
       MONITORING_ENABLED: 'false'
+      # NOTE: Do not use this stack in production without first enabling security:
+      # https://www.elastic.co/guide/en/kibana/current/security-settings-kb.html
+      XPACK_SECURITY_ENABLED: 'false'
     ports:
       - '5601:5601'
     depends_on:
