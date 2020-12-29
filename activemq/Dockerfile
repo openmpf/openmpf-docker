@@ -49,6 +49,12 @@ RUN curl --location https://archive.apache.org/dist/activemq/5.16.0/apache-activ
     # which prevented access to Web UI outside of container.
     sed -i '119s/.*/        <property name="host" value="0.0.0.0"\/>/' \
             /opt/activemq/conf/jetty.xml; \
+    # Remove the following to enable ActiveMQ Metricbeat access to Jolokia:
+    # <!-- Enforce that an Origin/Referer header is present to prevent CSRF -->
+    # <cors>
+    #   <strict-checking/>
+    # </cors>
+    sed -i '20,23d' /opt/activemq/webapps/api/WEB-INF/classes/jolokia-access.xml; \
     cd /opt/activemq; \
     rm --recursive docs examples webapps-demo;
 
