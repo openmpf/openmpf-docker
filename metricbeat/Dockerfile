@@ -26,18 +26,18 @@
 # limitations under the License.                                            #
 #############################################################################
 
-FROM docker.elastic.co/kibana/kibana:7.10.1
+FROM docker.elastic.co/beats/metricbeat:7.10.1
 
 COPY docker-entrypoint.sh /scripts/
 
 ENTRYPOINT ["/scripts/docker-entrypoint.sh"]
 
 # Taken from base image
-CMD ["/usr/local/bin/kibana-docker"]
+CMD ["-e"]
 
 # Inherit "license", "org.label-schema.license", and "org.label-schema.usage" from base image.
 LABEL org.label-schema.build-date="" \
-      org.label-schema.name="OpenMPF Kibana" \
+      org.label-schema.name="OpenMPF Metricbeat" \
       org.label-schema.schema-version="1.0" \
       org.label-schema.url="https://openmpf.github.io" \
       org.label-schema.vcs-url="https://github.com/openmpf" \

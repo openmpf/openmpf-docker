@@ -1,4 +1,4 @@
-# syntax=docker/dockerfile:1.2
+#!/bin/bash
 
 #############################################################################
 # NOTICE                                                                    #
@@ -26,19 +26,25 @@
 # limitations under the License.                                            #
 #############################################################################
 
-FROM docker.elastic.co/kibana/kibana:7.10.1
+set -o errexit -o pipefail
 
-COPY docker-entrypoint.sh /scripts/
+until curl --silent --fail --head 'http://kibana:5601' > /dev/null ; do
+    echo 'Kibana is unavailable. Sleeping.'
+    sleep 5
+done
 
-ENTRYPOINT ["/scripts/docker-entrypoint.sh"]
+set -o xtrace
 
-# Taken from base image
-CMD ["/usr/local/bin/kibana-docker"]
+echo 'Checking if index pattern exists...'
+index_url='http://kibana:5601/api/saved_objects/index-pattern/metricbeat-index'
+if curl --silent --fail --head "$index_url"; then
+    echo 'Index pattern already exists.'
+else
+    echo 'Creating index pattern and visualizations...'
+    metricbeat setup -E setup.kibana.host=kibana:5601 -E output.elasticsearch.hosts=elasticsearch:9200 # DEBUG
+    # metricbeat setup
+    echo 'Successfully created index pattern and visualizations'
+fi
 
-# Inherit "license", "org.label-schema.license", and "org.label-schema.usage" from base image.
-LABEL org.label-schema.build-date="" \
-      org.label-schema.name="OpenMPF Kibana" \
-      org.label-schema.schema-version="1.0" \
-      org.label-schema.url="https://openmpf.github.io" \
-      org.label-schema.vcs-url="https://github.com/openmpf" \
-      org.label-schema.vendor="MITRE"
+# Call base image's entry point
+exec /usr/local/bin/docker-entrypoint "$@"
