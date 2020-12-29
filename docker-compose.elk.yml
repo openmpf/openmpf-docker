@@ -72,6 +72,25 @@ services:
     depends_on:
       - elasticsearch
 
+  metricbeat:
+    image: openmpf_metricbeat:latest
+    build: metricbeat
+    command:
+      - -e
+      - -E
+      - logging.level=warning
+    user: root
+    environment:
+      ELASTICSEARCH_HOSTS: http://elasticsearch:9200
+      KIBANA_HOST: kibana:5601
+    depends_on:
+      - activemq
+      - elasticsearch
+      - kibana
+    deploy:
+      placement:
+        constraints:
+          - node.role == manager
 
 volumes:
   elastic_search_data:

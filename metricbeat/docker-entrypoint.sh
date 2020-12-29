@@ -28,7 +28,7 @@
 
 set -o errexit -o pipefail
 
-until curl --silent --fail --head 'http://kibana:5601' > /dev/null ; do
+until curl --silent --fail --head "http://${KIBANA_HOST}" > /dev/null ; do
     echo 'Kibana is unavailable. Sleeping.'
     sleep 5
 done
@@ -36,13 +36,12 @@ done
 set -o xtrace
 
 echo 'Checking if index pattern exists...'
-index_url='http://kibana:5601/api/saved_objects/index-pattern/metricbeat-index'
+index_url="http://${KIBANA_HOST}/api/saved_objects/index-pattern/metricbeat-index"
 if curl --silent --fail --head "$index_url"; then
     echo 'Index pattern already exists.'
 else
     echo 'Creating index pattern and visualizations...'
-    metricbeat setup -E setup.kibana.host=kibana:5601 -E output.elasticsearch.hosts=elasticsearch:9200 # DEBUG
-    # metricbeat setup
+    metricbeat setup -E setup "kibana.host=${KIBANA_HOST}"
     echo 'Successfully created index pattern and visualizations'
 fi
 
