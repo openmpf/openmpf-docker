@@ -229,7 +229,7 @@ try {
     stage('Build images') {
         docker.withRegistry('', dockerBaseImagePullCredId) {
             // Make sure we are using most recent version of external images
-            for (externalImage in ['docker/dockerfile:experimental', 'postgres:alpine',
+            for (externalImage in ['docker/dockerfile:1.2', 'postgres:alpine',
                                    'redis:alpine', 'centos:7']) {
                 try {
                     sh "docker pull '$externalImage'"
@@ -367,8 +367,9 @@ try {
 
             def nproc = Math.min((shOutput('nproc') as int), 6)
             def servicesInSystemTests = ['ocv-face-detection', 'darknet-detection', 'dlib-face-detection',
-                                        'ocv-dnn-detection', 'oalpr-license-plate-text-detection',
-                                        'ocv-person-detection', 'mog-motion-detection', 'subsense-motion-detection']
+                                         'ocv-dnn-detection', 'oalpr-license-plate-text-detection',
+                                         'ocv-person-detection', 'mog-motion-detection', 'subsense-motion-detection',
+                                         'east-text-detection', 'tesseract-ocr-text-detection', 'keyword-tagging']
 
             def scaleArgs = servicesInSystemTests.collect({ "--scale '$it=$nproc'" }).join(' ')
             // Sphinx uses a huge amount of memory so we don't want more than 2 of them.

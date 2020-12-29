@@ -1,4 +1,4 @@
-# syntax=docker/dockerfile:experimental
+# syntax=docker/dockerfile:1.2
 
 #############################################################################
 # NOTICE                                                                    #
@@ -56,6 +56,7 @@ RUN cd /usr/local/bin; \
 
 
 RUN yum update --assumeyes; \
+    yum-config-manager --setopt=skip_missing_names_on_install=False --save; \
     yum install --assumeyes https://download1.rpmfusion.org/free/el/rpmfusion-free-release-7.noarch.rpm; \
     yum install --assumeyes ffmpeg; \
     yum clean all; \
