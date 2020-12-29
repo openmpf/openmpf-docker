@@ -30,6 +30,8 @@ FROM docker.elastic.co/beats/metricbeat:7.10.1
 
 COPY docker-entrypoint.sh /scripts/
 
+COPY metricbeat.yml /usr/share/metricbeat/metricbeat.yml
+
 ENTRYPOINT ["/scripts/docker-entrypoint.sh"]
 
 # Taken from base image

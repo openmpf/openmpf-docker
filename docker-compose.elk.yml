@@ -29,6 +29,7 @@ services:
       XPACK_APM_ENABLED: 'false'
       XPACK_CANVAS_ENABLED: 'false'
       XPACK_FLEET_ENABLED: 'false'
+      XPACK_FLEET_AGENTS_ENABLED: 'false'
       XPACK_GRAPH_ENABLED: 'false'
       XPACK_INFRA_ENABLED: 'false'
       XPACK_MAPS_ENABLED: 'false'
