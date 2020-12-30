@@ -28,22 +28,24 @@
 
 set -o errexit -o pipefail
 
+KIBANA_HOST="${KIBANA_HOST:-kibana:5601}"
+
 until curl --silent --fail --head "http://${KIBANA_HOST}" > /dev/null ; do
-    echo 'Kibana is unavailable. Sleeping.'
+    echo "Kibana is unavailable. Sleeping."
     sleep 5
 done
 
-set -o xtrace
-
-echo 'Checking if index pattern exists...'
+echo "Checking if index pattern exists..."
 index_url="http://${KIBANA_HOST}/api/saved_objects/index-pattern/metricbeat-index"
 if curl --silent --fail --head "$index_url"; then
-    echo 'Index pattern already exists.'
+    echo "Index pattern already exists."
 else
-    echo 'Creating index pattern and visualizations...'
-    metricbeat setup -E setup "kibana.host=${KIBANA_HOST}"
-    echo 'Successfully created index pattern and visualizations'
+    echo "Creating index pattern and visualizations..."
+    metricbeat setup
+    echo "Successfully created index pattern and visualizations"
 fi
+
+set -o xtrace
 
 # Call base image's entry point
 exec /usr/local/bin/docker-entrypoint "$@"

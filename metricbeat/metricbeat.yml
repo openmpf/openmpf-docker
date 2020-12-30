@@ -13,6 +13,8 @@ metricbeat.modules:
   username: admin # default username
   password: admin # default password
 
+setup.kibana.host: '${KIBANA_HOST:kibana:5601}'
+
 output.elasticsearch:
   hosts: '${ELASTICSEARCH_HOSTS:elasticsearch:9200}'
   username: '${ELASTICSEARCH_USERNAME:}'

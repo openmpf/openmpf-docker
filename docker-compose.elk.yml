@@ -81,9 +81,6 @@ services:
       - -E
       - logging.level=warning
     user: root
-    environment:
-      ELASTICSEARCH_HOSTS: http://elasticsearch:9200
-      KIBANA_HOST: kibana:5601
     depends_on:
       - activemq
       - elasticsearch
