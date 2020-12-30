@@ -31,18 +31,19 @@ services:
       XPACK_FLEET_ENABLED: 'false'
       XPACK_FLEET_AGENTS_ENABLED: 'false'
       XPACK_GRAPH_ENABLED: 'false'
-      XPACK_INFRA_ENABLED: 'false'
       XPACK_MAPS_ENABLED: 'false'
       XPACK_ML_ENABLED: 'false'
       XPACK_MONITORING_ENABLED: 'false'
       XPACK_REPORTING_ENABLED: 'false'
       XPACK_ROLLUP_ENABLED: 'false'
-      XPACK_SPACES_ENABLED: 'false'
       NEWSFEED_ENABLED: 'false'
       MONITORING_ENABLED: 'false'
       # NOTE: Do not use this stack in production without first enabling security:
       # https://www.elastic.co/guide/en/kibana/current/security-settings-kb.html
       XPACK_SECURITY_ENABLED: 'false'
+      # The following two settings are needed for Logs view:
+      XPACK_INFRA_ENABLED: 'true'
+      XPACK_SPACES_ENABLED: 'true'
     ports:
       - '5601:5601'
     depends_on:

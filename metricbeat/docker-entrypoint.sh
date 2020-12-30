@@ -36,7 +36,7 @@ until curl --silent --fail --head "http://${KIBANA_HOST}" > /dev/null ; do
 done
 
 echo "Checking if index pattern exists..."
-index_url="http://${KIBANA_HOST}/api/saved_objects/index-pattern/metricbeat-index"
+index_url="http://${KIBANA_HOST}/api/saved_objects/index-pattern/metricbeat-*"
 if curl --silent --fail --head "$index_url"; then
     echo "Index pattern already exists."
 else
