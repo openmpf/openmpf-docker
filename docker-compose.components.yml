@@ -52,8 +52,8 @@ services:
       <<: *common-env-vars
       # ACS_URL and ACS_SUBSCRIPTION_KEY can also be provided as job properties.
       # Job properties take precedence over the environment variables set here.
-      ACS_URL: ${ACS_FORM_DETECTION_URL}
-      ACS_SUBSCRIPTION_KEY: ${ACS_FORM_DETECTION_SUBSCRIPTION_KEY}
+      MPF_PROP_ACS_URL: ${ACS_FORM_DETECTION_URL}
+      MPF_PROP_ACS_SUBSCRIPTION_KEY: ${ACS_FORM_DETECTION_SUBSCRIPTION_KEY}
 
   azure_ocr_text_detection:
     <<: *detection-component-base
@@ -64,8 +64,8 @@ services:
       <<: *common-env-vars
       # ACS_URL and ACS_SUBSCRIPTION_KEY can also be provided as job properties.
       # Job properties take precedence over the environment variables set here.
-      ACS_URL: ${ACS_OCR_URL}
-      ACS_SUBSCRIPTION_KEY: ${ACS_OCR_SUBSCRIPTION_KEY}
+      MPF_PROP_ACS_URL: ${ACS_OCR_URL}
+      MPF_PROP_ACS_SUBSCRIPTION_KEY: ${ACS_OCR_SUBSCRIPTION_KEY}
 
   azure_speech_detection:
     <<: *detection-component-base
@@ -76,10 +76,10 @@ services:
       <<: *common-env-vars
       # The following can also be provided as job properties.
       # Job properties take precedence over the environment variables set here.
-      ACS_URL: ${ACS_SPEECH_URL}
-      ACS_SUBSCRIPTION_KEY: ${ACS_SPEECH_SUBSCRIPTION_KEY}
-      ACS_BLOB_CONTAINER_URL: ${ACS_SPEECH_BLOB_CONTAINER_URL}
-      ACS_BLOB_SERVICE_KEY: ${ACS_SPEECH_BLOB_SERVICE_KEY}
+      MPF_PROP_ACS_URL: ${ACS_SPEECH_URL}
+      MPF_PROP_ACS_SUBSCRIPTION_KEY: ${ACS_SPEECH_SUBSCRIPTION_KEY}
+      MPF_PROP_ACS_BLOB_CONTAINER_URL: ${ACS_SPEECH_BLOB_CONTAINER_URL}
+      MPF_PROP_ACS_BLOB_SERVICE_KEY: ${ACS_SPEECH_BLOB_SERVICE_KEY}
 
   azure_translation:
     <<: *detection-component-base
@@ -190,7 +190,7 @@ services:
     environment:
       <<: *common-env-vars
       # Specifies container and port of TRTIS server.
-      TRTIS_SERVER: trtis-detection-server:8001
+      MPF_PROP_TRTIS_SERVER: trtis-detection-server:8001
     depends_on:
       - workflow-manager
       - trtis-detection-server
