@@ -378,14 +378,14 @@ try {
                      "COMPOSE_FILE=$composeFiles"]) {
                 try {
                     sh "docker-compose up --exit-code-from workflow-manager $scaleArgs $skipArgs"
-                    sh 'docker-compose down --volumes'
+                    sh 'docker-compose down --remove-orphans --volumes'
                 }
                 catch (e) {
                     if (preserveContainersOnFailure) {
                         sh 'docker-compose stop'
                     }
                     else {
-                        sh 'docker-compose down --volumes'
+                        sh 'docker-compose down --remove-orphans --volumes'
                     }
                     throw e;
                 }
