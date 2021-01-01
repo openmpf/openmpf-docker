@@ -75,7 +75,7 @@ services:
       - elasticsearch
 
   metricbeat:
-    image: openmpf_metricbeat:latest
+    image: ${REGISTRY}openmpf_metricbeat:${TAG}
     build: metricbeat
     command:
       - -e
