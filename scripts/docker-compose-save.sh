@@ -62,7 +62,7 @@ spinner() {
 }
 
 removeBuildFields() {
-    docker run --rm -i mikefarah/yq yq delete - 'services.*.build'
+    docker run --rm -i mikefarah/yq:3 yq delete - 'services.*.build'
 }
 
 cleanup() {
