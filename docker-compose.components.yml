@@ -50,10 +50,6 @@ services:
       context: ${OPENMPF_PROJECTS_PATH}/openmpf-components/python/AzureFormDetection
     environment:
       <<: *common-env-vars
-      # ACS_URL and ACS_SUBSCRIPTION_KEY properties can be set as environment
-      # variables by adding the MPF_PROP_ prefix to the property name, as seen below.
-      # Unique to this component: Job properties take precedence over the environment
-      # variables set here.
       MPF_PROP_ACS_URL: ${ACS_FORM_DETECTION_URL}
       MPF_PROP_ACS_SUBSCRIPTION_KEY: ${ACS_FORM_DETECTION_SUBSCRIPTION_KEY}
 
@@ -64,10 +60,6 @@ services:
       context: ${OPENMPF_PROJECTS_PATH}/openmpf-components/python/AzureOcrTextDetection
     environment:
       <<: *common-env-vars
-      # ACS_URL and ACS_SUBSCRIPTION_KEY properties can be set as environment
-      # variables by adding the MPF_PROP_ prefix to the property name, as seen below.
-      # Unique to this component: Job properties take precedence over the environment
-      # variables set here.
       MPF_PROP_ACS_URL: ${ACS_OCR_URL}
       MPF_PROP_ACS_SUBSCRIPTION_KEY: ${ACS_OCR_SUBSCRIPTION_KEY}
 
@@ -78,11 +70,6 @@ services:
       context: ${OPENMPF_PROJECTS_PATH}/openmpf-components/python/AzureSpeechDetection
     environment:
       <<: *common-env-vars
-      # ACS_URL, ACS_SUBSCRIPTION_KEY, ACS_BLOB_CONTAINER_URL, and ACS_BLOB_SERVICE_KEY
-      # properties can be set as environment variables by adding the MPF_PROP_
-      # prefix to the property name, as seen below.
-      # Unique to this component: Job properties take precedence over the environment
-      # variables set here.
       MPF_PROP_ACS_URL: ${ACS_SPEECH_URL}
       MPF_PROP_ACS_SUBSCRIPTION_KEY: ${ACS_SPEECH_SUBSCRIPTION_KEY}
       MPF_PROP_ACS_BLOB_CONTAINER_URL: ${ACS_SPEECH_BLOB_CONTAINER_URL}
@@ -95,12 +82,9 @@ services:
       context: ${OPENMPF_PROJECTS_PATH}/openmpf-components/python/AzureTranslation
     environment:
       <<: *common-env-vars
-      # ACS_URL and ACS_SUBSCRIPTION_KEY properties can be set as environment
-      # variables by adding the MPF_PROP_ prefix to the property name, as seen below.
-      # The environment variables set here take precedence over job properties.
       # The URL should not end with /translate because two separate endpoints are used.
-      # ACS_URL + '/translate' is used for translation and ACS_URL + '/breaksentence' is used to
-      # break up long text.
+      # MPF_PROP_ACS_URL + '/translate' is used for translation and
+      # MPF_PROP_ACS_URL + '/breaksentence' is used to break up long text.
       MPF_PROP_ACS_URL: ${ACS_TRANSLATION_URL}
       MPF_PROP_ACS_SUBSCRIPTION_KEY: ${ACS_TRANSLATION_SUBSCRIPTION_KEY}
 
