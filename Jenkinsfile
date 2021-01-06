@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2020 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2021 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2020 The MITRE Corporation                                       *
+ * Copyright 2021 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -378,14 +378,14 @@ try {
                      "COMPOSE_FILE=$composeFiles"]) {
                 try {
                     sh "docker-compose up --exit-code-from workflow-manager $scaleArgs $skipArgs"
-                    sh 'docker-compose down --volumes'
+                    shStatus 'docker-compose down --volumes'
                 }
                 catch (e) {
                     if (preserveContainersOnFailure) {
-                        sh 'docker-compose stop'
+                        shStatus 'docker-compose stop'
                     }
                     else {
-                        sh 'docker-compose down --volumes'
+                        shStatus 'docker-compose down --volumes'
                     }
                     throw e;
                 }
@@ -670,6 +670,11 @@ def parseDate(dateString) {
 
 def shOutput(script) {
     return sh(script: script, returnStdout: true).trim()
+}
+
+def shStatus(script) {
+    // This will not throw an exception for a non-zero exit code.
+    return sh(script: script, returnStatus: true)
 }
 
 def optionalStage(name, condition, body) {
