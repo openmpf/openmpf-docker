@@ -32,6 +32,10 @@ COPY docker-entrypoint.sh /scripts/
 
 COPY metricbeat.yml /usr/share/metricbeat/metricbeat.yml
 
+# Metricbeat performs a security checK:
+#  'config file ("metricbeat.yml") can only be writable by the owner'
+RUN chmod 0644 /usr/share/metricbeat/metricbeat.yml
+
 ENTRYPOINT ["/scripts/docker-entrypoint.sh"]
 
 # Taken from base image
