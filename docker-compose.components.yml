@@ -62,6 +62,16 @@ services:
       <<: *common-env-vars
       MPF_PROP_ACS_URL: ${ACS_OCR_URL}
       MPF_PROP_ACS_SUBSCRIPTION_KEY: ${ACS_OCR_SUBSCRIPTION_KEY}
+      
+  azure_read_text_detection:
+    <<: *detection-component-base
+    image: ${REGISTRY}openmpf_azure_read_text_detection:${TAG}
+    build:
+      context: ${OPENMPF_PROJECTS_PATH}/openmpf-components/python/AzureReadTextDetection
+    environment:
+      <<: *common-env-vars
+      MPF_PROP_ACS_URL: ${ACS_READ_DETECTION_URL}
+      MPF_PROP_ACS_SUBSCRIPTION_KEY: ${ACS_READ_DETECTION_SUBSCRIPTION_KEY
 
   azure_speech_detection:
     <<: *detection-component-base
