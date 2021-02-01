@@ -60,12 +60,13 @@ RUN cd /usr/local/bin; \
     ln --symbolic /usr/local/lib/libpython3.8.so.1.0 /usr/lib64/libpython3.8.so.1.0;
 
 
-RUN yum update --assumeyes; \
+RUN --mount=type=tmpfs,target=/tmp \
+    --mount=type=tmpfs,target=/var/cache/yum \
+    yum update --assumeyes; \
     yum-config-manager --setopt=skip_missing_names_on_install=False --save; \
     yum install --assumeyes https://download1.rpmfusion.org/free/el/rpmfusion-free-release-7.noarch.rpm; \
     yum install --assumeyes ffmpeg; \
-    yum clean all; \
-    rm --recursive /var/cache/yum/*;
+    yum clean all;
 
 # Use mount and cp shell command because the docker COPY command resolves symlinks which then causes duplicate copies
 # of the libraries to be added to the image.
