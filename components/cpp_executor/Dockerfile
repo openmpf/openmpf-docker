@@ -55,13 +55,14 @@ RUN cd /usr/local/bin; \
     ln --symbolic /usr/local/lib/libpython3.8.so.1.0 /usr/lib64/libpython3.8.so.1.0;
 
 
-RUN yum update --assumeyes; \
+RUN --mount=type=tmpfs,target=/tmp \
+    --mount=type=tmpfs,target=/var/cache/yum \
+    yum update --assumeyes; \
     yum-config-manager --setopt=skip_missing_names_on_install=False --save; \
     yum-config-manager --add-repo http://developer.download.nvidia.com/compute/cuda/repos/rhel7/x86_64; \
     yum install --assumeyes https://download1.rpmfusion.org/free/el/rpmfusion-free-release-7.noarch.rpm; \
     yum install --assumeyes --nogpgcheck ffmpeg cuda-cudart-10-2; \
     yum clean all; \
-    rm --recursive /var/cache/yum/*; \
     ln --symbolic cuda-10.2 /usr/local/cuda; \
     echo '/usr/local/cuda/lib64' >> /etc/ld.so.conf.d/cuda.conf; \
     ldconfig;

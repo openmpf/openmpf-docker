@@ -39,8 +39,9 @@ ENV PYTHONDONTWRITEBYTECODE=1
 ENV PIP_COMPILE=0
 
 
-
-RUN yum update --assumeyes; \
+RUN --mount=type=tmpfs,target=/tmp \
+    --mount=type=tmpfs,target=/var/cache/yum \
+    yum update --assumeyes; \
     yum-config-manager --setopt=skip_missing_names_on_install=False --save; \
     yum-config-manager --add-repo http://developer.download.nvidia.com/compute/cuda/repos/rhel7/x86_64; \
     yum install --assumeyes \
@@ -58,7 +59,6 @@ RUN yum update --assumeyes; \
             openblas-devel cuda-minimal-build-$CU_VERSION cuda-cufft-dev-$CU_VERSION cuda-npp-dev-$CU_VERSION \
             libcudnn7-devel-7.6.5.33-1.cuda10.2 libcublas-devel-10.2.2.89; \
     yum clean all; \
-    rm --recursive /var/cache/yum/*; \
     # For protobuf maven plugin
     ln --symbolic /usr/bin/protoc /usr/local/bin/protoc; \
     ln --symbolic cuda-10.2 /usr/local/cuda; \
@@ -70,7 +70,8 @@ RUN yum update --assumeyes; \
 ENV JAVA_HOME=/etc/alternatives/java_sdk
 
 
-RUN mkdir /tmp/python; \
+RUN --mount=type=tmpfs,target=/tmp \
+    mkdir /tmp/python; \
     cd /tmp/python; \
     curl 'https://www.python.org/ftp/python/3.8.2/Python-3.8.2.tar.xz' \
         | tar --extract --xz; \
@@ -84,14 +85,13 @@ RUN mkdir /tmp/python; \
     pip3 install --upgrade --no-cache-dir wheel; \
     # find commands taken from official Python Dockerfile
     find /usr/local/lib/python3.8 -depth -type d -a \( -name test -o -name tests -o -name idle_test \) -exec rm -rf '{}' + ; \
-    find /usr/local/lib/python3.8 -depth -type f -a \( -name '*.pyc' -o -name '*.pyo' \) -exec rm -rf '{}' + ; \
-    rm --recursive /tmp/python;
+    find /usr/local/lib/python3.8 -depth -type f -a \( -name '*.pyc' -o -name '*.pyo' \) -exec rm -rf '{}' + ;
 
 
-RUN mkdir /tmp/opencv-contrib; \
-    cd /tmp/opencv-contrib; \
+RUN --mount=type=tmpfs,target=/tmp \
+    mkdir /tmp/opencv-contrib; \
     curl --location 'https://github.com/opencv/opencv_contrib/archive/4.5.0.tar.gz' \
-        | tar --extract --gzip; \
+        | tar --extract --gzip --directory /tmp/opencv-contrib; \
     mkdir /tmp/opencv; \
     cd  /tmp/opencv; \
     curl --location 'https://github.com/opencv/opencv/archive/4.5.0.tar.gz' \
@@ -114,18 +114,16 @@ RUN mkdir /tmp/opencv-contrib; \
         -DOPENCV_EXTRA_MODULES_PATH=/tmp/opencv-contrib/opencv_contrib-4.5.0/modules \
         ..; \
     make --jobs "$(nproc)" install; \
-    ln --symbolic '/opt/opencv-4.5.0/include/opencv4/opencv2' /usr/local/include/opencv2; \
-    rm --recursive /tmp/opencv /tmp/opencv-contrib;
+    ln --symbolic '/opt/opencv-4.5.0/include/opencv4/opencv2' /usr/local/include/opencv2;
 
 
-RUN mkdir /tmp/pngdefry; \
+RUN --mount=type=tmpfs,target=/tmp \
+    mkdir /tmp/pngdefry; \
     cd /tmp/pngdefry; \
     curl --location 'https://github.com/openmpf/pngdefry/archive/v1.2.tar.gz' \
         | tar --extract --gzip; \
     cd pngdefry-1.2; \
-    gcc pngdefry.c -o pngdefry; \
-    mv pngdefry /usr/local/bin/pngdefry; \
-    rm --recursive /tmp/pngdefry;
+    gcc pngdefry.c -o /usr/local/bin/pngdefry;
 
 
 RUN curl --location 'https://archive.apache.org/dist/maven/maven-3/3.3.3/binaries/apache-maven-3.3.3-bin.tar.gz' \
@@ -139,6 +137,8 @@ ENV MPF_HOME /home/mpf/openmpf-projects/openmpf/trunk/install
 WORKDIR /home/mpf/openmpf-projects/openmpf
 
 RUN --mount=type=cache,id=mvn_cache,target=/root/.m2/repository,sharing=private \
+    --mount=type=tmpfs,target=/tmp \
+    --mount=type=tmpfs,target=/root/.cache \
     mvn package \
         -DskipTests -Dmaven.test.skip=true -DskipITs \
         -Dcargo.maven.skip=true \

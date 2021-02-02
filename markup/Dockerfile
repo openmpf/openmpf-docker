@@ -36,12 +36,13 @@ SHELL ["/bin/bash", "-o", "errexit", "-o", "pipefail", "-c"]
 
 ENV LANG en_US.UTF-8
 
-RUN yum update --assumeyes; \
+RUN --mount=type=tmpfs,target=/tmp \
+    --mount=type=tmpfs,target=/var/cache/yum \
+    yum update --assumeyes; \
     yum-config-manager --setopt=skip_missing_names_on_install=False --save; \
     yum install --assumeyes https://download1.rpmfusion.org/free/el/rpmfusion-free-release-7.noarch.rpm; \
     yum install --assumeyes java-11-openjdk ffmpeg libheif; \
-    yum clean all; \
-    rm -rf /var/cache/yum/*;
+    yum clean all;
 
 # Use mount and cp shell command because the docker COPY command resolves symlinks which then
 # causes duplicate copies of the libraries to be added to the image.

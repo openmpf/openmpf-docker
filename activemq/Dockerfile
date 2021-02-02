@@ -33,11 +33,12 @@ SHELL ["/bin/bash", "-o", "errexit", "-o", "pipefail", "-c"]
 
 ENV LANG en_US.UTF-8
 
-RUN yum update --assumeyes; \
+RUN --mount=type=tmpfs,target=/tmp \
+    --mount=type=tmpfs,target=/var/cache/yum \
+    yum update --assumeyes; \
     yum-config-manager --setopt=skip_missing_names_on_install=False --save; \
     yum install --assumeyes java-11-openjdk-headless; \
-    yum clean all; \
-    rm -rf /var/cache/yum/*;
+    yum clean all;
 
 ENV JAVA_HOME /etc/alternatives/jre
 
