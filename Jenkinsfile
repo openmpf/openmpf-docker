@@ -300,11 +300,14 @@ try {
 
 
             def pythonShas = getVcsRefLabelArg([openmpfPythonSdkRepo])
-            sh "docker build . -f python_component_build/Dockerfile $commonBuildArgs $labelArgs $pythonShas " +
-                    " -t openmpf_python_component_build:$inProgressTag"
+            sh "docker build . -f python/Dockerfile $commonBuildArgs $labelArgs $pythonShas " +
+                    " --target build -t openmpf_python_component_build:$inProgressTag"
 
-            sh "docker build . -f python_executor/Dockerfile $commonBuildArgs $labelArgs $pythonShas " +
-                    " -t openmpf_python_executor:$inProgressTag"
+            sh "docker build . -f python/Dockerfile $commonBuildArgs $labelArgs $pythonShas " +
+                    " --target executor -t openmpf_python_executor:$inProgressTag"
+
+            sh "docker build . -f python/Dockerfile $commonBuildArgs $labelArgs $pythonShas " +
+                    " --target ssb -t openmpf_python_executor_ssb:$inProgressTag"
         }
 
         dir (openmpfDockerRepo.path) {
@@ -416,6 +419,7 @@ try {
 
                 sh "docker push '${remoteImagePrefix}openmpf_python_component_build:$imageTag'"
                 sh "docker push '${remoteImagePrefix}openmpf_python_executor:$imageTag'"
+                sh "docker push '${remoteImagePrefix}openmpf_python_executor_ssb:$imageTag'"
 
                 sh "cd '$openmpfDockerRepo.path' && docker-compose push"
             } // docker.withRegistry ...

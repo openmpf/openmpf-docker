@@ -32,7 +32,7 @@ ARG BUILD_TAG=latest
 FROM ${BUILD_REGISTRY}openmpf_build:${BUILD_TAG} as openmpf_build
 
 
-FROM centos:7
+FROM centos:7 as common
 
 SHELL ["/bin/bash", "-o", "errexit", "-o", "pipefail", "-c"]
 
@@ -54,7 +54,6 @@ RUN cd /usr/local/bin; \
     ln --symbolic libpython3.8.so.1.0 libpython3.8.so; \
     ln --symbolic /usr/local/lib/libpython3.8.so.1.0 /usr/lib64/libpython3.8.so.1.0;
 
-
 RUN --mount=type=tmpfs,target=/tmp \
     --mount=type=tmpfs,target=/var/cache/yum \
     yum update --assumeyes; \
@@ -62,6 +61,43 @@ RUN --mount=type=tmpfs,target=/tmp \
     yum install --assumeyes https://download1.rpmfusion.org/free/el/rpmfusion-free-release-7.noarch.rpm; \
     yum install --assumeyes ffmpeg; \
     yum clean all;
+
+ENV MPF_HOME /opt/mpf
+
+ENV COMPONENT_VIRTUALENV $MPF_HOME/plugin-venv
+
+# Adding $COMPONENT_VIRTUALENV/bin to the front of $PATH persistently activates the virtualenv.
+ENV PATH $COMPONENT_VIRTUALENV/bin:/scripts:$PATH
+
+
+#########################################
+FROM common as build
+
+RUN python3 -m venv "$COMPONENT_VIRTUALENV"; \
+    pip3 install --no-cache-dir --upgrade pip;
+
+RUN --mount=from=openmpf_build,source=/home/mpf/openmpf-projects/openmpf-python-component-sdk/detection,target=/tmp/python \
+    pip3 install --no-cache-dir /tmp/python/api /tmp/python/component_util; \
+    python3 -m unittest discover --verbose --buffer --start-directory /tmp/python/component_util
+
+ENV SRC_DIR /home/mpf/component_src
+
+WORKDIR $SRC_DIR
+
+COPY python/install-component.sh /scripts/
+
+
+LABEL org.label-schema.build-date="" \
+      org.label-schema.license="Apache 2.0" \
+      org.label-schema.name="OpenMPF Python Component Builder" \
+      org.label-schema.schema-version="1.0" \
+      org.label-schema.url="https://openmpf.github.io" \
+      org.label-schema.vcs-url="https://github.com/openmpf/openmpf-python-component-sdk" \
+      org.label-schema.vendor="MITRE"
+
+
+#########################################
+FROM common as executor
 
 # Use mount and cp shell command because the docker COPY command resolves symlinks which then causes duplicate copies
 # of the libraries to be added to the image.
@@ -71,14 +107,12 @@ RUN --mount=type=bind,from=openmpf_build,source=/build-artifacts/install/lib,tar
     cp --preserve=links --no-dereference liblog4cxx* libactivemq-cpp* libapr* libXext* \
         /usr/lib64;
 
-ENV MPF_HOME /opt/mpf
-
 # Component executor binary
-COPY --from=openmpf_build /build-artifacts/install/bin/amq_detection_component $MPF_HOME/bin/amq_detection_component
+COPY --from=openmpf_build /build-artifacts/install/bin/amq_detection_component \
+                          $MPF_HOME/bin/amq_detection_component
 
 # Component executor log config
 COPY --from=openmpf_build /build-artifacts/install/config/Log4cxxConfig.xml $MPF_HOME/config/
-
 
 # print()'ed messsages from docker-entrypoint.py were not being shown at the right time.
 # Only applies to stdin, stdout and stderr
@@ -86,19 +120,18 @@ ENV PYTHONUNBUFFERED 1
 
 ENV MPF_LOG_PATH $MPF_HOME/share/logs
 
-ENV COMPONENT_VIRTUALENV $MPF_HOME/plugin-venv
-
 ENV PLUGINS_DIR $MPF_HOME/plugins
 
-ENV PATH $COMPONENT_VIRTUALENV/bin:/scripts:$PATH
-
-COPY docker-executor-entrypoint.py /scripts/docker-entrypoint.py
+COPY docker-executor-entrypoint.py /scripts/
 
 COPY docker-entrypoint.sh docker-executor-entrypoint.py /scripts/
-COPY cli_runner /scripts/cli_runner
+
+COPY cli_runner /scripts/
+
 RUN ln --symbolic /scripts/cli_runner/mpf_cli_runner.py /usr/bin/runner
 
 ENTRYPOINT ["/scripts/docker-entrypoint.sh"]
+
 
 LABEL org.label-schema.build-date="" \
       org.label-schema.license="Apache 2.0" \
@@ -107,3 +140,28 @@ LABEL org.label-schema.build-date="" \
       org.label-schema.url="https://openmpf.github.io" \
       org.label-schema.vcs-url="https://github.com/openmpf/openmpf-python-component-sdk" \
       org.label-schema.vendor="MITRE"
+
+
+#########################################
+FROM executor as ssb
+
+COPY --from=build $COMPONENT_VIRTUALENV $COMPONENT_VIRTUALENV
+
+COPY --from=build /scripts/install-component.sh /scripts/
+
+ENV SRC_DIR /home/mpf/component_src
+
+WORKDIR $SRC_DIR
+
+
+LABEL org.label-schema.build-date="" \
+      org.label-schema.license="Apache 2.0" \
+      org.label-schema.name="OpenMPF Python Component Executor Single Stage Build (SSB)" \
+      org.label-schema.schema-version="1.0" \
+      org.label-schema.url="https://openmpf.github.io" \
+      org.label-schema.vcs-url="https://github.com/openmpf/openmpf-python-component-sdk" \
+      org.label-schema.vendor="MITRE"
+
+
+#########################################
+FROM executor
