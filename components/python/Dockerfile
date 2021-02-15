@@ -126,7 +126,7 @@ COPY docker-executor-entrypoint.py /scripts/
 
 COPY docker-entrypoint.sh docker-executor-entrypoint.py /scripts/
 
-COPY cli_runner /scripts/
+COPY cli_runner /scripts/cli_runner
 
 RUN ln --symbolic /scripts/cli_runner/mpf_cli_runner.py /usr/bin/runner
 
