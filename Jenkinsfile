@@ -301,13 +301,19 @@ try {
 
             def pythonShas = getVcsRefLabelArg([openmpfPythonSdkRepo])
             sh "docker build . -f python/Dockerfile $commonBuildArgs $labelArgs $pythonShas " +
-                    " --target build -t openmpf_python_component_build:$inProgressTag"
-
-            sh "docker build . -f python/Dockerfile $commonBuildArgs $labelArgs $pythonShas " +
-                    " --target executor -t openmpf_python_executor:$inProgressTag"
-
-            sh "docker build . -f python/Dockerfile $commonBuildArgs $labelArgs $pythonShas " +
                     " --target ssb -t openmpf_python_executor_ssb:$inProgressTag"
+
+            // Add --no-cache=false so openmpf_python_component_build and openmpf_python_executor
+            // use the same common layers as openmpf_python_executor_ssb.
+            // When a user requests a no-cache build, openmpf_python_executor_ssb will be
+            // completely rebuilt. openmpf_python_component_build and openmpf_python_executor
+            // will use the layers from the openmpf_python_executor_ssb that was just built with
+            // --no-cache.
+            sh "docker build . -f python/Dockerfile $commonBuildArgs $labelArgs $pythonShas " +
+                    " --target build -t openmpf_python_component_build:$inProgressTag --no-cache=false"
+
+            sh "docker build . -f python/Dockerfile $commonBuildArgs $labelArgs $pythonShas " +
+                    " --target executor -t openmpf_python_executor:$inProgressTag --no-cache=false"
         }
 
         dir (openmpfDockerRepo.path) {
