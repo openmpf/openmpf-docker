@@ -328,6 +328,13 @@ try {
                     customComponentServices +=
                             readYaml(text: shOutput("cat $customGpuOnlyComponentsComposeFile")).services.keySet()
                 }
+                if (buildCustomConfigComponents) {
+                    def customConfigComponentsComposeFile =
+                            "../../$customConfigRepo.path/docker-compose.components.yml"
+                    componentComposeFiles += ":$customConfigComponentsComposeFile"
+                    customComponentServices +=
+                            readYaml(text: shOutput("cat $customConfigComponentsComposeFile")).services.keySet()
+                }
 
                 runtimeComposeFiles = "docker-compose.core.yml:$componentComposeFiles:docker-compose.elk.yml"
 
@@ -340,26 +347,6 @@ try {
                     addVcsRefLabels(composeYaml, openmpfRepo, openmpfDockerRepo)
                     addUserDefinedLabels(composeYaml, customComponentServices, imageUrl, imageVersion, customLabelKey)
                 }
-
-                def customConfigComponentsComposeFile
-                def customConfigComponentServices
-
-                if (buildCustomConfigComponents) {
-                    customConfigComponentsComposeFile =
-                            "../../$customConfigRepo.path/docker-compose.components.yml"
-                    customConfigComponentServices =
-                            readYaml(text: shOutput("cat $customConfigComponentsComposeFile")).services.keySet()
-                }
-                withEnv(["TAG=$inProgressTag", "COMPOSE_FILE=$customConfigComponentsComposeFile", 'COMPOSE_DOCKER_CLI_BUILD=1']) {
-                    docker.withRegistry("http://$dockerRegistryHostAndPort", dockerRegistryCredId) {
-                        sh "docker-compose build $commonBuildArgs --build-arg RUN_TESTS --parallel"
-                    }
-
-                    def composeYaml = readYaml(text: shOutput('docker-compose config'))
-                    addVcsRefLabels(composeYaml, openmpfRepo, openmpfDockerRepo)
-                    addUserDefinedLabels(composeYaml, customConfigComponentServices, imageUrl, imageVersion, customLabelKey)
-                }
-
             }
 
             if (applyCustomConfig) {
