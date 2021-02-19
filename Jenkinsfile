@@ -326,7 +326,7 @@ try {
                             readYaml(text: shOutput("cat $customGpuOnlyComponentsComposeFile")).services.keySet()
                 }
                 if (buildCustomConfigComponents) {
-                    def customConfigComponentsFile =
+                    def customConfigComponentsComposeFile =
                             "../../$customConfigRepo.path/docker-compose.components.yml"
                     componentComposeFiles += ":$customConfigComponentsComposeFile"
                     customComponentServices +=
