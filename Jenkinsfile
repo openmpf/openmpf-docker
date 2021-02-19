@@ -30,6 +30,7 @@ def preserveContainersOnFailure = env.preserve_containers_on_failure?.toBoolean(
 
 def buildCustomComponents = env.build_custom_components?.toBoolean() ?: false
 def openmpfCustomRepoCredId = env.openmpf_custom_repo_cred_id
+def buildCustomConfigComponents = env.build_custom_config_components?.toBoolean() ?: false
 def applyCustomConfig = env.apply_custom_config?.toBoolean() ?: false
 def mvnTestOptions = env.mvn_test_options ?: ''
 
@@ -319,13 +320,15 @@ try {
                     def customGpuOnlyComponentsComposeFile =
                             "../../$customComponentsRepo.path/docker-compose.custom-gpu-only-components.yml"
                     componentComposeFiles += ":$customGpuOnlyComponentsComposeFile"
-                    def customConfigComponentsFile =
-                            "../../$customConfigRepo.path/docker-compose.components.yml"
-                    componentComposeFiles += ":$customConfigComponentsComposeFile"
                     customComponentServices =
                             readYaml(text: shOutput("cat $customComponentsComposeFile")).services.keySet()
                     customComponentServices +=
                             readYaml(text: shOutput("cat $customGpuOnlyComponentsComposeFile")).services.keySet()
+                }
+                if (buildCustomConfigComponents) {
+                    def customConfigComponentsFile =
+                            "../../$customConfigRepo.path/docker-compose.components.yml"
+                    componentComposeFiles += ":$customConfigComponentsComposeFile"
                     customComponentServices +=
                             readYaml(text: shOutput("cat $customConfigComponentsComposeFile")).services.keySet()
                 }
