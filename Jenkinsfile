@@ -124,6 +124,9 @@ if (buildCustomComponents) {
         customRepos << customConfigRepo
     }
 }
+if (buildCustomConfigComponents) {
+    customRepos << customConfigRepo
+}
 
 def allRepos = [openmpfProjectsRepo] + projectsSubRepos + customRepos
 
