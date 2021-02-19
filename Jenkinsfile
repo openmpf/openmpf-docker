@@ -347,14 +347,14 @@ try {
                             readYaml(text: shOutput("cat $customConfigComponentsComposeFile")).services.keySet()
 
                     withEnv(["TAG=$inProgressTag", "COMPOSE_FILE=$customConfigComponentsComposeFile", 'COMPOSE_DOCKER_CLI_BUILD=1']) {
-                    docker.withRegistry("http://$dockerRegistryHostAndPort", dockerRegistryCredId) {
-                        sh "docker-compose build $commonBuildArgs --build-arg RUN_TESTS --parallel"
+                        docker.withRegistry("http://$dockerRegistryHostAndPort", dockerRegistryCredId) {
+                            sh "docker-compose build $commonBuildArgs --build-arg RUN_TESTS --parallel"
                     }
 
-                    def composeYaml = readYaml(text: shOutput('docker-compose config'))
-                    addVcsRefLabels(composeYaml, openmpfRepo, openmpfDockerRepo)
-                    addUserDefinedLabels(composeYaml, customConfigComponentServices, imageUrl, imageVersion, customLabelKey)
-                }
+                        def composeYaml = readYaml(text: shOutput('docker-compose config'))
+                        addVcsRefLabels(composeYaml, openmpfRepo, openmpfDockerRepo)
+                        addUserDefinedLabels(composeYaml, customConfigComponentServices, imageUrl, imageVersion, customLabelKey)
+                    }
                 }
 
             }
