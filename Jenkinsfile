@@ -374,14 +374,14 @@ try {
             def labelArgs = getUserDefinedLabelArgs(imageUrl, imageVersion)
             def customLabelArg = getCustomLabelArg(customLabelKey)
 
-            echo 'Directory $openmpfDockerRepo.path'
+            echo "Directory $openmpfDockerRepo.path"
             dir (openmpfDockerRepo.path) {
                 sh 'cp .env.tpl .env'
 
                 def customConfigComponentServices
                 def customConfigComponentsComposeFile
 
-                echo 'Directory $customConfigRepo.path'
+                echo "Directory $customConfigRepo.path"
                 if (buildCustomConfigComponents) {
                     customConfigComponentsComposeFile =
                             "../../$customConfigRepo.path/docker-compose.components.yml"
@@ -389,8 +389,8 @@ try {
                             readYaml(text: shOutput("cat $customConfigComponentsComposeFile")).services.keySet()
                 }
 
-                echo 'Compose file $customConfigComponentsComposeFile'
-                echo 'PWD = env.PWD'
+                echo "Compose file $customConfigComponentsComposeFile"
+                echo "PWD = $env.PWD"
                 withEnv(["TAG=$inProgressTag", "COMPOSE_FILE=$customConfigComponentsComposeFile", 'COMPOSE_DOCKER_CLI_BUILD=1']) {
                     docker.withRegistry("http://$dockerRegistryHostAndPort", dockerRegistryCredId) {
                         sh "docker-compose build $commonBuildArgs --build-arg RUN_TESTS --parallel"
