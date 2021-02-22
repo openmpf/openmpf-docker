@@ -385,6 +385,43 @@ try {
         } // withEnv
     } // stage('Build images')
 
+
+    stage('Build custom config components') {
+
+        withEnv(['DOCKER_BUILDKIT=1', 'RUN_TESTS=true']) {
+            def noCacheArg = buildNoCache ? '--no-cache' : ''
+            def commonBuildArgs = " --build-arg BUILD_TAG=$inProgressTag --build-arg BUILD_VERSION=$imageVersion " +
+                    "$noCacheArg "
+            def labelArgs = getUserDefinedLabelArgs(imageUrl, imageVersion)
+            def customLabelArg = getCustomLabelArg(customLabelKey)
+
+
+            dir (openmpfDockerRepo.path) {
+                sh 'cp .env.tpl .env'
+
+                def customConfigComponentServices
+                def customConfigComponentsComposeFile
+
+                if (buildCustomConfigComponents) {
+                    customConfigComponentsComposeFile =
+                            "../../$customConfigRepo.path/docker-compose.components.yml"
+                    customConfigComponentServices =
+                            readYaml(text: shOutput("cat $customConfigComponentsComposeFile")).services.keySet()
+                }
+
+                withEnv(["TAG=$inProgressTag", "COMPOSE_FILE=$customConfigComponentsComposeFile", 'COMPOSE_DOCKER_CLI_BUILD=1']) {
+                    docker.withRegistry("http://$dockerRegistryHostAndPort", dockerRegistryCredId) {
+                        sh "docker-compose build $commonBuildArgs --build-arg RUN_TESTS --parallel"
+                    }
+
+                    def composeYaml = readYaml(text: shOutput('docker-compose config'))
+                    addVcsRefLabels(composeYaml, openmpfRepo, openmpfDockerRepo)
+                    addUserDefinedLabels(composeYaml, customConfigComponentServices, imageUrl, imageVersion, customLabelKey)
+                }
+            }
+        } // withEnv
+    } // stage('Build custom config components')
+
     stage('Run Integration Tests') {
         dir(openmpfDockerRepo.path) {
             def skipArgs = env.docker_services_build_only.split(',').collect{ it.replaceAll("\\s","") }.findAll{ !it.isEmpty() }.collect{ "--scale $it=0"  }.join(' ')
