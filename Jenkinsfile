@@ -328,13 +328,6 @@ try {
                     customComponentServices +=
                             readYaml(text: shOutput("cat $customGpuOnlyComponentsComposeFile")).services.keySet()
                 }
-                if (buildCustomConfigComponents) {
-                    def customConfigComponentsComposeFile =
-                            "../../$customConfigRepo.path/docker-compose.components.yml"
-                    componentComposeFiles += ":$customConfigComponentsComposeFile"
-                    customComponentServices +=
-                            readYaml(text: shOutput("cat $customConfigComponentsComposeFile")).services.keySet()
-                }
 
                 runtimeComposeFiles = "docker-compose.core.yml:$componentComposeFiles:docker-compose.elk.yml"
 
@@ -354,9 +347,10 @@ try {
                 sh 'cp .env.tpl .env'
 
                 def customConfigComponentServices
+                def customConfigComponentsComposeFile
 
                 if (buildCustomConfigComponents) {
-                    def customConfigComponentsComposeFile =
+                    customConfigComponentsComposeFile =
                             "../../$customConfigRepo.path/docker-compose.components.yml"
                     customConfigComponentServices =
                             readYaml(text: shOutput("cat $customConfigComponentsComposeFile")).services.keySet()
