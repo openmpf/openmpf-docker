@@ -391,6 +391,7 @@ try {
                 }
 
                 echo "Compose file $customConfigComponentsComposeFile"
+                echo "Services $customConfigComponentServices"
                 componentComposeFiles += ":$customConfigComponentsComposeFile"
                 runtimeComposeFiles += ":$customConfigComponentsComposeFile"
 
@@ -438,6 +439,7 @@ try {
         dir(openmpfDockerRepo.path) {
             def skipArgs = env.docker_services_build_only.split(',').collect{ it.replaceAll("\\s","") }.findAll{ !it.isEmpty() }.collect{ "--scale $it=0"  }.join(' ')
             def composeFiles = "docker-compose.integration.test.yml:$componentComposeFiles"
+            echo "ComposeFiles $composeFiles"
 
             def nproc = Math.min((shOutput('nproc') as int), 6)
             def servicesInSystemTests = ['ocv-face-detection', 'darknet-detection', 'dlib-face-detection',
@@ -448,6 +450,7 @@ try {
             def scaleArgs = servicesInSystemTests.collect({ "--scale '$it=$nproc'" }).join(' ')
             // Sphinx uses a huge amount of memory so we don't want more than 2 of them.
             scaleArgs += " --scale sphinx-speech-detection=${Math.min(nproc, 2)} "
+            scaleArgs += " --scale vcxt-detection=1 "
 
             withEnv(["TAG=$inProgressTag",
                      "EXTRA_MVN_OPTIONS=$mvnTestOptions",
