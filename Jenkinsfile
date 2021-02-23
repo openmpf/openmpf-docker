@@ -227,6 +227,7 @@ try {
 
     def componentComposeFiles
     def runtimeComposeFiles
+    def customComponentServices = []
 
     stage('Build images') {
         docker.withRegistry('', dockerBaseImagePullCredId) {
@@ -314,7 +315,7 @@ try {
                 sh 'cp .env.tpl .env'
 
                 componentComposeFiles = 'docker-compose.components.yml'
-                def customComponentServices = []
+//                def customComponentServices = []
 
                 if (buildCustomComponents) {
                     def customComponentsComposeFile =
@@ -336,23 +337,23 @@ try {
                         sh "docker-compose build $commonBuildArgs --build-arg RUN_TESTS --parallel"
                     }
 
-                    def composeYaml = readYaml(text: shOutput('docker-compose config'))
-                    addVcsRefLabels(composeYaml, openmpfRepo, openmpfDockerRepo)
-                    addUserDefinedLabels(composeYaml, customComponentServices, imageUrl, imageVersion, customLabelKey)
+//                    def composeYaml = readYaml(text: shOutput('docker-compose config'))
+//                    addVcsRefLabels(composeYaml, openmpfRepo, openmpfDockerRepo)
+//                    addUserDefinedLabels(composeYaml, customComponentServices, imageUrl, imageVersion, customLabelKey)
                 }
             }
 
-            if (applyCustomConfig) {
-                echo 'APPLYING CUSTOM CONFIGURATION'
-                dir(customConfigRepo.path) {
-                    def wfmShasArg = getVcsRefLabelArg([openmpfRepo, openmpfDockerRepo, customConfigRepo])
-                    sh "docker build workflow_manager $commonBuildArgs $customLabelArg $wfmShasArg " +
-                            " -t openmpf_workflow_manager:$inProgressTag"
+//            if (applyCustomConfig) {
+//                echo 'APPLYING CUSTOM CONFIGURATION'
+//                dir(customConfigRepo.path) {
+//                    def wfmShasArg = getVcsRefLabelArg([openmpfRepo, openmpfDockerRepo, customConfigRepo])
+//                    sh "docker build workflow_manager $commonBuildArgs $customLabelArg $wfmShasArg " +
+//                            " -t openmpf_workflow_manager:$inProgressTag"
 
-                    def amqShasArg = getVcsRefLabelArg([openmpfDockerRepo, customConfigRepo])
-                    sh "docker build activemq $commonBuildArgs $customLabelArg $amqShasArg " +
-                            " -t openmpf_activemq:$inProgressTag"
-                }
+//                    def amqShasArg = getVcsRefLabelArg([openmpfDockerRepo, customConfigRepo])
+//                    sh "docker build activemq $commonBuildArgs $customLabelArg $amqShasArg " +
+//                            " -t openmpf_activemq:$inProgressTag"
+//                }
             }
             else  {
                 echo 'SKIPPING CUSTOM CONFIGURATION'
@@ -360,6 +361,9 @@ try {
         } // withEnv
     } // stage('Build images')
 
+
+    def customConfigComponentServices
+    def customConfigComponentsComposeFile
 
     stage('Build custom config components') {
 
@@ -378,9 +382,6 @@ try {
             dir (openmpfDockerRepo.path) {
                 sh 'cp .env.tpl .env'
 
-                def customConfigComponentServices
-                def customConfigComponentsComposeFile
-
                 echo "Directory $openmpfDockerRepo.path"
                 if (buildCustomConfigComponents) {
                     customConfigComponentsComposeFile =
@@ -395,15 +396,47 @@ try {
                 withEnv(["TAG=$inProgressTag", "COMPOSE_FILE=$customConfigComposeFiles", 'COMPOSE_DOCKER_CLI_BUILD=1']) {
                     docker.withRegistry("http://$dockerRegistryHostAndPort", dockerRegistryCredId) {
                         sh "docker-compose build $commonBuildArgs --build-arg RUN_TESTS --parallel"
-                    }
 
-                    def composeYaml = readYaml(text: shOutput("docker-compose -f $customConfigComponentsComposeFile config"))
-                    addVcsRefLabels(composeYaml, openmpfRepo, openmpfDockerRepo)
-                    addUserDefinedLabels(composeYaml, customConfigComponentServices, imageUrl, imageVersion, customLabelKey)
+                        def composeYaml = readYaml(text: shOutput("docker-compose -f $customConfigComponentsComposeFile config"))
+                        addVcsRefLabels(composeYaml, openmpfRepo, openmpfDockerRepo)
+                        addUserDefinedLabels(composeYaml, customConfigComponentServices, imageUrl, imageVersion, customLabelKey)
+                    }
                 }
-            }
+            } // dir
         } // withEnv
     } // stage('Build custom config components')
+
+
+     dir (openmpfDockerRepo.path) {
+         sh 'cp .env.tpl .env'
+
+         runtimeComposeFiles += customConfigComponentsComposeFile
+
+         withEnv(["TAG=$inProgressTag", "COMPOSE_FILE=$runtimeComposeFiles", 'COMPOSE_DOCKER_CLI_BUILD=1']) {
+             docker.withRegistry("http://$dockerRegistryHostAndPort", dockerRegistryCredId) {
+
+                 def composeYaml = readYaml(text: shOutput('docker-compose config'))
+                 addVcsRefLabels(composeYaml, openmpfRepo, openmpfDockerRepo)
+                 addUserDefinedLabels(composeYaml, customComponentServices, imageUrl, imageVersion, customLabelKey)
+            }
+        }
+        if (applyCustomConfig) {
+            echo 'APPLYING CUSTOM CONFIGURATION'
+            dir(customConfigRepo.path) {
+                def wfmShasArg = getVcsRefLabelArg([openmpfRepo, openmpfDockerRepo, customConfigRepo])
+                sh "docker build workflow_manager $commonBuildArgs $customLabelArg $wfmShasArg " +
+                        " -t openmpf_workflow_manager:$inProgressTag"
+
+                def amqShasArg = getVcsRefLabelArg([openmpfDockerRepo, customConfigRepo])
+                sh "docker build activemq $commonBuildArgs $customLabelArg $amqShasArg " +
+                        " -t openmpf_activemq:$inProgressTag"
+            }
+        }
+        else  {
+            echo 'SKIPPING CUSTOM CONFIGURATION'
+        }
+    }
+
 
     stage('Run Integration Tests') {
         dir(openmpfDockerRepo.path) {
