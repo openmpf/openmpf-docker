@@ -395,7 +395,7 @@ try {
                 componentComposeFiles += ":$customConfigComponentsComposeFile"
                 runtimeComposeFiles += ":$customConfigComponentsComposeFile"
 
-                withEnv(["TAG=$inProgressTag", "COMPOSE_FILE=$customConfigComponentsComposeFiles", 'COMPOSE_DOCKER_CLI_BUILD=1']) {
+                withEnv(["TAG=$inProgressTag", "COMPOSE_FILE=$customConfigComponentsComposeFile", 'COMPOSE_DOCKER_CLI_BUILD=1']) {
                     docker.withRegistry("http://$dockerRegistryHostAndPort", dockerRegistryCredId) {
                         sh "docker-compose build $commonBuildArgs --build-arg RUN_TESTS --parallel"
 
