@@ -354,10 +354,10 @@ try {
 //                    sh "docker build activemq $commonBuildArgs $customLabelArg $amqShasArg " +
 //                            " -t openmpf_activemq:$inProgressTag"
 //                }
-            }
-            else  {
-                echo 'SKIPPING CUSTOM CONFIGURATION'
-            }
+//            }
+//            else  {
+//                echo 'SKIPPING CUSTOM CONFIGURATION'
+//            }
         } // withEnv
     } // stage('Build images')
 
@@ -392,6 +392,7 @@ try {
 
                 echo "Compose file $customConfigComponentsComposeFile"
                 def customConfigComposeFiles = "docker-compose.core.yml:$customConfigComponentsComposeFile"
+                runtimeComposeFiles += customConfigComponentsComposeFile
 
                 withEnv(["TAG=$inProgressTag", "COMPOSE_FILE=$customConfigComposeFiles", 'COMPOSE_DOCKER_CLI_BUILD=1']) {
                     docker.withRegistry("http://$dockerRegistryHostAndPort", dockerRegistryCredId) {
@@ -409,8 +410,6 @@ try {
 
      dir (openmpfDockerRepo.path) {
          sh 'cp .env.tpl .env'
-
-         runtimeComposeFiles += customConfigComponentsComposeFile
 
          withEnv(["TAG=$inProgressTag", "COMPOSE_FILE=$runtimeComposeFiles", 'COMPOSE_DOCKER_CLI_BUILD=1']) {
              docker.withRegistry("http://$dockerRegistryHostAndPort", dockerRegistryCredId) {
