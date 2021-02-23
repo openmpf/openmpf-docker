@@ -392,7 +392,7 @@ try {
 
                 echo "Compose file $customConfigComponentsComposeFile"
                 def customConfigComposeFiles = "docker-compose.core.yml:$customConfigComponentsComposeFile"
-                runtimeComposeFiles += customConfigComponentsComposeFile
+                runtimeComposeFiles += ":$customConfigComponentsComposeFile"
 
                 withEnv(["TAG=$inProgressTag", "COMPOSE_FILE=$customConfigComposeFiles", 'COMPOSE_DOCKER_CLI_BUILD=1']) {
                     docker.withRegistry("http://$dockerRegistryHostAndPort", dockerRegistryCredId) {
