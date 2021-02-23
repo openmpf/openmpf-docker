@@ -398,9 +398,9 @@ try {
                     docker.withRegistry("http://$dockerRegistryHostAndPort", dockerRegistryCredId) {
                         sh "docker-compose build $commonBuildArgs --build-arg RUN_TESTS --parallel"
 
-                        def composeYaml = readYaml(text: shOutput("docker-compose -f $customConfigComponentsComposeFile config"))
-                        addVcsRefLabels(composeYaml, openmpfRepo, openmpfDockerRepo)
-                        addUserDefinedLabels(composeYaml, customConfigComponentServices, imageUrl, imageVersion, customLabelKey)
+//                        def composeYaml = readYaml(text: shOutput("docker-compose -f $customConfigComponentsComposeFile config"))
+//                        addVcsRefLabels(composeYaml, openmpfRepo, openmpfDockerRepo)
+//                        addUserDefinedLabels(composeYaml, customConfigComponentServices, imageUrl, imageVersion, customLabelKey)
                     }
                 }
             } // dir
