@@ -391,7 +391,6 @@ try {
                 }
 
                 echo "Compose file $customConfigComponentsComposeFile"
-//                def customConfigComposeFiles = "docker-compose.core.yml:$customConfigComponentsComposeFile"
                 componentComposeFiles += ":$customConfigComponentsComposeFile"
                 runtimeComposeFiles += ":$customConfigComponentsComposeFile"
 
@@ -399,9 +398,6 @@ try {
                     docker.withRegistry("http://$dockerRegistryHostAndPort", dockerRegistryCredId) {
                         sh "docker-compose build $commonBuildArgs --build-arg RUN_TESTS --parallel"
 
-//                        def composeYaml = readYaml(text: shOutput("docker-compose -f $customConfigComponentsComposeFile config"))
-//                        addVcsRefLabels(composeYaml, openmpfRepo, openmpfDockerRepo)
-//                        addUserDefinedLabels(composeYaml, customConfigComponentServices, imageUrl, imageVersion, customLabelKey)
                     }
                 }
             } // dir
@@ -534,7 +530,7 @@ finally {
     }
     email(buildStatus, emailRecipients)
 
-    dockerCleanUp()
+//    dockerCleanUp()
 }
 } // wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm'])
 } // node(env.jenkins_nodes)
