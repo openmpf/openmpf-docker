@@ -150,6 +150,11 @@ services:
     image: ${REGISTRY}openmpf_ocv_person_detection:${TAG}
     build: ${OPENMPF_PROJECTS_PATH}/openmpf-contrib-components/cpp/OcvPersonDetection
 
+  ocv-yolo-detection:
+    <<: *detection-component-base
+    image: ${REGISTRY}openmpf_ocv_yolo_detection:${TAG}
+    build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/cpp/OcvYoloDetection
+
   scene-change-detection:
     <<: *detection-component-base
     image: ${REGISTRY}openmpf_scene_change_detection:${TAG}
