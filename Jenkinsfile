@@ -366,47 +366,39 @@ try {
     def customConfigComponentsComposeFile
 
     stage('Build custom config components') {
+        if (buildCustomConfigComponents) {
 
-        if (preDockerBuildScriptPath) {
-            sh preDockerBuildScriptPath
-        }
+            if (preDockerBuildScriptPath) {
+                sh preDockerBuildScriptPath
+            }
 
-        withEnv(['DOCKER_BUILDKIT=1', 'RUN_TESTS=true']) {
-            def noCacheArg = buildNoCache ? '--no-cache' : ''
-            def commonBuildArgs = " --build-arg BUILD_TAG=$inProgressTag --build-arg BUILD_VERSION=$imageVersion " +
-                    "$noCacheArg "
-            def labelArgs = getUserDefinedLabelArgs(imageUrl, imageVersion)
-            def customLabelArg = getCustomLabelArg(customLabelKey)
+            withEnv(['DOCKER_BUILDKIT=1', 'RUN_TESTS=true']) {
+                def noCacheArg = buildNoCache ? '--no-cache' : ''
+                def commonBuildArgs = " --build-arg BUILD_TAG=$inProgressTag --build-arg BUILD_VERSION=$imageVersion " +
+                        "$noCacheArg "
+                def labelArgs = getUserDefinedLabelArgs(imageUrl, imageVersion)
+                def customLabelArg = getCustomLabelArg(customLabelKey)
 
-            echo "Directory $openmpfDockerRepo.path"
-            dir (openmpfDockerRepo.path) {
-                sh 'cp .env.tpl .env'
+                dir (openmpfDockerRepo.path) {
+                    sh 'cp .env.tpl .env'
+                    def custom_build_script = "../../$customConfigRepo.path/docker-custom-build.sh"
 
-                echo "Directory $openmpfDockerRepo.path"
-                if (buildCustomConfigComponents) {
                     customConfigComponentsComposeFile =
                             "../../$customConfigRepo.path/docker-compose.components.yml"
                     customConfigComponentServices =
                             readYaml(text: shOutput("cat $customConfigComponentsComposeFile")).services.keySet()
-                }
 
-                echo "Compose file $customConfigComponentsComposeFile"
-                echo "Services $customConfigComponentServices"
+                    componentComposeFiles += ":$customConfigComponentsComposeFile"
+                    runtimeComposeFiles += ":$customConfigComponentsComposeFile"
                 
-                componentComposeFiles += ":$customConfigComponentsComposeFile"
-                runtimeComposeFiles += ":$customConfigComponentsComposeFile"
-                
-                def compose_contents = shOutput "cat $customConfigComponentsComposeFile"
-                echo "Compose contents : $compose_contents"
-
-                withEnv(["TAG=$inProgressTag", "COMPOSE_FILE=$customConfigComponentsComposeFile", 'COMPOSE_DOCKER_CLI_BUILD=1']) {
-                    docker.withRegistry("http://$dockerRegistryHostAndPort", dockerRegistryCredId) {
-                        sh "docker-compose build $commonBuildArgs --build-arg RUN_TESTS --parallel"
-
+                    withEnv(["TAG=$inProgressTag", "COMPOSE_FILE=$customConfigComponentsComposeFile", 'COMPOSE_DOCKER_CLI_BUILD=1']) {
+                        docker.withRegistry("http://$dockerRegistryHostAndPort", dockerRegistryCredId) {
+                            sh "custom_build_script $commonBuildArgs"
+                        }
                     }
-                }
-            } // dir
-        } // withEnv
+                } // dir
+            } // withEnv
+        } // if (buildCustomConfigComponents)
     } // stage('Build custom config components')
 
 
