@@ -393,7 +393,7 @@ try {
                 
                     withEnv(["TAG=$inProgressTag", "COMPOSE_FILE=$customConfigComponentsComposeFile", 'COMPOSE_DOCKER_CLI_BUILD=1']) {
                         docker.withRegistry("http://$dockerRegistryHostAndPort", dockerRegistryCredId) {
-                            sh "custom_build_script $commonBuildArgs"
+                            sh "$custom_build_script $commonBuildArgs"
                         }
                     }
                 } // dir
