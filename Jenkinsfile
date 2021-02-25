@@ -397,12 +397,11 @@ try {
                 runtimeComposeFiles += ":$customConfigComponentsComposeFile"
                 
                 def compose_contents = shOutput "cat $customConfigComponentsComposeFile"
-                echo "Compose contents : "$compose_contents"
+                echo "Compose contents : $compose_contents"
 
-//                withEnv(["TAG=$inProgressTag", "COMPOSE_FILE=$customConfigComponentsComposeFile", 'COMPOSE_DOCKER_CLI_BUILD=1']) {
-                withEnv(["TAG=$inProgressTag",  'COMPOSE_DOCKER_CLI_BUILD=1']) {
+                withEnv(["TAG=$inProgressTag", "COMPOSE_FILE=$customConfigComponentsComposeFile", 'COMPOSE_DOCKER_CLI_BUILD=1']) {
                     docker.withRegistry("http://$dockerRegistryHostAndPort", dockerRegistryCredId) {
-                        sh "docker-compose -f $customConfigComponentsComposeFile build $commonBuildArgs --build-arg RUN_TESTS --parallel"
+                        sh "docker-compose build $commonBuildArgs --build-arg RUN_TESTS --parallel"
 
                     }
                 }
