@@ -381,7 +381,7 @@ try {
                     sh 'cp .env.tpl .env'
 
                     customConfigComponentsComposeFile =
-                            "../../$customConfigRepo.path/docker-compose.components.yml"
+                            "../$customConfigRepo.path/docker-compose.components.yml"
                     customConfigComponentServices =
                             readYaml(text: shOutput("cat $customConfigComponentsComposeFile")).services.keySet()
 
