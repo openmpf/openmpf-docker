@@ -376,12 +376,9 @@ try {
                 def noCacheArg = buildNoCache ? '--no-cache' : ''
                 def commonBuildArgs = " --build-arg BUILD_TAG=$inProgressTag --build-arg BUILD_VERSION=$imageVersion " +
                         "$noCacheArg "
-                def labelArgs = getUserDefinedLabelArgs(imageUrl, imageVersion)
-                def customLabelArg = getCustomLabelArg(customLabelKey)
 
                 dir (openmpfDockerRepo.path) {
                     sh 'cp .env.tpl .env'
-                    def custom_build_script = "../../$customConfigRepo.path/docker-custom-build.sh"
 
                     customConfigComponentsComposeFile =
                             "../../$customConfigRepo.path/docker-compose.components.yml"
@@ -390,8 +387,11 @@ try {
 
                     componentComposeFiles += ":$customConfigComponentsComposeFile"
                     runtimeComposeFiles += ":$customConfigComponentsComposeFile"
-                
-                    withEnv(["TAG=$inProgressTag", "COMPOSE_FILE=$customConfigComponentsComposeFile", 'COMPOSE_DOCKER_CLI_BUILD=1']) {
+                }
+                dir (customConfigRepo.path) {
+                    sh "cp $openmpfDockerRepo.path/.env.tpl .env"
+                    def custom_build_script = "./docker-custom-build.sh"
+                    withEnv(["TAG=$inProgressTag", 'DOCKER_BUILDKIT=1']) {
                         docker.withRegistry("http://$dockerRegistryHostAndPort", dockerRegistryCredId) {
                             sh "$custom_build_script $commonBuildArgs"
                         }
