@@ -389,7 +389,7 @@ try {
                     runtimeComposeFiles += ":$customConfigComponentsComposeFile"
                 }
                 dir (customConfigRepo.path) {
-                    sh "cp $openmpfDockerRepo.path/.env.tpl .env"
+                    sh "cp ../../$openmpfDockerRepo.path/.env.tpl .env"
                     def custom_build_script = "./docker-custom-build.sh"
                     withEnv(["TAG=$inProgressTag", 'DOCKER_BUILDKIT=1']) {
                         docker.withRegistry("http://$dockerRegistryHostAndPort", dockerRegistryCredId) {
