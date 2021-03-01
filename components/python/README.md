@@ -1,26 +1,38 @@
 Overview
 ==================
-The purpose of this image is to enable a developer to write a Python component for OpenMPF that can be encapsulated
-within a Docker container. This isolates the execution environment from the rest of OpenMPF,
-thereby providing greater freedom and portability. The `openmpf_python_component_build` and `openmpf_python_executor` 
-base images are designed to work together in a multi-stage Docker build.
+The purpose of these images is to enable a developer to write a Python component for OpenMPF that 
+can be encapsulated within a Docker container. This isolates the execution environment from the 
+rest of OpenMPF, thereby providing greater freedom and portability. There are two types of 
+executor base images: `openmpf_python_executor_ssb` and `openmpf_python_executor`. 
 
-This image will:
+`openmpf_python_executor` is designed to work with `openmpf_python_component_build` in a 
+multi-stage Docker build. `openmpf_python_executor` and `openmpf_python_component_build` should
+be used if the component has any build time dependencies (like compilers) that are not used at 
+runtime. 
+
+`openmpf_python_executor_ssb` can be used when the component is pure Python and does not require 
+any build time dependencies. Some pip packages will attempt to compile C extensions during 
+`pip install`. If you are using one of these libraries, you will need to use 
+`openmpf_python_executor` and `openmpf_python_component_build`.
+
+
+The executor image will:
 
 - Register your component with the Workflow Manager.
 - Execute your code using the OpenMPF component executor binary.
   
   
-How to build the `openmpf_python_component_build` and `openmpf_python_executor` base images
+How to build the `openmpf_python_component_build`, `openmpf_python_executor` and `openmpf_python_executor` base images
 ======================================================
 ```bash
 cd /path/to/openmpf-docker/components
-DOCKER_BUILDKIT=1 docker build . -f python_component_build/Dockerfile -t openmpf_python_component_build
-DOCKER_BUILDKIT=1 docker build . -f python_executor/Dockerfile -t openmpf_python_executor
+DOCKER_BUILDKIT=1 docker build . -f python/Dockerfile --target build -t openmpf_python_component_build
+DOCKER_BUILDKIT=1 docker build . -f python/Dockerfile --target executor -t openmpf_python_executor
+DOCKER_BUILDKIT=1 docker build . -f python/Dockerfile --target ssb -t openmpf_python_executor_ssb
 ```
 
 
-How to use this image
+How to use these images
 ===========================
 The following steps assume you are using the default project structure for OpenMPF Python components. Documentation
 for Python components can be found [here](https://openmpf.github.io/docs/site/Python-Batch-Component-API). 
@@ -42,7 +54,28 @@ MyFaceDetection
 └── setup.py
 ```
 
-The minimal Dockerfile is:
+If you are using `openmpf_python_executor_ssb`, the minimal Dockerfile is:
+```dockerfile
+FROM openmpf_python_executor_ssb:latest as build_component
+
+# If your component has external dependencies, you would add the commands necessary to download 
+# or install the dependencies here. Adding the dependencies prior the copying in your source code 
+# allows you to take advantage of the Docker build cache to avoid re-installing the dependencies 
+# every time your source code changes.
+# e.g. RUN pip3 install --no-cache-dir 'opencv-python>=4.4.0' 'tensorflow>=2.1.0'
+
+# `--mount=target=.` will bind-mount the root of the build context on to the current working 
+# directory which is set to $SRC_DIR in the base image.
+# The [install-component.sh](./install-component.sh) script will install your component in to your 
+# component's virtualenv (located at $COMPONENT_VIRTUALENV). It is provided by the 
+# openmpf_python_executor_ssb base image.
+# You also may want run unit tests in this step. 
+# The [EastTextDetection component's Dockerfile](https://github.com/openmpf/openmpf-components/blob/master/python/EastTextDetection/Dockerfile) 
+# shows one way of setting up unit tests.
+RUN --mount=target=. install-component.sh
+```
+
+If you are using `openmpf_python_executor` the minimal Dockerfile is:
 ```dockerfile
 # In first stage of the build we extend the openmpf_python_component_build base image.
 FROM openmpf_python_component_build:latest as build_component
@@ -51,6 +84,7 @@ FROM openmpf_python_component_build:latest as build_component
 # or build the dependencies here. Adding the dependencies prior the copying in your source code 
 # allows you to take advantage of the Docker build cache to avoid re-installing the dependencies 
 # every time your source code changes.
+# e.g. RUN yum install --assumeyes gcc; yum clean all; rm --recursive /var/cache/yum/*
 # e.g. RUN pip3 install --no-cache-dir 'opencv-python>=4.4.0' 'tensorflow>=2.1.0'
 
 # Copy in your source code
@@ -62,7 +96,7 @@ COPY . .
 RUN install-component.sh
 
 # You optionally may want to run unit tests here, or wherever is appropriate for your Dockerfile. 
-# The [EastTextDetection component's Dockerfile](https://github.com/openmpf/openmpf-components/blob/master/python/EastTextDetection/Dockerfile) 
+# The [EastTextDetection component's Dockerfile](https://github.com/openmpf/openmpf-components/blob/7145929319ff18c2b5957a3b7f88e4a04fcf3670/python/EastTextDetection/Dockerfile) 
 # shows one way of setting up unit tests, but you can do it in whatever way you see fit. 
 
 
