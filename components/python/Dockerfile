@@ -54,6 +54,9 @@ RUN cd /usr/local/bin; \
     ln --symbolic libpython3.8.so.1.0 libpython3.8.so; \
     ln --symbolic /usr/local/lib/libpython3.8.so.1.0 /usr/lib64/libpython3.8.so.1.0;
 
+# The Python headers are needed to build Python libararies with C extensions.
+COPY --from=openmpf_build /usr/local/include/python3.8 /usr/local/include/python3.8
+
 RUN --mount=type=tmpfs,target=/tmp \
     --mount=type=tmpfs,target=/var/cache/yum \
     yum update --assumeyes; \
