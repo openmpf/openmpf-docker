@@ -31,6 +31,10 @@ set -o errexit -o pipefail
 # NOTE: $HOSTNAME is not known until runtime.
 export THIS_MPF_NODE="${THIS_MPF_NODE}_id_${HOSTNAME}"
 
+if [ ! "$ACTIVE_MQ_BROKER_URI" ]; then
+    export ACTIVE_MQ_BROKER_URI="failover://(tcp://$ACTIVE_MQ_HOST:61616)?jms.prefetchPolicy.all=0&startupMaxReconnectAttempts=1"
+fi
+
 # Wait for ActiveMQ service.
 echo 'Waiting for ActiveMQ to become available ...'
 until curl --head "$ACTIVE_MQ_HOST:8161" >> /dev/null 2>&1; do
