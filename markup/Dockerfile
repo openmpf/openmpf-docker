@@ -39,7 +39,7 @@ ENV LANG en_US.UTF-8
 RUN yum update --assumeyes; \
     yum-config-manager --setopt=skip_missing_names_on_install=False --save; \
     yum install --assumeyes https://download1.rpmfusion.org/free/el/rpmfusion-free-release-7.noarch.rpm; \
-    yum install --assumeyes java-11-openjdk ffmpeg libheif; \
+    yum install --assumeyes java-11-openjdk ffmpeg libheif google-noto-emoji-fonts; \
     yum clean all; \
     rm -rf /var/cache/yum/*;
 
