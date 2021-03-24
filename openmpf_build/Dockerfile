@@ -52,12 +52,12 @@ RUN --mount=type=tmpfs,target=/tmp \
     yum install --assumeyes --nogpgcheck \
             cmake3 make gcc gcc-c++ qt-devel log4cxx-devel boost-devel ffmpeg ffmpeg-devel \
             gtest-devel java-11-openjdk-devel activemq-cpp-devel protobuf-static protobuf-devel \
-            libheif-devel file \
+            libheif-devel file google-noto-emoji-fonts \
             # Python build deps
             openssl-devel libffi-devel \
             # OpenCV build deps
             openblas-devel cuda-minimal-build-$CU_VERSION cuda-cufft-dev-$CU_VERSION cuda-npp-dev-$CU_VERSION \
-            libcudnn7-devel-7.6.5.33-1.cuda10.2 libcublas-devel-10.2.2.89; \
+            libcudnn7-devel-7.6.5.33-1.cuda10.2 libcublas-devel-10.2.2.89 harfbuzz-devel; \
     yum clean all; \
     # For protobuf maven plugin
     ln --symbolic /usr/bin/protoc /usr/local/bin/protoc; \

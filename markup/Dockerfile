@@ -41,7 +41,7 @@ RUN --mount=type=tmpfs,target=/tmp \
     yum update --assumeyes; \
     yum-config-manager --setopt=skip_missing_names_on_install=False --save; \
     yum install --assumeyes https://download1.rpmfusion.org/free/el/rpmfusion-free-release-7.noarch.rpm; \
-    yum install --assumeyes java-11-openjdk ffmpeg libheif; \
+    yum install --assumeyes java-11-openjdk ffmpeg libheif google-noto-emoji-fonts; \
     yum clean all;
 
 # Use mount and cp shell command because the docker COPY command resolves symlinks which then
