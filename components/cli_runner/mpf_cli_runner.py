@@ -564,7 +564,13 @@ def configure_logging(cmd_line_args) -> None:
         log_level = 'TRACE'
     elif log_level := os.environ.get('LOG_LEVEL'):
         log_level = log_level.upper()
-        if log_level not in ('TRACE', 'DEBUG', 'INFO', 'WARN', 'ERROR', 'FATAL'):
+        if log_level == 'WARNING':
+            # Python logging accepts either WARNING or WARN, but Log4CXX requires it be WARN.
+            log_level = 'WARN'
+        elif log_level == 'CRITICAL':
+            # Python logging accepts either CRITICAL or FATAL, but Log4CXX requires it be FATAL.
+            log_level = 'FATAL'
+        elif log_level not in ('TRACE', 'DEBUG', 'INFO', 'WARN', 'ERROR', 'FATAL'):
             print(f'Invalid log level of "{log_level}" provided. Log level will be set to DEBUG.')
             log_level = 'DEBUG'
     else:
