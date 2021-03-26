@@ -7,11 +7,11 @@
 # under contract, and is subject to the Rights in Data-General Clause       #
 # 52.227-14, Alt. IV (DEC 2007).                                            #
 #                                                                           #
-# Copyright 2020 The MITRE Corporation. All Rights Reserved.                #
+# Copyright 2021 The MITRE Corporation. All Rights Reserved.                #
 #############################################################################
 
 #############################################################################
-# Copyright 2020 The MITRE Corporation                                      #
+# Copyright 2021 The MITRE Corporation                                      #
 #                                                                           #
 # Licensed under the Apache License, Version 2.0 (the "License");           #
 # you may not use this file except in compliance with the License.          #
@@ -288,7 +288,7 @@ class JobRunner:
     def _get_media_metadata(cls, media_path: str, media_type: util.MediaType,
                             media_metadata: Dict[str, str]) -> Dict[str, str]:
         if media_type == util.MediaType.VIDEO and 'FPS' not in media_metadata:
-            log.info('FPS was not provided in the media metadata. Checking FPS with ffmpeg...')
+            log.info('FPS was not provided in the media metadata. Checking FPS with ffprobe...')
             fps = cls._get_fps(media_path)
             log.info(f'Determined FPS to be {fps}.')
             media_metadata['FPS'] = str(fps)
@@ -309,8 +309,8 @@ class JobRunner:
             return float(numerator) / float(denominator)
 
         except subprocess.CalledProcessError as e:
-            raise RuntimeError(f'Unable to determine FPS with ffmpeg. Please set it on the '
-                               f'command line using "-M FPS=x". ffmpeg stderr: {e.stderr}') from e
+            raise RuntimeError(f'Unable to determine FPS with ffprobe. Please set it on the '
+                               f'command line using "-M FPS=x". ffprobe stderr: {e.stderr}') from e
 
 
     @staticmethod
@@ -364,6 +364,7 @@ class JobRunner:
             return given_media_type
 
         log.warning('Media type argument missing. Attempting to guess file type...')
+        mime_type = mime_type.lower()
         if 'video' in mime_type:
             log.warning(f'Guessed that this is a video job because the mime type was {mime_type}.')
             return util.MediaType.VIDEO
@@ -483,16 +484,6 @@ class ComponentResultToDictConverter:
             detection_dict['height'],
             *detection_dict['detectionProperties'].items()
         ]
-
-
-
-
-def check_ld_lib_path(true_std_out, descriptor, mpf_home: pathlib.Path):
-    if 'LD_LIBRARY_PATH' not in os.environ:
-        os.environ['LD_LIBRARY_PATH'] = str(
-            mpf_home / 'plugins' / descriptor['componentName'] / 'lib')
-        os.environ['MPF_EXEC_STD_OUT'] = str(true_std_out.fileno())
-        os.execv(sys.executable, [sys.executable] + sys.argv)
 
 
 def run_as_daemon() -> None:
@@ -629,7 +620,7 @@ def parse_cmd_line_args(true_std_out: TextIO) -> argparse.Namespace:
     parser.add_argument(
         '--media-metadata', '-M', action=ParsePropsAction, metavar='<metadata_name>=<value>',
         help='Set a media metadata value. The argument should be the name of the metadata field '
-             'and its value separated by an "=" (e.g. "-P FPS=29.97"). '
+             'and its value separated by an "=" (e.g. "-M FPS=29.97"). '
              'This flag can be specified multiple times to set multiple metadata fields.')
 
     parser.add_argument(

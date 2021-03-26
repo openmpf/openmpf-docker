@@ -16,7 +16,7 @@ any build time dependencies. Some pip packages will attempt to compile C extensi
 `openmpf_python_executor` and `openmpf_python_component_build`.
 
 
-The executor image will:
+Both `openmpf_python_executor_ssb` and `openmpf_python_executor` will:
 
 - Register your component with the Workflow Manager.
 - Execute your code using the OpenMPF component executor binary.
@@ -54,6 +54,7 @@ MyFaceDetection
 └── setup.py
 ```
 
+#### `openmpf_python_executor_ssb` ###
 If you are using `openmpf_python_executor_ssb`, the minimal Dockerfile is:
 ```dockerfile
 FROM openmpf_python_executor_ssb:latest as build_component
@@ -75,6 +76,7 @@ FROM openmpf_python_executor_ssb:latest as build_component
 RUN --mount=target=. install-component.sh
 ```
 
+#### `openmpf_python_executor` ####
 If you are using `openmpf_python_executor` the minimal Dockerfile is:
 ```dockerfile
 # In first stage of the build we extend the openmpf_python_component_build base image.

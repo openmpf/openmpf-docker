@@ -5,11 +5,11 @@
 # under contract, and is subject to the Rights in Data-General Clause       #
 # 52.227-14, Alt. IV (DEC 2007).                                            #
 #                                                                           #
-# Copyright 2020 The MITRE Corporation. All Rights Reserved.                #
+# Copyright 2021 The MITRE Corporation. All Rights Reserved.                #
 #############################################################################
 
 #############################################################################
-# Copyright 2020 The MITRE Corporation                                      #
+# Copyright 2021 The MITRE Corporation                                      #
 #                                                                           #
 # Licensed under the Apache License, Version 2.0 (the "License");           #
 # you may not use this file except in compliance with the License.          #
@@ -40,7 +40,7 @@ class MediaType(enum.Enum):
 
 class ComponentHandle(Protocol):
     """
-    Manages the lifetime of a language specific component.
+    Manages the lifetime of a language-specific component.
     """
 
     # The type of detection produced by the component.
@@ -62,7 +62,7 @@ class ComponentHandle(Protocol):
     def run_job(self, job) -> Iterable:
         """
         Invokes the component code to run the given job.
-        :param job: The language specific (C++ or Python) job object describing the job.
+        :param job: The language-specific (C++ or Python) job object describing the job.
         :return: An iterable containing the results of running the component on the given job.
                  Contents of result iterable are dependent on the job type and component language.
         """

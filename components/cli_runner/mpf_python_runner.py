@@ -5,11 +5,11 @@
 # under contract, and is subject to the Rights in Data-General Clause       #
 # 52.227-14, Alt. IV (DEC 2007).                                            #
 #                                                                           #
-# Copyright 2020 The MITRE Corporation. All Rights Reserved.                #
+# Copyright 2021 The MITRE Corporation. All Rights Reserved.                #
 #############################################################################
 
 #############################################################################
-# Copyright 2020 The MITRE Corporation                                      #
+# Copyright 2021 The MITRE Corporation                                      #
 #                                                                           #
 # Licensed under the Apache License, Version 2.0 (the "License");           #
 # you may not use this file except in compliance with the License.          #
@@ -51,12 +51,13 @@ class PythonComponentHandle(util.ComponentHandle):
             raise RuntimeError(f'The "{distribution_name}" component did not declare a '
                                '"mpf.exported_component" entrypoint')
 
-        # The left hand side of the '=' in entry point declaration should be "component"
+        # The left hand side of the '=' in entry point declaration should be "component".
+        # For example: 'mpf.exported_component': 'component = my_module:MyComponentClass'
         component_entry_point = entry_points.get('component')
         if component_entry_point is None:
             # An entry point in the "mpf.exported_component" group was found,
             # but the left hand side of the '=' was something else.
-            # For example 'mpf.exported_component': 'MyComponentClass = my_module:MyComponentClass'
+            # For example: 'mpf.exported_component': 'MyComponentClass = my_module:MyComponentClass'
             # We really only care about the entry point group, since we don't do anything with
             # entry point name.
             component_entry_point = next(iter(entry_points.values()))

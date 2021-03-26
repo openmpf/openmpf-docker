@@ -75,9 +75,9 @@ ENV PLUGINS_DIR $MPF_HOME/plugins
 
 COPY --from=openmpf_build /build-artifacts/java-executor/*.jar $MPF_HOME/jars/
 
-COPY docker-executor-entrypoint.py /scripts/docker-entrypoint.py
+COPY component-executor.py /scripts/component-executor.py
 
-ENTRYPOINT ["python3", "-u", "/scripts/docker-entrypoint.py"]
+ENTRYPOINT ["python3", "-u", "/scripts/component-executor.py"]
 
 LABEL org.label-schema.build-date="" \
       org.label-schema.license="Apache 2.0" \
