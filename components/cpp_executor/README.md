@@ -76,7 +76,7 @@ FROM openmpf_cpp_executor:latest
 # the dependencies every time your source code changes.
 
 
-# Set LD_LIBRARY_PATH so this component works with the [CLI runner](../cli_runner/README.md).
+# Set LD_LIBRARY_PATH so this component works with the [CLI runner](../../CLI_RUNNER.md).
 ENV LD_LIBRARY_PATH $PLUGINS_DIR/MyFaceDetection/lib
 
 # Copy only the files the component will need at runtime from the build stage. 

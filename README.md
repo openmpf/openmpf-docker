@@ -336,6 +336,12 @@ or virtual machines. The simplest way to do this is to set up a Docker Swarm
 deployment. If you would like a walkthrough on how to do that, please see the
 [Swarm Deployment Guide](SWARM.md).
 
+
+### (Optional) CLI Runner
+The [OpenMPF Command Line Runner (CLI runner)](CLI_RUNNER.md) allows users to run jobs with a single component 
+without the Workflow Manager.
+
+
 ### (Optional) Configure Users
 
 Copy
