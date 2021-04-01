@@ -35,7 +35,6 @@ import json
 import logging
 import mimetypes
 import os
-import pathlib
 import shutil
 import signal
 import subprocess
@@ -602,6 +601,7 @@ def parse_cmd_line_args(true_std_out: TextIO) -> argparse.Namespace:
             prop_key, prop_val = value.split('=', 1)
             existing_props[prop_key] = prop_val
 
+    # CLI_RUNNER.md needs to be updated if any of these arguments or their descriptions change.
     parser = argparse.ArgumentParser()
     parser.add_argument('media_path',
                         help='Path to media to process. To read from standard in use "-"')

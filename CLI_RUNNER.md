@@ -7,14 +7,6 @@ The CLI runner does not support multi-component pipelines. It also does not segm
 It outputs results in a JSON structure that is a subset of the regular OpenMPF output. 
 
 
-### Command Line Arguments ###
-For the full set of available command line arguments and documentation, run the component Docker 
-image with the `--help` argument.
-```shell script
-docker run --rm openmpf_ocv_face_detection --help
-```
-
-
 ### Example Commands ###
 
 This is the simplest possible command. It runs OCV face detection on `face.jpg`. 
@@ -55,7 +47,7 @@ docker run --rm -i openmpf_ocv_face_detection -t image - -P MIN_FACE_SIZE=50 -P 
 Media metadata can be set using the `-M` flag. In the example below we set the media metadata 
 property `FPS` to 29.97.
 ```shell script
-docker run --rm -i openmpf_ocv_face_detection -t image - -M FPS=29.97 < face.mp4
+docker run --rm -i openmpf_ocv_face_detection -t video - -M FPS=29.97 < face.mp4
 ```
 
 This is an example of using the runner in a shell pipeline. It allows us to preprocess the 
@@ -64,7 +56,6 @@ it to `openmpf_tesseract_ocr_text_detection`. The `convert` command is part of I
 ```shell script
 convert -sharpen 20 eng.png bmp:- | docker run --rm -i openmpf_tesseract_ocr_text_detection -t image -
 ```
-
 
 
 ### Output Options ###
@@ -88,3 +79,63 @@ docker run --rm -i openmpf_ocv_face_detection -t image - -o out.json < face.jpg
 ```
 
 
+### Command Line Arguments ###
+For the full set of available command line arguments and documentation, run the component Docker
+image with the `--help` argument.
+```
+$ docker run --rm openmpf_ocv_face_detection --help
+usage: runner [-h] [--media-type {image,video,audio,generic}]
+              [--job-prop <prop_name>=<value>]
+              [--media-metadata <metadata_name>=<value>] [--begin BEGIN]
+              [--end END] [--daemon] [--pretty] [--brief] [--output OUTPUT]
+              [--descriptor DESCRIPTOR_FILE] [--verbose]
+              media_path
+
+positional arguments:
+  media_path            Path to media to process. To read from standard in use
+                        "-"
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --media-type {image,video,audio,generic}, -t {image,video,audio,generic}
+                        Specify type of media. Required when reading media
+                        from standard in. When not reading from standard in,
+                        the file extension will be used to guess the media
+                        type.
+  --job-prop <prop_name>=<value>, -P <prop_name>=<value>
+                        Set a job property for the job. The argument should be
+                        the name of the job property and its value separated
+                        by an "=" (e.g. "-P ROTATION=90"). This flag can be
+                        specified multiple times to set multiple job
+                        properties.
+  --media-metadata <metadata_name>=<value>, -M <metadata_name>=<value>
+                        Set a media metadata value. The argument should be the
+                        name of the metadata field and its value separated by
+                        an "=" (e.g. "-M FPS=29.97"). This flag can be
+                        specified multiple times to set multiple metadata
+                        fields.
+  --begin BEGIN, -b BEGIN
+                        For videos, the first frame number (0-based index) of
+                        the video that should be processed. For audio, the
+                        time (0-based index, in milliseconds) to begin
+                        processing the audio file.
+  --end END, -e END     For videos, the last frame number (0-based index) of
+                        the video that should be processed. For audio, the
+                        time (0-based index, in milliseconds) to stop
+                        processing the audio file.
+  --daemon, -d          Start up and sleep forever. This can be used to keep
+                        the Docker container alive so that jobs can be started
+                        with `docker exec <container-id> runner ...` .
+  --pretty, -p          Pretty print JSON output.
+  --brief               Only output tracks.
+  --output OUTPUT, -o OUTPUT
+                        The path where the JSON output should written. When
+                        omitted, JSON output is written to standard out.
+  --descriptor DESCRIPTOR_FILE
+                        Specifies which descriptor to use when multiple
+                        descriptors are present. Usually only needed when
+                        running outside of docker.
+  --verbose, -v         When provided once, set the log level to DEBUG. When
+                        provided twice (e.g. "-vv"), set the log level to
+                        TRACE
+```
