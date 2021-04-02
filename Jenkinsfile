@@ -53,6 +53,8 @@ def customLabelKey = env.getProperty("custom_label_key") ?: "custom"
 
 def preDockerBuildScriptPath = env.pre_docker_build_script_path
 
+env.DOCKER_BUILDKIT=1
+env.COMPOSE_DOCKER_CLI_BUILD=1
 
 class Repo {
     String name
@@ -248,116 +250,127 @@ try {
             sh preDockerBuildScriptPath
         }
 
-        withEnv(['DOCKER_BUILDKIT=1', 'RUN_TESTS=true']) {
-            def noCacheArg = buildNoCache ? '--no-cache' : ''
-            def commonBuildArgs = " --build-arg BUILD_TAG=$inProgressTag --build-arg BUILD_VERSION=$imageVersion " +
-                    "$noCacheArg "
-            def labelArgs = getUserDefinedLabelArgs(imageUrl, imageVersion)
-            def customLabelArg = getCustomLabelArg(customLabelKey)
+        def noCacheArg = buildNoCache ? '--no-cache' : ''
+        def commonBuildArgs = " --build-arg BUILD_TAG=$inProgressTag --build-arg BUILD_VERSION=$imageVersion " +
+                "$noCacheArg "
+        def labelArgs = getUserDefinedLabelArgs(imageUrl, imageVersion)
+        def customLabelArg = getCustomLabelArg(customLabelKey)
 
-            dir (openmpfDockerRepo.path) {
-                sh 'docker build -f openmpf_build/Dockerfile .. --build-arg RUN_TESTS ' +
-                        "$commonBuildArgs $labelArgs -t openmpf_build:$inProgressTag"
+        dir (openmpfDockerRepo.path) {
+            sh 'docker build -f openmpf_build/Dockerfile .. --build-arg RUN_TESTS=true ' +
+                    "$commonBuildArgs $labelArgs -t openmpf_build:$inProgressTag"
 
-                // --no-cache needs to be handled differently for the openmpf_integration_tests image because it
-                // expects that openmpf_build will populate the mvn_cache cache mount. When you run a
-                // --no-cache build, Docker will clear any cache mounts used in the Dockerfile right before
-                // beginning the build. If we were to just do a regular --no-cache build for openmpf_integration_tests,
-                // the mvn_cache mount will be empty.
-                if (buildNoCache) {
-                    // openmpf_integration_tests Dockerfile uses two stages. The final stage uses openmpf_build as the
-                    // base image, so the --no-cache build of openmpf_build invalidates the cache for that stage.
-                    // In order to invalidate the cache for the first stage (download_dependencies), we do a --no-cache
-                    // build with download_dependencies as the target
-                    sh 'docker build integration_tests --target download_dependencies --no-cache'
-                }
-                sh "docker build integration_tests $commonBuildArgs --no-cache=false " +
-                        " -t openmpf_integration_tests:$inProgressTag"
+            // --no-cache needs to be handled differently for the openmpf_integration_tests image because it
+            // expects that openmpf_build will populate the mvn_cache cache mount. When you run a
+            // --no-cache build, Docker will clear any cache mounts used in the Dockerfile right before
+            // beginning the build. If we were to just do a regular --no-cache build for openmpf_integration_tests,
+            // the mvn_cache mount will be empty.
+            if (buildNoCache) {
+                // openmpf_integration_tests Dockerfile uses two stages. The final stage uses openmpf_build as the
+                // base image, so the --no-cache build of openmpf_build invalidates the cache for that stage.
+                // In order to invalidate the cache for the first stage (download_dependencies), we do a --no-cache
+                // build with download_dependencies as the target
+                sh 'docker build integration_tests --target download_dependencies --no-cache'
             }
+            sh "docker build integration_tests $commonBuildArgs --no-cache=false " +
+                    " -t openmpf_integration_tests:$inProgressTag"
+        }
+
+        if (buildCustomComponents) {
+            sh "docker build $customSystemTestsRepo.path $commonBuildArgs $customLabelArg " +
+                    " -t openmpf_integration_tests:$inProgressTag"
+        }
+
+
+        dir(openmpfDockerRepo.path + '/components') {
+            def cppShas = getVcsRefLabelArg([openmpfCppSdkRepo])
+            sh "docker build . -f cpp_component_build/Dockerfile $commonBuildArgs $labelArgs $cppShas " +
+                    " -t openmpf_cpp_component_build:$inProgressTag"
+
+            sh "docker build . -f cpp_executor/Dockerfile $commonBuildArgs $labelArgs $cppShas " +
+                    " -t openmpf_cpp_executor:$inProgressTag"
+
+
+            def javaShas = getVcsRefLabelArg([openmpfJavaSdkRepo])
+            sh "docker build . -f java_component_build/Dockerfile $commonBuildArgs $labelArgs $javaShas " +
+                    " -t openmpf_java_component_build:$inProgressTag"
+
+            sh "docker build . -f java_executor/Dockerfile $commonBuildArgs $labelArgs $javaShas " +
+                    " -t openmpf_java_executor:$inProgressTag"
+
+
+            def pythonShas = getVcsRefLabelArg([openmpfPythonSdkRepo])
+            sh "docker build . -f python/Dockerfile $commonBuildArgs $labelArgs $pythonShas " +
+                    " --target ssb -t openmpf_python_executor_ssb:$inProgressTag"
+
+            // Add --no-cache=false so openmpf_python_component_build and openmpf_python_executor
+            // use the same common layers as openmpf_python_executor_ssb.
+            // When a user requests a no-cache build, openmpf_python_executor_ssb will be
+            // completely rebuilt. openmpf_python_component_build and openmpf_python_executor
+            // will use the layers from the openmpf_python_executor_ssb that was just built with
+            // --no-cache.
+            sh "docker build . -f python/Dockerfile $commonBuildArgs $labelArgs $pythonShas " +
+                    " --target build -t openmpf_python_component_build:$inProgressTag --no-cache=false"
+
+            sh "docker build . -f python/Dockerfile $commonBuildArgs $labelArgs $pythonShas " +
+                    " --target executor -t openmpf_python_executor:$inProgressTag --no-cache=false"
+        }
+
+        dir (openmpfDockerRepo.path) {
+            sh 'cp .env.tpl .env'
+
+            componentComposeFiles = 'docker-compose.components.yml'
+            def customComponentServices = []
 
             if (buildCustomComponents) {
-                sh "docker build $customSystemTestsRepo.path $commonBuildArgs $customLabelArg " +
-                        " -t openmpf_integration_tests:$inProgressTag"
-            }
+                def customComponentsComposeFile =
+                        "../../$customComponentsRepo.path/docker-compose.custom-components.yml"
+                componentComposeFiles += ":$customComponentsComposeFile"
 
-
-            dir(openmpfDockerRepo.path + '/components') {
-                def cppShas = getVcsRefLabelArg([openmpfCppSdkRepo])
-                sh "docker build . -f cpp_component_build/Dockerfile $commonBuildArgs $labelArgs $cppShas " +
-                        " -t openmpf_cpp_component_build:$inProgressTag"
-
-                sh "docker build . -f cpp_executor/Dockerfile $commonBuildArgs $labelArgs $cppShas " +
-                        " -t openmpf_cpp_executor:$inProgressTag"
-
-
-                def javaShas = getVcsRefLabelArg([openmpfJavaSdkRepo])
-                sh "docker build . -f java_component_build/Dockerfile $commonBuildArgs $labelArgs $javaShas " +
-                        " -t openmpf_java_component_build:$inProgressTag"
-
-                sh "docker build . -f java_executor/Dockerfile $commonBuildArgs $labelArgs $javaShas " +
-                        " -t openmpf_java_executor:$inProgressTag"
-
-
-                def pythonShas = getVcsRefLabelArg([openmpfPythonSdkRepo])
-                sh "docker build . -f python_component_build/Dockerfile $commonBuildArgs $labelArgs $pythonShas " +
-                        " -t openmpf_python_component_build:$inProgressTag"
-
-                sh "docker build . -f python_executor/Dockerfile $commonBuildArgs $labelArgs $pythonShas " +
-                        " -t openmpf_python_executor:$inProgressTag"
-            }
-
-            dir (openmpfDockerRepo.path) {
-                sh 'cp .env.tpl .env'
-
-                componentComposeFiles = 'docker-compose.components.yml'
-                def customComponentServices = []
-
-                if (buildCustomComponents) {
-                    def customComponentsComposeFile =
-                            "../../$customComponentsRepo.path/docker-compose.custom-components.yml"
-                    componentComposeFiles += ":$customComponentsComposeFile"
-                    def customGpuOnlyComponentsComposeFile =
+                def customGpuOnlyComponentsComposeFile =
                             "../../$customComponentsRepo.path/docker-compose.custom-gpu-only-components.yml"
-                    componentComposeFiles += ":$customGpuOnlyComponentsComposeFile"
-                    customComponentServices =
-                            readYaml(text: shOutput("cat $customComponentsComposeFile")).services.keySet()
-                    customComponentServices +=
-                            readYaml(text: shOutput("cat $customGpuOnlyComponentsComposeFile")).services.keySet()
-                }
+                componentComposeFiles += ":$customGpuOnlyComponentsComposeFile"
 
-                runtimeComposeFiles = "docker-compose.core.yml:$componentComposeFiles:docker-compose.elk.yml"
-
-                withEnv(["TAG=$inProgressTag", "COMPOSE_FILE=$runtimeComposeFiles", 'COMPOSE_DOCKER_CLI_BUILD=1']) {
-                    docker.withRegistry("http://$dockerRegistryHostAndPort", dockerRegistryCredId) {
-                        sh "docker-compose build $commonBuildArgs --build-arg RUN_TESTS --parallel"
-                    }
-
-                    def composeYaml = readYaml(text: shOutput('docker-compose config'))
-                    addVcsRefLabels(composeYaml, openmpfRepo, openmpfDockerRepo)
-                    addUserDefinedLabels(composeYaml, customComponentServices, imageUrl, imageVersion, customLabelKey)
-                }
+                customComponentServices =
+                        readYaml(text: shOutput("cat $customComponentsComposeFile")).services.keySet()
+                customComponentServices +=
+                        readYaml(text: shOutput("cat $customGpuOnlyComponentsComposeFile")).services.keySet()
             }
 
-            if (applyCustomConfig) {
-                echo 'APPLYING CUSTOM CONFIGURATION'
-                dir(customConfigRepo.path) {
-                    def wfmShasArg = getVcsRefLabelArg([openmpfRepo, openmpfDockerRepo, customConfigRepo])
-                    sh "docker build workflow_manager $commonBuildArgs $customLabelArg $wfmShasArg " +
-                            " -t openmpf_workflow_manager:$inProgressTag"
+            runtimeComposeFiles = "docker-compose.core.yml:$componentComposeFiles:docker-compose.elk.yml"
 
-                    def amqShasArg = getVcsRefLabelArg([openmpfDockerRepo, customConfigRepo])
-                    sh "docker build activemq $commonBuildArgs $customLabelArg $amqShasArg " +
-                            " -t openmpf_activemq:$inProgressTag"
+            withEnv(["TAG=$inProgressTag", "COMPOSE_FILE=$runtimeComposeFiles"]) {
+                docker.withRegistry("http://$dockerRegistryHostAndPort", dockerRegistryCredId) {
+                        sh "docker-compose build $commonBuildArgs --build-arg RUN_TESTS=true --parallel"
                 }
+
+                def composeYaml = readYaml(text: shOutput('docker-compose config'))
+                addVcsRefLabels(composeYaml, openmpfRepo, openmpfDockerRepo)
+                addUserDefinedLabels(composeYaml, customComponentServices, imageUrl, imageVersion, customLabelKey)
             }
-            else  {
-                echo 'SKIPPING CUSTOM CONFIGURATION'
+        }
+
+        if (applyCustomConfig) {
+            echo 'APPLYING CUSTOM CONFIGURATION'
+            dir(customConfigRepo.path) {
+                def wfmShasArg = getVcsRefLabelArg([openmpfRepo, openmpfDockerRepo, customConfigRepo])
+                sh "docker build workflow_manager $commonBuildArgs $customLabelArg $wfmShasArg " +
+                        " -t openmpf_workflow_manager:$inProgressTag"
+
+                def amqShasArg = getVcsRefLabelArg([openmpfDockerRepo, customConfigRepo])
+                sh "docker build activemq $commonBuildArgs $customLabelArg $amqShasArg " +
+                        " -t openmpf_activemq:$inProgressTag"
             }
-        } // withEnv
+        }
+        else  {
+            echo 'SKIPPING CUSTOM CONFIGURATION'
+        }
     } // stage('Build images')
 
     stage('Run Integration Tests') {
         dir(openmpfDockerRepo.path) {
+            test_cli_runner(inProgressTag)
+
             def skipArgs = env.docker_services_build_only.split(',').collect{ it.replaceAll("\\s","") }.findAll{ !it.isEmpty() }.collect{ "--scale $it=0"  }.join(' ')
             def composeFiles = "docker-compose.integration.test.yml:$componentComposeFiles"
 
@@ -412,6 +425,7 @@ try {
 
                 sh "docker push '${remoteImagePrefix}openmpf_python_component_build:$imageTag'"
                 sh "docker push '${remoteImagePrefix}openmpf_python_executor:$imageTag'"
+                sh "docker push '${remoteImagePrefix}openmpf_python_executor_ssb:$imageTag'"
 
                 sh "cd '$openmpfDockerRepo.path' && docker-compose push"
             } // docker.withRegistry ...
@@ -655,6 +669,14 @@ def dockerCleanUp() {
     catch (e) {
         echo "Docker clean up failed due to: $e"
     }
+}
+
+
+def test_cli_runner(inProgressTag) {
+    sh "docker build components/cli_runner/tests -t openmpf_cli_runner_tests:$inProgressTag"
+
+    sh "docker run --rm --env TEST_IMG_TAG=$inProgressTag --volume /var/run/docker.sock:/var/run/docker.sock " +
+            " openmpf_cli_runner_tests:$inProgressTag"
 }
 
 

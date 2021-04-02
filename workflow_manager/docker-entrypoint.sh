@@ -38,6 +38,10 @@ if [ -z "$MPF_VERSION" ]; then
     unset MPF_VERSION
 fi
 
+if [ ! "$ACTIVE_MQ_BROKER_URI" ]; then
+    export ACTIVE_MQ_BROKER_URI="failover://(tcp://$ACTIVE_MQ_HOST:61616)?jms.prefetchPolicy.all=0&startupMaxReconnectAttempts=1"
+fi
+
 ################################################################################
 # Custom Steps                                                                 #
 ################################################################################

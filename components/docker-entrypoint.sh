@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+
 #############################################################################
 # NOTICE                                                                    #
 #                                                                           #
@@ -24,9 +26,25 @@
 # limitations under the License.                                            #
 #############################################################################
 
-**/Dockerfile
-.dockerignore
+set -o errexit -o pipefail
 
-**/README.md
-**/__pycache__
-cli_runner/tests
+
+if [ $# -eq 0 ]; then
+    echo No command line arguments. Starting as regular component... 1>&2
+    exec python3 /scripts/component-executor.py
+fi
+
+if [ "$1" == runner ]; then
+    shift
+fi
+
+if [ "$1" == -d ] || [ "$1" == --daemon ]; then
+    # Linux disables default signal handlers for pid 1, so we need to explicitly add a signal
+    # handler.
+    trap 'exit 143' TERM
+    sleep infinity &
+    wait
+else
+    echo Starting as component CLI runner... 1>&2
+    exec runner "$@"
+fi

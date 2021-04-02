@@ -9,8 +9,6 @@ This image will:
 
 - Register your component with the Workflow Manager.
 - Execute your code using the OpenMPF component executor binary.
-- Tail log files so that they appear in the terminal window where you ran `docker run ..`
-  to start your component container.
   
   
 Build the base images
@@ -43,8 +41,6 @@ MyFaceDetection
 ├── MyFaceDetection.cpp
 ├── MyFaceDetection.h
 └── plugin-files
-    ├── config
-    │   └── Log4cxxConfig.xml
     └── descriptor
         └── descriptor.json
 ```
@@ -80,10 +76,8 @@ FROM openmpf_cpp_executor:latest
 # the dependencies every time your source code changes.
 
 
-# Set the COMPONENT_LOG_NAME environment variable so that your component's log file can be 
-# printed to standard out when running the image. 
-# The log name is defined in plugin-files/config/Log4cxxConfig.xml.
-ENV COMPONENT_LOG_NAME my-face-detection.log
+# Set LD_LIBRARY_PATH so this component works with the [CLI runner](../../CLI_RUNNER.md).
+ENV LD_LIBRARY_PATH $PLUGINS_DIR/MyFaceDetection/lib
 
 # Copy only the files the component will need at runtime from the build stage. 
 # This line also copies over the libraries that your component links to. 

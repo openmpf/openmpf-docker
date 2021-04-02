@@ -58,12 +58,13 @@ RUN cd /usr/local/bin; \
     ln --symbolic /usr/local/lib/libpython3.8.so.1.0 /usr/lib64/libpython3.8.so.1.0;
 
 
-RUN yum update --assumeyes; \
+RUN --mount=type=tmpfs,target=/tmp \
+    --mount=type=tmpfs,target=/var/cache/yum \
+    yum update --assumeyes; \
     yum-config-manager --setopt=skip_missing_names_on_install=False --save; \
     yum install --assumeyes --nogpgcheck https://download1.rpmfusion.org/free/el/rpmfusion-free-release-7.noarch.rpm; \
     yum install --assumeyes java-11-openjdk ffmpeg tomcat-native file; \
-    yum clean all; \
-    rm --recursive /var/cache/yum/*;
+    yum clean all;
 
 ENV JAVA_HOME /etc/alternatives/jre
 
@@ -94,7 +95,6 @@ COPY --from=openmpf_build /build-artifacts/workflow-manager /opt/apache-tomcat/w
 ENV MPF_HOME /opt/mpf
 
 ENV ACTIVE_MQ_HOST=activemq
-ENV ACTIVE_MQ_BROKER_URI="failover://(tcp://$ACTIVE_MQ_HOST:61616)?jms.prefetchPolicy.all=0&startupMaxReconnectAttempts=1"
 ENV REDIS_HOST=redis
 ENV THIS_MPF_NODE=workflow-manager
 ENV no_proxy=localhost

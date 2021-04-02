@@ -36,12 +36,13 @@ SHELL ["/bin/bash", "-o", "errexit", "-o", "pipefail", "-c"]
 
 ENV LANG en_US.UTF-8
 
-RUN yum update --assumeyes; \
+RUN --mount=type=tmpfs,target=/tmp \
+    --mount=type=tmpfs,target=/var/cache/yum \
+    yum update --assumeyes; \
     yum-config-manager --setopt=skip_missing_names_on_install=False --save; \
     yum install --assumeyes https://download1.rpmfusion.org/free/el/rpmfusion-free-release-7.noarch.rpm; \
     yum install --assumeyes java-11-openjdk ffmpeg libheif google-noto-emoji-fonts; \
-    yum clean all; \
-    rm -rf /var/cache/yum/*;
+    yum clean all;
 
 # Use mount and cp shell command because the docker COPY command resolves symlinks which then
 # causes duplicate copies of the libraries to be added to the image.
@@ -59,7 +60,6 @@ ENV MPF_HOME /opt/mpf
 COPY --from=openmpf_build /build-artifacts/markup/*.jar $MPF_HOME/jars/
 
 ENV ACTIVE_MQ_HOST activemq
-ENV ACTIVE_MQ_BROKER_URI="failover://(tcp://$ACTIVE_MQ_HOST:61616)?jms.prefetchPolicy.all=0&startupMaxReconnectAttempts=1"
 ENV MPF_LOG_PATH $MPF_HOME/share/logs
 ENV THIS_MPF_NODE markup
 

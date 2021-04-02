@@ -15,3 +15,5 @@ swarm-compose.yml
 openmpf-docker-images*
 .env
 test-reports
+__pycache__
+
