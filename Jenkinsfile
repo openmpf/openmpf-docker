@@ -198,7 +198,8 @@ try {
                                       disableSubmodules: false,
                                       parentCredentials: true,
                                       recursiveSubmodules: true,
-                                      trackingSubmodules: false]])
+                                      trackingSubmodules: false],
+                            [$class: 'CloneOption', timeout: 60]])
         }
 
         for (repo in allRepos) {
