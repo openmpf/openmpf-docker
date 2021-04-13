@@ -97,6 +97,7 @@ RUN --mount=type=tmpfs,target=/tmp \
     curl --location 'https://github.com/opencv/opencv/archive/4.5.0.tar.gz' \
         | tar --extract --gzip; \
     cd opencv-4.5.0; \
+    sed -i '297s/.*/    return min((int)sysconf( _SC_NPROCESSORS_ONLN ), 4);/' modules/videoio/src/cap_ffmpeg_impl.hpp; \
     mkdir build; \
     cd build; \
     cmake3 -DCMAKE_INSTALL_PREFIX:PATH='/opt/opencv-4.5.0' \
