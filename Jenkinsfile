@@ -390,22 +390,23 @@ try {
                      // Use custom project name to allow multiple builds on same machine
                      "COMPOSE_PROJECT_NAME=openmpf_$buildId",
                      "COMPOSE_FILE=$composeFiles"]) {
-                try {
-                    sh "docker-compose up --exit-code-from workflow-manager $scaleArgs $skipArgs"
-                    shStatus 'docker-compose down --volumes'
-                }
-                catch (e) {
-                    if (preserveContainersOnFailure) {
-                        shStatus 'docker-compose stop'
-                    }
-                    else {
+                docker.withRegistry("http://$dockerRegistryHostAndPort", dockerRegistryCredId) {
+                    try {
+                        sh "docker-compose up --exit-code-from workflow-manager $scaleArgs $skipArgs"
                         shStatus 'docker-compose down --volumes'
                     }
-                    throw e;
-                }
-                finally {
-                    junit 'test-reports/*-reports/*.xml'
-                }
+                    catch (e) {
+                        if (preserveContainersOnFailure) {
+                            shStatus 'docker-compose stop'
+                        } else {
+                            shStatus 'docker-compose down --volumes'
+                        }
+                        throw e;
+                    }
+                    finally {
+                        junit 'test-reports/*-reports/*.xml'
+                    }
+                } // withRegistry
             } // withEnv
         } // dir(openmpfDockerRepo.path)
     } // stage('Run Integration Tests')
