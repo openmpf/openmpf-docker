@@ -36,7 +36,6 @@ def mvnTestOptions = env.mvn_test_options ?: ''
 def dockerRegistryHost = env.docker_registry_host
 def dockerRegistryPort = env.docker_registry_port
 def dockerRegistryPath = env.docker_registry_path ?: "/openmpf"
-def dockerBaseImagePullCredId = env.docker_base_image_pull_cred_id
 def dockerRegistryCredId = env.docker_registry_cred_id;
 def pushRuntimeImages = env.push_runtime_images?.toBoolean() ?: false
 
@@ -228,25 +227,6 @@ try {
     def runtimeComposeFiles
 
     stage('Build images') {
-        docker.withRegistry('', dockerBaseImagePullCredId) {
-            // Make sure we are using most recent version of external images
-            for (externalImage in ['docker/dockerfile:1.2', 'postgres:alpine', 'redis:alpine', 'centos:7',
-                                   'python:3.8-alpine', 'openmpf/openmpf_trtis_detection_models:latest']) {
-                try {
-                    sh "docker pull '$externalImage'"
-                }
-                catch (e) {
-                    if (buildNoCache) {
-                        throw e;
-                    }
-                    else {
-                        echo "WARNING: Could not pull latest $externalImage from DockerHub."
-                        e.printStackTrace()
-                    }
-                }
-            }
-        }
-
         if (preDockerBuildScriptPath) {
             sh preDockerBuildScriptPath
         }
