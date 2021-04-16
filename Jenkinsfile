@@ -227,6 +227,23 @@ try {
     def runtimeComposeFiles
 
     stage('Build images') {
+        // Make sure we are using most recent version of external images
+            for (externalImage in ['docker/dockerfile:1.2', 'postgres:alpine',
+                                   'redis:alpine', 'centos:7']) {
+            try {
+                sh "docker pull '$externalImage'"
+            }
+            catch (e) {
+                if (buildNoCache) {
+                    throw e;
+                }
+                else {
+                    echo "WARNING: Could not pull latest $externalImage from DockerHub."
+                    e.printStackTrace()
+                }
+            }
+        }
+
         if (preDockerBuildScriptPath) {
             sh preDockerBuildScriptPath
         }
