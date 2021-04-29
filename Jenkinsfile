@@ -36,7 +36,6 @@ def mvnTestOptions = env.mvn_test_options ?: ''
 def dockerRegistryHost = env.docker_registry_host
 def dockerRegistryPort = env.docker_registry_port
 def dockerRegistryPath = env.docker_registry_path ?: "/openmpf"
-def dockerBaseImagePullCredId = env.docker_base_image_pull_cred_id
 def dockerRegistryCredId = env.docker_registry_cred_id;
 def pushRuntimeImages = env.push_runtime_images?.toBoolean() ?: false
 
@@ -198,7 +197,8 @@ try {
                                       disableSubmodules: false,
                                       parentCredentials: true,
                                       recursiveSubmodules: true,
-                                      trackingSubmodules: false]])
+                                      trackingSubmodules: false],
+                            [$class: 'CloneOption', timeout: 60]])
         }
 
         for (repo in allRepos) {
@@ -227,21 +227,19 @@ try {
     def runtimeComposeFiles
 
     stage('Build images') {
-        docker.withRegistry('', dockerBaseImagePullCredId) {
-            // Make sure we are using most recent version of external images
+        // Make sure we are using most recent version of external images
             for (externalImage in ['docker/dockerfile:1.2', 'postgres:alpine',
                                    'redis:alpine', 'centos:7']) {
-                try {
-                    sh "docker pull '$externalImage'"
+            try {
+                sh "docker pull '$externalImage'"
+            }
+            catch (e) {
+                if (buildNoCache) {
+                    throw e;
                 }
-                catch (e) {
-                    if (buildNoCache) {
-                        throw e;
-                    }
-                    else {
-                        echo "WARNING: Could not pull latest $externalImage from DockerHub."
-                        e.printStackTrace()
-                    }
+                else {
+                    echo "WARNING: Could not pull latest $externalImage from DockerHub."
+                    e.printStackTrace()
                 }
             }
         }
@@ -389,22 +387,23 @@ try {
                      // Use custom project name to allow multiple builds on same machine
                      "COMPOSE_PROJECT_NAME=openmpf_$buildId",
                      "COMPOSE_FILE=$composeFiles"]) {
-                try {
-                    sh "docker-compose up --exit-code-from workflow-manager $scaleArgs $skipArgs"
-                    shStatus 'docker-compose down --volumes'
-                }
-                catch (e) {
-                    if (preserveContainersOnFailure) {
-                        shStatus 'docker-compose stop'
-                    }
-                    else {
+                docker.withRegistry("http://$dockerRegistryHostAndPort", dockerRegistryCredId) {
+                    try {
+                        sh "docker-compose up --exit-code-from workflow-manager $scaleArgs $skipArgs"
                         shStatus 'docker-compose down --volumes'
                     }
-                    throw e;
-                }
-                finally {
-                    junit 'test-reports/*-reports/*.xml'
-                }
+                    catch (e) {
+                        if (preserveContainersOnFailure) {
+                            shStatus 'docker-compose stop'
+                        } else {
+                            shStatus 'docker-compose down --volumes'
+                        }
+                        throw e;
+                    }
+                    finally {
+                        junit 'test-reports/*-reports/*.xml'
+                    }
+                } // withRegistry
             } // withEnv
         } // dir(openmpfDockerRepo.path)
     } // stage('Run Integration Tests')
