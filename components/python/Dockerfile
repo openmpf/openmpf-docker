@@ -61,9 +61,11 @@ RUN --mount=type=tmpfs,target=/tmp \
     --mount=type=tmpfs,target=/var/cache/yum \
     yum update --assumeyes; \
     yum-config-manager --setopt=skip_missing_names_on_install=False --save; \
-    yum install --assumeyes https://download1.rpmfusion.org/free/el/rpmfusion-free-release-7.noarch.rpm; \
-    yum install --assumeyes ffmpeg; \
+    # libglvnd-glx is required for opencv-python.
+    yum install --assumeyes libglvnd-glx; \
     yum clean all;
+
+COPY --from=openmpf_build /usr/local/bin/ffmpeg /usr/local/bin/ffprobe /usr/local/bin/
 
 ENV MPF_HOME /opt/mpf
 

@@ -41,8 +41,10 @@ RUN --mount=type=tmpfs,target=/tmp \
     yum update --assumeyes; \
     yum-config-manager --setopt=skip_missing_names_on_install=False --save; \
     yum install --assumeyes https://download1.rpmfusion.org/free/el/rpmfusion-free-release-7.noarch.rpm; \
-    yum install --assumeyes java-11-openjdk ffmpeg libheif google-noto-emoji-fonts; \
+    yum install --assumeyes java-11-openjdk ffmpeg-libs libheif google-noto-emoji-fonts; \
     yum clean all;
+
+COPY --from=openmpf_build /usr/local/bin/ffmpeg /usr/local/bin/ffprobe /usr/local/bin/
 
 # Use mount and cp shell command because the docker COPY command resolves symlinks which then
 # causes duplicate copies of the libraries to be added to the image.
