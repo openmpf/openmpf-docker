@@ -50,7 +50,7 @@ RUN --mount=type=tmpfs,target=/tmp \
         http://developer.download.nvidia.com/compute/machine-learning/repos/rhel7/x86_64/nvidia-machine-learning-repo-rhel7-1.0.0-1.x86_64.rpm; \
     CU_VERSION=10-2; \
     yum install --assumeyes --nogpgcheck \
-            cmake3 make gcc gcc-c++ qt-devel log4cxx-devel boost-devel ffmpeg ffmpeg-devel \
+            cmake3 make gcc gcc-c++ qt-devel log4cxx-devel boost-devel ffmpeg-devel mediainfo \
             gtest-devel java-11-openjdk-devel activemq-cpp-devel protobuf-static protobuf-devel \
             libheif-devel file google-noto-emoji-fonts \
             # Python build deps
@@ -117,6 +117,10 @@ RUN --mount=type=tmpfs,target=/tmp \
     make --jobs "$(nproc)" install; \
     ln --symbolic '/opt/opencv-4.5.0/include/opencv4/opencv2' /usr/local/include/opencv2;
 
+
+RUN curl --location 'https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz' \
+        | tar --extract --xz --directory /usr/local/bin --strip-components 1 \
+            'ffmpeg-*-amd64-static/ffmpeg' 'ffmpeg-*-amd64-static/ffprobe';
 
 RUN --mount=type=tmpfs,target=/tmp \
     mkdir /tmp/pngdefry; \
