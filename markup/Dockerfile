@@ -41,7 +41,7 @@ RUN --mount=type=tmpfs,target=/tmp \
     yum update --assumeyes; \
     yum-config-manager --setopt=skip_missing_names_on_install=False --save; \
     yum install --assumeyes https://download1.rpmfusion.org/free/el/rpmfusion-free-release-7.noarch.rpm; \
-    yum install --assumeyes java-11-openjdk ffmpeg-libs libheif google-noto-emoji-fonts; \
+    yum install --assumeyes java-11-openjdk ffmpeg-libs google-noto-emoji-fonts; \
     yum clean all;
 
 COPY --from=openmpf_build /usr/local/bin/ffmpeg /usr/local/bin/ffprobe /usr/local/bin/
@@ -50,7 +50,8 @@ COPY --from=openmpf_build /usr/local/bin/ffmpeg /usr/local/bin/ffprobe /usr/loca
 # causes duplicate copies of the libraries to be added to the image.
 RUN --mount=type=bind,from=openmpf_build,source=/build-artifacts/install/lib,target=/tmp/mpf-libs \
     cd /tmp/mpf-libs; \
-    cp --preserve=links --no-dereference libopencv* libopenblas* libgfortran* libquadmath* \
+    cp --preserve=links --no-dereference \
+        libopencv* libopenblas* libgfortran* libquadmath* libheif* libde265* \
         /usr/lib64;
 
 COPY --from=openmpf_build /build-artifacts/install/lib/libmpfopencvjni.so /usr/lib64/

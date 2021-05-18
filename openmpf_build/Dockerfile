@@ -52,7 +52,9 @@ RUN --mount=type=tmpfs,target=/tmp \
     yum install --assumeyes --nogpgcheck \
             cmake3 make gcc gcc-c++ qt-devel log4cxx-devel boost-devel ffmpeg-devel mediainfo \
             gtest-devel java-11-openjdk-devel activemq-cpp-devel protobuf-static protobuf-devel \
-            libheif-devel file google-noto-emoji-fonts \
+            file google-noto-emoji-fonts \
+            # libheif build deps
+            libde265-devel \
             # Python build deps
             openssl-devel libffi-devel \
             # OpenCV build deps
@@ -121,6 +123,19 @@ RUN --mount=type=tmpfs,target=/tmp \
 RUN curl --location 'https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz' \
         | tar --extract --xz --directory /usr/local/bin --strip-components 1 \
             'ffmpeg-*-amd64-static/ffmpeg' 'ffmpeg-*-amd64-static/ffprobe';
+
+# We don't use the version from yum because it is older and doesn't work correctly with certain files.
+RUN --mount=type=tmpfs,target=/tmp \
+    mkdir /tmp/libheif; \
+    cd /tmp/libheif; \
+    curl --location https://github.com/strukturag/libheif/archive/refs/tags/v1.12.0.tar.gz \
+        | tar --extract --gzip; \
+    cd libheif-1.12.0; \
+    mkdir build; \
+    cd build; \
+    cmake3 -DCMAKE_INSTALL_PREFIX=/usr -DWITH_EXAMPLES=false ..; \
+    make --jobs "$(nproc)" install;
+
 
 RUN --mount=type=tmpfs,target=/tmp \
     mkdir /tmp/pngdefry; \
