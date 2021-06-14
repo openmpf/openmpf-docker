@@ -39,7 +39,9 @@ ENV LANG en_US.UTF-8
 
 # Change override_install_langs because the centos:7 image sets this yum property to en_US.utf8
 # which prevents other locales (including other English locales) from being installed with GCC.
-RUN yum-config-manager --setopt=override_install_langs='' \
+RUN --mount=type=tmpfs,target=/tmp \
+    --mount=type=tmpfs,target=/var/cache/yum \
+    yum-config-manager --setopt=override_install_langs='' \
                        --setopt=skip_missing_names_on_install=False --save; \
     yum update --assumeyes; \
     yum-config-manager --add-repo http://developer.download.nvidia.com/compute/cuda/repos/rhel7/x86_64; \
@@ -47,10 +49,9 @@ RUN yum-config-manager --setopt=override_install_langs='' \
             https://download1.rpmfusion.org/free/el/rpmfusion-free-release-7.noarch.rpm \
             http://developer.download.nvidia.com/compute/machine-learning/repos/rhel7/x86_64/nvidia-machine-learning-repo-rhel7-1.0.0-1.x86_64.rpm; \
     yum install --assumeyes  --nogpgcheck cmake3 make gcc gcc-c++ qt-devel log4cxx-devel \
-            boost-devel ffmpeg gtest-devel openblas-devel cuda-minimal-build-10-2 \
+            boost-devel ffmpeg-libs gtest-devel openblas-devel cuda-minimal-build-10-2 \
             libcublas-devel-10.2.2.89-1 libcudnn7-devel-7.6.5.33-1.cuda10.2; \
     yum clean all; \
-    rm --recursive /var/cache/yum/*; \
     ln --symbolic cuda-10.2 /usr/local/cuda; \
     # OpenCV doesn't use the statically compiled CUDA libraries except for libcudart and they are relatively large.
     find /usr/local/cuda/lib64/ -name '*.a' -not -name 'libcudart_static.a' \
@@ -60,6 +61,8 @@ RUN yum-config-manager --setopt=override_install_langs='' \
     ldconfig;
 
 COPY --from=openmpf_build /opt/opencv-4.5.0 /opt/opencv-4.5.0
+
+COPY --from=openmpf_build /usr/local/bin/ffmpeg /usr/local/bin/ffprobe /usr/local/bin/
 
 # Normally components' CMakeList.txt file includes include(../ComponentSetup.cmake) but since that
 # is outside of the components' build context we create it here.

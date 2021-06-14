@@ -36,18 +36,22 @@ SHELL ["/bin/bash", "-o", "errexit", "-o", "pipefail", "-c"]
 
 ENV LANG en_US.UTF-8
 
-RUN yum update --assumeyes; \
+RUN --mount=type=tmpfs,target=/tmp \
+    --mount=type=tmpfs,target=/var/cache/yum \
+    yum update --assumeyes; \
     yum-config-manager --setopt=skip_missing_names_on_install=False --save; \
     yum install --assumeyes https://download1.rpmfusion.org/free/el/rpmfusion-free-release-7.noarch.rpm; \
-    yum install --assumeyes java-11-openjdk ffmpeg libheif google-noto-emoji-fonts; \
-    yum clean all; \
-    rm -rf /var/cache/yum/*;
+    yum install --assumeyes java-11-openjdk ffmpeg-libs google-noto-emoji-fonts; \
+    yum clean all;
+
+COPY --from=openmpf_build /usr/local/bin/ffmpeg /usr/local/bin/ffprobe /usr/local/bin/
 
 # Use mount and cp shell command because the docker COPY command resolves symlinks which then
 # causes duplicate copies of the libraries to be added to the image.
 RUN --mount=type=bind,from=openmpf_build,source=/build-artifacts/install/lib,target=/tmp/mpf-libs \
     cd /tmp/mpf-libs; \
-    cp --preserve=links --no-dereference libopencv* libopenblas* libgfortran* libquadmath* \
+    cp --preserve=links --no-dereference \
+        libopencv* libopenblas* libgfortran* libquadmath* libheif* libde265* \
         /usr/lib64;
 
 COPY --from=openmpf_build /build-artifacts/install/lib/libmpfopencvjni.so /usr/lib64/
@@ -59,7 +63,6 @@ ENV MPF_HOME /opt/mpf
 COPY --from=openmpf_build /build-artifacts/markup/*.jar $MPF_HOME/jars/
 
 ENV ACTIVE_MQ_HOST activemq
-ENV ACTIVE_MQ_BROKER_URI="failover://(tcp://$ACTIVE_MQ_HOST:61616)?jms.prefetchPolicy.all=0&startupMaxReconnectAttempts=1"
 ENV MPF_LOG_PATH $MPF_HOME/share/logs
 ENV THIS_MPF_NODE markup
 

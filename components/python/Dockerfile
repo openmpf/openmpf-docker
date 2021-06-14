@@ -26,22 +26,18 @@
 # limitations under the License.                                            #
 #############################################################################
 
+
 ARG BUILD_REGISTRY
 ARG BUILD_TAG=latest
 FROM ${BUILD_REGISTRY}openmpf_build:${BUILD_TAG} as openmpf_build
 
 
-FROM centos:7
+FROM centos:7 as common
 
 SHELL ["/bin/bash", "-o", "errexit", "-o", "pipefail", "-c"]
 
 ENV LANG en_US.UTF-8
 
-# Disable Python bytecode generation because it was causing build cache issues. It may slightly increase start up
-# time, but once everything is imported, there is no difference in performance. If the bytecode files were critical,
-# it is unlikely that the official Python Docker images would explicitly delete them. It also saves 86MB of space.
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PIP_COMPILE=0
 
 COPY --from=openmpf_build /usr/local/bin/python3.8 /usr/local/bin/python3.8-config \
     /usr/local/bin/pip /usr/local/bin/pip3 /usr/local/bin/pip3.8 /usr/local/bin/wheel \
@@ -61,25 +57,31 @@ RUN cd /usr/local/bin; \
 # The Python headers are needed to build Python libararies with C extensions.
 COPY --from=openmpf_build /usr/local/include/python3.8 /usr/local/include/python3.8
 
+RUN --mount=type=tmpfs,target=/tmp \
+    --mount=type=tmpfs,target=/var/cache/yum \
+    yum update --assumeyes; \
+    yum-config-manager --setopt=skip_missing_names_on_install=False --save; \
+    # libglvnd-glx is required for opencv-python.
+    yum install --assumeyes libglvnd-glx; \
+    yum clean all;
+
+COPY --from=openmpf_build /usr/local/bin/ffmpeg /usr/local/bin/ffprobe /usr/local/bin/
+
 ENV MPF_HOME /opt/mpf
 
 ENV COMPONENT_VIRTUALENV $MPF_HOME/plugin-venv
 
+# Adding $COMPONENT_VIRTUALENV/bin to the front of $PATH persistently activates the virtualenv.
 ENV PATH $COMPONENT_VIRTUALENV/bin:/scripts:$PATH
 
-RUN yum update --assumeyes; \
-    yum-config-manager --setopt=skip_missing_names_on_install=False --save; \
-    yum install --assumeyes https://download1.rpmfusion.org/free/el/rpmfusion-free-release-7.noarch.rpm; \
-    yum install --assumeyes ffmpeg; \
-    yum clean all; \
-    rm --recursive /var/cache/yum/*;
+
+#########################################
+FROM common as build
 
 RUN python3 -m venv "$COMPONENT_VIRTUALENV"; \
     pip3 install --no-cache-dir --upgrade pip;
 
-
-# Use mount so the source files don't end up in image
-RUN --mount=type=bind,from=openmpf_build,source=/home/mpf/openmpf-projects/openmpf-python-component-sdk/detection,target=/tmp/python \
+RUN --mount=from=openmpf_build,source=/home/mpf/openmpf-projects/openmpf-python-component-sdk/detection,target=/tmp/python \
     pip3 install --no-cache-dir /tmp/python/api /tmp/python/component_util; \
     python3 -m unittest discover --verbose --buffer --start-directory /tmp/python/component_util
 
@@ -87,7 +89,8 @@ ENV SRC_DIR /home/mpf/component_src
 
 WORKDIR $SRC_DIR
 
-COPY python_component_build/scripts /scripts
+COPY python/install-component.sh /scripts/
+
 
 LABEL org.label-schema.build-date="" \
       org.label-schema.license="Apache 2.0" \
@@ -96,3 +99,74 @@ LABEL org.label-schema.build-date="" \
       org.label-schema.url="https://openmpf.github.io" \
       org.label-schema.vcs-url="https://github.com/openmpf/openmpf-python-component-sdk" \
       org.label-schema.vendor="MITRE"
+
+
+#########################################
+FROM common as executor
+
+# Use mount and cp shell command because the docker COPY command resolves symlinks which then causes duplicate copies
+# of the libraries to be added to the image.
+RUN --mount=type=bind,from=openmpf_build,source=/build-artifacts/install/lib,target=/tmp/mpf-libs \
+    cd /tmp/mpf-libs; \
+    # component executor binary's dependencies
+    cp --preserve=links --no-dereference liblog4cxx* libactivemq-cpp* libapr* libXext* \
+        /usr/lib64;
+
+# Component executor binary
+COPY --from=openmpf_build /build-artifacts/install/bin/amq_detection_component \
+                          $MPF_HOME/bin/amq_detection_component
+
+# Component executor log config
+COPY --from=openmpf_build /build-artifacts/install/config/Log4cxxConfig.xml $MPF_HOME/config/
+
+# print()'ed messsages from docker-entrypoint.py were not being shown at the right time.
+# Only applies to stdin, stdout and stderr
+ENV PYTHONUNBUFFERED 1
+
+ENV MPF_LOG_PATH $MPF_HOME/share/logs
+
+ENV PLUGINS_DIR $MPF_HOME/plugins
+
+
+COPY docker-entrypoint.sh component-executor.py /scripts/
+
+COPY cli_runner/mpf_cli_runner.py cli_runner/mpf_cli_runner_util.py cli_runner/mpf_python_runner.py \
+     /scripts/cli_runner/
+
+RUN ln --symbolic /scripts/cli_runner/mpf_cli_runner.py /usr/bin/runner
+
+ENTRYPOINT ["/scripts/docker-entrypoint.sh"]
+
+
+LABEL org.label-schema.build-date="" \
+      org.label-schema.license="Apache 2.0" \
+      org.label-schema.name="OpenMPF Python Component Executor" \
+      org.label-schema.schema-version="1.0" \
+      org.label-schema.url="https://openmpf.github.io" \
+      org.label-schema.vcs-url="https://github.com/openmpf/openmpf-python-component-sdk" \
+      org.label-schema.vendor="MITRE"
+
+
+#########################################
+FROM executor as ssb
+
+COPY --from=build $COMPONENT_VIRTUALENV $COMPONENT_VIRTUALENV
+
+COPY --from=build /scripts/install-component.sh /scripts/
+
+ENV SRC_DIR /home/mpf/component_src
+
+WORKDIR $SRC_DIR
+
+
+LABEL org.label-schema.build-date="" \
+      org.label-schema.license="Apache 2.0" \
+      org.label-schema.name="OpenMPF Python Component Executor Single Stage Build (SSB)" \
+      org.label-schema.schema-version="1.0" \
+      org.label-schema.url="https://openmpf.github.io" \
+      org.label-schema.vcs-url="https://github.com/openmpf/openmpf-python-component-sdk" \
+      org.label-schema.vendor="MITRE"
+
+
+#########################################
+FROM executor

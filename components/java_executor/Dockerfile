@@ -59,12 +59,14 @@ RUN cd /usr/local/bin; \
     ln --symbolic /usr/local/lib/libpython3.8.so.1.0 /usr/lib64/libpython3.8.so.1.0;
 
 
-RUN yum update --assumeyes; \
+RUN --mount=type=tmpfs,target=/tmp \
+    --mount=type=tmpfs,target=/var/cache/yum \
+    yum update --assumeyes; \
     yum-config-manager --setopt=skip_missing_names_on_install=False --save; \
-    yum install --assumeyes https://download1.rpmfusion.org/free/el/rpmfusion-free-release-7.noarch.rpm; \
-    yum install --assumeyes java-11-openjdk ffmpeg; \
-    yum clean all; \
-    rm --recursive /var/cache/yum/*;
+    yum install --assumeyes java-11-openjdk; \
+    yum clean all;
+
+COPY --from=openmpf_build /usr/local/bin/ffmpeg /usr/local/bin/ffprobe /usr/local/bin/
 
 ENV MPF_HOME /opt/mpf
 
@@ -74,9 +76,9 @@ ENV PLUGINS_DIR $MPF_HOME/plugins
 
 COPY --from=openmpf_build /build-artifacts/java-executor/*.jar $MPF_HOME/jars/
 
-COPY docker-executor-entrypoint.py /scripts/docker-entrypoint.py
+COPY component-executor.py /scripts/component-executor.py
 
-ENTRYPOINT ["python3", "-u", "/scripts/docker-entrypoint.py"]
+ENTRYPOINT ["python3", "-u", "/scripts/component-executor.py"]
 
 LABEL org.label-schema.build-date="" \
       org.label-schema.license="Apache 2.0" \

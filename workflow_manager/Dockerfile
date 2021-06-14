@@ -58,12 +58,13 @@ RUN cd /usr/local/bin; \
     ln --symbolic /usr/local/lib/libpython3.8.so.1.0 /usr/lib64/libpython3.8.so.1.0;
 
 
-RUN yum update --assumeyes; \
+RUN --mount=type=tmpfs,target=/tmp \
+    --mount=type=tmpfs,target=/var/cache/yum \
+    yum update --assumeyes; \
     yum-config-manager --setopt=skip_missing_names_on_install=False --save; \
-    yum install --assumeyes --nogpgcheck https://download1.rpmfusion.org/free/el/rpmfusion-free-release-7.noarch.rpm; \
-    yum install --assumeyes java-11-openjdk ffmpeg tomcat-native file; \
-    yum clean all; \
-    rm --recursive /var/cache/yum/*;
+    yum install --assumeyes --nogpgcheck epel-release; \
+    yum install --assumeyes java-11-openjdk tomcat-native file mediainfo; \
+    yum clean all;
 
 ENV JAVA_HOME /etc/alternatives/jre
 
@@ -82,6 +83,8 @@ RUN curl --location 'http://archive.apache.org/dist/tomcat/tomcat-8/v8.5.41/bin/
     sed --in-place '24s/.*/    <WatchedResource>$\{catalina\.ba\se\}\/conf\/web.xml<\/WatchedResource>\n    <Resources cachingAllowed="true" cacheMaxSize="100000" \/>/' \
         /opt/apache-tomcat/conf/context.xml;
 
+COPY --from=openmpf_build /usr/local/bin/ffmpeg /usr/local/bin/ffprobe /usr/local/bin/
+
 COPY --from=openmpf_build /usr/local/bin/pngdefry /usr/local/bin/pngdefry
 
 COPY --from=openmpf_build /build-artifacts/mpf-scripts /home/mpf/mpf-scripts
@@ -94,7 +97,6 @@ COPY --from=openmpf_build /build-artifacts/workflow-manager /opt/apache-tomcat/w
 ENV MPF_HOME /opt/mpf
 
 ENV ACTIVE_MQ_HOST=activemq
-ENV ACTIVE_MQ_BROKER_URI="failover://(tcp://$ACTIVE_MQ_HOST:61616)?jms.prefetchPolicy.all=0&startupMaxReconnectAttempts=1"
 ENV REDIS_HOST=redis
 ENV THIS_MPF_NODE=workflow-manager
 ENV no_proxy=localhost
