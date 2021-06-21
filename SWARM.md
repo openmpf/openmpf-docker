@@ -211,6 +211,14 @@ to configure how services are deployed. Among others, you may be also
 interested in [resource limits and
 reservations](https://docs.docker.com/compose/compose-file/#resources).
 
+If you need access to the actual hostname where Workflow Manager is deployed,
+you can set an environment variable to `{{.Node.Hostname}}`. For example:
+```yaml
+  workflow-manager:
+    environment:
+      NODE_HOSTNAME: {{.Node.Hostname}}
+```
+
 ### Deploy the Stack to the Swarm
 
 `docker stack deploy openmpf -c docker-compose.yml --with-registry-auth`
