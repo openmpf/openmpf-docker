@@ -20,10 +20,20 @@ Both `openmpf_python_executor_ssb` and `openmpf_python_executor` will:
 
 - Register your component with the Workflow Manager.
 - Execute your code using the OpenMPF component executor binary.
-  
-  
-How to build the `openmpf_python_component_build`, `openmpf_python_executor` and `openmpf_python_executor` base images
+
+
+Pull or build the base images
 ======================================================
+Most developers will not need to build their own set of base images. Instead, they can pull them from
+[Docker Hub](https://hub.docker.com/u/openmpf) as follows:
+```bash
+docker pull openmpf/openmpf_python_component_build:latest
+docker pull openmpf/openmpf_python_executor:latest
+docker pull openmpf/openmpf_python_executor_ssb:latest
+```
+
+Alternatively, these build steps assume that you've previously built the `openmpf_build` base image described
+[here](https://github.com/openmpf/openmpf-docker/blob/master/README.md#create-the-openmpf-build-image):
 ```bash
 cd /path/to/openmpf-docker/components
 DOCKER_BUILDKIT=1 docker build . -f python/Dockerfile --target build -t openmpf_python_component_build
