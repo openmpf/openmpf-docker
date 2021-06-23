@@ -12,24 +12,23 @@ the
 ## Prerequisites
 
 1. A cluster of machines running the Docker daemon. The client and daemon
-(server) API must both be at least 1.24. Use the `docker version` command to check your client and daemon API versions.
-See the [Install and Configure Docker](README.md#install-and-configure-docker) section in the README.<br/>
+   (server) API must both be at least version 1.24. Use the `docker version` command to check your client and daemon API
+   versions. See the [Install and Configure Docker](README.md#install-and-configure-docker) section in the README.<br/>
 
-2. A [Docker registry](https://docs.docker.com/registry/) that is accessible by each machine that you plan to join to the
-swarm. There are many offerings for Docker registries, including public cloud-hosted registries, such
-as [Docker Hub](https://hub.docker.com/), private cloud-hosted registries, or
-[self-hosted registries](https://github.com/docker/distribution). Feel free to pick the solution that works best for
-you, but please note that if you choose to host any images on a public registry, you accept responsibility for the usage
-of those images.<br/>
+2. A [Docker registry](https://docs.docker.com/registry/) that is accessible by each machine that you plan to join to
+   the swarm. There are many offerings for Docker registries, including public cloud-hosted registries, such
+   as [Docker Hub](https://hub.docker.com/), private cloud-hosted registries, or
+   [self-hosted registries](https://github.com/docker/distribution). Feel free to pick the solution that works best for
+   you, but please note that if you choose to host any images on a public registry, you accept responsibility for the
+   usage of those images.<br/>
 
-3. A stand-alone `docker-compose.yml` file. If you don't have one then you may wish to use the one provided in the "Quick
-Start" section of the documentation for the OpenMPF Workflow Manager image
-on [Docker Hub](https://hub.docker.com/r/openmpf/openmpf_workflow_manager), or follow the instructions in
-the [Generate docker-compose.yml](README.md#generate-docker-composeyml) section in the README.<br/>
+3. A stand-alone `docker-compose.yml` file. If you don't have one then you may wish to use the one provided in the "
+   Quick Start" section of the documentation for the OpenMPF Workflow Manager image
+   on [Docker Hub](https://hub.docker.com/r/openmpf/openmpf_workflow_manager), or follow the instructions in
+   the [Generate docker-compose.yml](README.md#generate-docker-composeyml) section in the README.<br/>
 
-4. A local copy of
-the [openmpf-docker repository](https://github.com/openmpf/openmpf-docker) somewhere on the swarm manager host so you
-can run scripts:<br/>
+4. A local copy of the [openmpf-docker repository](https://github.com/openmpf/openmpf-docker) somewhere on the swarm
+   manager host so you can run scripts:<br/>
 
     - `git clone https://github.com/openmpf/openmpf-docker.git`
         - (Optional) checkout a branch or commit
@@ -39,7 +38,7 @@ can run scripts:<br/>
 
 ### Initialize the Swarm Cluster
 
-Choose a machine that you wish to act as the manager node. You will be able to deploy and manager the stack from this
+Choose a machine that you wish to act as the manager node. You will be able to deploy and manage the stack from this
 node. Run the following command on that node:
 
 - `docker swarm init`
@@ -65,7 +64,7 @@ openmpf-docker repository by following the steps in
 the [Pull or Build the OpenMPF Docker Images](README.md#pull-or-build-the-openmpf-docker-images)
 section in the README.
 
-In order to push the images to your own Docker registry, they each need to named with the approprate prefix for your
+In order to push the images to your own Docker registry, they each need to be named with the appropriate prefix for your
 registry. The format is:
 
 `<registry_host>:<registry_port>/<registry_path>/<openmpf_component_name>`

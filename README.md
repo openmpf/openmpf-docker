@@ -63,79 +63,9 @@ which storage driver Docker chose by default:
 - `docker info | grep Storage`
 
 If this prints out `Storage Driver: overlay2` then nothing more needs to be done. Instead, if it prints
-out `Storage Driver: devicemapper`, then we recommend changing it. The following steps assume that you've installed
-Docker Community Edition (CE) on a CentOS 7 host. If you installed Docker Enterprise Edition (EE), and/or are using a
-different flavor of Linux, then refer to the official
-steps [here](https://docs.docker.com/storage/storagedriver/overlayfs-driver/).
-
-First check that you're running at least version 3.10.0-514 of higher of the Linux kernel:
-
-- `uname -r`
-
-If you're running an older version of the kernel then consider upgrading your system. Next, check the root partition:
-
-- `df -hT`
-
-This will print some output. For example:
-
-```
-Filesystem                                    Type      Size  Used Avail Use% Mounted on
-/dev/mapper/centos-root                       xfs        50G  8.5G   42G  17% /
-devtmpfs                                      devtmpfs  3.9G     0  3.9G   0% /dev
-tmpfs                                         tmpfs     3.9G     0  3.9G   0% /dev/shm
-tmpfs                                         tmpfs     3.9G  417M  3.5G  11% /run
-tmpfs                                         tmpfs     3.9G     0  3.9G   0% /sys/fs/cgroup
-/dev/sda1                                     xfs       497M  305M  192M  62% /boot
-/dev/mapper/centos-home                       xfs        87G  5.1G   82G   6% /home
-```
-
-Here we see that the root partition is mounted to `/` and has type `xfs`. In order to use overlay2 on an xfs filesystem,
-the d_type option must be enabled. To check that run:
-
-- `xfs_info <mount_point>`
-
-For example:
-
-```
-[root@somehost ~]# xfs_info /
-meta-data=/dev/mapper/centos-root isize=256    agcount=4, agsize=3276800 blks
-         =                       sectsz=512   attr=2, projid32bit=1
-         =                       crc=0        finobt=0 spinodes=0
-data     =                       bsize=4096   blocks=13107200, imaxpct=25
-         =                       sunit=0      swidth=0 blks
-naming   =version 2              bsize=4096   ascii-ci=0 ftype=0
-log      =internal               bsize=4096   blocks=6400, version=2
-         =                       sectsz=512   sunit=0 blks, lazy-count=1
-realtime =none                   extsz=4096   blocks=0, rtextents=0
-```
-
-Here we see that `ftype=0`. That means d_type is not enabled, so if you wish to use overlay2 you will need to recreate
-the root partition with that option enabled. See
-[here](http://www.pimwiddershoven.nl/entry/docker-on-centos-7-machine-with-xfs-filesystem-can-cause-trouble-when-d-type-is-not-supported)
-.
-
-Once you've determined that your Linux setup can support overlay2, stop Docker:
-
-- `sudo systemctl stop docker`
-
-Edit `/etc/docker/daemon.json`. If that file does not already exist, then create it. Assuming it's empty, add the
-following content:
-
-```
-{
-  "storage-driver": "overlay2"
-}
-```
-
-Next, start Docker:
-
-- `sudo systemctl start docker`
-
-Check that the correct storage driver is now in use:
-
-- `docker info | grep Storage`
-
-This should now print out `Storage Driver: overlay2`. Repeat these steps on each of your Docker nodes.
+out `Storage Driver: devicemapper`, then we recommend changing it. Refer to
+the [Change the Linux Host Storage Driver to overlay2](#optional-change-the-linux-host-storage-driver-to-overlay2)
+section.
 
 #### Install Docker Compose
 
@@ -155,9 +85,9 @@ terminal environment. We recommend Git Bash, which is part of [Git for Windows](
 
 ### Pull or Build the OpenMPF Docker Images
 
-The simplest way to get started is to follow the steps in the "Quick Start" section of the documentation for the OpenMPF
-Workflow Manager image on [Docker Hub](https://hub.docker.com/r/openmpf/openmpf_workflow_manager). That will instruct
-you to pull and deploy prebuilt runtime images. If you wish to customize your deployment then skip ahead to
+The recommended way to get started is to follow the steps in the "Quick Start" section of the documentation for the
+OpenMPF Workflow Manager image on [Docker Hub](https://hub.docker.com/r/openmpf/openmpf_workflow_manager). That will
+instruct you to pull and deploy prebuilt runtime images. If you wish to customize your deployment then skip ahead to
 the [Configure Users](#optional-configure-users) section and the [Configure HTTPS](#optional-configure-https) section.
 
 Otherwise, the rest of this section will describe the process for building the OpenMPF Docker images. Note that this
@@ -430,7 +360,7 @@ add `-f docker-compose.users.yml` to the above command.
 ### (Optional) Import Root Certificates for Additional Certificate Authorities
 
 The Workflow Manager can be configured to trust additional certificate authorities. The Workflow Manager uses these
-certificates when it acts as an HTTPS client. For example, remote media download and job status callbacks.
+certificates when it acts as an HTTPS client. Examples include remote media download and job status callbacks.
 
 To import additional root certificates add an entry for `MPF_CA_CERTS` to the `workflow-manager` service's environment
 variables in `docker-compose.core.yml`. `MPF_CA_CERTS` must contain a colon-delimited list of absolute file paths. Each
@@ -536,6 +466,81 @@ services:
     image: ${REGISTRY}openmpf_ocv_face_detection:${TAG}
     build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/cpp/OcvFaceDetection
 ```
+
+### (Optional) Change the Linux Host Storage Driver to overlay2
+
+The following steps assume that you've installed Docker Community Edition (CE) on a CentOS 7 host. If you installed
+Docker Enterprise Edition (EE), and/or are using a different flavor of Linux, then refer to the official
+steps [here](https://docs.docker.com/storage/storagedriver/overlayfs-driver/).
+
+First check that you're running at least version 3.10.0-514 of higher of the Linux kernel:
+
+- `uname -r`
+
+If you're running an older version of the kernel then consider upgrading your system. Next, check the root partition:
+
+- `df -hT`
+
+This will print some output. For example:
+
+```
+Filesystem                                    Type      Size  Used Avail Use% Mounted on
+/dev/mapper/centos-root                       xfs        50G  8.5G   42G  17% /
+devtmpfs                                      devtmpfs  3.9G     0  3.9G   0% /dev
+tmpfs                                         tmpfs     3.9G     0  3.9G   0% /dev/shm
+tmpfs                                         tmpfs     3.9G  417M  3.5G  11% /run
+tmpfs                                         tmpfs     3.9G     0  3.9G   0% /sys/fs/cgroup
+/dev/sda1                                     xfs       497M  305M  192M  62% /boot
+/dev/mapper/centos-home                       xfs        87G  5.1G   82G   6% /home
+```
+
+Here we see that the root partition is mounted to `/` and has type `xfs`. In order to use overlay2 on an xfs filesystem,
+the d_type option must be enabled. To check that run:
+
+- `xfs_info <mount_point>`
+
+For example:
+
+```
+[root@somehost ~]# xfs_info /
+meta-data=/dev/mapper/centos-root isize=256    agcount=4, agsize=3276800 blks
+         =                       sectsz=512   attr=2, projid32bit=1
+         =                       crc=0        finobt=0 spinodes=0
+data     =                       bsize=4096   blocks=13107200, imaxpct=25
+         =                       sunit=0      swidth=0 blks
+naming   =version 2              bsize=4096   ascii-ci=0 ftype=0
+log      =internal               bsize=4096   blocks=6400, version=2
+         =                       sectsz=512   sunit=0 blks, lazy-count=1
+realtime =none                   extsz=4096   blocks=0, rtextents=0
+```
+
+Here we see that `ftype=0`. That means d_type is not enabled, so if you wish to use overlay2 you will need to recreate
+the root partition with that option enabled. See
+[here](http://www.pimwiddershoven.nl/entry/docker-on-centos-7-machine-with-xfs-filesystem-can-cause-trouble-when-d-type-is-not-supported)
+.
+
+Once you've determined that your Linux setup can support overlay2, stop Docker:
+
+- `sudo systemctl stop docker`
+
+Edit `/etc/docker/daemon.json`. If that file does not already exist, then create it. Assuming it's empty, add the
+following content:
+
+```
+{
+  "storage-driver": "overlay2"
+}
+```
+
+Next, start Docker:
+
+- `sudo systemctl start docker`
+
+Check that the correct storage driver is now in use:
+
+- `docker info | grep Storage`
+
+This should now print out `Storage Driver: overlay2`. Repeat these steps on each of your Docker nodes.
 
 ## Project Website
 
