@@ -130,6 +130,11 @@ services:
       context: ${OPENMPF_PROJECTS_PATH}/openmpf-contrib-components/cpp/motion
       dockerfile: MogMotionDetection/Dockerfile
 
+  nlp-text-correction:
+    <<: *detection-component-base
+    image: ${REGISTRY}openmpf_nlp_text_correction:${TAG}
+    build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/python/NlpTextCorrection
+
   oalpr-license-plate-text-detection:
     <<: *detection-component-base
     image: ${REGISTRY}openmpf_oalpr_license_plate_text_detection:${TAG}
