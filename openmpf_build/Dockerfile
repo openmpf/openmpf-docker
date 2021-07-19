@@ -56,7 +56,7 @@ RUN --mount=type=tmpfs,target=/tmp \
             # libheif build deps
             libde265-devel \
             # Python build deps
-            openssl-devel libffi-devel sqlite-devel \
+            openssl-devel libffi-devel \
             # OpenCV build deps
             openblas-devel cuda-minimal-build-$CU_VERSION cuda-cufft-dev-$CU_VERSION cuda-npp-dev-$CU_VERSION \
             libcudnn7-devel-7.6.5.33-1.cuda10.2 libcublas-devel-10.2.2.89 harfbuzz-devel; \
