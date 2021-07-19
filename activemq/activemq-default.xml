@@ -70,7 +70,7 @@
         <destinationPolicy>
             <policyMap>
               <policyEntries>
-                <policyEntry queue=">" prioritizedMessages="true" useCache="false" expireMessagesPeriod="0" queuePrefetch="0" />
+                <policyEntry queue=">" prioritizedMessages="true"/>
 
                 <policyEntry topic=">" >
                     <!-- The constantPendingMessageLimitStrategy is used to prevent
