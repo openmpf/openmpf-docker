@@ -26,24 +26,19 @@
 # limitations under the License.                                            #
 #############################################################################
 
-
-FROM centos:7
+FROM ubuntu:20.04
 
 SHELL ["/bin/bash", "-o", "errexit", "-o", "pipefail", "-c"]
 
-ENV LANG en_US.UTF-8
-
-RUN --mount=type=tmpfs,target=/tmp \
-    --mount=type=tmpfs,target=/var/cache/yum \
-    yum update --assumeyes; \
-    yum-config-manager --setopt=skip_missing_names_on_install=False --save; \
-    yum install --assumeyes java-11-openjdk-headless; \
-    yum clean all;
-
-ENV JAVA_HOME /etc/alternatives/jre
+RUN --mount=type=tmpfs,target=/var/cache/apt \
+    --mount=type=tmpfs,target=/var/lib/apt/lists  \
+    --mount=type=tmpfs,target=/tmp \
+    apt-get update; \
+    apt-get upgrade -y; \
+    apt-get install --no-install-recommends -y openjdk-11-jre-headless wget ca-certificates;
 
 
-RUN curl --location https://archive.apache.org/dist/activemq/5.16.0/apache-activemq-5.16.0-bin.tar.gz \
+RUN wget -O- https://archive.apache.org/dist/activemq/5.16.0/apache-activemq-5.16.0-bin.tar.gz \
         | tar --extract --gzip --directory /opt; \
     ln --symbolic /opt/apache-activemq-5.16.0 /opt/activemq; \
     # Originally line 119 was <property name="host" value="127.0.0.1"/>

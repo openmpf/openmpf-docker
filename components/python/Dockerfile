@@ -26,44 +26,27 @@
 # limitations under the License.                                            #
 #############################################################################
 
-
 ARG BUILD_REGISTRY
 ARG BUILD_TAG=latest
 FROM ${BUILD_REGISTRY}openmpf_build:${BUILD_TAG} as openmpf_build
 
 
-FROM centos:7 as common
+FROM ubuntu:20.04 as common
 
 SHELL ["/bin/bash", "-o", "errexit", "-o", "pipefail", "-c"]
 
-ENV LANG en_US.UTF-8
+ENV LANG C.UTF-8
+ENV LC_ALL C.UTF-8
 
-
-COPY --from=openmpf_build /usr/local/bin/python3.8 /usr/local/bin/python3.8-config \
-    /usr/local/bin/pip /usr/local/bin/pip3 /usr/local/bin/pip3.8 /usr/local/bin/wheel \
-    /usr/local/bin/
-
-COPY --from=openmpf_build /usr/local/lib/python3.8 /usr/local/lib/python3.8
-
-COPY --from=openmpf_build /usr/local/lib/libpython3.8.so.1.0 /usr/local/lib/libpython3.8.so.1.0
-
-RUN cd /usr/local/bin; \
-    ln --symbolic python3.8 python3; \
-    ln --symbolic python3.8-config python3-config; \
-    cd /usr/local/lib; \
-    ln --symbolic libpython3.8.so.1.0 libpython3.8.so; \
-    ln --symbolic /usr/local/lib/libpython3.8.so.1.0 /usr/lib64/libpython3.8.so.1.0;
-
-# The Python headers are needed to build Python libararies with C extensions.
-COPY --from=openmpf_build /usr/local/include/python3.8 /usr/local/include/python3.8
-
-RUN --mount=type=tmpfs,target=/tmp \
-    --mount=type=tmpfs,target=/var/cache/yum \
-    yum update --assumeyes; \
-    yum-config-manager --setopt=skip_missing_names_on_install=False --save; \
-    # libglvnd-glx is required for opencv-python.
-    yum install --assumeyes libglvnd-glx; \
-    yum clean all;
+RUN --mount=type=tmpfs,target=/var/cache/apt \
+    --mount=type=tmpfs,target=/var/lib/apt/lists  \
+    --mount=type=tmpfs,target=/tmp \
+    apt-get update; \
+    apt-get upgrade -y; \
+    apt-get install --no-install-recommends -y \
+        python3.8 python3.8-venv libpython3.8 \
+        # Required for opencv-python
+        libglib2.0-0 libgl1-mesa-glx;
 
 COPY --from=openmpf_build /usr/local/bin/ffmpeg /usr/local/bin/ffprobe /usr/local/bin/
 
@@ -78,8 +61,7 @@ ENV PATH $COMPONENT_VIRTUALENV/bin:/scripts:$PATH
 #########################################
 FROM common as build
 
-RUN python3 -m venv "$COMPONENT_VIRTUALENV"; \
-    pip3 install --no-cache-dir --upgrade pip;
+RUN python3 -m venv "$COMPONENT_VIRTUALENV";
 
 RUN --mount=from=openmpf_build,source=/home/mpf/openmpf-projects/openmpf-python-component-sdk/detection,target=/tmp/python \
     pip3 install --no-cache-dir /tmp/python/api /tmp/python/component_util; \
@@ -109,8 +91,8 @@ FROM common as executor
 RUN --mount=type=bind,from=openmpf_build,source=/build-artifacts/install/lib,target=/tmp/mpf-libs \
     cd /tmp/mpf-libs; \
     # component executor binary's dependencies
-    cp --preserve=links --no-dereference liblog4cxx* libactivemq-cpp* libapr* libXext* \
-        /usr/lib64;
+    cp --preserve=links --no-dereference liblog4cxx* libapr* libactivemq-cpp* \
+        /usr/lib/x86_64-linux-gnu;
 
 # Component executor binary
 COPY --from=openmpf_build /build-artifacts/install/bin/amq_detection_component \
@@ -126,7 +108,6 @@ ENV PYTHONUNBUFFERED 1
 ENV MPF_LOG_PATH $MPF_HOME/share/logs
 
 ENV PLUGINS_DIR $MPF_HOME/plugins
-
 
 COPY docker-entrypoint.sh component-executor.py /scripts/
 
@@ -145,7 +126,6 @@ LABEL org.label-schema.build-date="" \
       org.label-schema.url="https://openmpf.github.io" \
       org.label-schema.vcs-url="https://github.com/openmpf/openmpf-python-component-sdk" \
       org.label-schema.vendor="MITRE"
-
 
 #########################################
 FROM executor as ssb
@@ -166,7 +146,6 @@ LABEL org.label-schema.build-date="" \
       org.label-schema.url="https://openmpf.github.io" \
       org.label-schema.vcs-url="https://github.com/openmpf/openmpf-python-component-sdk" \
       org.label-schema.vendor="MITRE"
-
 
 #########################################
 FROM executor

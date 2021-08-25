@@ -43,6 +43,7 @@ services:
   activemq:
     image: ${REGISTRY}openmpf_activemq:${TAG}
     build: activemq
+    init: true
     environment:
       # Set which configuration files are used at runtime:
       - ACTIVE_MQ_PROFILE=${ACTIVE_MQ_PROFILE}

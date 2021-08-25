@@ -33,7 +33,7 @@ import glob
 import http.client
 import json
 import os
-import pipes
+import shlex
 import signal
 import socket
 import ssl
@@ -266,7 +266,7 @@ def start_executor(descriptor, mpf_home, activemq_host, node_name):
     else:
         raise RuntimeError('Descriptor contained invalid sourceLanguage property. It must be c++, python, or java.')
 
-    print('Starting component executor with command:', format_command_list(executor_command))
+    print('Starting component executor with command:', shlex.join(executor_command))
     executor_proc = subprocess.Popen(executor_command,
                                      env=executor_env,
                                      cwd=os.path.join(mpf_home, 'plugins', descriptor['componentName']),
@@ -332,7 +332,7 @@ def tail_log_if_needed(log_dir, component_log_name, executor_pid):
         '--pid', str(executor_pid),
         component_log_full_path)
 
-    print('Displaying logs with command: ', format_command_list(tail_command))
+    print('Displaying logs with command: ', shlex.join(tail_command))
     # Use preexec_fn=os.setpgrp to prevent ctrl-c from killing tail since
     # executor may write to log file when shutting down.
     return subprocess.Popen(tail_command, preexec_fn=os.setpgrp)
@@ -370,12 +370,6 @@ def expand_env_vars(raw_str, env):
     defaults = collections.defaultdict(str)
     # In the call to substitute the keyword arguments (**env) take precedence.
     return string.Template(raw_str).substitute(defaults, **env)
-
-
-
-def format_command_list(command):
-    # Makes sure any arguments with spaces are quoted.
-    return ' '.join(map(pipes.quote, command))
 
 
 if __name__ == '__main__':
