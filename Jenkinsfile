@@ -192,6 +192,7 @@ try {
                     branches: [[name: repo.branch]],
                     extensions: [
                             [$class: 'CleanBeforeCheckout'],
+                            [$class: 'GitLFSPull'],
                             [$class: 'RelativeTargetDirectory', relativeTargetDir: repo.path],
                             [$class: 'SubmoduleOption',
                                       disableSubmodules: false,
