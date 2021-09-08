@@ -199,7 +199,8 @@ try {
                                       parentCredentials: true,
                                       recursiveSubmodules: true,
                                       trackingSubmodules: false],
-                            [$class: 'CloneOption', timeout: 60]])
+                            [$class: 'CloneOption', timeout: 60],
+                            [$class: 'CheckoutOption', timeout: 60]])
         }
 
         for (repo in allRepos) {
