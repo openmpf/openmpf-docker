@@ -98,16 +98,6 @@ services:
       MPF_PROP_ACS_URL: ${ACS_TRANSLATION_URL}
       MPF_PROP_ACS_SUBSCRIPTION_KEY: ${ACS_TRANSLATION_SUBSCRIPTION_KEY}
 
-  darknet-detection:
-    <<: *detection-component-base
-    image: ${REGISTRY}openmpf_darknet_detection:${TAG}
-    build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/cpp/DarknetDetection
-
-  dlib-face-detection:
-    <<: *detection-component-base
-    image: ${REGISTRY}openmpf_dlib_face_detection:${TAG}
-    build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/cpp/DlibFaceDetection
-
   east-text-detection:
     <<: *detection-component-base
     image: ${REGISTRY}openmpf_east_text_detection:${TAG}
@@ -149,11 +139,6 @@ services:
     <<: *detection-component-base
     image: ${REGISTRY}openmpf_ocv_face_detection:${TAG}
     build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/cpp/OcvFaceDetection
-
-  ocv-person-detection:
-    <<: *detection-component-base
-    image: ${REGISTRY}openmpf_ocv_person_detection:${TAG}
-    build: ${OPENMPF_PROJECTS_PATH}/openmpf-contrib-components/cpp/OcvPersonDetection
 
   ocv-yolo-detection:
     <<: *detection-component-base

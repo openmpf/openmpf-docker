@@ -34,12 +34,6 @@ x-build-args:
       RUN_TESTS: 'true'
 
 services:
-  darknet-detection:
-    <<: *test-args
-
-  dlib-face-detection:
-    <<: *test-args
-
   east-text-detection:
     <<: *test-args
 
@@ -53,9 +47,6 @@ services:
     <<: *test-args
 
   ocv-face-detection:
-    <<: *test-args
-
-  ocv-person-detection:
     <<: *test-args
 
   scene-change-detection:
