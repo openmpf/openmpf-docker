@@ -78,6 +78,8 @@ FROM openmpf/openmpf_python_executor_ssb:latest as build_component
 # every time your source code changes.
 # e.g. RUN pip3 install --no-cache-dir 'opencv-python>=4.4.0' 'tensorflow>=2.1.0'
 
+# `--mount=type=tmpfs,target=/tmp` will bind-mount a temporary space that only exists in the host
+# memory. We use the temporary space to build the Python package.
 # `--mount=target=.` will bind-mount the root of the build context on to the current working 
 # directory which is set to $SRC_DIR in the base image.
 # The [install-component.sh](./install-component.sh) script will install your component in to your 
@@ -86,7 +88,7 @@ FROM openmpf/openmpf_python_executor_ssb:latest as build_component
 # You also may want run unit tests in this step. 
 # The [EastTextDetection component's Dockerfile](https://github.com/openmpf/openmpf-components/blob/master/python/EastTextDetection/Dockerfile) 
 # shows one way of setting up unit tests.
-RUN --mount=target=. install-component.sh
+RUN --mount=type=tmpfs,target=/tmp --mount=target=. install-component.sh
 ```
 
 #### `openmpf_python_executor`

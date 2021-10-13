@@ -44,14 +44,19 @@ if [ -e "$src_dir/setup.py" ]; then
     echo 'Installing setuptools plugin'
     cp --recursive "$src_dir"/plugin-files/* "$MPF_HOME/plugins/$component_name/"
 
+    # Starting with pip 21.3, pip no longer copies the source to a temporary directory.
+    # We don't want to make the Docker mount with the source code writable, so we create our own temporary directory.
+    build_dir=/tmp/pip-build
+    mkdir -p "$build_dir"
+    cp --recursive "$src_dir"/* "$build_dir"
 
-    if [ -d "$src_dir/plugin-files/wheelhouse" ]; then
+    if [ -d "$tmp_dir/plugin-files/wheelhouse" ]; then
         "$COMPONENT_VIRTUALENV/bin/pip3" install \
-            --find-links "$src_dir/plugin-files/wheelhouse" \
-            --no-cache-dir "$src_dir"
+            --find-links "$build_dir/plugin-files/wheelhouse" \
+            --no-cache-dir "$build_dir"
     else
         "$COMPONENT_VIRTUALENV/bin/pip3" install \
-            --no-cache-dir "$src_dir"
+            --no-cache-dir "$build_dir"
     fi
 else
     echo 'Installing basic component'
