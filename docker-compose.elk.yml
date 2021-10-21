@@ -2,7 +2,7 @@ version: '3.7'
 
 services:
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:7.6.0
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.10.1
     command:
       - elasticsearch
       - -E
@@ -26,12 +26,24 @@ services:
       # Disable Kibana apps we don't use. Not all Kibana apps can be disabled.
       TELEMETRY_OPTIN: 'false'
       TELEMETRY_ENABLED: 'false'
-      XPACK_APM_UI_ENABLED: 'false'
+      XPACK_APM_ENABLED: 'false'
+      XPACK_CANVAS_ENABLED: 'false'
+      XPACK_FLEET_ENABLED: 'false'
+      XPACK_FLEET_AGENTS_ENABLED: 'false'
+      XPACK_GRAPH_ENABLED: 'false'
+      XPACK_MAPS_ENABLED: 'false'
       XPACK_ML_ENABLED: 'false'
       XPACK_MONITORING_ENABLED: 'false'
       XPACK_REPORTING_ENABLED: 'false'
-      XPACK_GRAPH_ENABLED: 'false'
+      XPACK_ROLLUP_ENABLED: 'false'
       NEWSFEED_ENABLED: 'false'
+      MONITORING_ENABLED: 'false'
+      # NOTE: Do not use this stack in production without first enabling security:
+      # https://www.elastic.co/guide/en/kibana/current/security-settings-kb.html
+      XPACK_SECURITY_ENABLED: 'false'
+      # The following two settings are needed for Logs view:
+      XPACK_INFRA_ENABLED: 'true'
+      XPACK_SPACES_ENABLED: 'true'
     ports:
       - '5601:5601'
     depends_on:
@@ -42,7 +54,7 @@ services:
           - node.role == manager
 
   filebeat:
-    image: docker.elastic.co/beats/filebeat:7.6.0
+    image: docker.elastic.co/beats/filebeat:7.10.1
     command:
       # Allow filebeat's own logs to be collected
       - -e
@@ -62,6 +74,22 @@ services:
     depends_on:
       - elasticsearch
 
+  metricbeat:
+    image: ${REGISTRY}openmpf_metricbeat:${TAG}
+    build: metricbeat
+    command:
+      - -e
+      - -E
+      - logging.level=warning
+    user: root
+    depends_on:
+      - activemq
+      - elasticsearch
+      - kibana
+    deploy:
+      placement:
+        constraints:
+          - node.role == manager
 
 volumes:
   elastic_search_data:

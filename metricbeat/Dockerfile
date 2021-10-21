@@ -7,11 +7,11 @@
 # under contract, and is subject to the Rights in Data-General Clause       #
 # 52.227-14, Alt. IV (DEC 2007).                                            #
 #                                                                           #
-# Copyright 2021 The MITRE Corporation. All Rights Reserved.                #
+# Copyright 2020 The MITRE Corporation. All Rights Reserved.                #
 #############################################################################
 
 #############################################################################
-# Copyright 2021 The MITRE Corporation                                      #
+# Copyright 2020 The MITRE Corporation                                      #
 #                                                                           #
 # Licensed under the Apache License, Version 2.0 (the "License");           #
 # you may not use this file except in compliance with the License.          #
@@ -26,18 +26,27 @@
 # limitations under the License.                                            #
 #############################################################################
 
-FROM docker.elastic.co/kibana/kibana:7.10.1
+FROM docker.elastic.co/beats/metricbeat:7.10.1
 
 COPY docker-entrypoint.sh /scripts/
+
+COPY metricbeat.yml /usr/share/metricbeat/metricbeat.yml
+
+# Metricbeat performs security checks:
+# - config file ("metricbeat.yml") must be owned by the user identifier (uid=0) or root
+# - config file ("metricbeat.yml") can only be writable by the owner
+USER root
+RUN chmod 0644 /usr/share/metricbeat/metricbeat.yml
+USER metricbeat
 
 ENTRYPOINT ["/scripts/docker-entrypoint.sh"]
 
 # Taken from base image
-CMD ["/usr/local/bin/kibana-docker"]
+CMD ["-e"]
 
 # Inherit "license", "org.label-schema.license", and "org.label-schema.usage" from base image.
 LABEL org.label-schema.build-date="" \
-      org.label-schema.name="OpenMPF Kibana" \
+      org.label-schema.name="OpenMPF Metricbeat" \
       org.label-schema.schema-version="1.0" \
       org.label-schema.url="https://openmpf.github.io" \
       org.label-schema.vcs-url="https://github.com/openmpf" \

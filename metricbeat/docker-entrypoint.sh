@@ -1,4 +1,4 @@
-# syntax=docker/dockerfile:1.2
+#!/bin/bash
 
 #############################################################################
 # NOTICE                                                                    #
@@ -7,11 +7,11 @@
 # under contract, and is subject to the Rights in Data-General Clause       #
 # 52.227-14, Alt. IV (DEC 2007).                                            #
 #                                                                           #
-# Copyright 2021 The MITRE Corporation. All Rights Reserved.                #
+# Copyright 2020 The MITRE Corporation. All Rights Reserved.                #
 #############################################################################
 
 #############################################################################
-# Copyright 2021 The MITRE Corporation                                      #
+# Copyright 2020 The MITRE Corporation                                      #
 #                                                                           #
 # Licensed under the Apache License, Version 2.0 (the "License");           #
 # you may not use this file except in compliance with the License.          #
@@ -26,19 +26,26 @@
 # limitations under the License.                                            #
 #############################################################################
 
-FROM docker.elastic.co/kibana/kibana:7.10.1
+set -o errexit -o pipefail
 
-COPY docker-entrypoint.sh /scripts/
+KIBANA_HOST="${KIBANA_HOST:-kibana:5601}"
 
-ENTRYPOINT ["/scripts/docker-entrypoint.sh"]
+until curl --silent --fail --head "http://${KIBANA_HOST}" > /dev/null ; do
+    echo "Kibana is unavailable. Sleeping."
+    sleep 5
+done
 
-# Taken from base image
-CMD ["/usr/local/bin/kibana-docker"]
+echo "Checking if index pattern exists..."
+index_url="http://${KIBANA_HOST}/api/saved_objects/index-pattern/metricbeat-*"
+if curl --silent --fail --head "$index_url"; then
+    echo "Index pattern already exists."
+else
+    echo "Creating index pattern and visualizations..."
+    metricbeat setup
+    echo "Successfully created index pattern and visualizations"
+fi
 
-# Inherit "license", "org.label-schema.license", and "org.label-schema.usage" from base image.
-LABEL org.label-schema.build-date="" \
-      org.label-schema.name="OpenMPF Kibana" \
-      org.label-schema.schema-version="1.0" \
-      org.label-schema.url="https://openmpf.github.io" \
-      org.label-schema.vcs-url="https://github.com/openmpf" \
-      org.label-schema.vendor="MITRE"
+set -o xtrace
+
+# Call base image's entry point
+exec /usr/local/bin/docker-entrypoint "$@"
