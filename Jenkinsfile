@@ -229,7 +229,7 @@ try {
     stage('Build images') {
         // Make sure we are using most recent version of external images
             for (externalImage in ['docker/dockerfile:1.2', 'postgres:alpine',
-                                   'redis:alpine', 'centos:7']) {
+                                   'redis:alpine', 'ubuntu:20.04']) {
             try {
                 sh "docker pull '$externalImage'"
             }
