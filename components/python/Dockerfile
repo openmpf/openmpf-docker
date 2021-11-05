@@ -130,10 +130,9 @@ ENV PLUGINS_DIR $MPF_HOME/plugins
 
 COPY docker-entrypoint.sh component-executor.py /scripts/
 
-COPY cli_runner/mpf_cli_runner.py cli_runner/mpf_cli_runner_util.py cli_runner/mpf_python_runner.py \
-     /scripts/cli_runner/
+COPY cli_runner/*.py /scripts/cli_runner/
 
-RUN ln --symbolic /scripts/cli_runner/mpf_cli_runner.py /usr/bin/runner
+RUN ln --symbolic /scripts/cli_runner/mpf_cli_client.py /usr/bin/runner
 
 ENTRYPOINT ["/scripts/docker-entrypoint.sh"]
 
