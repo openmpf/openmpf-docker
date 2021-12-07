@@ -80,12 +80,6 @@ class ComponentHandle(Protocol):
         """
         ...
 
-    def __enter__(self) -> 'ComponentHandle':
-        ...
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        ...
-
 
 def expand_env_vars(raw_str: str, env: Mapping[str, str]) -> str:
     # dict that returns empty string when key is missing.

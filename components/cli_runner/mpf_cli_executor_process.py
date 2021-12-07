@@ -91,7 +91,7 @@ class ExecutorProcess(contextlib.AbstractContextManager):
         try:
             self._check_close(self._job_sync)
         except threading.BrokenBarrierError:
-            # Runner thread closed self._job_sync if it was due to an error, the exception will be
+            # Runner thread closed self._job_sync. If it was due to an error, the exception will be
             # stored in the runner_exception variable.
             pass
         except JobAbortedException:
@@ -276,7 +276,7 @@ class JobRequest(contextlib.AbstractContextManager):
             exit_stack.callback(stdout.close)
             exit_stack.callback(stderr.close)
 
-            # Make diagnostic message go to the clients standard error.
+            # Make diagnostic message go to the client's standard error.
             exit_stack.enter_context(replace_fd_temp(sys.stdout, stderr))
             exit_stack.enter_context(replace_fd_temp(sys.stderr, stderr))
 
@@ -335,8 +335,8 @@ class JobSync:
         yield
         with self._lock:
             self._is_job_active = False
-            # Call socket.shutdown to unblock the watcher's socket.recv, because normally
-            # socket.recv will only unblock when the remote side of the socket is closed.
+            # Call socket.shutdown to unblock the watcher's socket.recv. Normally socket.recv will
+            # only unblock when the remote side of the socket is closed.
             # The call to shutdown also must occur after `self._is_job_active = False` so the
             # watcher doesn't think the client prematurely closed the connection.
             self._client_socket.shutdown(socket.SHUT_RD)
@@ -612,7 +612,7 @@ class ArgumentParser(argparse.ArgumentParser):
         if path == '-':
             return path
 
-        # Is path is an absolute path, join does nothing.
+        # If path is an absolute path, join does nothing.
         client_path = os.path.join(client_cwd, path)
         if mode == 'r':
             if os.path.exists(client_path) or not os.path.exists(path):

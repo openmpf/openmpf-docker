@@ -161,7 +161,7 @@ When applied to ComponentServer:
 
 ### Technical Information ###
 The CLI runner behaves like a typical command line program, but the jobs are actually executed by
-a server process. Some component load large model files. When running short jobs, loading the
+a server process. Some components load large model files. When running short jobs, loading the
 model can take longer than the job itself. A server process is used so that a single component 
 instance can be re-used across multiple runs. When a job is received, it is either assigned
 to an idle ExecutorProcess or a new ExecutorProcess is created. There is no queueing and no limit 
@@ -180,17 +180,17 @@ ExecutorProcesses by waiting for existing jobs to complete before submitting mor
 
 #### Protocol ####
 1. Either:
-   - Start ComponentServer manually. ComponentServer will never exit due to idle, but executor
-     processes will unless disabled.
+   - Start ComponentServer manually. ComponentServer will never exit due to idle, but 
+     ExecutorProcesses will unless disabled.
    - Start client while server not running. Client will start a new process to run ComponentServer
-     before running job. In this case both ComponentServer and ExecutorProcesses will use the
+     before running the job. In this case both ComponentServer and ExecutorProcesses will use the
      `COMPONENT_SERVER_IDLE_TIMEOUT` environment variable to determine idle timeout behavior
 2. ComponentServer listens to a Unix socket with address `b'\x00mpf_cli_runner.sock'`.
 3. Client connects to Unix socket with address `b'\x00mpf_cli_runner.sock'`.
-4. ComponentServer accepts the connection and creates `client_sock`.
+4. ComponentServer accepts the connection and creates the `client_sock` socket.
 5. ComponentServer looks for an idle ExecutorProcess. If there are no idle ExecutorProcesses a new
-   one will be created. During the creation of an ExecutorProcess an unnamed Unix socket is
-   created using socketpair and is used for communication between ComponentServer and 
+   one will be created. During the creation of an ExecutorProcess a pair of unnamed Unix sockets
+   are created using `socketpair`. They are used for communication between ComponentServer and 
    ExecutorProcess.
 6. ComponentServer sends `client_sock` to ExecutorProcess using the unnamed socket pair. All further
    interaction with `client_sock` is handled by the ExecutorProcess.
