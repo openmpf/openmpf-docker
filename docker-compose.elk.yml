@@ -2,7 +2,7 @@ version: '3.7'
 
 services:
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:7.6.0
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.16.1
     command:
       - elasticsearch
       - -E
@@ -42,7 +42,7 @@ services:
           - node.role == manager
 
   filebeat:
-    image: docker.elastic.co/beats/filebeat:7.6.0
+    image: docker.elastic.co/beats/filebeat:7.16.1
     command:
       # Allow filebeat's own logs to be collected
       - -e
