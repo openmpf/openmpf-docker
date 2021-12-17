@@ -26,7 +26,7 @@
 # limitations under the License.                                            #
 #############################################################################
 
-FROM docker.elastic.co/kibana/kibana:7.6.0
+FROM docker.elastic.co/kibana/kibana:7.16.1
 
 COPY docker-entrypoint.sh /scripts/
 
