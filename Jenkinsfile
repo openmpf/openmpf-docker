@@ -52,6 +52,9 @@ def customLabelKey = env.getProperty("custom_label_key") ?: "custom"
 
 def preDockerBuildScriptPath = env.pre_docker_build_script_path
 
+def runTrivyScans = env.run_trivy_scans?.toBoolean() ?: false
+
+
 env.DOCKER_BUILDKIT=1
 env.COMPOSE_DOCKER_CLI_BUILD=1
 
@@ -406,6 +409,45 @@ try {
             } // withEnv
         } // dir(openmpfDockerRepo.path)
     } // stage('Run Integration Tests')
+
+    optionalStage('Trivy Scans', runTrivyScans) {
+        def composeYaml
+        dir (openmpfDockerRepo.path) {
+            withEnv(["TAG=$inProgressTag", "COMPOSE_FILE=$runtimeComposeFiles"]) {
+                composeYaml = readYaml(text: shOutput('docker-compose config'))
+            }
+        }
+        sh 'docker pull aquasec/trivy'
+        def trivyVolume = "trivy_$inProgressTag"
+        sh "docker volume create $trivyVolume"
+        try {
+            def failedImages = []
+            for (def serviceName in composeYaml.services.keySet()) {
+                def service = composeYaml.services[serviceName]
+                if (!service.build) {
+                    echo "Not scanning $service.image since we didn't build it"
+                    continue
+                }
+
+                def exitCode = shStatus("docker run --rm " +
+                        "-v /var/run/docker.sock:/var/run/docker.sock " +
+                        "-v $trivyVolume:/root/.cache/ " +
+                        "aquasec/trivy --severity CRITICAL,HIGH --exit-code 1 $service.image")
+                if (exitCode != 0) {
+                    failedImages << service.image
+                }
+            }
+            if (failedImages) {
+                echo 'Trivy scan failed for the following images:'
+                for (def image in failedImages) {
+                    echo image
+                }
+            }
+        }
+        finally {
+            sh "docker volume rm $trivyVolume"
+        }
+    }
 
     stage('Re-Tag Images') {
         reTagImages(inProgressTag, remoteImagePrefix, imageTag)
