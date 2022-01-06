@@ -424,7 +424,7 @@ try {
             def failedImages = []
             for (def serviceName in composeYaml.services.keySet()) {
                 def service = composeYaml.services[serviceName]
-                if (!service.build) {
+                if (!service.build || serviceName == 'kibana') {
                     echo "Not scanning $service.image since we didn't build it"
                     continue
                 }
@@ -432,16 +432,13 @@ try {
                 def exitCode = shStatus("docker run --rm " +
                         "-v /var/run/docker.sock:/var/run/docker.sock " +
                         "-v $trivyVolume:/root/.cache/ " +
-                        "aquasec/trivy --severity CRITICAL,HIGH --exit-code 1 $service.image")
+                        "aquasec/trivy image --severity CRITICAL,HIGH --exit-code 1 $service.image")
                 if (exitCode != 0) {
                     failedImages << service.image
                 }
             }
             if (failedImages) {
-                echo 'Trivy scan failed for the following images:'
-                for (def image in failedImages) {
-                    echo image
-                }
+                echo 'Trivy scan failed for the following images:\n' + failedImages.join('\n')
             }
         }
         finally {
