@@ -40,14 +40,12 @@ ENV LC_ALL C.UTF-8
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PIP_COMPILE=0
 
-ENV DEBIAN_FRONTEND=noninteractive
-
 RUN --mount=type=tmpfs,target=/var/cache/apt \
     --mount=type=tmpfs,target=/var/lib/apt/lists  \
     --mount=type=tmpfs,target=/tmp \
     apt-get update; \
     apt-get upgrade -y; \
-    apt-get install --no-install-recommends -y \
+    DEBIAN_FRONTEND=noninteractive apt-get install --no-install-recommends -y \
         wget ca-certificates gnupg2 unzip xz-utils cmake make g++ libgtest-dev mediainfo libssl-dev \
         liblog4cxx-dev libboost-dev file openjdk-11-jdk-headless libprotobuf-dev \
         protobuf-compiler libprotobuf-java python3.8-dev python3-pip libgl1-mesa-glx  \
