@@ -427,7 +427,7 @@ try {
                 def exitCode = shStatus("docker run --rm " +
                         "-v /var/run/docker.sock:/var/run/docker.sock " +
                         "-v $trivyVolume:/root/.cache/ " +
-                        "-v $openmpfDockerRepo.path/trivyignore.txt:/.trivyignore " +
+                        "-v '${pwd()}/$openmpfDockerRepo.path/trivyignore.txt:/.trivyignore' " +
                         "aquasec/trivy image --severity CRITICAL,HIGH --exit-code 1 $service.image")
                 if (exitCode != 0) {
                     failedImages << service.image
