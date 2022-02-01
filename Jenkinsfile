@@ -428,7 +428,8 @@ try {
                         "-v /var/run/docker.sock:/var/run/docker.sock " +
                         "-v $trivyVolume:/root/.cache/ " +
                         "-v '${pwd()}/$openmpfDockerRepo.path/trivyignore.txt:/.trivyignore' " +
-                        "aquasec/trivy image --severity CRITICAL,HIGH --exit-code 1 $service.image")
+                        "aquasec/trivy image --severity CRITICAL,HIGH --exit-code 1 " +
+                        "--timeout 20m $service.image")
                 if (exitCode != 0) {
                     failedImages << service.image
                 }
