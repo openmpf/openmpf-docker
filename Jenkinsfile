@@ -413,7 +413,8 @@ try {
     optionalStage('Trivy Scans', runTrivyScans) {
         def composeYaml
         dir (openmpfDockerRepo.path) {
-            withEnv(["TAG=$inProgressTag", "COMPOSE_FILE=$runtimeComposeFiles"]) {
+            withEnv(["TAG=$inProgressTag",
+                     "COMPOSE_FILE=docker-compose.core.yml:$componentComposeFiles"]) {
                 composeYaml = readYaml(text: shOutput('docker-compose config'))
             }
         }
@@ -422,16 +423,11 @@ try {
         sh "docker volume create $trivyVolume"
         try {
             def failedImages = []
-            for (def serviceName in composeYaml.services.keySet()) {
-                def service = composeYaml.services[serviceName]
-                if (!service.build || serviceName == 'kibana') {
-                    echo "Not scanning $service.image since we didn't build it"
-                    continue
-                }
-
+            for (def service in composeYaml.services.values()) {
                 def exitCode = shStatus("docker run --rm " +
                         "-v /var/run/docker.sock:/var/run/docker.sock " +
                         "-v $trivyVolume:/root/.cache/ " +
+                        "-v $openmpfDockerRepo.path/trivyignore.txt:/.trivyignore " +
                         "aquasec/trivy image --severity CRITICAL,HIGH --exit-code 1 $service.image")
                 if (exitCode != 0) {
                     failedImages << service.image
