@@ -342,10 +342,10 @@ try {
 
             withEnv(["TAG=$inProgressTag", "COMPOSE_FILE=$runtimeComposeFiles"]) {
                 docker.withRegistry("http://$dockerRegistryHostAndPort", dockerRegistryCredId) {
-                        sh "docker-compose build $commonBuildArgs --build-arg RUN_TESTS=true --parallel"
+                        sh "docker compose build $commonBuildArgs --build-arg RUN_TESTS=true --parallel"
                 }
 
-                def composeYaml = readYaml(text: shOutput('docker-compose config'))
+                def composeYaml = readYaml(text: shOutput('docker compose config'))
                 addVcsRefLabels(composeYaml, openmpfRepo, openmpfDockerRepo)
                 addUserDefinedLabels(composeYaml, customComponentServices, imageUrl, imageVersion, customLabelKey)
             }
@@ -391,14 +391,14 @@ try {
                      "COMPOSE_FILE=$composeFiles"]) {
                 docker.withRegistry("http://$dockerRegistryHostAndPort", dockerRegistryCredId) {
                     try {
-                        sh "docker-compose up --exit-code-from workflow-manager $scaleArgs $skipArgs"
-                        shStatus 'docker-compose down --volumes'
+                        sh "docker compose up --exit-code-from workflow-manager $scaleArgs $skipArgs"
+                        shStatus 'docker compose down --volumes'
                     }
                     catch (e) {
                         if (preserveContainersOnFailure) {
-                            shStatus 'docker-compose stop'
+                            shStatus 'docker compose stop'
                         } else {
-                            shStatus 'docker-compose down --volumes'
+                            shStatus 'docker compose down --volumes'
                         }
                         throw e;
                     }
@@ -415,7 +415,7 @@ try {
         dir (openmpfDockerRepo.path) {
             withEnv(["TAG=$inProgressTag",
                      "COMPOSE_FILE=docker-compose.core.yml:$componentComposeFiles"]) {
-                composeYaml = readYaml(text: shOutput('docker-compose config'))
+                composeYaml = readYaml(text: shOutput('docker compose config'))
             }
         }
         sh 'docker pull aquasec/trivy'
@@ -461,7 +461,7 @@ try {
                 sh "docker push '${remoteImagePrefix}openmpf_python_executor:$imageTag'"
                 sh "docker push '${remoteImagePrefix}openmpf_python_executor_ssb:$imageTag'"
 
-                sh "cd '$openmpfDockerRepo.path' && docker-compose push"
+                sh "cd '$openmpfDockerRepo.path' && docker compose push"
             } // docker.withRegistry ...
         } // withEnv...
     } // optionalStage('Push runtime images', ...
