@@ -33,6 +33,6 @@ build your component's Docker image along with the rest of OpenMPF.
 Then, run the steps in the
 [Run OpenMPF using Docker Compose](README.md#run-openmpf-using-docker-compose)
 section to deploy them. Repeat these steps, starting with the 
-`docker-compose build` command, each time you make a change to your 
+`docker compose build` command, each time you make a change to your 
 component code and want to run it.
 

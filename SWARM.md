@@ -90,7 +90,7 @@ Note that the `<registry_host>:<registry_port>` part is optional. If omitted, yo
 
 Push the images by running the following command within the same directory as `docker-compose.yml`:
 
-- `docker-compose push`
+- `docker compose push`
 
 ## Deploy to the Swarm Cluster
 
