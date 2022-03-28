@@ -38,9 +38,9 @@ RUN --mount=type=tmpfs,target=/var/cache/apt \
     apt-get install --no-install-recommends -y openjdk-11-jre-headless wget ca-certificates;
 
 
-RUN wget -O- https://archive.apache.org/dist/activemq/5.16.4/apache-activemq-5.16.4-bin.tar.gz \
+RUN wget -O- https://archive.apache.org/dist/activemq/5.17.0/apache-activemq-5.17.0-bin.tar.gz \
         | tar --extract --gzip --directory /opt; \
-    ln --symbolic /opt/apache-activemq-5.16.4 /opt/activemq; \
+    ln --symbolic /opt/apache-activemq-5.17.0 /opt/activemq; \
     # Originally line 119 was <property name="host" value="127.0.0.1"/>
     # which prevented access to Web UI outside of container.
     sed -i '119s/.*/        <property name="host" value="0.0.0.0"\/>/' \
