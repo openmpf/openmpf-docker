@@ -26,90 +26,71 @@
 # limitations under the License.                                            #
 #############################################################################
 
-FROM centos:7 as openmpf_build
+FROM ubuntu:20.04 as build
 
 SHELL ["/bin/bash", "-o", "errexit", "-o", "pipefail", "-c"]
 
-ENV LANG en_US.UTF-8
+ENV LANG C.UTF-8
+ENV LC_ALL C.UTF-8
 
-# Disable Python bytecode generation because it was causing build cache issues. It may slightly increase start up
-# time, but once everything is imported, there is no difference in performance. If the bytecode files were critical,
-# it is unlikely that the official Python Docker images would explicitly delete them. It also saves 86MB of space.
+# Disable Python bytecode generation because it was causing build cache issues. It may slightly
+# increase start up time, but once everything is imported, there is no difference in performance.
+# If the bytecode files were critical, it is unlikely that the official Python Docker images would
+# explicitly delete them.
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PIP_COMPILE=0
 
-
-RUN --mount=type=tmpfs,target=/tmp \
-    --mount=type=tmpfs,target=/var/cache/yum \
-    yum update --assumeyes; \
-    yum-config-manager --setopt=skip_missing_names_on_install=False --save; \
-    yum-config-manager --add-repo http://developer.download.nvidia.com/compute/cuda/repos/rhel7/x86_64; \
-    yum install --assumeyes \
-        epel-release \
-        https://download1.rpmfusion.org/free/el/rpmfusion-free-release-7.noarch.rpm \
-        http://developer.download.nvidia.com/compute/machine-learning/repos/rhel7/x86_64/nvidia-machine-learning-repo-rhel7-1.0.0-1.x86_64.rpm; \
-    CU_VERSION=10-2; \
-    yum install --assumeyes --nogpgcheck \
-            cmake3 make gcc gcc-c++ qt-devel log4cxx-devel boost-devel ffmpeg-devel mediainfo \
-            gtest-devel java-11-openjdk-devel activemq-cpp-devel protobuf-static protobuf-devel \
-            file google-noto-emoji-fonts \
-            # libheif build deps
-            libde265-devel \
-            # Python build deps
-            openssl-devel libffi-devel \
-            # OpenCV build deps
-            openblas-devel cuda-minimal-build-$CU_VERSION cuda-cufft-dev-$CU_VERSION cuda-npp-dev-$CU_VERSION \
-            libcudnn7-devel-7.6.5.33-1.cuda10.2 libcublas-devel-10.2.2.89 harfbuzz-devel; \
-    yum clean all; \
-    # For protobuf maven plugin
-    ln --symbolic /usr/bin/protoc /usr/local/bin/protoc; \
-    ln --symbolic cuda-10.2 /usr/local/cuda; \
+RUN --mount=type=tmpfs,target=/var/cache/apt \
+    --mount=type=tmpfs,target=/var/lib/apt/lists  \
+    --mount=type=tmpfs,target=/tmp \
+    apt-get update; \
+    apt-get upgrade -y; \
+    DEBIAN_FRONTEND=noninteractive apt-get install --no-install-recommends -y \
+        wget ca-certificates gnupg2 unzip xz-utils cmake make g++ libgtest-dev mediainfo libssl-dev \
+        liblog4cxx-dev libboost-dev file openjdk-11-jdk-headless libprotobuf-dev \
+        protobuf-compiler libprotobuf-java python3.8-dev python3-pip libgl1-mesa-glx  \
+        # libheif build deps
+        libde265-dev \
+        # OpenCV build deps \
+        libopenblas-dev liblapacke-dev libavcodec-dev libavcodec-extra libavformat-dev  \
+        libavutil-dev libswscale-dev libavresample-dev libharfbuzz-dev libfreetype-dev; \
+    # Can't set up cuda repo at the beginning because it requires wget ca-certificates gnupg2
+    wget -O- https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/7fa2af80.pub \
+            | apt-key add -; \
+    echo "deb https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64 /" \
+        > /etc/apt/sources.list.d/cuda.list; \
+    apt-get update; \
+    apt-get install -y --no-install-recommends cuda-minimal-build-11-4 libcufft-dev-11-4 \
+        libnpp-dev-11-4 libcudnn8-dev libcublas-dev-11-4; \
     # OpenCV doesn't use the statically compiled CUDA libraries except for libcudart and they are relatively large.
     find /usr/local/cuda/lib64/ -name '*.a' -not -name 'libcudart_static.a' -delete; \
-    echo '/usr/local/cuda/lib64' >> /etc/ld.so.conf.d/cuda.conf; \
-    ldconfig
-
-ENV JAVA_HOME=/etc/alternatives/java_sdk
-
-
-RUN --mount=type=tmpfs,target=/tmp \
-    mkdir /tmp/python; \
-    cd /tmp/python; \
-    curl 'https://www.python.org/ftp/python/3.8.2/Python-3.8.2.tar.xz' \
-        | tar --extract --xz; \
-    cd Python-3.8.2; \
-    ./configure --enable-optimizations --with-lto --enable-shared; \
-    make --jobs "$(nproc)"; \
-    make install; \
-    ln --symbolic /usr/local/lib/libpython3.8.so.1.0 /usr/lib64/libpython3.8.so.1.0; \
-    rm /usr/local/lib/python3.8/config-3.8-x86_64-linux-gnu/libpython3.8.a; \
-    pip3 install --upgrade --no-cache-dir pip; \
-    pip3 install --upgrade --no-cache-dir wheel; \
-    # find commands taken from official Python Dockerfile
-    find /usr/local/lib/python3.8 -depth -type d -a \( -name test -o -name tests -o -name idle_test \) -exec rm -rf '{}' + ; \
-    find /usr/local/lib/python3.8 -depth -type f -a \( -name '*.pyc' -o -name '*.pyo' \) -exec rm -rf '{}' + ;
+    rm /usr/lib/x86_64-linux-gnu/libcudnn*.a; \
+    ln --symbolic /usr/include/x86_64-linux-gnu/openblas-pthread/cblas.h /usr/include/cblas.h; \
+    ln --symbolic /usr/bin/cmake /usr/bin/cmake3; \
+    ln --symbolic /usr/bin/protoc /usr/local/bin/protoc;
 
 
 RUN --mount=type=tmpfs,target=/tmp \
     mkdir /tmp/opencv-contrib; \
-    curl --location 'https://github.com/opencv/opencv_contrib/archive/4.5.0.tar.gz' \
+    wget -O- 'https://github.com/opencv/opencv_contrib/archive/4.5.0.tar.gz' \
         | tar --extract --gzip --directory /tmp/opencv-contrib; \
     mkdir /tmp/opencv; \
     cd  /tmp/opencv; \
-    curl --location 'https://github.com/opencv/opencv/archive/4.5.0.tar.gz' \
+    wget -O- 'https://github.com/opencv/opencv/archive/4.5.0.tar.gz' \
         | tar --extract --gzip; \
     cd opencv-4.5.0; \
     sed -i '297s/.*/    return min((int)sysconf( _SC_NPROCESSORS_ONLN ), 4);/' modules/videoio/src/cap_ffmpeg_impl.hpp; \
     mkdir build; \
     cd build; \
-    cmake3 -DCMAKE_INSTALL_PREFIX:PATH='/opt/opencv-4.5.0' \
+    export OpenBLAS_HOME=/usr/lib/x86_64-linux-gnu/openblas-pthread; \
+    cmake -DCMAKE_INSTALL_PREFIX:PATH='/opt/opencv-4.5.0' \
         -DWITH_IPP=false \
         -DBUILD_EXAMPLES=false \
         -DBUILD_TESTS=false \
         -DBUILD_PERF_TESTS=false \
         -DWITH_CUDA=true \
-        -DCUDA_ARCH_BIN=3.0 \
-        -DCUDA_ARCH_PTX=3.0 \
+        -DCUDA_ARCH_BIN=7.0 \
+        -DCUDA_ARCH_PTX=7.0 \
         -DWITH_CUBLAS=true \
         -DWITH_CUDNN=true \
         -DOPENCV_DNN_CUDA=true \
@@ -120,15 +101,47 @@ RUN --mount=type=tmpfs,target=/tmp \
     ln --symbolic '/opt/opencv-4.5.0/include/opencv4/opencv2' /usr/local/include/opencv2;
 
 
-RUN curl --location 'https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz' \
-        | tar --extract --xz --directory /usr/local/bin --strip-components 1 \
+RUN --mount=type=tmpfs,target=/tmp \
+    mkdir /tmp/activemq-cpp; \
+    cd /tmp/activemq-cpp; \
+    wget -O- https://dlcdn.apache.org/activemq/activemq-cpp/3.9.5/activemq-cpp-library-3.9.5-src.tar.gz \
+        | tar --extract --gzip; \
+    cd activemq-cpp-library-3.9.5; \
+    ./configure; \
+    make --jobs "$(nproc)" install;
+
+RUN wget -O- 'https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz' \
+        | tar --extract --xz --directory /usr/local/bin --strip-components 1 --wildcards \
             'ffmpeg-*-amd64-static/ffmpeg' 'ffmpeg-*-amd64-static/ffprobe';
 
-# We don't use the version from yum because it is older and doesn't work correctly with certain files.
+# Markup uses the emoji font for icons.
+RUN --mount=type=tmpfs,target=/tmp \
+    mkdir /tmp/noto; \
+    cd /tmp/noto; \
+    wget https://noto-website-2.storage.googleapis.com/pkgs/NotoEmoji-unhinted.zip; \
+    unzip NotoEmoji-unhinted.zip; \
+    mkdir --parents /usr/share/fonts/google-noto-emoji; \
+    cp NotoEmoji-Regular.ttf /usr/share/fonts/google-noto-emoji;
+
+
+RUN --mount=type=tmpfs,target=/tmp \
+    mkdir /tmp/pngdefry; \
+    cd /tmp/pngdefry; \
+    wget -O- 'https://github.com/openmpf/pngdefry/archive/v1.2.tar.gz' \
+        | tar --extract --gzip; \
+    cd pngdefry-1.2; \
+    gcc pngdefry.c -o /usr/local/bin/pngdefry;
+
+
+RUN wget -O- 'https://archive.apache.org/dist/maven/maven-3/3.3.3/binaries/apache-maven-3.3.3-bin.tar.gz' \
+        | tar --extract --gzip --directory /opt; \
+    ln --symbolic /opt/apache-maven-3.3.3/bin/mvn /usr/local/bin;
+
+
 RUN --mount=type=tmpfs,target=/tmp \
     mkdir /tmp/libheif; \
     cd /tmp/libheif; \
-    curl --location https://github.com/strukturag/libheif/archive/refs/tags/v1.12.0.tar.gz \
+    wget -O- https://github.com/strukturag/libheif/archive/refs/tags/v1.12.0.tar.gz \
         | tar --extract --gzip; \
     cd libheif-1.12.0; \
     mkdir build; \
@@ -136,19 +149,6 @@ RUN --mount=type=tmpfs,target=/tmp \
     cmake3 -DCMAKE_INSTALL_PREFIX=/usr -DWITH_EXAMPLES=false ..; \
     make --jobs "$(nproc)" install;
 
-
-RUN --mount=type=tmpfs,target=/tmp \
-    mkdir /tmp/pngdefry; \
-    cd /tmp/pngdefry; \
-    curl --location 'https://github.com/openmpf/pngdefry/archive/v1.2.tar.gz' \
-        | tar --extract --gzip; \
-    cd pngdefry-1.2; \
-    gcc pngdefry.c -o /usr/local/bin/pngdefry;
-
-
-RUN curl --location 'https://archive.apache.org/dist/maven/maven-3/3.3.3/binaries/apache-maven-3.3.3-bin.tar.gz' \
-        | tar --extract --gzip --directory /opt; \
-    ln --symbolic /opt/apache-maven-3.3.3/bin/mvn /usr/local/bin;
 
 COPY . /home/mpf/openmpf-projects
 
@@ -170,8 +170,10 @@ RUN --mount=type=cache,id=mvn_cache,target=/root/.m2/repository,sharing=private 
     # Move mpf artifacts out of Maven repo so they won't be in the cache mount when another build is started
     mv /root/.m2/repository/org/mitre/mpf /build-artifacts/mvn;
 
+
 ARG RUN_TESTS=false
 RUN \[ "${RUN_TESTS,,}" = true ] || exit 0; \
+    export LD_LIBRARY_PATH=$MPF_HOME/lib:LD_LIBRARY_PATH; \
     # Use nullglob to avoid entering for loop when no glob matches.
     # Use globstar to enable ** globs.
     shopt -s nullglob globstar; \

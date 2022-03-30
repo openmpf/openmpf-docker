@@ -71,16 +71,11 @@ fi
 ################################################################################
 
 IFS=':' read -r -a ca_certs <<< "$MPF_CA_CERTS"
-# Use counter to create unique alias names because each key in a keystore needs to have a unique alias.
-cert_counter=1
 for cert in "${ca_certs[@]}"; do
     # If there are leading colons, trailing colons, or two colons in a row, $cert wil contain the empty string.
     [ ! "$cert" ] && continue
-
-    "$JAVA_HOME/bin/keytool" -import -alias "mpf_imported_$((cert_counter++))" -file "$cert" -cacerts \
-            -storepass changeit -noprompt
-
-    cp "$cert" /etc/pki/ca-trust/source/anchors/
+    cp "$cert" /usr/local/share/ca-certificates/
+    update-ca-certificates
 done
 
 
@@ -158,9 +153,13 @@ until [ +PONG = "$( (exec 8<>/dev/tcp/redis/6379 && echo -e 'PING\r\n' >&8 && he
 done
 echo 'Redis is up'
 
-# Wait for ActiveMQ service.
+
 echo 'Waiting for ActiveMQ to become available ...'
-until curl --head "$ACTIVE_MQ_HOST:8161" >> /dev/null 2>&1; do
+# --spider makes wget use a HEAD request
+# wget exits with code 6 when there is an authentication error. This is expected because the
+# ActiveMQ status page requires authentication. We are just using the request to verify ActiveMQ
+# is running so there is no need to authenticate.
+until wget --spider --tries 1 "http://$ACTIVE_MQ_HOST:8161" >> /dev/null 2>&1 || [ $? -eq 6 ]; do
     echo 'ActiveMQ is unavailable. Sleeping.'
     sleep 5
 done

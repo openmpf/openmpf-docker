@@ -113,7 +113,7 @@ echo "Load images:
 \`docker load -i images.tar.gz\`
 
 Run images:
-\`docker-compose up\`
+\`docker compose up\`
 
 For more information, refer to https://github.com/openmpf/openmpf-docker/blob/develop/README.md." > "$outDir/README.md"
 
@@ -127,7 +127,7 @@ if [ "$omitComposeFiles" = 0 ]; then
     fi
 fi
 
-readarray -t imageNames < <(docker-compose config | awk '{if ($1 == "image:") print $2;}')
+readarray -t imageNames < <(docker compose config | awk '{if ($1 == "image:") print $2;}')
 
 newImageNames=()
 if [ "$cleanImageNames" = 1 ]; then
