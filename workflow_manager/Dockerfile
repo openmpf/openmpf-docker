@@ -74,9 +74,9 @@ RUN mkdir /scripts; \
     chmod +x /scripts/wait-for-it.sh;
 
 
-RUN curl --location 'http://archive.apache.org/dist/tomcat/tomcat-8/v8.5.41/bin/apache-tomcat-8.5.41.tar.gz' \
+RUN curl --location 'http://archive.apache.org/dist/tomcat/tomcat-8/v8.5.41/bin/apache-tomcat-8.5.78.tar.gz' \
         | tar --extract --gzip --directory /opt; \
-    ln --symbolic /opt/apache-tomcat-8.5.41 /opt/apache-tomcat; \
+    ln --symbolic /opt/apache-tomcat-8.5.78 /opt/apache-tomcat; \
     rm --recursive /opt/apache-tomcat/webapps/*; \
     # Configure Tomcat cache size:
     # https://stackoverflow.com/questions/26893297/tomcat-8-throwing-org-apache-catalina-webresources-cache-getresource-unable-to
