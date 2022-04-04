@@ -40,8 +40,8 @@ fi
 component_name=$(python3 -c "import json; print(json.load(open('$descriptor_path'))['componentName'])")
 mkdir --parents "$MPF_HOME/plugins/$component_name"
 
-if [ -e "$src_dir/setup.py" ]; then
-    echo 'Installing setuptools plugin'
+if [ -e "$src_dir/pyproject.toml" ] || [ -e "$src_dir/setup.py" ]; then
+    echo 'Installing plugin with pip'
     cp --recursive "$src_dir"/plugin-files/* "$MPF_HOME/plugins/$component_name/"
 
 
