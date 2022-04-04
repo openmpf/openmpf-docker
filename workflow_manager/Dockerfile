@@ -74,7 +74,7 @@ RUN mkdir /scripts; \
     chmod +x /scripts/wait-for-it.sh;
 
 
-RUN curl --location 'http://archive.apache.org/dist/tomcat/tomcat-8/v8.5.41/bin/apache-tomcat-8.5.78.tar.gz' \
+RUN curl --location 'http://archive.apache.org/dist/tomcat/tomcat-8/v8.5.78/bin/apache-tomcat-8.5.78.tar.gz' \
         | tar --extract --gzip --directory /opt; \
     ln --symbolic /opt/apache-tomcat-8.5.78 /opt/apache-tomcat; \
     rm --recursive /opt/apache-tomcat/webapps/*; \
