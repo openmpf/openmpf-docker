@@ -98,7 +98,7 @@ RUN --mount=type=tmpfs,target=/tmp \
     cd  /tmp/opencv; \
     curl --location 'https://github.com/opencv/opencv/archive/4.5.5.tar.gz' \
         | tar --extract --gzip; \
-    cd opencv-4.5.0; \
+    cd opencv-4.5.5; \
     sed -i '315s/.*/    return min((int)sysconf( _SC_NPROCESSORS_ONLN ), 4);/' modules/videoio/src/cap_ffmpeg_impl.hpp; \
     mkdir build; \
     cd build; \
