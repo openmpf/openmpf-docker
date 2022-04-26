@@ -60,7 +60,7 @@ RUN --mount=type=tmpfs,target=/tmp \
     echo '/usr/local/cuda/lib64' >> /etc/ld.so.conf.d/cuda.conf; \
     ldconfig;
 
-COPY --from=openmpf_build /opt/opencv-4.5.0 /opt/opencv-4.5.0
+COPY --from=openmpf_build /opt/opencv-4.5.5 /opt/opencv-4.5.5
 
 COPY --from=openmpf_build /usr/local/bin/ffmpeg /usr/local/bin/ffprobe /usr/local/bin/
 

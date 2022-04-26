@@ -92,17 +92,17 @@ RUN --mount=type=tmpfs,target=/tmp \
 
 RUN --mount=type=tmpfs,target=/tmp \
     mkdir /tmp/opencv-contrib; \
-    curl --location 'https://github.com/opencv/opencv_contrib/archive/4.5.0.tar.gz' \
+    curl --location 'https://github.com/opencv/opencv_contrib/archive/4.5.5.tar.gz' \
         | tar --extract --gzip --directory /tmp/opencv-contrib; \
     mkdir /tmp/opencv; \
     cd  /tmp/opencv; \
-    curl --location 'https://github.com/opencv/opencv/archive/4.5.0.tar.gz' \
+    curl --location 'https://github.com/opencv/opencv/archive/4.5.5.tar.gz' \
         | tar --extract --gzip; \
-    cd opencv-4.5.0; \
-    sed -i '297s/.*/    return min((int)sysconf( _SC_NPROCESSORS_ONLN ), 4);/' modules/videoio/src/cap_ffmpeg_impl.hpp; \
+    cd opencv-4.5.5; \
+    sed -i '315s/.*/    return min((int)sysconf( _SC_NPROCESSORS_ONLN ), 4);/' modules/videoio/src/cap_ffmpeg_impl.hpp; \
     mkdir build; \
     cd build; \
-    cmake3 -DCMAKE_INSTALL_PREFIX:PATH='/opt/opencv-4.5.0' \
+    cmake3 -DCMAKE_INSTALL_PREFIX:PATH='/opt/opencv-4.5.5' \
         -DWITH_IPP=false \
         -DBUILD_EXAMPLES=false \
         -DBUILD_TESTS=false \
@@ -114,10 +114,10 @@ RUN --mount=type=tmpfs,target=/tmp \
         -DWITH_CUDNN=true \
         -DOPENCV_DNN_CUDA=true \
         -DBUILD_CUDA_STUBS=true \
-        -DOPENCV_EXTRA_MODULES_PATH=/tmp/opencv-contrib/opencv_contrib-4.5.0/modules \
+        -DOPENCV_EXTRA_MODULES_PATH=/tmp/opencv-contrib/opencv_contrib-4.5.5/modules \
         ..; \
     make --jobs "$(nproc)" install; \
-    ln --symbolic '/opt/opencv-4.5.0/include/opencv4/opencv2' /usr/local/include/opencv2;
+    ln --symbolic '/opt/opencv-4.5.5/include/opencv4/opencv2' /usr/local/include/opencv2;
 
 
 RUN curl --location 'https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz' \
