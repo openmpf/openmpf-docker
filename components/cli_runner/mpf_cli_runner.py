@@ -466,6 +466,8 @@ class ComponentResultToDictConverter:
         return [
             track_dict['startOffsetFrame'],
             track_dict['stopOffsetFrame'],
+            track_dict['startOffsetTime'],
+            track_dict['stopOffsetTime'],
             track_dict['type'],
             track_dict['confidence'],
             *track_dict['trackProperties'].items()
@@ -476,6 +478,7 @@ class ComponentResultToDictConverter:
     def _detection_dict_compare_key(detection_dict: Dict[str, Any]) -> List:
         return [
             detection_dict['offsetFrame'],
+            detection_dict['offsetTime'],
             detection_dict['confidence'],
             detection_dict['x'],
             detection_dict['y'],
