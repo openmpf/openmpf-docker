@@ -46,7 +46,7 @@ RUN --mount=type=tmpfs,target=/var/cache/apt \
     apt-get install --no-install-recommends -y \
         python3.8 libpython3.8 wget ca-certificates gnupg2; \
     # Can't set up cuda repo at the beginning because it requires wget ca-certificates gnupg2
-    wget -O- https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/7fa2af80.pub \
+    wget -O- https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/3bf863cc.pub \
             | apt-key add -; \
     echo "deb https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64 /" \
         > /etc/apt/sources.list.d/cuda.list; \
