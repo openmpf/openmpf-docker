@@ -26,45 +26,33 @@
 # limitations under the License.                                            #
 #############################################################################
 
-
 ARG BUILD_REGISTRY
 ARG BUILD_TAG=latest
 FROM ${BUILD_REGISTRY}openmpf_build:${BUILD_TAG} as openmpf_build
 
 
-FROM centos:7
+FROM ubuntu:20.04
 
 SHELL ["/bin/bash", "-o", "errexit", "-o", "pipefail", "-c"]
 
-ENV LANG en_US.UTF-8
+ENV LANG C.UTF-8
+ENV LC_ALL C.UTF-8
 
-
-COPY --from=openmpf_build /usr/local/bin/python3.8 /usr/local/bin/python3.8-config \
-    /usr/local/bin/pip /usr/local/bin/pip3 /usr/local/bin/pip3.8 /usr/local/bin/wheel \
-    /usr/local/bin/
-
-COPY --from=openmpf_build /usr/local/lib/python3.8 /usr/local/lib/python3.8
-
-COPY --from=openmpf_build /usr/local/lib/libpython3.8.so.1.0 /usr/local/lib/libpython3.8.so.1.0
-
-RUN cd /usr/local/bin; \
-    ln --symbolic python3.8 python3; \
-    ln --symbolic python3.8-config python3-config; \
-    cd /usr/local/lib; \
-    ln --symbolic libpython3.8.so.1.0 libpython3.8.so; \
-    ln --symbolic /usr/local/lib/libpython3.8.so.1.0 /usr/lib64/libpython3.8.so.1.0;
-
-
-RUN --mount=type=tmpfs,target=/tmp \
-    --mount=type=tmpfs,target=/var/cache/yum \
-    yum update --assumeyes; \
-    yum-config-manager --setopt=skip_missing_names_on_install=False --save; \
-    yum-config-manager --add-repo http://developer.download.nvidia.com/compute/cuda/repos/rhel7/x86_64; \
-    yum install --assumeyes --nogpgcheck cuda-cudart-10-2; \
-    yum clean all; \
-    ln --symbolic cuda-10.2 /usr/local/cuda; \
-    echo '/usr/local/cuda/lib64' >> /etc/ld.so.conf.d/cuda.conf; \
-    ldconfig;
+RUN --mount=type=tmpfs,target=/var/cache/apt \
+    --mount=type=tmpfs,target=/var/lib/apt/lists  \
+    --mount=type=tmpfs,target=/tmp \
+    apt-get update; \
+    apt-get upgrade -y; \
+    apt-get install --no-install-recommends -y \
+        python3.8 libpython3.8 wget ca-certificates gnupg2; \
+    # Can't set up cuda repo at the beginning because it requires wget ca-certificates gnupg2
+    wget -O- https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/3bf863cc.pub \
+            | apt-key add -; \
+    echo "deb https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64 /" \
+        > /etc/apt/sources.list.d/cuda.list; \
+    apt-get update; \
+    apt-get install -y --no-install-recommends cuda-cudart-11-4; \
+    ln --symbolic /usr/bin/python3.8 /usr/bin/python3
 
 COPY --from=openmpf_build /usr/local/bin/ffmpeg /usr/local/bin/ffprobe /usr/local/bin/
 
@@ -81,17 +69,17 @@ WORKDIR $MPF_HOME
 RUN --mount=type=bind,from=openmpf_build,source=/build-artifacts/install/lib,target=/tmp/mpf-libs \
     cd /tmp/mpf-libs; \
     # component executor binary's dependencies
-    cp --preserve=links --no-dereference liblog4cxx* libactivemq-cpp* libapr* libXext* \
-        /usr/lib64;
+    cp --preserve=links --no-dereference libactivemq-cpp* /usr/lib/x86_64-linux-gnu;
 
 # component executor binary
-COPY --from=openmpf_build /build-artifacts/install/bin/amq_detection_component $MPF_HOME/bin/amq_detection_component
+COPY --from=openmpf_build /build-artifacts/install/bin/amq_detection_component \
+                          $MPF_HOME/bin/amq_detection_component
 
 # component executor log config
 COPY --from=openmpf_build /build-artifacts/install/config/Log4cxxConfig.xml $MPF_HOME/config/
 
 COPY --from=openmpf_build /build-artifacts/install/lib/mpf_cpp_sdk.cpython-38-x86_64-linux-gnu.so \
-                          /usr/local/lib/python3.8/lib-dynload/
+                          /usr/lib/python3.8/lib-dynload
 
 
 ENV MPF_LOG_PATH $MPF_HOME/share/logs

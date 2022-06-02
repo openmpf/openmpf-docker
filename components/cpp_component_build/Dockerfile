@@ -26,41 +26,40 @@
 # limitations under the License.                                            #
 #############################################################################
 
-
 ARG BUILD_REGISTRY
 ARG BUILD_TAG=latest
 FROM ${BUILD_REGISTRY}openmpf_build:${BUILD_TAG} as openmpf_build
 
-FROM centos:7
+
+FROM ubuntu:20.04
 
 SHELL ["/bin/bash", "-o", "errexit", "-o", "pipefail", "-c"]
 
-ENV LANG en_US.UTF-8
+ENV LANG C.UTF-8
+ENV LC_ALL C.UTF-8
 
-# Change override_install_langs because the centos:7 image sets this yum property to en_US.utf8
-# which prevents other locales (including other English locales) from being installed with GCC.
-RUN --mount=type=tmpfs,target=/tmp \
-    --mount=type=tmpfs,target=/var/cache/yum \
-    yum-config-manager --setopt=override_install_langs='' \
-                       --setopt=skip_missing_names_on_install=False --save; \
-    yum update --assumeyes; \
-    yum-config-manager --add-repo http://developer.download.nvidia.com/compute/cuda/repos/rhel7/x86_64; \
-    yum install --assumeyes epel-release \
-            https://download1.rpmfusion.org/free/el/rpmfusion-free-release-7.noarch.rpm \
-            http://developer.download.nvidia.com/compute/machine-learning/repos/rhel7/x86_64/nvidia-machine-learning-repo-rhel7-1.0.0-1.x86_64.rpm; \
-    yum install --assumeyes  --nogpgcheck cmake3 make gcc gcc-c++ qt-devel log4cxx-devel \
-            boost-devel ffmpeg-libs gtest-devel openblas-devel cuda-minimal-build-10-2 \
-            libcublas-devel-10.2.2.89-1 libcudnn7-devel-7.6.5.33-1.cuda10.2; \
-    yum clean all; \
-    ln --symbolic cuda-10.2 /usr/local/cuda; \
+RUN --mount=type=tmpfs,target=/var/cache/apt \
+    --mount=type=tmpfs,target=/var/lib/apt/lists  \
+    --mount=type=tmpfs,target=/tmp \
+    apt-get update; \
+    apt-get upgrade -y; \
+    apt-get install --no-install-recommends -y \
+        wget ca-certificates gnupg2 cmake make g++ libgtest-dev  liblog4cxx-dev libboost-dev \
+        libavcodec58 libavformat58 libswscale5 libopenblas0-pthread liblapacke; \
+    # Can't set up cuda repo at the beginning because it requires wget ca-certificates gnupg2
+    wget -O- https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/3bf863cc.pub \
+            | apt-key add -; \
+    echo "deb https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64 /" \
+        > /etc/apt/sources.list.d/cuda.list; \
+    apt-get update; \
+    apt-get install -y --no-install-recommends \
+        cuda-minimal-build-11-4 libcudnn8-dev libcublas-dev-11-4; \
     # OpenCV doesn't use the statically compiled CUDA libraries except for libcudart and they are relatively large.
-    find /usr/local/cuda/lib64/ -name '*.a' -not -name 'libcudart_static.a' \
-                                            -not -name 'libcudadevrt.a' -delete; \
-    rm /usr/lib64/libcudnn*.a; \
-    echo '/usr/local/cuda/lib64' >> /etc/ld.so.conf.d/cuda.conf; \
-    ldconfig;
+    rm /usr/local/cuda/lib64/libcublasLt_static.a /usr/local/cuda/lib64/libcublas_static.a \
+        /usr/lib/x86_64-linux-gnu/libcudnn*.a; \
+    ln --symbolic /usr/bin/cmake /usr/bin/cmake3;
 
-COPY --from=openmpf_build /opt/opencv-4.5.0 /opt/opencv-4.5.0
+COPY --from=openmpf_build /opt/opencv-4.5.5 /opt/opencv-4.5.5
 
 COPY --from=openmpf_build /usr/local/bin/ffmpeg /usr/local/bin/ffprobe /usr/local/bin/
 
@@ -70,6 +69,10 @@ RUN mkdir /home/mpf; echo 'find_package(mpfCMakeHelpers REQUIRED)' > /home/mpf/C
 
 COPY --from=openmpf_build /build-artifacts/mpf-sdk-install/include /home/mpf/mpf-sdk-install/include
 COPY --from=openmpf_build /build-artifacts/mpf-sdk-install/lib /home/mpf/mpf-sdk-install/lib
+
+RUN echo '/opt/opencv-4.5.5/lib' > /etc/ld.so.conf.d/opencv.conf; \
+    echo '/home/mpf/mpf-sdk-install/lib' > /etc/ld.so.conf.d/mpf.conf; \
+    ldconfig
 
 COPY cpp_component_build/scripts /scripts
 

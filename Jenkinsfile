@@ -52,6 +52,9 @@ def customLabelKey = env.getProperty("custom_label_key") ?: "custom"
 
 def preDockerBuildScriptPath = env.pre_docker_build_script_path
 
+def runTrivyScans = env.run_trivy_scans?.toBoolean() ?: false
+
+
 env.DOCKER_BUILDKIT=1
 env.COMPOSE_DOCKER_CLI_BUILD=1
 
@@ -229,7 +232,7 @@ try {
     stage('Build images') {
         // Make sure we are using most recent version of external images
             for (externalImage in ['docker/dockerfile:1.2', 'postgres:alpine',
-                                   'redis:alpine', 'centos:7']) {
+                                   'redis:alpine', 'ubuntu:20.04']) {
             try {
                 sh "docker pull '$externalImage'"
             }
@@ -339,10 +342,10 @@ try {
 
             withEnv(["TAG=$inProgressTag", "COMPOSE_FILE=$runtimeComposeFiles"]) {
                 docker.withRegistry("http://$dockerRegistryHostAndPort", dockerRegistryCredId) {
-                        sh "docker-compose build $commonBuildArgs --build-arg RUN_TESTS=true --parallel"
+                        sh "docker compose build $commonBuildArgs --build-arg RUN_TESTS=true --parallel"
                 }
 
-                def composeYaml = readYaml(text: shOutput('docker-compose config'))
+                def composeYaml = readYaml(text: shOutput('docker compose config'))
                 addVcsRefLabels(composeYaml, openmpfRepo, openmpfDockerRepo)
                 addUserDefinedLabels(composeYaml, customComponentServices, imageUrl, imageVersion, customLabelKey)
             }
@@ -388,14 +391,14 @@ try {
                      "COMPOSE_FILE=$composeFiles"]) {
                 docker.withRegistry("http://$dockerRegistryHostAndPort", dockerRegistryCredId) {
                     try {
-                        sh "docker-compose up --exit-code-from workflow-manager $scaleArgs $skipArgs"
-                        shStatus 'docker-compose down --volumes'
+                        sh "docker compose --ansi always up --exit-code-from workflow-manager $scaleArgs $skipArgs"
+                        shStatus 'docker compose down --volumes'
                     }
                     catch (e) {
                         if (preserveContainersOnFailure) {
-                            shStatus 'docker-compose stop'
+                            shStatus 'docker compose stop'
                         } else {
-                            shStatus 'docker-compose down --volumes'
+                            shStatus 'docker compose down --volumes'
                         }
                         throw e;
                     }
@@ -406,6 +409,39 @@ try {
             } // withEnv
         } // dir(openmpfDockerRepo.path)
     } // stage('Run Integration Tests')
+
+    optionalStage('Trivy Scans', runTrivyScans) {
+        def composeYaml
+        dir (openmpfDockerRepo.path) {
+            withEnv(["TAG=$inProgressTag",
+                     "COMPOSE_FILE=docker-compose.core.yml:$componentComposeFiles"]) {
+                composeYaml = readYaml(text: shOutput('docker compose config'))
+            }
+        }
+        sh 'docker pull aquasec/trivy'
+        def trivyVolume = "trivy_$inProgressTag"
+        sh "docker volume create $trivyVolume"
+        try {
+            def failedImages = []
+            for (def service in composeYaml.services.values()) {
+                def exitCode = shStatus("docker run --rm " +
+                        "-v /var/run/docker.sock:/var/run/docker.sock " +
+                        "-v $trivyVolume:/root/.cache/ " +
+                        "-v '${pwd()}/$openmpfDockerRepo.path/trivyignore.txt:/.trivyignore' " +
+                        "aquasec/trivy image --severity CRITICAL,HIGH --exit-code 1 " +
+                        "--timeout 20m $service.image")
+                if (exitCode != 0) {
+                    failedImages << service.image
+                }
+            }
+            if (failedImages) {
+                echo 'Trivy scan failed for the following images:\n' + failedImages.join('\n')
+            }
+        }
+        finally {
+            sh "docker volume rm $trivyVolume"
+        }
+    }
 
     stage('Re-Tag Images') {
         reTagImages(inProgressTag, remoteImagePrefix, imageTag)
@@ -425,7 +461,7 @@ try {
                 sh "docker push '${remoteImagePrefix}openmpf_python_executor:$imageTag'"
                 sh "docker push '${remoteImagePrefix}openmpf_python_executor_ssb:$imageTag'"
 
-                sh "cd '$openmpfDockerRepo.path' && docker-compose push"
+                sh "cd '$openmpfDockerRepo.path' && docker compose push"
             } // docker.withRegistry ...
         } // withEnv...
     } // optionalStage('Push runtime images', ...

@@ -30,64 +30,45 @@ ARG BUILD_REGISTRY
 ARG BUILD_TAG=latest
 FROM ${BUILD_REGISTRY}openmpf_build:${BUILD_TAG} as openmpf_build
 
-FROM centos:7
+
+FROM ubuntu:20.04
 
 SHELL ["/bin/bash", "-o", "errexit", "-o", "pipefail", "-c"]
 
-ENV LANG en_US.UTF-8
+ENV LANG C.UTF-8
+ENV LC_ALL C.UTF-8
 
-# Disable Python bytecode generation because it was causing build cache issues. It may slightly increase start up
-# time, but once everything is imported, there is no difference in performance. If the bytecode files were critical,
-# it is unlikely that the official Python Docker images would explicitly delete them. It also saves 86MB of space.
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PIP_COMPILE=0
-
-COPY --from=openmpf_build /usr/local/bin/python3.8 /usr/local/bin/python3.8-config \
-    /usr/local/bin/pip /usr/local/bin/pip3 /usr/local/bin/pip3.8 /usr/local/bin/wheel \
-    /usr/local/bin/
-
-COPY --from=openmpf_build /usr/local/lib/python3.8 /usr/local/lib/python3.8
-
-COPY --from=openmpf_build /usr/local/lib/libpython3.8.so.1.0 /usr/local/lib/libpython3.8.so.1.0
-
-RUN cd /usr/local/bin; \
-    ln --symbolic python3.8 python3; \
-    ln --symbolic python3.8-config python3-config; \
-    cd /usr/local/lib; \
-    ln --symbolic libpython3.8.so.1.0 libpython3.8.so; \
-    ln --symbolic /usr/local/lib/libpython3.8.so.1.0 /usr/lib64/libpython3.8.so.1.0;
+RUN --mount=type=tmpfs,target=/var/cache/apt \
+    --mount=type=tmpfs,target=/var/lib/apt/lists  \
+    --mount=type=tmpfs,target=/tmp \
+    apt-get update; \
+    apt-get upgrade -y; \
+    apt-get install --no-install-recommends -y \
+        openjdk-11-jre-headless libtcnative-1 file mediainfo wget ca-certificates \
+        python3.8 python3-pip;
 
 
-RUN --mount=type=tmpfs,target=/tmp \
-    --mount=type=tmpfs,target=/var/cache/yum \
-    yum update --assumeyes; \
-    yum-config-manager --setopt=skip_missing_names_on_install=False --save; \
-    yum install --assumeyes --nogpgcheck epel-release; \
-    yum install --assumeyes java-11-openjdk tomcat-native file mediainfo; \
-    yum clean all;
-
-ENV JAVA_HOME /etc/alternatives/jre
-
-RUN mkdir /scripts; \
-    curl --location https://raw.githubusercontent.com/vishnubob/wait-for-it/master/wait-for-it.sh \
-        > /scripts/wait-for-it.sh; \
+RUN wget --directory-prefix /scripts \
+        https://raw.githubusercontent.com/vishnubob/wait-for-it/master/wait-for-it.sh; \
     chmod +x /scripts/wait-for-it.sh;
 
 
-RUN curl --location 'http://archive.apache.org/dist/tomcat/tomcat-8/v8.5.41/bin/apache-tomcat-8.5.41.tar.gz' \
+RUN wget -O- 'http://archive.apache.org/dist/tomcat/tomcat-8/v8.5.78/bin/apache-tomcat-8.5.78.tar.gz' \
         | tar --extract --gzip --directory /opt; \
-    ln --symbolic /opt/apache-tomcat-8.5.41 /opt/apache-tomcat; \
+    ln --symbolic /opt/apache-tomcat-8.5.78 /opt/apache-tomcat; \
     rm --recursive /opt/apache-tomcat/webapps/*; \
     # Configure Tomcat cache size:
     # https://stackoverflow.com/questions/26893297/tomcat-8-throwing-org-apache-catalina-webresources-cache-getresource-unable-to
     sed --in-place '24s/.*/    <WatchedResource>$\{catalina\.ba\se\}\/conf\/web.xml<\/WatchedResource>\n    <Resources cachingAllowed="true" cacheMaxSize="100000" \/>/' \
         /opt/apache-tomcat/conf/context.xml;
 
+
 COPY --from=openmpf_build /usr/local/bin/ffmpeg /usr/local/bin/ffprobe /usr/local/bin/
 
 COPY --from=openmpf_build /usr/local/bin/pngdefry /usr/local/bin/pngdefry
 
 COPY --from=openmpf_build /build-artifacts/mpf-scripts /home/mpf/mpf-scripts
+
 # Make sure mpf-scripts is not globally installed and that the mpf command in not on the $PATH
 RUN mkdir --parents /home/mpf/mpf-scripts-install; \
     pip3 install --no-cache --target /home/mpf/mpf-scripts-install /home/mpf/mpf-scripts

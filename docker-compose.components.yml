@@ -145,6 +145,37 @@ services:
     image: ${REGISTRY}openmpf_ocv_yolo_detection:${TAG}
     build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/cpp/OcvYoloDetection
 
+  ocv-yolo-detection-server:
+    image: ${REGISTRY}openmpf_ocv_yolo_detection_server:${TAG}
+    build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/cpp/OcvYoloDetection/triton_server
+    deploy:
+      mode: global
+    ulimits:
+      memlock: -1  # don't limit locked-in memory (prevent paging)
+      stack: 67108864  # 8 GiB
+    # ports:
+    #  - "8001:8001"  # server gRPC port (expose to enable handling requests from outside the stack)
+    #  - "8000:8000"  # (optional) HTTP management port
+    #  - "8002:8002"  # (optional) Prometheus metrics at http://<host>:<this-port>/metrics
+    environment:
+      # Optionally, limit the GPUs exposed to the server.
+      # At least one GPU is required to run the YOLO TensorRT engine.
+      - NVIDIA_VISIBLE_DEVICES=all
+      - LD_PRELOAD=/plugins/libyolo608layerplugin.so
+    volumes:
+      # (optional) Volume for shared memory with OcvYoloDetection component on same host
+      # - "/dev/shm:/dev/shm"
+      # At runtime the server generates a GPU-specific engine file for the YOLO model. Caching it in a volume saves
+      # initialization time. To save space, manually remove generated engine files that are no longer needed.
+      - yolo_engine_files:/models
+    command: [tritonserver,
+              --model-repository=/models,
+              --strict-model-config=false,
+              --model-control-mode=explicit,
+              --load-model=yolo-608,
+              # --log-verbose=1,  # (optional)
+              --grpc-infer-allocation-pool-size=16]
+
   scene-change-detection:
     <<: *detection-component-base
     image: ${REGISTRY}openmpf_scene_change_detection:${TAG}
@@ -209,3 +240,6 @@ services:
     #volumes:
     #  - "${OPENMPF_PROJECTS_PATH}/openmpf-components/cpp/TrtisDetection/plugin-files/models:/models"
     command: [trtserver,--model-store=/models]
+
+volumes:
+  yolo_engine_files:

@@ -61,7 +61,8 @@ MyFaceDetection
 ├── plugin-files
 │   └── descriptor
 │       └── descriptor.json
-└── setup.py
+├── setup.cfg
+└── pyproject.toml
 ```
 
 #### `openmpf_python_executor_ssb`

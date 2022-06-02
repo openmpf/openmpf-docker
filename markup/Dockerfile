@@ -30,19 +30,22 @@ ARG BUILD_REGISTRY
 ARG BUILD_TAG=latest
 FROM ${BUILD_REGISTRY}openmpf_build:${BUILD_TAG} as openmpf_build
 
-FROM centos:7
+
+FROM ubuntu:20.04
 
 SHELL ["/bin/bash", "-o", "errexit", "-o", "pipefail", "-c"]
 
-ENV LANG en_US.UTF-8
+ENV LANG C.UTF-8
+ENV LC_ALL C.UTF-8
 
-RUN --mount=type=tmpfs,target=/tmp \
-    --mount=type=tmpfs,target=/var/cache/yum \
-    yum update --assumeyes; \
-    yum-config-manager --setopt=skip_missing_names_on_install=False --save; \
-    yum install --assumeyes https://download1.rpmfusion.org/free/el/rpmfusion-free-release-7.noarch.rpm; \
-    yum install --assumeyes java-11-openjdk ffmpeg-libs google-noto-emoji-fonts; \
-    yum clean all;
+RUN --mount=type=tmpfs,target=/var/cache/apt \
+    --mount=type=tmpfs,target=/var/lib/apt/lists  \
+    --mount=type=tmpfs,target=/tmp \
+    apt-get update; \
+    apt-get upgrade -y; \
+    apt-get install --no-install-recommends -y \
+        openjdk-11-jre-headless wget \
+        libavcodec58 libavformat58 libswscale5;
 
 COPY --from=openmpf_build /usr/local/bin/ffmpeg /usr/local/bin/ffprobe /usr/local/bin/
 
@@ -52,11 +55,15 @@ RUN --mount=type=bind,from=openmpf_build,source=/build-artifacts/install/lib,tar
     cd /tmp/mpf-libs; \
     cp --preserve=links --no-dereference \
         libopencv* libopenblas* libgfortran* libquadmath* libheif* libde265* \
-        /usr/lib64;
+        /usr/lib/x86_64-linux-gnu;
 
-COPY --from=openmpf_build /build-artifacts/install/lib/libmpfopencvjni.so /usr/lib64/
+COPY --from=openmpf_build /usr/share/fonts/google-noto-emoji /usr/share/fonts/google-noto-emoji
 
-COPY --from=openmpf_build /build-artifacts/install/lib/libmpfDetectionComponentApi.so /usr/lib64/
+COPY --from=openmpf_build /build-artifacts/install/lib/libmpfopencvjni.so \
+                          /usr/lib/x86_64-linux-gnu/
+
+COPY --from=openmpf_build /build-artifacts/install/lib/libmpfDetectionComponentApi.so \
+                          /usr/lib/x86_64-linux-gnu
 
 ENV MPF_HOME /opt/mpf
 

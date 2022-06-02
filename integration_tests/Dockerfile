@@ -31,36 +31,36 @@ ARG BUILD_TAG=latest
 
 
 # Separate stage so we don't have to re-download things when openmpf_build changes
-FROM centos:7 as download_dependencies
+FROM ubuntu:20.04 as download_dependencies
 
 SHELL ["/bin/bash", "-o", "errexit", "-o", "pipefail", "-c"]
 
-ENV LANG en_US.UTF-8
+RUN --mount=type=tmpfs,target=/var/cache/apt \
+    --mount=type=tmpfs,target=/var/lib/apt/lists  \
+    --mount=type=tmpfs,target=/tmp \
+    apt-get update; \
+    apt-get install --no-install-recommends -y openjdk-11-jre-headless wget ca-certificates patch;
 
-RUN yum-config-manager --setopt=skip_missing_names_on_install=False --save; \
-    yum install -y java-11-openjdk; \
-    yum clean all; \
-    rm -rf /var/cache/yum/*;
 
-ENV JAVA_HOME /etc/alternatives/jre
-
-RUN curl --location 'http://archive.apache.org/dist/tomcat/tomcat-8/v8.5.41/bin/apache-tomcat-8.5.41.tar.gz' \
+RUN --mount=source=enable-ajp.patch,target=/tmp/enable-ajp.patch \
+    wget -O- 'http://archive.apache.org/dist/tomcat/tomcat-8/v8.5.78/bin/apache-tomcat-8.5.78.tar.gz' \
         | tar --extract --gzip --directory /opt; \
-    ln --symbolic /opt/apache-tomcat-8.5.41 /opt/apache-tomcat; \
+    ln --symbolic /opt/apache-tomcat-8.5.78 /opt/apache-tomcat; \
     rm --recursive /opt/apache-tomcat/webapps/examples; \
     rm --recursive /opt/apache-tomcat/webapps/docs; \
     rm --recursive /opt/apache-tomcat/webapps/ROOT; \
     # Configure Tomcat cache size:
     # https://stackoverflow.com/questions/26893297/tomcat-8-throwing-org-apache-catalina-webresources-cache-getresource-unable-to
     sed --in-place '24s/.*/    <WatchedResource>$\{catalina\.ba\se\}\/conf\/web.xml<\/WatchedResource>\n    <Resources cachingAllowed="true" cacheMaxSize="100000" \/>/' \
-            /opt/apache-tomcat/conf/context.xml;
+            /opt/apache-tomcat/conf/context.xml; \
+    patch /opt/apache-tomcat/conf/server.xml /tmp/enable-ajp.patch
 
 RUN mkdir /scripts; \
-    curl --location https://raw.githubusercontent.com/vishnubob/wait-for-it/master/wait-for-it.sh \
-        > /scripts/wait-for-it.sh; \
-    chmod +x /scripts/wait-for-it.sh;
+    cd /scripts; \
+    wget https://raw.githubusercontent.com/vishnubob/wait-for-it/master/wait-for-it.sh; \
+    chmod +x wait-for-it.sh;
 
-RUN curl --location 'https://archive.apache.org/dist/maven/maven-3/3.3.3/binaries/apache-maven-3.3.3-bin.tar.gz' \
+RUN wget -O- 'https://archive.apache.org/dist/maven/maven-3/3.3.3/binaries/apache-maven-3.3.3-bin.tar.gz' \
         | tar --extract --gzip --directory /opt; \
     ln --symbolic /opt/apache-maven-3.3.3/bin/mvn /usr/local/bin;
 
@@ -76,8 +76,6 @@ FROM ${BUILD_REGISTRY}openmpf_build:${BUILD_TAG} as integration_tests
 
 SHELL ["/bin/bash", "-o", "errexit", "-o", "pipefail", "-c"]
 
-ENV LANG en_US.UTF-8
-
 # Copy Maven repository out of cache mount so that the Maven dependencies can be used when running the
 # integration tests. This is necessary because the cache mount is only available at build time and the
 # integration tests run at run time.
@@ -87,8 +85,8 @@ RUN --mount=type=cache,id=mvn_cache,target=/mnt/mvn,sharing=private \
 
 RUN cp --recursive /build-artifacts/mvn/mpf /root/.m2/repository/org/mitre
 
-COPY --from=download_dependencies /opt/apache-tomcat-8.5.41 /opt/apache-tomcat-8.5.41
-RUN ln --symbolic /opt/apache-tomcat-8.5.41 /opt/apache-tomcat
+COPY --from=download_dependencies /opt/apache-tomcat-8.5.78 /opt/apache-tomcat-8.5.78
+RUN ln --symbolic /opt/apache-tomcat-8.5.78 /opt/apache-tomcat
 
 COPY --from=download_dependencies /root/.m2/repository /root/.m2/repository
 

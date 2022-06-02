@@ -52,4 +52,4 @@ set -o errexit -o pipefail
 set -o xtrace
 
 # Call base image's entry point
-exec /usr/local/bin/dumb-init -- "$@"
+exec /bin/tini -- "$@"

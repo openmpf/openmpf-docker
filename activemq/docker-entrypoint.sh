@@ -38,6 +38,5 @@ if [ -f "env.$active_mq_profile" ]; then
     cp "env.$active_mq_profile" env
 fi
 
-
 exec /opt/activemq/bin/activemq console
 

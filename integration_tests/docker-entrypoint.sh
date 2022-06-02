@@ -78,9 +78,12 @@ until [ +PONG = "$( (exec 8<>/dev/tcp/redis/6379 && echo -e 'PING\r\n' >&8 && he
 done
 echo 'Redis is up'
 
-# Wait for ActiveMQ service.
+# --spider makes wget use a HEAD request
+# wget exits with code 6 when there is an authentication error. This is expected because the
+# ActiveMQ status page requires authentication. We are just using the request to verify ActiveMQ
+# is running so there is no need to authenticate.
 echo 'Waiting for ActiveMQ to become available ...'
-until curl --head "$ACTIVE_MQ_HOST:8161" >> /dev/null 2>&1; do
+until wget --spider --tries 1 "http://$ACTIVE_MQ_HOST:8161" >> /dev/null 2>&1 || [ $? -eq 6 ]; do
     echo 'ActiveMQ is unavailable. Sleeping.'
     sleep 5
 done
@@ -99,7 +102,7 @@ mvn verify -Pjenkins \
     -Dstartup.auto.registration.skip=false \
     -Dexec.skip=true \
     -Dnode.manager.disabled=true \
-    $MVN_OPTIONS $EXTRA_MVN_OPTIONS # Intentionally unquoted to allow variables to hold mulitple flags.
+    $MVN_OPTIONS $EXTRA_MVN_OPTIONS # Intentionally unquoted to allow variables to hold multiple flags.
 
 maven_exit_code=$?
 

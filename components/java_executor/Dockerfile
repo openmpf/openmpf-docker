@@ -31,40 +31,20 @@ ARG BUILD_TAG=latest
 FROM ${BUILD_REGISTRY}openmpf_build:${BUILD_TAG} as openmpf_build
 
 
-FROM centos:7
+FROM ubuntu:20.04
 
 SHELL ["/bin/bash", "-o", "errexit", "-o", "pipefail", "-c"]
 
-ENV LANG en_US.UTF-8
+ENV LANG C.UTF-8
+ENV LC_ALL C.UTF-8
 
-# Disable Python bytecode generation because it was causing build cache issues. It may slightly increase start up
-# time, but once everything is imported, there is no difference in performance. If the bytecode files were critical,
-# it is unlikely that the official Python Docker images would explicitly delete them. It also saves 86MB of space.
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PIP_COMPILE=0
-
-COPY --from=openmpf_build /usr/local/bin/python3.8 /usr/local/bin/python3.8-config \
-    /usr/local/bin/pip /usr/local/bin/pip3 /usr/local/bin/pip3.8 /usr/local/bin/wheel \
-    /usr/local/bin/
-
-COPY --from=openmpf_build /usr/local/lib/python3.8 /usr/local/lib/python3.8
-
-COPY --from=openmpf_build /usr/local/lib/libpython3.8.so.1.0 /usr/local/lib/libpython3.8.so.1.0
-
-RUN cd /usr/local/bin; \
-    ln --symbolic python3.8 python3; \
-    ln --symbolic python3.8-config python3-config; \
-    cd /usr/local/lib; \
-    ln --symbolic libpython3.8.so.1.0 libpython3.8.so; \
-    ln --symbolic /usr/local/lib/libpython3.8.so.1.0 /usr/lib64/libpython3.8.so.1.0;
-
-
-RUN --mount=type=tmpfs,target=/tmp \
-    --mount=type=tmpfs,target=/var/cache/yum \
-    yum update --assumeyes; \
-    yum-config-manager --setopt=skip_missing_names_on_install=False --save; \
-    yum install --assumeyes java-11-openjdk; \
-    yum clean all;
+RUN --mount=type=tmpfs,target=/var/cache/apt \
+    --mount=type=tmpfs,target=/var/lib/apt/lists  \
+    --mount=type=tmpfs,target=/tmp \
+    apt-get update; \
+    apt-get upgrade -y; \
+    apt-get install --no-install-recommends -y openjdk-11-jre-headless python3.8; \
+    ln --symbolic /usr/bin/python3.8 /usr/bin/python3;
 
 COPY --from=openmpf_build /usr/local/bin/ffmpeg /usr/local/bin/ffprobe /usr/local/bin/
 
