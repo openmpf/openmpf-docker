@@ -116,7 +116,7 @@ class ComponentServer(contextlib.AbstractContextManager):
             self._selector = exit_stack.enter_context(selectors.DefaultSelector())
             self._selector.register(self._server_sock, selectors.EVENT_READ)
 
-            self._executor_processes: List[ExecutorProcessInfo] = []
+            self._executor_processes: List[ExecutorProcessManager] = []
             self._stats = Stats()
             self._idle_timeout = server_idle_timeout
 
@@ -153,14 +153,14 @@ class ComponentServer(contextlib.AbstractContextManager):
                          'submitted.')
 
 
-    def _find_idle_process(self, client_sock: socket.socket) -> ExecutorProcessInfo:
+    def _find_idle_process(self, client_sock: socket.socket) -> ExecutorProcessManager:
         for process in self._executor_processes:
             if process.is_alive() and process.is_idle():
                 log.info('Re-using existing process for job.')
                 return process
 
         log.info('Creating new executor process')
-        new_process = ExecutorProcessInfo(client_sock, self._server_sock)
+        new_process = ExecutorProcessManager(client_sock, self._server_sock)
         self._executor_processes.append(new_process)
         self._selector.register(new_process.get_sentinel(), selectors.EVENT_READ)
         self._stats.on_process_started()
@@ -243,7 +243,7 @@ class TryAgain(Exception):
     ...
 
 
-class ExecutorProcessInfo:
+class ExecutorProcessManager:
     """
     Starts a component executor process. Sends new jobs to the executor process using a Unix
     socket. The protocol is as follows:

@@ -99,7 +99,7 @@ class ExecutorProcess(contextlib.AbstractContextManager):
         except BaseException as e:
             runner_thread.join()
             if runner_exception is not None:
-                # Prefer reporting runner thread's exception over the watcher threads exception.
+                # Prefer reporting runner thread's exception over the watcher thread's exception.
                 raise runner_exception
             else:
                 raise e
@@ -299,10 +299,8 @@ class JobRequest(contextlib.AbstractContextManager):
         try:
             return os.fdopen(stdin_fd, 'r'), os.fdopen(stdout_fd, 'w'), os.fdopen(stderr_fd, 'w')
         except Exception:
-            # We need to be careful here to only call either os.close(fd) or close on the file
-            # object returned from os.fdopen. If we call close on the return value of os.fdopen,
-            # by the time we call os.close(fd), that file descriptor may refer to a different file
-            # that shouldn't be closed.
+            # When os.fdopen fails, we still need to close the file descriptor. Since there is
+            # no file object to call close on, the low level os.close must be used.
             os.close(stdin_fd)
             os.close(stdout_fd)
             os.close(stderr_fd)

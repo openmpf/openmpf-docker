@@ -159,61 +159,6 @@ When applied to ComponentServer:
 - Negative: Wait for a new job forever.
 
 
-### Technical Information ###
-The CLI runner behaves like a typical command line program, but the jobs are actually executed by
-a server process. Some components load large model files. When running short jobs, loading the
-model can take longer than the job itself. A server process is used so that a single component 
-instance can be re-used across multiple runs. When a job is received, it is either assigned
-to an idle ExecutorProcess or a new ExecutorProcess is created. There is no queueing and no limit 
-to the number of ExecutorProcesses that may be created. A user can limit the number of 
-ExecutorProcesses by waiting for existing jobs to complete before submitting more.
-
-
-### Parts ###
-1. Client - The program that the user starts. It connects to the socket that ComponentServer is 
-   listening on to submit a job.
-2. ComponentServer - Listens on a Unix socket for new jobs and forwards the job request to an 
-   ExecutorProcess. If there are no idle processes when a job is received, a new ExecutorProcess 
-   is created.
-3. ExecutorProcess - Child process of ComponentServer that actually runs the jobs.
-
-
-#### Protocol ####
-1. Either:
-   - Start ComponentServer manually. ComponentServer will never exit due to idle, but 
-     ExecutorProcesses will unless disabled.
-   - Start client while server not running. Client will start a new process to run ComponentServer
-     before running the job. In this case both ComponentServer and ExecutorProcesses will use the
-     `COMPONENT_SERVER_IDLE_TIMEOUT` environment variable to determine idle timeout behavior
-2. ComponentServer listens to a Unix socket with address `b'\x00mpf_cli_runner.sock'`.
-3. Client connects to Unix socket with address `b'\x00mpf_cli_runner.sock'`.
-4. ComponentServer accepts the connection and creates the `client_sock` socket.
-5. ComponentServer looks for an idle ExecutorProcess. If there are no idle ExecutorProcesses a new
-   one will be created. During the creation of an ExecutorProcess a pair of unnamed Unix sockets
-   are created using `socketpair`. They are used for communication between ComponentServer and 
-   ExecutorProcess.
-6. ComponentServer sends `client_sock` to ExecutorProcess using the unnamed socket pair. All further
-   interaction with `client_sock` is handled by the ExecutorProcess.
-7. The ExecutorProcess begins reading from `client_sock` to receive the job request.
-8. Using the Unix socket connected to `b'\x00mpf_cli_runner.sock'`, the client sends the following
-   messages:
-   - 1 byte of regular data and ancillary data containing the file descriptors for the client's
-     standard in, standard out, and standard error in that order. When sending ancillary data
-     at least one byte of regular data must be sent. The byte of regular data is ignored.
-   - The client's command line arguments as a list of strings encoded using pickle.
-   - The client's current working directory as a string encoded using pickle.
-   - The client's environment variables that started with `MPF_PROP_` as dictionary with string 
-     keys and values encoded using pickle.
-9. ExecutorProcess executes the job.
-10. ExecutorProcess writes JSON output to configured location.
-11. ExecutorProcess sends a byte to `client_sock`. The byte is the exit code that the client should
-    exit with. It is unsigned because Linux exit codes are required to be in the range 0-255.
-12. ExecutorProcess sends one byte to ComponentServer to inform ComponentServer that it is done
-    running the job and is now idle.
-13. ExecutorProcess waits for a new job from ComponentServer. If it does not receive a job before 
-    the configured timeout, it will exit.
-
-
 ### Known Issues ###
 
 #### Starting a Lot of Simultaneous Job ####
@@ -258,3 +203,61 @@ This is an issue with the Docker binary. It occurs before any OpenMPF code runs.
 If you start a job by running `docker exec` and don't include the `-t` or the `--tty` option,
 ctrl-c causes `docker exec` to exit, but the program started by `docker exec` will still be
 running in the container.
+
+
+
+### Appendix: Technical Information ###
+The CLI runner behaves like a typical command line program, but the jobs are actually executed by
+a server process. Some components load large model files. When running short jobs, loading the
+model can take longer than the job itself. A server process is used so that a single component
+instance can be re-used across multiple runs. When a job is received, it is either assigned
+to an idle ExecutorProcess or a new ExecutorProcess is created. There is no queueing and no limit
+to the number of ExecutorProcesses that may be created. A user can limit the number of
+ExecutorProcesses by waiting for existing jobs to complete before submitting more.
+
+
+### Parts ###
+1. Client - The program that the user starts. It connects to the socket that ComponentServer is
+   listening on to submit a job.
+2. ComponentServer - Listens on a Unix socket for new jobs and forwards the job request to an
+   ExecutorProcess. If there are no idle processes when a job is received, a new ExecutorProcess
+   is created.
+3. ExecutorProcess - Child process of ComponentServer that actually runs the jobs.
+
+
+#### Protocol ####
+1. Either:
+    - The ComponentServer was started manually by using the `-d` or `--daemon` command line 
+      argument. ComponentServer will never exit due to idle, but ExecutorProcesses will unless 
+      disabled.
+    - The client was started while server not running. Client will start a new process to run
+      ComponentServer before running the job. In this case both ComponentServer and
+      ExecutorProcesses will use the `COMPONENT_SERVER_IDLE_TIMEOUT` environment variable to
+      determine idle timeout behavior.
+2. ComponentServer listens to a Unix socket with address `b'\x00mpf_cli_runner.sock'`.
+3. Client connects to Unix socket with address `b'\x00mpf_cli_runner.sock'`.
+4. ComponentServer accepts the connection and creates the `client_sock` socket.
+5. ComponentServer looks for an idle ExecutorProcess. If there are no idle ExecutorProcesses a new
+   one will be created. During the creation of an ExecutorProcess a pair of unnamed Unix sockets
+   are created using `socketpair`. They are used for communication between ComponentServer and
+   ExecutorProcess.
+6. ComponentServer sends `client_sock` to ExecutorProcess using the unnamed socket pair. All further
+   interaction with `client_sock` is handled by the ExecutorProcess.
+7. The ExecutorProcess begins reading from `client_sock` to receive the job request.
+8. Using the Unix socket connected to `b'\x00mpf_cli_runner.sock'`, the client sends the following
+   messages:
+    - 1 byte of regular data and ancillary data containing the file descriptors for the client's
+      standard in, standard out, and standard error in that order. When sending ancillary data
+      at least one byte of regular data must be sent. The byte of regular data is ignored.
+    - The client's command line arguments as a list of strings encoded using pickle.
+    - The client's current working directory as a string encoded using pickle.
+    - The client's environment variables that started with `MPF_PROP_` as dictionary with string
+      keys and values encoded using pickle.
+9. ExecutorProcess executes the job.
+10. ExecutorProcess writes JSON output to configured location.
+11. ExecutorProcess sends a byte to `client_sock`. The byte is the exit code that the client should
+    exit with. It is unsigned because Linux exit codes are required to be in the range 0-255.
+12. ExecutorProcess sends one byte to ComponentServer to inform ComponentServer that it is done
+    running the job and is now idle.
+13. ExecutorProcess waits for a new job from ComponentServer. If it does not receive a job before
+    the configured timeout, it will exit.
