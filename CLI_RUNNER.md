@@ -141,10 +141,23 @@ optional arguments:
 ```
 
 ### Idle Timeout ###
-The `COMPONENT_SERVER_IDLE_TIMEOUT` environment variable can be used to configure the idle timeout.
-It should be set when the Docker container is started. It always applies to ExecutorProcesses
-and only applies to ComponentServer if it was automatically started by a client. When it is not
-provided, it defaults to 60.
+The `COMPONENT_SERVER_IDLE_TIMEOUT` environment variable can be used to configure the idle timeout
+of the ComponentServer and ExecutorProcesses. In general, the ComponentServer maintains a worker pool
+of ExecutorProcesses to process jobs. See [Appendix: Technical Information](#appendix-technical-information)
+for details.
+
+The environment variable does not apply when the ComponentServer is directly started when using
+`docker run` with the `-d` or `--daemon` command line argument. It only applies if the ComponentServer 
+is started automatically when using `docker exec` on a container not already running the ComponentServer.
+When the ComponentServer times out, the next use of `docker exec` will create a new one.
+
+The environment variable always applies to ExecutorProcesses. It's helpful for each of these processes
+to persist in the worker pool for a period of time to avoid reinitializing them, which may involve
+loading large models into memory. When a ExecutorProcess times out, it will be removed from the worker
+pool. The next use of `docker exec` will create a new one, if necessary.
+
+The environment variable should be set when the Docker container is started. When not provided,
+it defaults to 60 seconds.
 
 When applied to an ExecutorProcess:
 - Positive: Number of seconds to wait for a new job before exiting.
