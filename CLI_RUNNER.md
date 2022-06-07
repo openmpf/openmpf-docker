@@ -139,3 +139,139 @@ optional arguments:
                         provided twice (e.g. "-vv"), set the log level to
                         TRACE
 ```
+
+### Idle Timeout ###
+The `COMPONENT_SERVER_IDLE_TIMEOUT` environment variable can be used to configure the idle timeout
+of the ComponentServer and ExecutorProcesses. The ComponentServer maintains a worker pool
+of ExecutorProcesses to process jobs. See 
+[Appendix: Technical Information](#appendix-technical-information) for details.
+
+The environment variable does not apply when the ComponentServer is directly started when using
+`docker run` with the `-d` or `--daemon` command line argument. It only applies if the 
+ComponentServer is started automatically when using `docker exec` on a container not already 
+running the ComponentServer. When the ComponentServer times out, the next use of `docker exec` will 
+create a new one.
+
+The environment variable always applies to ExecutorProcesses. It's helpful for each of these 
+processes to persist in the worker pool for a period of time to avoid reinitializing them, which 
+may involve loading large models into memory. When a ExecutorProcess times out, it will be removed 
+from the worker pool. The next use of `docker exec` will create a new one, if necessary.
+
+The environment variable should be set when the Docker container is started. When not provided,
+it defaults to 60 seconds.
+
+When applied to an ExecutorProcess:
+- Positive: Number of seconds to wait for a new job before exiting.
+- 0: Exit after processing a single job.
+- Negative: Wait for a new job forever.
+
+When applied to ComponentServer:
+- Positive: After all ExecutorProcesses have exited, number of seconds to wait for a new job 
+  before exiting.
+- 0: Exit as soon as the last ExecutorProcess exits. Jobs received while waiting for the 
+  ExecutorProcesses to exit will still be processed.
+- Negative: Wait for a new job forever.
+
+
+### Known Issues ###
+
+#### Starting a Lot of Simultaneous Job ####
+When submitting more than 350 jobs at the same time, the Docker binary fails with an error like:
+```
+runtime/cgo: pthread_create failed: Resource temporarily unavailable
+SIGABRT: abort
+PC=0x7f889ff8c387 m=3 sigcode=18446744073709551610
+
+goroutine 0 [idle]:
+runtime: unknown pc 0x7f889ff8c387
+stack: frame={sp:0x7f8878c42918, fp:0x0} stack=[0x7f88784432a8,0x7f8878c42ea8)
+00007f8878c42818:  736e692f6b6e7572  62696c2f6c6c6174 
+00007f8878c42828:  736e617274442d20  6175672e74726f70 
+00007f8878c42838:  273d6565746e6172  442d2027454e4f4e 
+00007f8878c42848:  747365722e626577  6f636f746f72702e 
+00007f8878c42858:  2770747468273d6c  0000000000000000 
+00007f8878c42868:  0000000000000000  0000000000000000 
+00007f8878c42878:  0000000000000000  2e656d69746e7572 
+...
+
+goroutine 7 [chan receive]:
+github.com/docker/cli/vendor/k8s.io/klog.(*loggingT).flushDaemon(0x55ace53bc360)
+    /go/src/github.com/docker/cli/vendor/k8s.io/klog/klog.go:1010 +0x8d
+created by github.com/docker/cli/vendor/k8s.io/klog.init.0
+    /go/src/github.com/docker/cli/vendor/k8s.io/klog/klog.go:411 +0xd8
+
+rax    0x0
+rbx    0x7f88a031e868
+rcx    0xffffffffffffffff
+rdx    0x6
+rdi    0x100b1
+rsi    0x100bb
+rbp    0x55ace3fd2e04
+rsp    0x7f8878c42918
+....
+```
+This is an issue with the Docker binary. It occurs before any OpenMPF code runs.
+
+
+#### docker exec doesn't forward ctrl-c without -t  ####
+If you start a job by running `docker exec` and don't include the `-t` or the `--tty` option,
+ctrl-c causes `docker exec` to exit, but the program started by `docker exec` will still be
+running in the container.
+
+
+
+### Appendix: Technical Information ###
+The CLI runner behaves like a typical command line program, but the jobs are actually executed by
+a server process. Some components load large model files. When running short jobs, loading the
+model can take longer than the job itself. A server process is used so that a single component
+instance can be re-used across multiple runs. When a job is received, it is either assigned
+to an idle ExecutorProcess or a new ExecutorProcess is created. There is no queueing and no limit
+to the number of ExecutorProcesses that may be created. A user can limit the number of
+ExecutorProcesses by waiting for existing jobs to complete before submitting more.
+
+
+### Parts ###
+1. Client - The program that the user starts. It connects to the socket that ComponentServer is
+   listening on to submit a job.
+2. ComponentServer - Listens on a Unix socket for new jobs and forwards the job request to an
+   ExecutorProcess. If there are no idle processes when a job is received, a new ExecutorProcess
+   is created.
+3. ExecutorProcess - Child process of ComponentServer that actually runs the jobs.
+
+
+#### Protocol ####
+1. Either:
+    - The ComponentServer was started manually by using the `-d` or `--daemon` command line 
+      argument. ComponentServer will never exit due to idle, but ExecutorProcesses will unless 
+      disabled.
+    - The client was started while server not running. Client will start a new process to run
+      ComponentServer before running the job. In this case both ComponentServer and
+      ExecutorProcesses will use the `COMPONENT_SERVER_IDLE_TIMEOUT` environment variable to
+      determine idle timeout behavior.
+2. ComponentServer listens to a Unix socket with address `b'\x00mpf_cli_runner.sock'`.
+3. Client connects to Unix socket with address `b'\x00mpf_cli_runner.sock'`.
+4. ComponentServer accepts the connection and creates the `client_sock` socket.
+5. ComponentServer looks for an idle ExecutorProcess. If there are no idle ExecutorProcesses a new
+   one will be created. During the creation of an ExecutorProcess a pair of unnamed Unix sockets
+   are created using `socketpair`. They are used for communication between ComponentServer and
+   ExecutorProcess.
+6. ComponentServer sends `client_sock` to ExecutorProcess using the unnamed socket pair. All further
+   interaction with `client_sock` is handled by the ExecutorProcess.
+7. The ExecutorProcess begins reading from `client_sock` to receive the job request.
+8. Using the Unix socket connected to `b'\x00mpf_cli_runner.sock'`, the client sends the following
+   messages:
+    - 1 byte of regular data and ancillary data containing the file descriptors for the client's
+      standard in, standard out, and standard error in that order. When sending ancillary data
+      at least one byte of regular data must be sent. The byte of regular data is ignored.
+    - The client's command line arguments as a list of strings encoded using pickle.
+    - The client's current working directory as a string encoded using pickle.
+    - The client's environment variables that started with `MPF_PROP_` as dictionary with string
+      keys and values encoded using pickle.
+9. ExecutorProcess executes the job.
+10. ExecutorProcess writes JSON output to configured location.
+11. ExecutorProcess sends a byte to `client_sock`. The byte is the exit code that the client should
+    exit with. It is unsigned because Linux exit codes are required to be in the range 0-255.
+12. ExecutorProcess sends one byte to ComponentServer to inform ComponentServer that it is done
+    running the job and is now idle.
+13. ExecutorProcess waits for a new job from ComponentServer. If it does not receive a job before
+    the configured timeout, it will exit.

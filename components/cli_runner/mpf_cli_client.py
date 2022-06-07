@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env python3
 
 #############################################################################
 # NOTICE                                                                    #
@@ -26,17 +26,42 @@
 # limitations under the License.                                            #
 #############################################################################
 
-set -o errexit -o pipefail
+import os
+import pickle
+import socket
+import sys
+
+import mpf_cli_runner_util as util
 
 
-if [ $# -eq 0 ]; then
-    echo No command line arguments. Starting as regular component... 1>&2
-    exec python3 /scripts/component-executor.py
-fi
+def main():
+    if len(sys.argv) == 2 and sys.argv[1] in ('-d', '--daemon'):
+        import mpf_cli_server
+        mpf_cli_server.main()
+        return
 
-if [ "$1" == runner ]; then
-    shift
-fi
+    with socket.socket(socket.AF_UNIX) as sock:
+        try:
+            sock.connect(util.SOCKET_ADDRESS)
+        except ConnectionRefusedError:
+            import mpf_cli_server
+            # Fork a server process.
+            mpf_cli_server.start_from_client(sock)
+            sock.connect(util.SOCKET_ADDRESS)
 
-echo Starting as component CLI runner... 1>&2
-exec runner "$@"
+        util.send_fds(sock, sys.stdin.fileno(), sys.stdout.fileno(), sys.stderr.fileno())
+        with sock.makefile('rwb') as sf:
+            pickle.dump(sys.argv, sf)
+            pickle.dump(os.getcwd(), sf)
+            pickle.dump(dict(util.get_job_props_from_env(os.environ)), sf)
+            sf.flush()
+            response = sf.read(1)
+    if response == b'':
+        print('ERROR: Server closed connection before completing the job.', file=sys.stderr)
+        sys.exit(6)
+    else:
+        sys.exit(response[0])
+
+
+if __name__ == '__main__':
+    main()

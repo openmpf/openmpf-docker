@@ -25,7 +25,7 @@
 #############################################################################
 
 import os
-import threading
+import contextlib
 from typing import Any, Dict, Union, Iterable
 
 import mpf_cpp_sdk
@@ -34,7 +34,7 @@ from mpf_cpp_sdk import ImageLocation, VideoTrack, AudioTrack, GenericTrack
 import mpf_cli_runner_util as util
 
 
-class CppComponentHandle(util.ComponentHandle):
+class CppComponentHandle(util.ComponentHandle, contextlib.AbstractContextManager):
     sdk_module = mpf_cpp_sdk
 
     def __init__(self, descriptor: Dict[str, Any]):
@@ -56,9 +56,6 @@ class CppComponentHandle(util.ComponentHandle):
         self.detection_type = self._component.GetDetectionType()
 
 
-    def __enter__(self) -> 'CppComponentHandle':
-        return self
-
     def __exit__(self, *exc_details):
         self._component.Close()
 
@@ -77,27 +74,7 @@ class CppComponentHandle(util.ComponentHandle):
 
     def run_job(self, job) -> Union[Iterable[ImageLocation], Iterable[VideoTrack],
                                     Iterable[AudioTrack], Iterable[GenericTrack]]:
-        results = []
-        exception = None
-
-        def _get_detections_in_thread():
-            nonlocal results
-            nonlocal exception
-            try:
-                results = self._component.GetDetections(job)
-            except Exception as e:
-                exception = e
-                raise
-
-        # Need to use separate daemon thread so that the program can exit when a user presses
-        # ctrl-c during the execution of native code.
-        thread = threading.Thread(target=_get_detections_in_thread, daemon=True)
-        thread.start()
-        # While waiting on .join the main thread can still handle signals.
-        thread.join()
-        if exception is not None:
-            raise exception
-        return results
+        return self._component.GetDetections(job)
 
 
     @staticmethod

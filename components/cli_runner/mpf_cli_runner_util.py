@@ -24,11 +24,23 @@
 # limitations under the License.                                            #
 #############################################################################
 
+import array
 import collections
 import enum
+import os
+import socket
 import string
 from types import ModuleType
-from typing import Mapping, Protocol, ClassVar, Iterable
+from typing import Iterator, Mapping, Optional, Protocol, ClassVar, Iterable, Tuple
+
+# A leading zero byte indicates an address in Linux’s abstract namespace.
+# The address in a regular unix socket corresponds to a name that appears in the filesystem. That
+# socket file can not be bound to a second time, even if the process that created it has exited.
+# If the server stopped and then was started again, it would have to delete that socket file before
+# binding to it. This can create a race condition if multiple instances of the server were started
+# at the same time. Using an abstract prevents these issues because it is automatically removed
+# when the process exits.
+SOCKET_ADDRESS = b'\x00mpf_cli_runner.sock'
 
 
 class MediaType(enum.Enum):
@@ -74,3 +86,34 @@ def expand_env_vars(raw_str: str, env: Mapping[str, str]) -> str:
     defaults = collections.defaultdict(str)
     # In the call to substitute the keyword arguments (**env) take precedence.
     return string.Template(raw_str).substitute(defaults, **env)
+
+
+def get_idle_timeout() -> Optional[int]:
+    default_idle_timeout = 60
+    env_val_str = os.getenv('COMPONENT_SERVER_IDLE_TIMEOUT')
+    if not env_val_str:
+        return default_idle_timeout
+    try:
+        env_val_int = int(env_val_str)
+        if env_val_int >= 0:
+            return env_val_int
+        else:
+            return None
+    except ValueError:
+        return default_idle_timeout
+
+
+# From https://docs.python.org/3/library/socket.html#socket.socket.sendmsg
+def send_fds(sock: socket.socket, *fds: int) -> int:
+    # At least one byte of regular data must be sent with the file descriptors, so we send a
+    # zero byte.
+    return sock.sendmsg((b'\x00',), [(socket.SOL_SOCKET, socket.SCM_RIGHTS, array.array("i", fds))])
+
+
+def get_job_props_from_env(env: Mapping[str, str]) -> Iterator[Tuple[str, str]]:
+    property_prefix = 'MPF_PROP_'
+    for var_name, var_value in env.items():
+        if len(var_name) > len(property_prefix) and var_name.startswith(property_prefix):
+            prop_name = var_name[len(property_prefix):]
+            yield prop_name, var_value
+

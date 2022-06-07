@@ -29,6 +29,7 @@ import os
 import json
 import shlex
 import subprocess
+import time
 import unittest
 from typing import Dict, Any, List, ClassVar
 
@@ -52,6 +53,7 @@ class BaseTestCliRunner(unittest.TestCase):
         print('Starting test container with command: ', shlex.join(command))
         proc = subprocess.run(command, stdout=subprocess.PIPE, text=True, check=True)
         cls._container_id = proc.stdout.strip()
+        time.sleep(1)
 
     @classmethod
     def tearDownClass(cls):
@@ -109,7 +111,6 @@ class BaseTestCliRunner(unittest.TestCase):
 
     def get_image_tracks(
             self,
-            expected_path,
             expected_mime_type: str,
             expected_job_props: Dict[str, str],
             expected_media_metadata: Dict[str, str],
@@ -117,7 +118,7 @@ class BaseTestCliRunner(unittest.TestCase):
 
         self._assertOuterJsonCorrect(
             expected_mime_type, expected_job_props, expected_media_metadata, output_object)
-        self.assertEqual(expected_path, output_object['media'][0]['path'])
+        self.assertGreater(len(output_object['media'][0]['path']), 0)
 
         tracks = self._get_tracks(output_object)
         for track in tracks:
@@ -203,7 +204,7 @@ class TestCppCliRunnerWithOcvFace(BaseTestCliRunner):
     def test_can_run_image_jobs(self):
         output_object = self.run_cli_runner_stdin_media(self._face_image, '-t', 'image', '-')
         tracks = self.get_image_tracks(
-            '/dev/stdin', 'image/octet-stream', self._default_job_properties, {}, output_object)
+            'image/octet-stream', self._default_job_properties, {}, output_object)
 
         self.assertEqual(1, len(tracks))
         track = tracks[0]
@@ -235,7 +236,7 @@ class TestCppCliRunnerWithOcvFace(BaseTestCliRunner):
             'HORIZONTAL_FLIP': 'false'}
         expected_media_metadata = {'META_KEY1': 'META_VAL1', 'META_KEY2': 'META_VAL2'}
         tracks = self.get_image_tracks(
-            '/dev/stdin', 'image/octet-stream', expected_job_props, expected_media_metadata,
+            'image/octet-stream', expected_job_props, expected_media_metadata,
             output_object)
 
         self.assertEqual(1, len(tracks))
@@ -260,8 +261,7 @@ class TestCppCliRunnerWithOcvFace(BaseTestCliRunner):
 
         expected_job_props = {**self._default_job_properties, 'AUTO_ROTATE': 'true'}
         tracks = self.get_image_tracks(
-            '/dev/stdin', 'image/octet-stream', expected_job_props, {'ROTATION': '180'},
-            output_object)
+            'image/octet-stream', expected_job_props, {'ROTATION': '180'}, output_object)
         self.assertEqual(0, len(tracks))
 
 
@@ -403,11 +403,10 @@ class TestCppCliRunnerWithTesseract(BaseTestCliRunner):
                                'UNSTRUCTURED_TEXT_SHARPEN': '1.0'}
 
     def test_can_run_generic_job(self):
-        pdf_name = 'test.pdf'
-        output_object = self.run_cli_runner(get_test_media(pdf_name))
+        output_object = self.run_cli_runner(get_test_media('test.pdf'))
         tracks = self.get_image_tracks(
-            f'/root/{pdf_name}', 'application/pdf', self._default_job_properties,
-            {'MIME_TYPE': 'application/pdf'}, output_object)
+            'application/pdf', self._default_job_properties, {'MIME_TYPE': 'application/pdf'},
+            output_object)
 
         self.assertEqual(1, len(tracks))
         track = tracks[0]
@@ -463,7 +462,7 @@ class TestPythonCliRunner(BaseTestCliRunner):
     def test_can_run_image_jobs(self):
         output_object = self.run_cli_runner_stdin_media(self._text_image, '-t', 'image', '-')
         tracks = self.get_image_tracks(
-            '/dev/stdin', 'image/octet-stream', self._default_job_properties, {}, output_object)
+            'image/octet-stream', self._default_job_properties, {}, output_object)
         self.assertEqual(2, len(tracks))
 
         track1 = tracks[0]
@@ -500,7 +499,7 @@ class TestPythonCliRunner(BaseTestCliRunner):
 
         expected_job_props = {**self._default_job_properties, 'ROTATION': '15'}
         tracks = self.get_image_tracks(
-            '/dev/stdin', 'image/octet-stream', expected_job_props, {}, output_object)
+            'image/octet-stream', expected_job_props, {}, output_object)
 
         self.assertEqual(1, len(tracks))
         track = tracks[0]
