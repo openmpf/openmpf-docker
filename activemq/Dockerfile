@@ -35,7 +35,7 @@ RUN --mount=type=tmpfs,target=/var/cache/apt \
     --mount=type=tmpfs,target=/tmp \
     apt-get update; \
     apt-get upgrade -y; \
-    apt-get install --no-install-recommends -y openjdk-11-jre-headless wget ca-certificates;
+    apt-get install --no-install-recommends -y openjdk-16-jre-headless wget ca-certificates;
 
 
 RUN wget -O- https://archive.apache.org/dist/activemq/5.17.0/apache-activemq-5.17.0-bin.tar.gz \
