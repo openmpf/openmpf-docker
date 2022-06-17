@@ -39,7 +39,7 @@ RUN --mount=type=tmpfs,target=/var/cache/apt \
     --mount=type=tmpfs,target=/var/lib/apt/lists  \
     --mount=type=tmpfs,target=/tmp \
     apt-get update; \
-    apt-get install --no-install-recommends -y openjdk-17-jre-headless wget ca-certificates patch;
+    apt-get install --no-install-recommends -y openjdk-15-jre-headless wget ca-certificates patch;
 
 
 RUN --mount=source=enable-ajp.patch,target=/tmp/enable-ajp.patch \

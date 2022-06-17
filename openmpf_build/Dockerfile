@@ -47,7 +47,7 @@ RUN --mount=type=tmpfs,target=/var/cache/apt \
     apt-get upgrade -y; \
     DEBIAN_FRONTEND=noninteractive apt-get install --no-install-recommends -y \
         wget ca-certificates gnupg2 unzip xz-utils cmake make g++ libgtest-dev mediainfo libssl-dev \
-        liblog4cxx-dev libboost-dev file openjdk-17-jdk-headless libprotobuf-dev \
+        liblog4cxx-dev libboost-dev file openjdk-15-jdk-headless libprotobuf-dev \
         protobuf-compiler libprotobuf-java python3.8-dev python3-pip libgl1-mesa-glx  \
         # libheif build deps
         libde265-dev \
@@ -159,7 +159,7 @@ WORKDIR /home/mpf/openmpf-projects/openmpf
 RUN --mount=type=cache,id=mvn_cache,target=/root/.m2/repository,sharing=private \
     --mount=type=tmpfs,target=/tmp \
     --mount=type=tmpfs,target=/root/.cache \
-    JAVA_TOOL_OPTIONS='--add-opens java.base/java.util=ALL-UNNAMED' mvn package \
+    mvn package \
         -DskipTests -Dmaven.test.skip=true -DskipITs \
         -Dcargo.maven.skip=true \
         -Dcomponents.build.components='' \
