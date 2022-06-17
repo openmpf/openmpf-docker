@@ -159,7 +159,7 @@ WORKDIR /home/mpf/openmpf-projects/openmpf
 RUN --mount=type=cache,id=mvn_cache,target=/root/.m2/repository,sharing=private \
     --mount=type=tmpfs,target=/tmp \
     --mount=type=tmpfs,target=/root/.cache \
-    mvn package \
+    JAVA_TOOL_OPTIONS='--add-opens java.base/java.util=ALL-UNNAMED' mvn package \
         -DskipTests -Dmaven.test.skip=true -DskipITs \
         -Dcargo.maven.skip=true \
         -Dcomponents.build.components='' \
