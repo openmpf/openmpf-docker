@@ -43,7 +43,7 @@ RUN --mount=type=tmpfs,target=/var/cache/apt \
     --mount=type=tmpfs,target=/tmp \
     apt-get update; \
     apt-get upgrade -y; \
-    apt-get install --no-install-recommends -y openjdk-15-jdk-headless wget ca-certificates;
+    apt-get install --no-install-recommends -y openjdk-17-jdk-headless wget ca-certificates;
 
 COPY --from=openmpf_build /usr/local/bin/ffmpeg /usr/local/bin/ffprobe /usr/local/bin/
 
