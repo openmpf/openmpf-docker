@@ -44,7 +44,7 @@ RUN --mount=type=tmpfs,target=/var/cache/apt \
     apt-get update; \
     apt-get upgrade -y; \
     apt-get install --no-install-recommends -y \
-        openjdk-11-jre-headless wget \
+        openjdk-17-jre-headless wget \
         libavcodec58 libavformat58 libswscale5;
 
 COPY --from=openmpf_build /usr/local/bin/ffmpeg /usr/local/bin/ffprobe /usr/local/bin/

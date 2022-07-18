@@ -44,7 +44,7 @@ RUN --mount=type=tmpfs,target=/var/cache/apt \
     apt-get update; \
     apt-get upgrade -y; \
     apt-get install --no-install-recommends -y \
-        openjdk-11-jre-headless libtcnative-1 file mediainfo wget ca-certificates \
+        openjdk-17-jre-headless libtcnative-1 file mediainfo wget ca-certificates \
         python3.8 python3-pip;
 
 
