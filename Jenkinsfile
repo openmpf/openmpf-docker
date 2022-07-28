@@ -429,7 +429,7 @@ try {
                         "-v $trivyVolume:/root/.cache/ " +
                         "-v '${pwd()}/$openmpfDockerRepo.path/trivyignore.txt:/.trivyignore' " +
                         "aquasec/trivy image --severity CRITICAL,HIGH --exit-code 1 " +
-                        "--timeout 20m $service.image")
+                        "--timeout 20m --security-checks vuln $service.image")
                 if (exitCode != 0) {
                     failedImages << service.image
                 }
