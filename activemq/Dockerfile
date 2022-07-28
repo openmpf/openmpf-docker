@@ -38,9 +38,9 @@ RUN --mount=type=tmpfs,target=/var/cache/apt \
     apt-get install --no-install-recommends -y openjdk-17-jre-headless wget ca-certificates;
 
 
-RUN wget -O- https://archive.apache.org/dist/activemq/5.17.0/apache-activemq-5.17.0-bin.tar.gz \
+RUN wget -O- https://archive.apache.org/dist/activemq/5.17.1/apache-activemq-5.17.1-bin.tar.gz \
         | tar --extract --gzip --directory /opt; \
-    ln --symbolic /opt/apache-activemq-5.17.0 /opt/activemq; \
+    ln --symbolic /opt/apache-activemq-5.17.1 /opt/activemq; \
     cd /opt/activemq; \
     rm --recursive docs examples webapps-demo;
 
