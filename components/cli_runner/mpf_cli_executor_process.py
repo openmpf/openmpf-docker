@@ -415,6 +415,8 @@ class LogConfig:
     @classmethod
     def configure_server_logging(cls) -> None:
         level = cls._get_level_from_env('DEBUG')
+        if level.upper() == 'TRACE':
+            level = 'DEBUG'
         log.setLevel(level)
         # Create duplicate of stderr since stderr will temporarily change while running a job.
         handler = cls._create_handler(os.fdopen(os.dup(2), 'w'), level)
@@ -440,14 +442,25 @@ class LogConfig:
             else:
                 exit_stack.callback(operator.setitem, os.environ, 'LOG_LEVEL', prev_log_level_env)
 
-            prev_level = log.getEffectiveLevel()
-            log.setLevel(min(prev_level, cls._get_level_int(level_for_job)))
-            exit_stack.callback(log.setLevel, prev_level)
+            # The log level needs to be temporarily changed because the client may request a more
+            # verbose logging level than the level the server was originally started with.
+            # This only affects the client's log output because the server's log output is further
+            # filtered by the handler added in configure_server_logging.
+            root_logger = logging.getLogger()
+            prev_root_level = root_logger.getEffectiveLevel()
+            level_int_for_job = cls._get_level_int(level_for_job)
+            root_logger.setLevel(min(prev_root_level, level_int_for_job))
+            exit_stack.callback(root_logger.setLevel, prev_root_level)
 
             handler = cls._create_handler(stream, level_for_job)
-            log.addHandler(handler)
-            exit_stack.callback(log.removeHandler, handler)
+            root_logger.addHandler(handler)
             exit_stack.callback(handler.flush)
+            exit_stack.callback(root_logger.removeHandler, handler)
+
+            cli_log = log
+            prev_cli_level = cli_log.getEffectiveLevel()
+            cli_log.setLevel(min(prev_cli_level, level_int_for_job))
+            exit_stack.callback(cli_log.setLevel, prev_cli_level)
             try:
                 yield
             except BaseException as e:
@@ -490,6 +503,8 @@ class LogConfig:
     def _get_level_int(level: Union[int, str]) -> int:
         if isinstance(level, int):
             return level
+        elif level.upper() == 'TRACE':
+            return logging.DEBUG
         else:
             return logging.getLevelName(level)
 
