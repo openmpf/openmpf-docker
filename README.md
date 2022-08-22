@@ -1,4 +1,7 @@
 # OpenMPF Docker
+[![Docker Image Version (latest semver)](https://img.shields.io/docker/v/openmpf/openmpf_workflow_manager?logo=docker)](https://hub.docker.com/r/openmpf/openmpf_workflow_manager)
+[![Docker Pulls](https://img.shields.io/docker/pulls/openmpf/openmpf_workflow_manager?logo=docker)](https://hub.docker.com/r/openmpf/openmpf_workflow_manager)
+[![GitHub tag (latest SemVer)](https://img.shields.io/github/v/tag/openmpf/openmpf?label=release&logo=github)](https://github.com/openmpf/openmpf/tags)
 
 Welcome to the Open Media Processing Framework (OpenMPF) Docker Project!
 
