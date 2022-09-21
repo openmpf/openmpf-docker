@@ -74,10 +74,16 @@ IFS=':' read -r -a ca_certs <<< "$MPF_CA_CERTS"
 for cert in "${ca_certs[@]}"; do
     # If there are leading colons, trailing colons, or two colons in a row, $cert wil contain the empty string.
     [ ! "$cert" ] && continue
-    cp "$cert" /usr/local/share/ca-certificates/
-    update-ca-certificates
-done
 
+    extension=${cert##*.}
+    cert_file_name=$(basename "$cert")
+    # update-ca-certificates will ignore files that don't end .crt, so we append it to the file
+    # name when it is missing.
+    [ "$extension" != crt ] && cert_file_name=$cert_file_name.crt
+    cp "$cert" "/usr/local/share/ca-certificates/$cert_file_name"
+    certs_added=1
+done
+[ "$certs_added" ] && update-ca-certificates
 
 ################################################################################
 # Configure HTTP or HTTPS                                                      #
