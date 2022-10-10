@@ -127,8 +127,8 @@ def wait_for_activemq(activemq_host):
         except socket.error as e:
             print('Attempt to connect to ActiveMQ failed due to "{}". This is either because ActiveMQ is still '
                   'starting or the wrong host name was used for the ACTIVE_MQ_HOST(={}) environment variable. '
-                  'Connection to ActiveMQ will re-attempted in 5 seconds.'.format(e, activemq_host))
-        time.sleep(5)
+                  'Connection to ActiveMQ will re-attempted in 10 seconds.'.format(e, activemq_host))
+        time.sleep(10)
 
 
 
@@ -201,8 +201,8 @@ def post_descriptor_with_retry(unparsed_descriptor, url, headers):
                 raise
             print('Registration failed due to "{}". This is either because the Workflow Manager is still starting or '
                   'because the wrong URL was used for the WFM_BASE_URL(={}) environment variable. Registration will '
-                  'be re-attempted in 5 seconds.'.format(reason.strerror, url))
-        time.sleep(5)
+                  'be re-attempted in 10 seconds.'.format(reason.strerror, url))
+        time.sleep(10)
 
 
 # The default urllib.request.HTTPRedirectHandler converts POST requests to GET requests.

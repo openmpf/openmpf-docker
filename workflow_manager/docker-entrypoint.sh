@@ -85,49 +85,6 @@ for cert in "${ca_certs[@]}"; do
 done
 [ "$certs_added" ] && update-ca-certificates
 
-################################################################################
-# Configure HTTP or HTTPS                                                      #
-################################################################################
-
-if [ "$KEYSTORE_PASSWORD" ]; then
-    export CATALINA_OPTS="$CATALINA_OPTS -Dtransport.guarantee='CONFIDENTIAL' -Dweb.rest.protocol='https'"
-    python3 << EndOfPythonScript
-import xml.etree.ElementTree as ET
-import os
-
-keystore_password = os.getenv('KEYSTORE_PASSWORD')
-server_xml_path = '/opt/apache-tomcat/conf/server.xml'
-
-tree_builder = ET.TreeBuilder(insert_comments=True)
-tree = ET.parse(server_xml_path, ET.XMLParser(target=tree_builder))
-https_connector = tree.find('./Service/Connector[@sslProtocol="TLS"][@scheme="https"]')
-
-if https_connector is None:
-    print('Enabling HTTPS')
-    ssl_connector_element = ET.Element('Connector',
-        SSLEnabled='true',
-        acceptCount='100',
-        clientAuth='false',
-        disableUploadTimeout='true',
-        enableLookups='false',
-        keystoreFile='/run/secrets/https_keystore',
-        keystorePass=keystore_password,
-        maxThreads='25',
-        port='8443',
-        protocol='org.apache.coyote.http11.Http11NioProtocol',
-        scheme='https',
-        secure='true',
-        sslProtocol='TLS')
-    ssl_connector_element.tail = '\n\n    '
-    tree.find('Service').insert(8, ssl_connector_element)
-    tree.write(server_xml_path)
-else:
-    print('HTTPS already enabled')
-EndOfPythonScript
-else
-    export CATALINA_OPTS="$CATALINA_OPTS -Dtransport.guarantee='NONE' -Dweb.rest.protocol='http'"
-fi
-
 
 ################################################################################
 # Start Tomcat                                                                 #
@@ -171,7 +128,16 @@ until wget --spider --tries 1 "http://$ACTIVE_MQ_HOST:8161" >> /dev/null 2>&1 ||
 done
 echo 'ActiveMQ is up'
 
-set -o xtrace
 
+if [ "$KEYSTORE_PASSWORD" ]; then
+    echo Enabling HTTPS
+    set -o xtrace
+    exec java -Dsecurity.require-ssl=true -Dserver.port=8443 \
+            -Dserver.ssl.key-store=/run/secrets/https_keystore  \
+            -Dserver.ssl.key-store-password="$KEYSTORE_PASSWORD" \
+            org.mitre.mpf.Application
+else
+    set -o xtrace
+    exec java org.mitre.mpf.Application
+fi
 
-exec /opt/apache-tomcat/bin/catalina.sh run
