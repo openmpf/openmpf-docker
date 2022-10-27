@@ -42,19 +42,6 @@ RUN --mount=type=tmpfs,target=/var/cache/apt \
     apt-get install --no-install-recommends -y openjdk-17-jre-headless wget ca-certificates patch;
 
 
-RUN --mount=source=enable-ajp.patch,target=/tmp/enable-ajp.patch \
-    wget -O- 'http://archive.apache.org/dist/tomcat/tomcat-8/v8.5.78/bin/apache-tomcat-8.5.78.tar.gz' \
-        | tar --extract --gzip --directory /opt; \
-    ln --symbolic /opt/apache-tomcat-8.5.78 /opt/apache-tomcat; \
-    rm --recursive /opt/apache-tomcat/webapps/examples; \
-    rm --recursive /opt/apache-tomcat/webapps/docs; \
-    rm --recursive /opt/apache-tomcat/webapps/ROOT; \
-    # Configure Tomcat cache size:
-    # https://stackoverflow.com/questions/26893297/tomcat-8-throwing-org-apache-catalina-webresources-cache-getresource-unable-to
-    sed --in-place '24s/.*/    <WatchedResource>$\{catalina\.ba\se\}\/conf\/web.xml<\/WatchedResource>\n    <Resources cachingAllowed="true" cacheMaxSize="100000" \/>/' \
-            /opt/apache-tomcat/conf/context.xml; \
-    patch /opt/apache-tomcat/conf/server.xml /tmp/enable-ajp.patch
-
 RUN mkdir /scripts; \
     cd /scripts; \
     wget https://raw.githubusercontent.com/vishnubob/wait-for-it/master/wait-for-it.sh; \
@@ -67,8 +54,7 @@ RUN wget -O- 'https://archive.apache.org/dist/maven/maven-3/3.3.3/binaries/apach
 RUN mvn dependency:get -Dartifact=org.apache.maven.plugins:maven-surefire-plugin:2.22.1; \
     mvn dependency:get -Dartifact=org.apache.maven.surefire:surefire-junit4:2.22.1; \
     mvn dependency:get -Dartifact=org.apache.maven.surefire:surefire-junit47:2.22.1; \
-    mvn dependency:get -Dartifact=org.codehaus.cargo:cargo-maven2-plugin:1.4.8; \
-    mvn dependency:get -Dartifact=org.codehaus.cargo:cargo-core-container-tomcat:1.4.8;
+    mvn dependency:get -Dartifact=org.springframework.boot:spring-boot-maven-plugin:2.7.4
 
 
 
@@ -84,9 +70,6 @@ RUN --mount=type=cache,id=mvn_cache,target=/mnt/mvn,sharing=private \
     cp --recursive /mnt/mvn/* /root/.m2/repository;
 
 RUN cp --recursive /build-artifacts/mvn/mpf /root/.m2/repository/org/mitre
-
-COPY --from=download_dependencies /opt/apache-tomcat-8.5.78 /opt/apache-tomcat-8.5.78
-RUN ln --symbolic /opt/apache-tomcat-8.5.78 /opt/apache-tomcat
 
 COPY --from=download_dependencies /root/.m2/repository /root/.m2/repository
 
@@ -107,8 +90,7 @@ ENV MPF_USER=root
 ENV MPF_LOG_PATH=$MPF_HOME/share/logs
 ENV LD_LIBRARY_PATH=/usr/lib64:$MPF_HOME/lib
 ENV PATH=$PATH:$MPF_HOME/bin
-ENV CATALINA_OPTS "-Dtransport.guarantee='NONE' -Dweb.rest.protocol='http'"
-ENV TOMCAT_BASE_URL=http://localhost:8181
+ENV WFM_BASE_URL=http://localhost:8181
 # Default for JDBC configuration. Can be overridden at runtime.
 ENV JDBC_URL=jdbc:postgresql://db:5432/mpf
 ENV PYTHONUNBUFFERED 1

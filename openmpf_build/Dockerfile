@@ -161,7 +161,6 @@ RUN --mount=type=cache,id=mvn_cache,target=/root/.m2/repository,sharing=private 
     --mount=type=tmpfs,target=/root/.cache \
     mvn package \
         -DskipTests -Dmaven.test.skip=true -DskipITs \
-        -Dcargo.maven.skip=true \
         -Dcomponents.build.components='' \
         -Dstartup.auto.registration.skip=false \
         -Dcomponents.build.parallel.builds="$(nproc)" \
