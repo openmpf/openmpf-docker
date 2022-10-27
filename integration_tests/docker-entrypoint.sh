@@ -94,7 +94,6 @@ set -o xtrace
 set +o errexit
 
 mvn verify -Pjenkins \
-    -Dcargo.spring.profiles.active=docker,jenkins \
     -Dspring.profiles.active=docker,jenkins \
     -Dit.test=ITWebREST \
     -Dtransport.guarantee=NONE \

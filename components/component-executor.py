@@ -122,13 +122,13 @@ def wait_for_activemq(activemq_host):
                 return
             print('Received non-success status code of {} when trying to connect to ActiveMQ. '
                   'This is either because ActiveMQ is still starting or the wrong host name was used for the '
-                  'ACTIVE_MQ_HOST(={}) environment variable. Connection to ActiveMQ will re-attempted in 5 seconds.'
+                  'ACTIVE_MQ_HOST(={}) environment variable. Connection to ActiveMQ will re-attempted in 10 seconds.'
                   .format(resp.status, activemq_host))
         except socket.error as e:
             print('Attempt to connect to ActiveMQ failed due to "{}". This is either because ActiveMQ is still '
                   'starting or the wrong host name was used for the ACTIVE_MQ_HOST(={}) environment variable. '
-                  'Connection to ActiveMQ will re-attempted in 5 seconds.'.format(e, activemq_host))
-        time.sleep(5)
+                  'Connection to ActiveMQ will re-attempted in 10 seconds.'.format(e, activemq_host))
+        time.sleep(10)
 
 
 
@@ -172,16 +172,13 @@ def post_descriptor_with_retry(unparsed_descriptor, url, headers):
             return
 
         except urllib.error.HTTPError as err:
-            if err.url != url:
+            if err.url == url:
+                raise
+            else:
                 # This generally means the provided WFM url used HTTP, but WFM was configured to use HTTPS
                 print('Initial registration response failed. Trying with redirected url: ', err.url)
                 post_descriptor(unparsed_descriptor, err.url, headers, opener)
                 return
-            if err.code != 404:
-                raise
-            print('Registration failed due to "{}". This is either because Tomcat has started, but the '
-                  'Workflow Manager is still deploying or because the wrong URL was used for the WFM_BASE_URL(={}) '
-                  'environment variable. Registration will be re-attempted in 5 seconds.'.format(err, url))
 
         except urllib.error.URLError as err:
             reason = err.reason
@@ -201,8 +198,8 @@ def post_descriptor_with_retry(unparsed_descriptor, url, headers):
                 raise
             print('Registration failed due to "{}". This is either because the Workflow Manager is still starting or '
                   'because the wrong URL was used for the WFM_BASE_URL(={}) environment variable. Registration will '
-                  'be re-attempted in 5 seconds.'.format(reason.strerror, url))
-        time.sleep(5)
+                  'be re-attempted in 10 seconds.'.format(reason.strerror, url))
+        time.sleep(10)
 
 
 # The default urllib.request.HTTPRedirectHandler converts POST requests to GET requests.
