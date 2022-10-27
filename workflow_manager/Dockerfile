@@ -53,16 +53,6 @@ RUN wget --directory-prefix /scripts \
     chmod +x /scripts/wait-for-it.sh;
 
 
-RUN wget -O- 'http://archive.apache.org/dist/tomcat/tomcat-8/v8.5.78/bin/apache-tomcat-8.5.78.tar.gz' \
-        | tar --extract --gzip --directory /opt; \
-    ln --symbolic /opt/apache-tomcat-8.5.78 /opt/apache-tomcat; \
-    rm --recursive /opt/apache-tomcat/webapps/*; \
-    # Configure Tomcat cache size:
-    # https://stackoverflow.com/questions/26893297/tomcat-8-throwing-org-apache-catalina-webresources-cache-getresource-unable-to
-    sed --in-place '24s/.*/    <WatchedResource>$\{catalina\.ba\se\}\/conf\/web.xml<\/WatchedResource>\n    <Resources cachingAllowed="true" cacheMaxSize="100000" \/>/' \
-        /opt/apache-tomcat/conf/context.xml;
-
-
 COPY --from=openmpf_build /usr/local/bin/ffmpeg /usr/local/bin/ffprobe /usr/local/bin/
 
 COPY --from=openmpf_build /usr/local/bin/pngdefry /usr/local/bin/pngdefry
@@ -73,9 +63,9 @@ COPY --from=openmpf_build /build-artifacts/mpf-scripts /home/mpf/mpf-scripts
 RUN mkdir --parents /home/mpf/mpf-scripts-install; \
     pip3 install --no-cache --target /home/mpf/mpf-scripts-install /home/mpf/mpf-scripts
 
-COPY --from=openmpf_build /build-artifacts/workflow-manager /opt/apache-tomcat/webapps/workflow-manager
-
 ENV MPF_HOME /opt/mpf
+
+COPY --from=openmpf_build /build-artifacts/workflow-manager $MPF_HOME/workflow-manager
 
 ENV ACTIVE_MQ_HOST=activemq
 ENV REDIS_HOST=redis
@@ -83,13 +73,14 @@ ENV THIS_MPF_NODE=workflow-manager
 ENV no_proxy=localhost
 ENV MPF_USER=root
 ENV MPF_LOG_PATH=$MPF_HOME/share/logs
-ENV LD_LIBRARY_PATH=/usr/lib64:/opt/apache-tomcat/webapps/workflow-manager/WEB-INF/classes
+ENV LD_LIBRARY_PATH=/usr/lib64:$MPF_HOME/workflow-manager/WEB-INF/classes
 ENV PATH=$PATH:$MPF_HOME/bin
 # Default for JDBC configuration. Can be overridden at runtime.
 ENV JDBC_URL=jdbc:postgresql://db:5432/mpf
 ENV POSTGRES_USER=mpf
 ENV POSTGRES_PASSWORD=password
-ENV JAVA_OPTS='-Dspring.profiles.active=docker'
+ENV CLASSPATH=$MPF_HOME/workflow-manager/WEB-INF/classes:$MPF_HOME/workflow-manager/WEB-INF/lib/*
+ENV spring_profiles_active=docker
 
 EXPOSE 8080 8443
 
