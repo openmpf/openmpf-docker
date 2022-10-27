@@ -67,7 +67,7 @@ RUN pip config --site set global.no-cache-dir true;
 
 RUN --mount=from=openmpf_build,source=/home/mpf/openmpf-projects/openmpf-python-component-sdk/detection,target=/tmp/python \
     pip3 install --no-cache-dir /tmp/python/api /tmp/python/component_util; \
-    python3 -m unittest discover --verbose --buffer --start-directory /tmp/python/component_util
+    python3 -m unittest discover --verbose --buffer --start-directory /tmp/python/component_util/tests
 
 ENV SRC_DIR /home/mpf/component_src
 
