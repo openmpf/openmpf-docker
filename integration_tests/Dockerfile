@@ -54,7 +54,6 @@ RUN wget -O- 'https://archive.apache.org/dist/maven/maven-3/3.3.3/binaries/apach
 RUN mvn dependency:get -Dartifact=org.apache.maven.plugins:maven-surefire-plugin:2.22.1; \
     mvn dependency:get -Dartifact=org.apache.maven.surefire:surefire-junit4:2.22.1; \
     mvn dependency:get -Dartifact=org.apache.maven.surefire:surefire-junit47:2.22.1; \
-    mvn dependency:get -Dartifact=org.codehaus.cargo:cargo-maven2-plugin:1.4.8; \
     mvn dependency:get -Dartifact=org.springframework.boot:spring-boot-maven-plugin:2.7.4
 
 
@@ -91,8 +90,7 @@ ENV MPF_USER=root
 ENV MPF_LOG_PATH=$MPF_HOME/share/logs
 ENV LD_LIBRARY_PATH=/usr/lib64:$MPF_HOME/lib
 ENV PATH=$PATH:$MPF_HOME/bin
-ENV CATALINA_OPTS "-Dtransport.guarantee='NONE' -Dweb.rest.protocol='http'"
-ENV TOMCAT_BASE_URL=http://localhost:8181
+ENV WFM_BASE_URL=http://localhost:8181
 # Default for JDBC configuration. Can be overridden at runtime.
 ENV JDBC_URL=jdbc:postgresql://db:5432/mpf
 ENV PYTHONUNBUFFERED 1
