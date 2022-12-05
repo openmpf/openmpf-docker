@@ -95,7 +95,8 @@ set +o errexit
 
 # Download any missing dependencies, such as those used for custom system tests, to prevent potential
 # download timeout issues later on that occur on some host networks.
-mvn org.apache.maven.plugins:maven-dependency-plugin:3.1.1:go-offline
+mvn org.apache.maven.plugins:maven-dependency-plugin:3.1.1:go-offline \
+    $MVN_OPTIONS $EXTRA_MVN_OPTIONS # Intentionally unquoted to allow variables to hold multiple flags.
 
 mvn verify -Pjenkins \
     -Dspring.profiles.active=docker,jenkins \
