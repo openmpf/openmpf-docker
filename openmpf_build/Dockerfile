@@ -159,7 +159,7 @@ WORKDIR /home/mpf/openmpf-projects/openmpf
 RUN --mount=type=cache,id=mvn_cache,target=/root/.m2/repository,sharing=private \
     --mount=type=tmpfs,target=/tmp \
     --mount=type=tmpfs,target=/root/.cache \
-    mvn install \
+    mvn package \
         -DskipTests -Dmaven.test.skip=true -DskipITs \
         -Dcomponents.build.components='' \
         -Dstartup.auto.registration.skip=false \
