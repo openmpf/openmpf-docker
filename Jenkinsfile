@@ -248,7 +248,9 @@ try {
         }
 
         if (preDockerBuildScriptPath) {
-            sh preDockerBuildScriptPath
+            docker.withRegistry("http://$dockerRegistryHostAndPort", dockerRegistryCredId) {
+                sh preDockerBuildScriptPath
+            }
         }
 
         def noCacheArg = buildNoCache ? '--no-cache' : ''
