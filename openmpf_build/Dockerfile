@@ -61,7 +61,8 @@ RUN --mount=type=tmpfs,target=/var/cache/apt \
         > /etc/apt/sources.list.d/cuda.list; \
     apt-get update; \
     apt-get install -y --no-install-recommends cuda-minimal-build-11-4 libcufft-dev-11-4 \
-        libnpp-dev-11-4 libcudnn8-dev libcublas-dev-11-4; \
+        libnpp-dev-11-4 libcudnn8-dev=8.2.4.15-1+cuda11.4 libcudnn8=8.2.4.15-1+cuda11.4 \
+        libcublas-dev-11-4; \
     # OpenCV doesn't use the statically compiled CUDA libraries except for libcudart and they are relatively large.
     find /usr/local/cuda/lib64/ -name '*.a' -not -name 'libcudart_static.a' -delete; \
     rm /usr/lib/x86_64-linux-gnu/libcudnn*.a; \
