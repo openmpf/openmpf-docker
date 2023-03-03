@@ -53,7 +53,8 @@ def customLabelKey = env.getProperty("custom_label_key") ?: "custom"
 def preDockerBuildScriptPath = env.pre_docker_build_script_path
 
 def runTrivyScans = env.run_trivy_scans?.toBoolean() ?: false
-
+def skipIntegrationTests = env.skip_integration_tests?.toBoolean() ?: false
+def pruneDocker = env.prune_docker?.toBoolean() ?: false
 
 env.DOCKER_BUILDKIT=1
 env.COMPOSE_DOCKER_CLI_BUILD=1
@@ -226,6 +227,10 @@ try {
         return // end build early; do this outside of a stage
     }
 
+    optionalStage('Prune Docker', pruneDocker) {
+         sh "docker system prune --all --force"
+    }
+
     def componentComposeFiles
     def runtimeComposeFiles
 
@@ -370,7 +375,7 @@ try {
         }
     } // stage('Build images')
 
-    stage('Run Integration Tests') {
+    optionalStage('Run Integration Tests', !skipIntegrationTests) {
         dir(openmpfDockerRepo.path) {
             test_cli_runner(inProgressTag)
 
