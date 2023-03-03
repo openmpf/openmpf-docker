@@ -500,7 +500,7 @@ finally {
         reTagImages(inProgressTag, '', 'failed-build-deleteme')
     }
 
-    if (postBuildStatusEnabled) {
+    if (postBuildStatusEnabled && !skipIntegrationTests) {
         for (repo in projectsSubRepos) {
             postBuildStatus(repo, buildStatus, githubAuthToken)
         }
