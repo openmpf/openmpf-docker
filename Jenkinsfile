@@ -486,8 +486,8 @@ finally {
         echo 'DETECTED BUILD ABORTED'
         buildStatus = 'failure'
     }
-    else if (isTimeout(buildException)) {
-        echo 'DETECTED BUILD TIMEOUT'
+    else if (isProbableTimeout(buildException)) {
+        echo 'DETECTED PROBABLE BUILD TIMEOUT'
         buildStatus = 'failure'
     }
     else if (buildException != null) {
@@ -638,11 +638,8 @@ def isAborted() {
             !currentBuild.getRawBuild().getActions(jenkins.model.InterruptedBuildAction).isEmpty()
 }
 
-def isTimeout(Exception e) {
-    def cause = e.getCause()
-    echo cause.getClass() // DEBUG
-    return cause != null &&
-            cause.getClass() == org.jenkinsci.plugins.workflow.steps.TimeoutStepExecution$ExceededTimeout
+def isProbableTimeout(Exception e) {
+    return e == org.jenkinsci.plugins.workflow.steps.FlowInterruptedException
 }
 
 def postBuildStatus(repo, status, githubAuthToken) {
