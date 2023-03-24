@@ -486,6 +486,10 @@ finally {
         echo 'DETECTED BUILD ABORTED'
         buildStatus = 'failure'
     }
+    else if (isTimeout(buildException)) {
+        echo 'DETECTED BUILD TIMEOUT'
+        buildStatus = 'failure'
+    }
     else if (buildException != null) {
         echo 'DETECTED BUILD FAILURE'
         echo 'Exception type: ' + buildException.getClass()
@@ -632,6 +636,12 @@ def getCustomLabel(customLabelKey) {
 def isAborted() {
     return currentBuild.result == 'ABORTED' ||
             !currentBuild.getRawBuild().getActions(jenkins.model.InterruptedBuildAction).isEmpty()
+}
+
+def isTimeout(Exception e) {
+    def cause = e.getCause()
+    return cause != null
+        && cause.getClass() == org.jenkinsci.plugins.workflow.steps.TimeoutStepExecution$ExceededTimeout
 }
 
 def postBuildStatus(repo, status, githubAuthToken) {
