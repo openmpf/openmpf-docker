@@ -640,8 +640,8 @@ def isAborted() {
 
 def isTimeout(Exception e) {
     def cause = e.getCause()
-    return cause != null
-        && cause.getClass() == org.jenkinsci.plugins.workflow.steps.TimeoutStepExecution$ExceededTimeout
+    return cause != null &&
+            cause.getClass() == org.jenkinsci.plugins.workflow.steps.TimeoutStepExecution$ExceededTimeout
 }
 
 def postBuildStatus(repo, status, githubAuthToken) {
