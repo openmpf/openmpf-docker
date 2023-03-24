@@ -55,6 +55,7 @@ def preDockerBuildScriptPath = env.pre_docker_build_script_path
 def runTrivyScans = env.run_trivy_scans?.toBoolean() ?: false
 def skipIntegrationTests = env.skip_integration_tests?.toBoolean() ?: false
 def pruneDocker = env.prune_docker?.toBoolean() ?: false
+def buildTimeout = env.build_timeout ?: 6 // hours
 
 env.DOCKER_BUILDKIT=1
 env.COMPOSE_DOCKER_CLI_BUILD=1
@@ -235,9 +236,10 @@ try {
     def runtimeComposeFiles
 
     stage('Build images') {
+    timeout(time: buildTimeout, unit: 'SECONDS') { // DEBUG
         // Make sure we are using most recent version of external images
-            for (externalImage in ['docker/dockerfile:1.2', 'postgres:alpine',
-                                   'redis:alpine', 'ubuntu:20.04']) {
+        for (externalImage in ['docker/dockerfile:1.2', 'postgres:alpine',
+                               'redis:alpine', 'ubuntu:20.04']) {
             try {
                 sh "docker pull '$externalImage'"
             }
@@ -373,6 +375,7 @@ try {
         else  {
             echo 'SKIPPING CUSTOM CONFIGURATION'
         }
+    } // timeout
     } // stage('Build images')
 
     optionalStage('Run Integration Tests', !skipIntegrationTests) {
