@@ -640,6 +640,7 @@ def isAborted() {
 
 def isTimeout(Exception e) {
     def cause = e.getCause()
+    echo cause.getClass() // DEBUG
     return cause != null &&
             cause.getClass() == org.jenkinsci.plugins.workflow.steps.TimeoutStepExecution$ExceededTimeout
 }
