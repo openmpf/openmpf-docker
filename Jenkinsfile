@@ -639,7 +639,7 @@ def isAborted() {
 }
 
 def isProbableTimeout(Exception e) {
-    return e == org.jenkinsci.plugins.workflow.steps.FlowInterruptedException
+    return e.getClass() == org.jenkinsci.plugins.workflow.steps.FlowInterruptedException
 }
 
 def postBuildStatus(repo, status, githubAuthToken) {
