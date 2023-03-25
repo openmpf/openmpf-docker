@@ -639,6 +639,8 @@ def isAborted() {
 }
 
 def isProbableTimeout(Exception e) {
+    echo 'isProbableTimeout' // DEBUG
+    echo currentBuild.result // DEBUG
     return e.getClass() == org.jenkinsci.plugins.workflow.steps.FlowInterruptedException
 }
 
