@@ -236,7 +236,7 @@ try {
     def runtimeComposeFiles
 
     stage('Build images') {
-    timeout(time: buildTimeout, unit: 'HOURS') {
+    timeout(time: buildTimeout, unit: 'SECONDS') { // DEBUG
         // Make sure we are using most recent version of external images
         for (externalImage in ['docker/dockerfile:1.2', 'postgres:alpine',
                                'redis:alpine', 'ubuntu:20.04']) {
