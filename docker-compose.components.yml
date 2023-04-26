@@ -5,11 +5,11 @@
 # under contract, and is subject to the Rights in Data-General Clause       #
 # 52.227-14, Alt. IV (DEC 2007).                                            #
 #                                                                           #
-# Copyright 2022 The MITRE Corporation. All Rights Reserved.                #
+# Copyright 2023 The MITRE Corporation. All Rights Reserved.                #
 #############################################################################
 
 #############################################################################
-# Copyright 2022 The MITRE Corporation                                      #
+# Copyright 2023 The MITRE Corporation                                      #
 #                                                                           #
 # Licensed under the Apache License, Version 2.0 (the "License");           #
 # you may not use this file except in compliance with the License.          #
@@ -97,6 +97,37 @@ services:
       # MPF_PROP_ACS_URL + '/breaksentence' is used to break up long text.
       MPF_PROP_ACS_URL: ${ACS_TRANSLATION_URL}
       MPF_PROP_ACS_SUBSCRIPTION_KEY: ${ACS_TRANSLATION_SUBSCRIPTION_KEY}
+
+  clip-detection:
+    <<: *detection-component-base
+    image: ${REGISTRY}openmpf_clip_detection:${TAG}
+    build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/python/ClipDetection
+  
+  clip-detection-server:
+    <<: *detection-component-base
+    image: ${REGISTRY}openmpf_clip_detection_server:${TAG}
+    build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/python/ClipDetection/triton_server
+    deploy:
+      mode: global
+    ulimits:
+      memlock: -1  # don't limit locked-in memory (prevent paging)
+      stack: 67108864  # 8 GiB
+    ports:
+      # - "8001:8001"  # server gRPC port (expose to enable handling requests from outside the stack)
+      # - "8000:8000"  # (optional) HTTP management port
+      # - "8002:8002"  # (optional) Prometheus metrics at http://<host>:<this-port>/metrics
+    environment:
+      # Optionally, limit the GPUs exposed to the server.
+      # At least one GPU is required to run the YOLO TensorRT engine.
+      - NVIDIA_VISIBLE_DEVICES=all
+
+    command: [tritonserver,
+              --model-repository=/models,
+              --strict-model-config=false,
+              --model-control-mode=explicit,
+              --load-model=ip-clip-512,
+              # --log-verbose=1,  # (optional)
+              --grpc-infer-allocation-pool-size=16 ]
 
   east-text-detection:
     <<: *detection-component-base
