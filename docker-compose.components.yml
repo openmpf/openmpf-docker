@@ -112,7 +112,7 @@ services:
     ulimits:
       memlock: -1  # don't limit locked-in memory (prevent paging)
       stack: 67108864  # 8 GiB
-    ports:
+    # ports:
       # - "8001:8001"  # server gRPC port (expose to enable handling requests from outside the stack)
       # - "8000:8000"  # (optional) HTTP management port
       # - "8002:8002"  # (optional) Prometheus metrics at http://<host>:<this-port>/metrics
