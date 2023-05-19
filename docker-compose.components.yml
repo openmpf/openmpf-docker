@@ -243,8 +243,8 @@ services:
 
   whisper-detection:
     <<: *detection-component-base
-    image: ${REGISTRY}openmpf_whisper_detection:${TAG}
-    build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/python/WhisperDetection
+    image: ${REGISTRY}openmpf_whisper_speech_detection:${TAG}
+    build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/python/WhisperSpeechDetection
 
 volumes:
   yolo_engine_files:
