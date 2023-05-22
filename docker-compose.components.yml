@@ -104,7 +104,6 @@ services:
     build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/python/ClipDetection
   
   clip-detection-server:
-    <<: *detection-component-base
     image: ${REGISTRY}openmpf_clip_detection_server:${TAG}
     build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/python/ClipDetection/triton_server
     deploy:
@@ -125,7 +124,7 @@ services:
               --model-repository=/models,
               --strict-model-config=false,
               --model-control-mode=explicit,
-              --load-model=ip-clip-512,
+              --load-model=ip_clip_512,
               # --log-verbose=1,  # (optional)
               --grpc-infer-allocation-pool-size=16 ]
 
