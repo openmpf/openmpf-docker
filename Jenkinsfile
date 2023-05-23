@@ -24,6 +24,11 @@
  * limitations under the License.                                             *
  ******************************************************************************/
 
+// Ensure that the hosts running this build have the login credentials for the
+// <docker_registry_host>:<docker_registry_port> cached in ~/.docker/config.json.
+// Also, consider caching the credentials for Docker Hub (index.docker.io) and
+// NVIDIA (nvcr.io) to avoid rate limiting.
+
 def imageTag = env.image_tag ?: 'deleteme'
 def buildNoCache = env.build_no_cache?.toBoolean() ?: false
 def preserveContainersOnFailure = env.preserve_containers_on_failure?.toBoolean() ?: false
@@ -36,7 +41,6 @@ def mvnTestOptions = env.mvn_test_options ?: ''
 def dockerRegistryHost = env.docker_registry_host
 def dockerRegistryPort = env.docker_registry_port
 def dockerRegistryPath = env.docker_registry_path ?: "/openmpf"
-def dockerRegistryCredId = env.docker_registry_cred_id;
 def pushRuntimeImages = env.push_runtime_images?.toBoolean() ?: false
 
 def pollReposAndEndBuild = env.poll_repos_and_end_build?.toBoolean() ?: false
@@ -255,9 +259,7 @@ try {
         }
 
         if (preDockerBuildScriptPath) {
-            docker.withRegistry("http://$dockerRegistryHostAndPort", dockerRegistryCredId) {
-                sh preDockerBuildScriptPath
-            }
+            sh preDockerBuildScriptPath
         }
 
         def noCacheArg = buildNoCache ? '--no-cache' : ''
@@ -350,9 +352,7 @@ try {
             runtimeComposeFiles = "docker-compose.core.yml:$componentComposeFiles:docker-compose.elk.yml"
 
             withEnv(["TAG=$inProgressTag", "COMPOSE_FILE=$runtimeComposeFiles"]) {
-                docker.withRegistry("http://$dockerRegistryHostAndPort", dockerRegistryCredId) {
-                        sh "docker compose build $commonBuildArgs --build-arg RUN_TESTS=true --parallel"
-                }
+                sh "docker compose build $commonBuildArgs --build-arg RUN_TESTS=true --parallel"
 
                 def composeYaml = readYaml(text: shOutput('docker compose config'))
                 addVcsRefLabels(composeYaml, openmpfRepo, openmpfDockerRepo)
@@ -399,23 +399,21 @@ try {
                      // Use custom project name to allow multiple builds on same machine
                      "COMPOSE_PROJECT_NAME=openmpf_$buildId",
                      "COMPOSE_FILE=$composeFiles"]) {
-                docker.withRegistry("http://$dockerRegistryHostAndPort", dockerRegistryCredId) {
-                    try {
-                        sh "docker compose --ansi always up --exit-code-from workflow-manager $scaleArgs $skipArgs"
+                try {
+                    sh "docker compose --ansi always up --exit-code-from workflow-manager $scaleArgs $skipArgs"
+                    shStatus 'docker compose down --volumes'
+                }
+                catch (e) {
+                    if (preserveContainersOnFailure) {
+                        shStatus 'docker compose stop'
+                    } else {
                         shStatus 'docker compose down --volumes'
                     }
-                    catch (e) {
-                        if (preserveContainersOnFailure) {
-                            shStatus 'docker compose stop'
-                        } else {
-                            shStatus 'docker compose down --volumes'
-                        }
-                        throw e;
-                    }
-                    finally {
-                        junit 'test-reports/*-reports/*.xml'
-                    }
-                } // withRegistry
+                    throw e;
+                }
+                finally {
+                    junit 'test-reports/*-reports/*.xml'
+                }
             } // withEnv
         } // dir(openmpfDockerRepo.path)
     } // stage('Run Integration Tests')
@@ -459,20 +457,17 @@ try {
 
     optionalStage('Push runtime images', pushRuntimeImages) {
         withEnv(["TAG=$imageTag", "REGISTRY=$remoteImagePrefix", "COMPOSE_FILE=$runtimeComposeFiles"]) {
+            sh "docker push '${remoteImagePrefix}openmpf_cpp_component_build:$imageTag'"
+            sh "docker push '${remoteImagePrefix}openmpf_cpp_executor:$imageTag'"
 
-            docker.withRegistry("http://$dockerRegistryHostAndPort", dockerRegistryCredId) {
-                sh "docker push '${remoteImagePrefix}openmpf_cpp_component_build:$imageTag'"
-                sh "docker push '${remoteImagePrefix}openmpf_cpp_executor:$imageTag'"
+            sh "docker push '${remoteImagePrefix}openmpf_java_component_build:$imageTag'"
+            sh "docker push '${remoteImagePrefix}openmpf_java_executor:$imageTag'"
 
-                sh "docker push '${remoteImagePrefix}openmpf_java_component_build:$imageTag'"
-                sh "docker push '${remoteImagePrefix}openmpf_java_executor:$imageTag'"
+            sh "docker push '${remoteImagePrefix}openmpf_python_component_build:$imageTag'"
+            sh "docker push '${remoteImagePrefix}openmpf_python_executor:$imageTag'"
+            sh "docker push '${remoteImagePrefix}openmpf_python_executor_ssb:$imageTag'"
 
-                sh "docker push '${remoteImagePrefix}openmpf_python_component_build:$imageTag'"
-                sh "docker push '${remoteImagePrefix}openmpf_python_executor:$imageTag'"
-                sh "docker push '${remoteImagePrefix}openmpf_python_executor_ssb:$imageTag'"
-
-                sh "cd '$openmpfDockerRepo.path' && docker compose push"
-            } // docker.withRegistry ...
+            sh "cd '$openmpfDockerRepo.path' && docker compose push"
         } // withEnv...
     } // optionalStage('Push runtime images', ...
 }
