@@ -401,7 +401,7 @@ try {
                      "COMPOSE_FILE=$composeFiles"]) {
                 docker.withRegistry("http://$dockerRegistryHostAndPort", dockerRegistryCredId) {
                     try {
-                        sh "docker compose --ansi always up --exit-code-from workflow-manager $scaleArgs $skipArgs"
+                        sh "docker compose up --exit-code-from workflow-manager $scaleArgs $skipArgs"
                         shStatus 'docker compose down --volumes'
                     }
                     catch (e) {
