@@ -276,5 +276,10 @@ services:
     #  - "${OPENMPF_PROJECTS_PATH}/openmpf-components/cpp/TrtisDetection/plugin-files/models:/models"
     command: [trtserver,--model-store=/models]
 
+  whisper-speech-detection:
+    <<: *detection-component-base
+    image: ${REGISTRY}openmpf_whisper_speech_detection:${TAG}
+    build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/python/WhisperSpeechDetection
+
 volumes:
   yolo_engine_files:
