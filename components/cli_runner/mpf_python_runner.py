@@ -39,7 +39,6 @@ class PythonComponentHandle(util.ComponentHandle):
     def __init__(self, descriptor: Mapping[str, Any]):
         component_cls = self._load_component(descriptor)
         self._component = component_cls()
-        self.detection_type = self._component.detection_type
 
 
     @classmethod
