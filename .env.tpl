@@ -39,8 +39,6 @@ TAG=latest
 WFM_USER=admin
 WFM_PASSWORD=mpfadm
 
-ACTIVE_MQ_PROFILE=default
-
 # Set this if using "docker-compose.users.yml".
 USER_PROPERTIES_PATH=
 

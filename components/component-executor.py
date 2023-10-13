@@ -29,16 +29,13 @@
 from __future__ import annotations
 
 import collections
-import http.client
 import json
 import os
 import shlex
 import signal
-import socket
 import string
 import subprocess
 import sys
-import time
 from pathlib import Path
 from typing import Any, Dict, NamedTuple, Optional, Tuple
 
@@ -61,7 +58,7 @@ class EnvConfig(NamedTuple):
     wfm_password: str
     wfm_base_url: str
     oidc_issuer_uri: Optional[str]
-    activemq_host: str
+    activemq_broker_uri: str
     component_log_name: Optional[str]
     disable_component_registration: bool
     node_name: Optional[str]
@@ -77,6 +74,11 @@ class EnvConfig(NamedTuple):
             raise RuntimeError(
                 'The WFM_USER and WFM_PASSWORD environment variables must both be set.')
 
+        activemq_broker_uri = os.getenv('ACTIVE_MQ_BROKER_URI')
+        if not activemq_broker_uri:
+            activemq_host = os.getenv('ACTIVE_MQ_HOST', 'workflow-manager')
+            activemq_broker_uri = f'failover:(tcp://{activemq_host}:61616)?maxReconnectAttempts=13'
+
         mpf_home = Path(os.getenv('MPF_HOME', '/opt/mpf'))
         if log_path_str := os.getenv('MPF_LOG_PATH'):
             log_path = Path(log_path_str)
@@ -85,9 +87,9 @@ class EnvConfig(NamedTuple):
         return EnvConfig(
             wfm_user,
             wfm_password,
-            os.getenv('WFM_BASE_URL', 'http://workflow-manager:8080/workflow-manager'),
+            os.getenv('WFM_BASE_URL', 'http://workflow-manager:8080'),
             oidc_issuer_uri,
-            os.getenv('ACTIVE_MQ_HOST', 'activemq'),
+            activemq_broker_uri,
             os.getenv('COMPONENT_LOG_NAME'),
             bool(os.getenv('DISABLE_COMPONENT_REGISTRATION')),
             os.getenv('THIS_MPF_NODE'),
@@ -109,8 +111,6 @@ def init() -> Tuple[subprocess.Popen[str], Optional[subprocess.Popen[bytes]]]:
     else:
         component_registration.register_component(env_config, unparsed_descriptor)
 
-    wait_for_activemq(env_config.activemq_host)
-
     descriptor = json.loads(unparsed_descriptor)
     if env_config.node_name:
         node_name = env_config.node_name
@@ -120,7 +120,7 @@ def init() -> Tuple[subprocess.Popen[str], Optional[subprocess.Popen[bytes]]]:
     log_dir = env_config.base_log_path / node_name / 'log'
 
     executor_proc = start_executor(
-        descriptor, env_config.mpf_home, env_config.activemq_host, node_name)
+        descriptor, env_config.mpf_home, env_config.activemq_broker_uri, node_name)
     tail_proc = tail_log_if_needed(log_dir, env_config.component_log_name, executor_proc.pid)
 
     return executor_proc, tail_proc
@@ -145,32 +145,8 @@ def find_descriptor(mpf_home: Path) -> Path:
         f'descriptors were found: {glob_matches}')
 
 
-def wait_for_activemq(activemq_host: str) -> None:
-    while True:
-        try:
-            conn = http.client.HTTPConnection(activemq_host, 8161)
-            conn.request('HEAD', '/')
-            resp = conn.getresponse()
-            if 200 <= resp.status <= 299 or resp.status == 401:
-                return
-            print(f'Received non-success status code of {resp.status} when trying to connect to '
-                  'ActiveMQ. This is either because ActiveMQ is still starting or the wrong host '
-                  f'name was used for the ACTIVE_MQ_HOST(={activemq_host}) environment variable. '
-                  'Connection to ActiveMQ will re-attempted in 10 seconds.')
-        except socket.error as e:
-            print(f'Attempt to connect to ActiveMQ failed due to "{e}". This is either because '
-                  'ActiveMQ is still starting or the wrong host name was used for the '
-                  f'ACTIVE_MQ_HOST(={activemq_host}) environment variable. Connection to ActiveMQ '
-                  'will re-attempted in 10 seconds.')
-        time.sleep(10)
-
-
-
-def start_executor(descriptor: Descriptor, mpf_home: Path, activemq_host: str, node_name: str
+def start_executor(descriptor: Descriptor, mpf_home: Path, activemq_broker_uri: str, node_name: str
                    ) -> subprocess.Popen[str]:
-    activemq_broker_uri = (
-        f'failover://(tcp://{activemq_host}:61616)'
-        '?jms.prefetchPolicy.all=0&startupMaxReconnectAttempts=1')
     algorithm_name = descriptor['algorithm']['name'].upper()
     queue_name = f'MPF.DETECTION_{algorithm_name}_REQUEST'
     language = descriptor['sourceLanguage'].lower()

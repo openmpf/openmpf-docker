@@ -67,7 +67,6 @@ ENV MPF_HOME /opt/mpf
 
 COPY --from=openmpf_build /build-artifacts/workflow-manager $MPF_HOME/workflow-manager
 
-ENV ACTIVE_MQ_HOST=activemq
 ENV REDIS_HOST=redis
 ENV THIS_MPF_NODE=workflow-manager
 ENV no_proxy=localhost

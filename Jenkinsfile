@@ -366,10 +366,6 @@ try {
                 def wfmShasArg = getVcsRefLabelArg([openmpfRepo, openmpfDockerRepo, customConfigRepo])
                 sh "docker build workflow_manager $commonBuildArgs $customLabelArg $wfmShasArg " +
                         " -t openmpf_workflow_manager:$inProgressTag"
-
-                def amqShasArg = getVcsRefLabelArg([openmpfDockerRepo, customConfigRepo])
-                sh "docker build activemq $commonBuildArgs $customLabelArg $amqShasArg " +
-                        " -t openmpf_activemq:$inProgressTag"
             }
         }
         else  {

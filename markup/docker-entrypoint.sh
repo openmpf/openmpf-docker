@@ -32,19 +32,8 @@ set -o errexit -o pipefail
 export THIS_MPF_NODE="${THIS_MPF_NODE}_id_${HOSTNAME}"
 
 if [ ! "$ACTIVE_MQ_BROKER_URI" ]; then
-    export ACTIVE_MQ_BROKER_URI="failover://(tcp://$ACTIVE_MQ_HOST:61616)?jms.prefetchPolicy.all=0&startupMaxReconnectAttempts=1"
+    export ACTIVE_MQ_BROKER_URI="failover:(tcp://$ACTIVE_MQ_HOST:61616)?maxReconnectAttempts=13"
 fi
-
-# --spider makes wget use a HEAD request
-# wget exits with code 6 when there is an authentication error. This is expected because the
-# ActiveMQ status page requires authentication. We are just using the request to verify ActiveMQ
-# is running so there is no need to authenticate.
-echo 'Waiting for ActiveMQ to become available ...'
-until wget --spider --tries 1 "http://$ACTIVE_MQ_HOST:8161" >> /dev/null 2>&1 || [ $? -eq 6 ]; do
-    echo 'ActiveMQ is unavailable. Sleeping.'
-    sleep 5
-done
-echo 'ActiveMQ is up'
 
 set -o xtrace
 
