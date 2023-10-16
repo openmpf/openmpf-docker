@@ -77,7 +77,8 @@ class EnvConfig(NamedTuple):
         activemq_broker_uri = os.getenv('ACTIVE_MQ_BROKER_URI')
         if not activemq_broker_uri:
             activemq_host = os.getenv('ACTIVE_MQ_HOST', 'workflow-manager')
-            activemq_broker_uri = f'failover:(tcp://{activemq_host}:61616)?maxReconnectAttempts=13'
+            # activemq_broker_uri = f'failover:(tcp://{activemq_host}:61616)?maxReconnectAttempts=13'
+            activemq_broker_uri = f'failover:(tcp://{activemq_host}:61616)'
 
         mpf_home = Path(os.getenv('MPF_HOME', '/opt/mpf'))
         if log_path_str := os.getenv('MPF_LOG_PATH'):
