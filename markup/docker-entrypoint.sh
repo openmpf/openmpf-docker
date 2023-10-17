@@ -32,7 +32,7 @@ set -o errexit -o pipefail
 export THIS_MPF_NODE="${THIS_MPF_NODE}_id_${HOSTNAME}"
 
 if [ ! "$ACTIVE_MQ_BROKER_URI" ]; then
-    export ACTIVE_MQ_BROKER_URI="failover:(tcp://$ACTIVE_MQ_HOST:61616)?maxReconnectAttempts=13"
+    export ACTIVE_MQ_BROKER_URI="failover:(tcp://$ACTIVE_MQ_HOST:61616)?maxReconnectAttempts=13&startupMaxReconnectAttempts=21"
 fi
 
 set -o xtrace
