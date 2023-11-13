@@ -97,7 +97,7 @@ class JobRunner(contextlib.AbstractContextManager):
             fps = 0
 
         result_dicts = ComponentResultToDictConverter.convert(
-            fps, self._track_type, component_results)
+            fps, self._component_handle.track_type, component_results)
 
         if self._media_type == util.MediaType.IMAGE:
             log.info(f'Found {len(result_dicts)} detections.\n')
@@ -247,6 +247,7 @@ class JobRunner(contextlib.AbstractContextManager):
             start_time: datetime.datetime) -> Union[List[Dict[str, Any]], Dict[str, Any]]:
         if self._brief_output:
             return result_dicts
+        track_type = self._component_handle.track_type
 
         # Create a structure that will be parsable by the mpf-interop package. Some fields
         # don't exactly make sense, but are necessary for compatibility. For example, the media
@@ -261,7 +262,7 @@ class JobRunner(contextlib.AbstractContextManager):
                     'mimeType': self._mime_type,
                     'mediaMetadata': self._media_metadata,
                     'output': {
-                        self._track_type: [
+                        track_type: [
                             {
                                 'tracks': result_dicts
                             }

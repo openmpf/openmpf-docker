@@ -55,6 +55,9 @@ class ComponentHandle(Protocol):
     Manages the lifetime of a language-specific component.
     """
 
+    # The type of track produced by the component.
+    track_type: str
+
     # A reference to the module containing the MPF job and result objects.
     # The classes and fields are named identically in mpf_cpp_sdk and mpf_component_api so the
     # common runner code can use them interchangeably.

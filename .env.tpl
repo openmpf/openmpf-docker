@@ -31,7 +31,8 @@ OPENMPF_PROJECTS_PATH=..
 
 # Takes the form: "<registry-host>:<registry-port>/<repository>/", where
 # <repository> is usually "openmpf". Make sure to include the "/" at the end.
-# Leave blank to use images on the local host or Docker Hub.
+# Leave blank to use images on the local host.
+# Use "openmpf/" to use images on Docker Hub.
 REGISTRY=
 
 TAG=latest
