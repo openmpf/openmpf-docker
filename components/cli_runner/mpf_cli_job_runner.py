@@ -96,7 +96,7 @@ class JobRunner(contextlib.AbstractContextManager):
             fps = 0
 
         result_dicts = ComponentResultToDictConverter.convert(
-            fps, self._component_handle.detection_type, component_results)
+            fps, self._component_handle.track_type, component_results)
 
         if self._media_type == util.MediaType.IMAGE:
             log.info(f'Found {len(result_dicts)} detections.\n')
@@ -246,7 +246,7 @@ class JobRunner(contextlib.AbstractContextManager):
             start_time: datetime.datetime) -> Union[List[Dict[str, Any]], Dict[str, Any]]:
         if self._brief_output:
             return result_dicts
-        detection_type = self._component_handle.detection_type
+        track_type = self._component_handle.track_type
 
         # Create a structure that will be parsable by the mpf-interop package. Some fields
         # don't exactly make sense, but are necessary for compatibility. For example, the media
@@ -261,7 +261,7 @@ class JobRunner(contextlib.AbstractContextManager):
                     'mimeType': self._mime_type,
                     'mediaMetadata': self._media_metadata,
                     'output': {
-                        detection_type: [
+                        track_type: [
                             {
                                 'tracks': result_dicts
                             }
@@ -302,29 +302,29 @@ class JobRunner(contextlib.AbstractContextManager):
 class ComponentResultToDictConverter:
 
     @classmethod
-    def convert(cls, fps: float, detection_type: str,
+    def convert(cls, fps: float, track_type: str,
                 component_results: Iterable) -> List[Dict[str, Any]]:
         """
         Convert component_results to JSON-serializable dictionaries
         :param fps: For video jobs, the video's frames per second. Otherwise, 0.
-        :param detection_type: Name of the detection type produced by the component.
+        :param track_type: Name of the track type produced by the component.
         :param component_results: Output from the component
         :return: A JSON-serializable representation of component_results
         """
-        return cls(fps, detection_type).to_dict_list(component_results)
+        return cls(fps, track_type).to_dict_list(component_results)
 
 
     _convert_frame_to_time: Callable[[int], float]
-    _detection_type: str
+    _track_type: str
 
-    def __init__(self, fps: float, detection_type: str):
+    def __init__(self, fps: float, track_type: str):
         if fps == 0:
             self._convert_frame_to_time = lambda x: 0
         else:
             ms_per_frame = 1000 / fps
             self._convert_frame_to_time = lambda fr: round(fr * ms_per_frame)
 
-        self._detection_type = detection_type
+        self._track_type = track_type
 
     def to_dict_list(self, component_results: Iterable) -> List[Dict[str, Any]]:
         result_dicts = [self._create_track_dict(obj) for obj in component_results]
@@ -355,7 +355,7 @@ class ComponentResultToDictConverter:
             stopOffsetFrame=stop_frame,
             startOffsetTime=start_time,
             stopOffsetTime=stop_time,
-            type=self._detection_type,
+            type=self._track_type,
             confidence=obj.confidence,
             trackProperties=sort_property_dict(obj.detection_properties),
             exemplar=serialized_exemplar,
