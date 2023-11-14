@@ -45,7 +45,6 @@ class BaseTestCliRunner(unittest.TestCase):
     # Provided by subclass
     image_name: ClassVar[str]
     track_type: ClassVar[str]
-    track_type: ClassVar[str]
 
     @classmethod
     def setUpClass(cls):
