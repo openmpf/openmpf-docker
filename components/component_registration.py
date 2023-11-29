@@ -86,11 +86,11 @@ def handle_http_error(
     try:
         server_message = json.loads(response_content)['message']
     except (ValueError,  KeyError):
-        server_message = response_content
+        server_message = response_content.decode()
 
     error_msg = f'The following error occurred while sending HTTP request to {url}: {error}'
     if server_message:
-        error_msg += f' {server_message.decode()}'
+        error_msg += f' {server_message}'
     if error.code == 401:
         error_msg += f'\n{request_context.get_401_error_msg(error)}'
     raise RuntimeError(error_msg) from error
@@ -229,8 +229,12 @@ class OidcRegistration:
         return urllib.request.Request(url, self._descriptor_bytes, headers)
 
     @staticmethod
-    def get_401_error_msg(_: urllib.error.HTTPError):
-        return 'The OIDC environment variables need to be changed.'
+    def get_401_error_msg(error: urllib.error.HTTPError):
+        base_message = 'The OIDC environment variables need to be changed.'
+        if auth_header := error.headers.get('WWW-Authenticate'):
+            return f'The WWW-Authenticate header contained: {auth_header}\n{base_message}'
+        else:
+            return base_message
 
 
 def create_basic_auth_header(user: str, password: str) -> Dict[str, str]:
