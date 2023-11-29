@@ -24,6 +24,8 @@
 # limitations under the License.                                            #
 #############################################################################
 
+from __future__ import annotations
+
 import base64
 import errno
 import http.client
@@ -34,7 +36,7 @@ import time
 import urllib.error
 import urllib.request
 import urllib.response
-from typing import Callable, Dict, NoReturn, Tuple
+from typing import Callable, Dict, NamedTuple, NoReturn, Tuple
 
 
 def register_component(env_config, descriptor_bytes: bytes) -> None:
@@ -46,17 +48,16 @@ def register_component(env_config, descriptor_bytes: bytes) -> None:
                               ).post_descriptor()
 
 
-def execute_http_request_with_retry(
-        url: str,
-        request_builder: Callable[[str], urllib.request.Request]) -> urllib.response.addinfourl:
+def execute_http_request_with_retry(request_context: RequestContext) -> urllib.response.addinfourl:
+    url = request_context.url
     while True:
-        request = request_builder(url)
+        request = request_context.request_builder(url)
         try:
             return _OPENER.open(request)
         except http.client.BadStatusLine as err:
             url = handle_bad_status(url, err)
         except urllib.error.HTTPError as err:
-            url = handle_http_error(url, err)
+            url = handle_http_error(url, err, request_context)
         except urllib.error.URLError as err:
             url, should_wait = handle_url_error(url, err)
             if should_wait:
@@ -73,7 +74,10 @@ def handle_bad_status(url: str, error: http.client.BadStatusLine) -> str:
     return new_url
 
 
-def handle_http_error(url: str, error: urllib.error.HTTPError) -> str:
+def handle_http_error(
+        url: str,
+        error: urllib.error.HTTPError,
+        request_context: RequestContext) -> str:
     if error.url != url:
         print(f'Sending HTTP request to {url} resulted in a redirect to {error.url}.')
         return error.url
@@ -88,7 +92,7 @@ def handle_http_error(url: str, error: urllib.error.HTTPError) -> str:
     if server_message:
         error_msg += f' {server_message.decode()}'
     if error.code == 401:
-        error_msg += '\nThe WFM_USER and WFM_PASSWORD environment variables need to be changed.'
+        error_msg += f'\n{request_context.get_401_error_msg(error)}'
     raise RuntimeError(error_msg) from error
 
 
@@ -147,13 +151,23 @@ class BasicAuthRegistration:
         headers = create_basic_auth_header(self._wfm_user, self._wfm_password)
         headers['Content-Type'] = 'application/json'
 
-        def create_request(url):
-            return urllib.request.Request(url, self._descriptor_bytes, headers)
-
         print('Registering component by posting descriptor to', url)
-        with execute_http_request_with_retry(url, create_request):
+        request_context = RequestContext(
+            url,
+            lambda u: urllib.request.Request(u, self._descriptor_bytes, headers),
+            self.get_401_error_msg)
+
+        with execute_http_request_with_retry(request_context):
             # We don't need to do anything with the response.
             pass
+
+    @staticmethod
+    def get_401_error_msg(error: urllib.error.HTTPError):
+        if error.headers.get('WWW-Authenticate') == 'Bearer':
+            return ('Workflow Manager is configured to use OIDC, so the component must also be'
+                    ' configured to use OIDC.')
+        else:
+            return 'The WFM_USER and WFM_PASSWORD environment variables need to be changed.'
 
 
 class OidcRegistration:
@@ -167,11 +181,41 @@ class OidcRegistration:
         self._descriptor_bytes: bytes = descriptor_bytes
         self._request_auth_token()
 
+    @classmethod
+    def _request_token_url(cls, oidc_issuer_uri: str) -> str:
+        config_url = oidc_issuer_uri + '/.well-known/openid-configuration'
+        print('Getting OIDC configuration metadata from', config_url)
+        request_context = RequestContext(config_url, urllib.request.Request, cls.get_401_error_msg)
+        with execute_http_request_with_retry(request_context) as resp:
+            return json.load(resp)['token_endpoint']
+
+    def _request_auth_token(self) -> None:
+        headers = create_basic_auth_header(self._client_id, self._client_secret)
+
+        def create_request(url):
+            # Update token url in case there was a redirect.
+            self._token_url = url
+            return urllib.request.Request(url, b'grant_type=client_credentials', headers)
+
+        print(f'Requesting token from {self._token_url}')
+        request_context = RequestContext(self._token_url, create_request, self.get_401_error_msg)
+        with execute_http_request_with_retry(request_context) as resp:
+            resp_content = json.load(resp)
+
+        self._token = resp_content['access_token']
+        expires_in = resp_content['expires_in']
+        self._reuse_token_until = time.time() + expires_in
+        if expires_in > 60:
+            # Do not re-use token for full duration to account for clock drift and network latency.
+            self._reuse_token_until -= 60
+        print(f'Received token that expires in {expires_in} seconds.')
 
     def post_descriptor(self) -> None:
         url = self._wfm_base_url + '/rest/components/registerUnmanaged'
         print('Registering component by posting descriptor to', url)
-        with execute_http_request_with_retry(url, self._create_post_descriptor_request):
+        request_context = RequestContext(
+            url, self._create_post_descriptor_request, self.get_401_error_msg)
+        with execute_http_request_with_retry(request_context):
             # We don't need to do anything with the response.
             pass
 
@@ -184,37 +228,18 @@ class OidcRegistration:
         }
         return urllib.request.Request(url, self._descriptor_bytes, headers)
 
-
     @staticmethod
-    def _request_token_url(oidc_issuer_uri: str) -> str:
-        config_url = oidc_issuer_uri + '/.well-known/openid-configuration'
-        print('Getting OIDC configuration metadata from', config_url)
-        with execute_http_request_with_retry(config_url, urllib.request.Request) as resp:
-            return json.load(resp)['token_endpoint']
-
-
-    def _request_auth_token(self) -> None:
-        headers = create_basic_auth_header(self._client_id, self._client_secret)
-
-        def create_request(url):
-            # Update token url in case there was a redirect.
-            self._token_url = url
-            return urllib.request.Request(url, b'grant_type=client_credentials', headers)
-
-        print(f'Requesting token from {self._token_url}')
-        with execute_http_request_with_retry(self._token_url, create_request) as resp:
-            resp_content = json.load(resp)
-
-        self._token = resp_content['access_token']
-        expires_in = resp_content['expires_in']
-        self._reuse_token_until = time.time() + expires_in
-        if expires_in > 60:
-            # Do not re-use token for full duration to account for clock drift and network latency.
-            self._reuse_token_until -= 60
-        print(f'Received token that expires in {expires_in} seconds.')
+    def get_401_error_msg(_: urllib.error.HTTPError):
+        return 'The OIDC environment variables need to be changed.'
 
 
 def create_basic_auth_header(user: str, password: str) -> Dict[str, str]:
-    auth_info_bytes = (user + ':' + password).encode()
+    auth_info_bytes = f'{user}:{password}'.encode()
     base64_auth_info = base64.b64encode(auth_info_bytes).decode()
     return {'Authorization': f'Basic {base64_auth_info}'}
+
+
+class RequestContext(NamedTuple):
+    url: str
+    request_builder: Callable[[str], urllib.request.Request]
+    get_401_error_msg: Callable[[urllib.error.HTTPError], str]
