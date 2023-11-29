@@ -84,8 +84,9 @@ def handle_http_error(url: str, error: urllib.error.HTTPError) -> str:
     except (ValueError,  KeyError):
         server_message = response_content
 
-    error_msg = (f'The following error occurred while sending HTTP request to {url}: '
-                f'{error}: {server_message}')
+    error_msg = f'The following error occurred while sending HTTP request to {url}: {error}'
+    if server_message:
+        error_msg += f' {server_message.decode()}'
     if error.code == 401:
         error_msg += '\nThe WFM_USER and WFM_PASSWORD environment variables need to be changed.'
     raise RuntimeError(error_msg) from error
@@ -161,8 +162,8 @@ class OidcRegistration:
         self._token: str = ''
         self._reuse_token_until: float = 0.0
         self._wfm_base_url: str = env_config.wfm_base_url
-        self._wfm_user: str = env_config.wfm_user
-        self._wfm_password: str = env_config.wfm_password
+        self._client_id: str = env_config.oidc_client_id
+        self._client_secret: str = env_config.oidc_client_secret
         self._descriptor_bytes: bytes = descriptor_bytes
         self._request_auth_token()
 
@@ -193,7 +194,7 @@ class OidcRegistration:
 
 
     def _request_auth_token(self) -> None:
-        headers = create_basic_auth_header(self._wfm_user, self._wfm_password)
+        headers = create_basic_auth_header(self._client_id, self._client_secret)
 
         def create_request(url):
             # Update token url in case there was a redirect.
@@ -208,6 +209,7 @@ class OidcRegistration:
         expires_in = resp_content['expires_in']
         self._reuse_token_until = time.time() + expires_in
         if expires_in > 60:
+            # Do not re-use token for full duration to account for clock drift and network latency.
             self._reuse_token_until -= 60
         print(f'Received token that expires in {expires_in} seconds.')
 
