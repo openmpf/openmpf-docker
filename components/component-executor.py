@@ -58,6 +58,8 @@ class EnvConfig(NamedTuple):
     wfm_password: str
     wfm_base_url: str
     oidc_issuer_uri: Optional[str]
+    oidc_client_id: Optional[str]
+    oidc_client_secret: Optional[str]
     activemq_broker_uri: str
     component_log_name: Optional[str]
     disable_component_registration: bool
@@ -68,11 +70,12 @@ class EnvConfig(NamedTuple):
     @staticmethod
     def create():
         oidc_issuer_uri = os.getenv('OIDC_JWT_ISSUER_URI', os.getenv('OIDC_ISSUER_URI'))
-        wfm_user = os.getenv('WFM_USER', None if oidc_issuer_uri else 'admin')
-        wfm_password = os.getenv('WFM_PASSWORD', None if oidc_issuer_uri else 'mpfadm')
-        if not wfm_user or not wfm_password:
+        oidc_client_id = os.getenv('OIDC_CLIENT_ID')
+        oidc_client_secret = os.getenv('OIDC_CLIENT_SECRET')
+        if oidc_issuer_uri and (not oidc_client_id or not oidc_client_secret):
             raise RuntimeError(
-                'The WFM_USER and WFM_PASSWORD environment variables must both be set.')
+                'The OIDC_CLIENT_ID and OIDC_CLIENT_SECRET environment variables must both '
+                'be set.')
 
         activemq_broker_uri = os.getenv('ACTIVE_MQ_BROKER_URI')
         if not activemq_broker_uri:
@@ -86,10 +89,12 @@ class EnvConfig(NamedTuple):
         else:
             log_path = mpf_home / 'share/logs'
         return EnvConfig(
-            wfm_user,
-            wfm_password,
-            os.getenv('WFM_BASE_URL', 'http://workflow-manager:8080'),
+            os.getenv('WFM_USER', 'admin'),
+            os.getenv('WFM_PASSWORD', 'mpfadm'),
+            os.getenv('WFM_BASE_URL', 'http://workflow-manager:8080/workflow-manager'),
             oidc_issuer_uri,
+            oidc_client_id,
+            oidc_client_secret,
             activemq_broker_uri,
             os.getenv('COMPONENT_LOG_NAME'),
             bool(os.getenv('DISABLE_COMPONENT_REGISTRATION')),
