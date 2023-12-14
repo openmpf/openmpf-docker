@@ -32,6 +32,7 @@ set -o errexit -o pipefail
 export THIS_MPF_NODE="${THIS_MPF_NODE}_id_${HOSTNAME}"
 
 if [ ! "$ACTIVE_MQ_BROKER_URI" ]; then
+    # Set reconnect attempts so that about 5 minutes will be spent attempting to reconnect.
     export ACTIVE_MQ_BROKER_URI="failover:(tcp://$ACTIVE_MQ_HOST:61616)?maxReconnectAttempts=13&startupMaxReconnectAttempts=21"
 fi
 

@@ -80,6 +80,7 @@ class EnvConfig(NamedTuple):
         activemq_broker_uri = os.getenv('ACTIVE_MQ_BROKER_URI')
         if not activemq_broker_uri:
             activemq_host = os.getenv('ACTIVE_MQ_HOST', 'workflow-manager')
+            # Set reconnect attempts so that about 5 minutes will be spent attempting to reconnect.
             activemq_broker_uri = (
                 f'failover:(tcp://{activemq_host}:61616)?maxReconnectAttempts=13&startupMaxReconnectAttempts=21')
 
@@ -91,7 +92,7 @@ class EnvConfig(NamedTuple):
         return EnvConfig(
             os.getenv('WFM_USER', 'admin'),
             os.getenv('WFM_PASSWORD', 'mpfadm'),
-            os.getenv('WFM_BASE_URL', 'http://workflow-manager:8080/workflow-manager'),
+            os.getenv('WFM_BASE_URL', 'http://workflow-manager:8080'),
             oidc_issuer_uri,
             oidc_client_id,
             oidc_client_secret,
