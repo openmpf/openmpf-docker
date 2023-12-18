@@ -258,7 +258,7 @@ Press ctrl+c when done.
 You can reach the Workflow Manager using IP address or hostname of any of the nodes in the swarm. The request will be
 forwarded to the node that is hosting the Workflow Manager container.
 
-`http://<ip-address-or-hostname-of-any-node>:8080/workflow-manager`
+`http://<ip-address-or-hostname-of-any-node>:8080`
 
 After logging in, you can see which components are registered by clicking on the "Configuration" dropdown from the top
 menu bar and then clicking on
