@@ -69,7 +69,7 @@ ENV MPF_HOME /opt/mpf
 
 COPY --from=openmpf_build /build-artifacts/markup/*.jar $MPF_HOME/jars/
 
-ENV ACTIVE_MQ_HOST activemq
+ENV ACTIVE_MQ_HOST workflow-manager
 ENV MPF_LOG_PATH $MPF_HOME/share/logs
 ENV THIS_MPF_NODE markup
 

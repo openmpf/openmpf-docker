@@ -34,12 +34,6 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-mpf}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
 
-  activemq:
-    image: ${REGISTRY}openmpf_activemq:${TAG:-latest}
-    environment:
-      # Set which configuration files are used at runtime:
-      - ACTIVE_MQ_PROFILE=default
-
   redis:
     image: redis:alpine
 
@@ -49,7 +43,6 @@ services:
     depends_on:
       - db
       - redis
-      - activemq
     environment:
       - EXTRA_MVN_OPTIONS=$EXTRA_MVN_OPTIONS
     volumes:
@@ -66,4 +59,3 @@ services:
 
 volumes:
   shared_data:
-

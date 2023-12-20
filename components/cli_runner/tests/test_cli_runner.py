@@ -167,7 +167,7 @@ class BaseTestCliRunner(unittest.TestCase):
 
         track_type_entry = media_entry['output'][self.track_type]
         self.assertEqual(1, len(track_type_entry))
-        self.assertEqual(1, len(track_type_entry))
+        self.assertEqual(1, len(track_type_entry[0]))
         self.assertIn('tracks', track_type_entry[0])
 
 

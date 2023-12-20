@@ -74,6 +74,7 @@ class JobRunner(contextlib.AbstractContextManager):
 
             self._job_props = self._get_combined_job_props(
                 cmd_line_args.job_props, env_props, descriptor)
+            self._track_type = descriptor['algorithm']['trackType']
 
             self._begin = cmd_line_args.begin
             self._end = cmd_line_args.end
