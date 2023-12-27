@@ -55,7 +55,7 @@ services:
     volumes:
       - shared_data:/opt/mpf/share
     environment:
-      ACTIVE_MQ_BROKER_URI: failover:(tcp://workflow-manager:61616)?maxReconnectAttempts=100
+      ACTIVE_MQ_BROKER_URI:
     deploy:
       mode: global
 
