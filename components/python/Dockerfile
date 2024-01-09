@@ -61,9 +61,9 @@ ENV PATH $COMPONENT_VIRTUALENV/bin:/scripts:$PATH
 #########################################
 FROM common as build
 
-RUN python3 -m venv "$COMPONENT_VIRTUALENV";
-
-RUN pip config --site set global.no-cache-dir true;
+RUN python3 -m venv "$COMPONENT_VIRTUALENV"; \
+    pip config --site set global.no-cache-dir true; \
+    pip install --upgrade setuptools;
 
 RUN --mount=from=openmpf_build,source=/home/mpf/openmpf-projects/openmpf-python-component-sdk/detection,target=/tmp/python \
     pip3 install --no-cache-dir /tmp/python/api /tmp/python/component_util; \
