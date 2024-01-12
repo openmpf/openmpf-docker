@@ -31,8 +31,9 @@ version: '3.7'
 x-detection-component-base:
   &detection-component-base
   environment: &common-env-vars
-    WFM_USER: ${WFM_USER}
-    WFM_PASSWORD: ${WFM_PASSWORD}
+    WFM_USER:
+    WFM_PASSWORD:
+    ACTIVE_MQ_BROKER_URI:
   depends_on:
     - workflow-manager
   volumes:
@@ -43,6 +44,11 @@ x-detection-component-base:
 
 
 services:
+  argos_translation:
+    <<: *detection-component-base
+    image: ${REGISTRY}openmpf_argos_translation:${TAG}
+    build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/python/ArgosTranslation
+
   azure_form_detection:
     <<: *detection-component-base
     image: ${REGISTRY}openmpf_azure_form_detection:${TAG}
@@ -97,6 +103,36 @@ services:
       # MPF_PROP_ACS_URL + '/breaksentence' is used to break up long text.
       MPF_PROP_ACS_URL: ${ACS_TRANSLATION_URL}
       MPF_PROP_ACS_SUBSCRIPTION_KEY: ${ACS_TRANSLATION_SUBSCRIPTION_KEY}
+
+  clip-detection:
+    <<: *detection-component-base
+    image: ${REGISTRY}openmpf_clip_detection:${TAG}
+    build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/python/ClipDetection
+
+  clip-detection-server:
+    image: ${REGISTRY}openmpf_clip_detection_server:${TAG}
+    build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/python/ClipDetection/triton_server
+    deploy:
+      mode: global
+    ulimits:
+      memlock: -1  # don't limit locked-in memory (prevent paging)
+      stack: 67108864  # 8 GiB
+    # ports:
+      # - "8001:8001"  # server gRPC port (expose to enable handling requests from outside the stack)
+      # - "8000:8000"  # (optional) HTTP management port
+      # - "8002:8002"  # (optional) Prometheus metrics at http://<host>:<this-port>/metrics
+    environment:
+      # Optionally, limit the GPUs exposed to the server.
+      # At least one GPU is required to run the YOLO TensorRT engine.
+      - NVIDIA_VISIBLE_DEVICES=all
+
+    command: [tritonserver,
+              --model-repository=/models,
+              --strict-model-config=false,
+              --model-control-mode=explicit,
+              --load-model=ip_clip_512,
+              # --log-verbose=1,  # (optional)
+              --grpc-infer-allocation-pool-size=16 ]
 
   east-text-detection:
     <<: *detection-component-base
@@ -245,6 +281,11 @@ services:
     #volumes:
     #  - "${OPENMPF_PROJECTS_PATH}/openmpf-components/cpp/TrtisDetection/plugin-files/models:/models"
     command: [trtserver,--model-store=/models]
+
+  whisper-speech-detection:
+    <<: *detection-component-base
+    image: ${REGISTRY}openmpf_whisper_speech_detection:${TAG}
+    build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/python/WhisperSpeechDetection
 
 volumes:
   yolo_engine_files:

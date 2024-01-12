@@ -56,7 +56,7 @@ ENV PLUGINS_DIR $MPF_HOME/plugins
 
 COPY --from=openmpf_build /build-artifacts/java-executor/*.jar $MPF_HOME/jars/
 
-COPY component-executor.py /scripts/component-executor.py
+COPY component-executor.py component_registration.py /scripts/
 
 ENTRYPOINT ["python3", "-u", "/scripts/component-executor.py"]
 

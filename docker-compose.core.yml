@@ -40,16 +40,6 @@ services:
         constraints:
           - node.role == manager
 
-  activemq:
-    image: ${REGISTRY}openmpf_activemq:${TAG}
-    build: activemq
-    init: true
-    environment:
-      # Set which configuration files are used at runtime:
-      - ACTIVE_MQ_PROFILE=${ACTIVE_MQ_PROFILE}
-    ports:
-      - "8161:8161"
-
   redis:
     image: redis:alpine
 
@@ -59,7 +49,6 @@ services:
     depends_on:
       - db
       - redis
-      - activemq
     ports:
       - "8080:8080"
     volumes:
@@ -72,6 +61,8 @@ services:
   markup:
     image: ${REGISTRY}openmpf_markup:${TAG}
     build: markup
+    environment:
+      ACTIVE_MQ_BROKER_URI:
     volumes:
       - shared_data:/opt/mpf/share
     deploy:

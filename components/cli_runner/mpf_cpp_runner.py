@@ -53,7 +53,7 @@ class CppComponentHandle(util.ComponentHandle, contextlib.AbstractContextManager
         if not self._component.Init():
             raise RuntimeError('The component failed to initialized.')
 
-        self.detection_type = self._component.GetDetectionType()
+        self.track_type = descriptor['algorithm']['trackType']
 
 
     def __exit__(self, *exc_details):
