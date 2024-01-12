@@ -187,9 +187,9 @@ def start_executor(descriptor: Descriptor, mpf_home: Path, activemq_broker_uri: 
         text=True)
 
     # Handle ctrl-c
-    signal.signal(signal.SIGINT, lambda sig, frame: stop_executor(executor_proc))
+    signal.signal(signal.SIGINT, lambda sig, frame: forward_signal(sig, executor_proc))
     # Handle docker stop
-    signal.signal(signal.SIGTERM, lambda sig, frame: stop_executor(executor_proc))
+    signal.signal(signal.SIGTERM, lambda sig, frame: forward_signal(sig, executor_proc))
     return executor_proc
 
 
@@ -213,13 +213,10 @@ def find_java_executor_jar(descriptor: Descriptor, mpf_home: Path) -> Path:
     return expanded_executor_path
 
 
-def stop_executor(executor_proc: subprocess.Popen[str]) -> None:
-    still_running = executor_proc.poll() is None
-    if still_running:
-        print('Sending quit to component executor')
-        # Write "q\n" to executor's stdin to request orderly shutdown.
-        executor_proc.stdin.write('q\n')
-        executor_proc.stdin.flush()
+def forward_signal(sig: int, executor_proc: subprocess.Popen[str]) -> None:
+    signal_entry = signal.Signals(sig)
+    print(f'Sending {signal_entry.name}({sig}) to component executor.')
+    executor_proc.send_signal(sig)
 
 
 def tail_log_if_needed(log_dir: Path, component_log_name: Optional[str], executor_pid: int

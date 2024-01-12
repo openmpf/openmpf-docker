@@ -54,6 +54,8 @@ services:
     build: markup
     volumes:
       - shared_data:/opt/mpf/share
+    environment:
+      ACTIVE_MQ_BROKER_URI:
     deploy:
       mode: global
 

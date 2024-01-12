@@ -61,6 +61,8 @@ services:
   markup:
     image: ${REGISTRY}openmpf_markup:${TAG}
     build: markup
+    environment:
+      ACTIVE_MQ_BROKER_URI:
     volumes:
       - shared_data:/opt/mpf/share
     deploy:
