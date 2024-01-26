@@ -33,6 +33,8 @@ set -o errexit -o pipefail -o xtrace
 # Initial Setup                                                                #
 ################################################################################
 
+source /scripts/set-file-env-vars.sh
+
 # If empty, unset MPF_VERSION so that the default value is used by the WFM.
 if [ -z "$MPF_VERSION" ]; then
     unset MPF_VERSION

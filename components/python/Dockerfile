@@ -28,10 +28,10 @@
 
 ARG BUILD_REGISTRY
 ARG BUILD_TAG=latest
-FROM ${BUILD_REGISTRY}openmpf_build:${BUILD_TAG} as openmpf_build
+FROM ${BUILD_REGISTRY}openmpf_build:${BUILD_TAG} AS openmpf_build
 
 
-FROM ubuntu:20.04 as common
+FROM ubuntu:20.04 AS common
 
 SHELL ["/bin/bash", "-o", "errexit", "-o", "pipefail", "-c"]
 
@@ -59,7 +59,7 @@ ENV PATH $COMPONENT_VIRTUALENV/bin:/scripts:$PATH
 
 
 #########################################
-FROM common as build
+FROM common AS build
 
 RUN python3 -m venv "$COMPONENT_VIRTUALENV"; \
     pip config --site set global.no-cache-dir true; \
@@ -86,7 +86,7 @@ LABEL org.label-schema.build-date="" \
 
 
 #########################################
-FROM common as executor
+FROM common AS executor
 
 # Use mount and cp shell command because the docker COPY command resolves symlinks which then causes duplicate copies
 # of the libraries to be added to the image.
@@ -102,6 +102,8 @@ COPY --from=openmpf_build /build-artifacts/install/bin/amq_detection_component \
 
 # Component executor log config
 COPY --from=openmpf_build /build-artifacts/install/config/Log4cxxConfig.xml $MPF_HOME/config/
+
+COPY --from=openmpf_build /scripts/* /scripts/
 
 # print()'ed messsages from docker-entrypoint.py were not being shown at the right time.
 # Only applies to stdin, stdout and stderr
@@ -129,7 +131,7 @@ LABEL org.label-schema.build-date="" \
       org.label-schema.vendor="MITRE"
 
 #########################################
-FROM executor as ssb
+FROM executor AS ssb
 
 COPY --from=build $COMPONENT_VIRTUALENV $COMPONENT_VIRTUALENV
 

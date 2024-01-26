@@ -28,6 +28,7 @@
 
 set -o errexit -o pipefail
 
+source /scripts/set-file-env-vars.sh
 
 if [ $# -eq 0 ]; then
     echo No command line arguments. Starting as regular component... 1>&2
