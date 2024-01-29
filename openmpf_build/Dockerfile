@@ -200,7 +200,7 @@ RUN ln --symbolic /home/mpf/openmpf-projects/openmpf/trunk/workflow-manager/targ
     ln --symbolic /home/mpf/openmpf-projects/openmpf/trunk/install; \
     ln --symbolic /root/mpf-sdk-install;
 
-RUN cp /home/mpf/openmpf-projects/openmpf-docker/openmpf_build/scripts /scripts;
+RUN cp -r /home/mpf/openmpf-projects/openmpf-docker/openmpf_build/scripts /scripts;
 
 LABEL org.label-schema.build-date="" \
       org.label-schema.license="Mixed" \
