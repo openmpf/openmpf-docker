@@ -200,7 +200,7 @@ RUN ln --symbolic /home/mpf/openmpf-projects/openmpf/trunk/workflow-manager/targ
     ln --symbolic /home/mpf/openmpf-projects/openmpf/trunk/install; \
     ln --symbolic /root/mpf-sdk-install;
 
-COPY set-file-env-vars.sh /scripts
+COPY openmpf-docker/openmpf_build/set-file-env-vars.sh /scripts/
 
 LABEL org.label-schema.build-date="" \
       org.label-schema.license="Mixed" \
