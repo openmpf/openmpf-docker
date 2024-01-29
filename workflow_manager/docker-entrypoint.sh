@@ -26,7 +26,7 @@
 # limitations under the License.                                            #
 #############################################################################
 
-set -o errexit -o pipefail -o xtrace
+set -o errexit -o pipefail
 
 
 ################################################################################
@@ -101,8 +101,6 @@ else
     exit 3
 fi
 echo 'PostgreSQL is available'
-
-set +o xtrace
 
 
 # Wait for Redis service.

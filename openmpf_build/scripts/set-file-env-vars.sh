@@ -35,6 +35,9 @@ if [[ ${BASH_SOURCE[0]} == "$0" ]]; then
 fi
 
 
+# For each environment variable with a name ending in _LOAD_FROM_FILE, create a new one by
+# removing the suffix and setting the value to the contents of the file path from the original.
+# Maps SOME_NAME_LOAD_FROM_FILE=/path/to/file to SOME_NAME=<content of /path/to/file>
 set_file_env_vars() {
     # Make "set -o" options local to this function.
     local -
@@ -58,7 +61,7 @@ set_file_env_vars() {
         # "$target_env_var" is the name of the environment variable that will modified.
         # "${!target_env_var}" is the value of that environment variable.
         if [[ ${!target_env_var} ]]; then
-            echo "error: ${target_env_var} is already set to ${!target_env_var}"
+            echo "error: $target_env_var is already set to ${!target_env_var}"
             exit 4
         fi
         # Remove the first = and everything before it. # is remove short prefix.
@@ -69,7 +72,7 @@ set_file_env_vars() {
         # Using $() in the same line as local or export does not exit on error.
         local temp_file_contents
         temp_file_contents="$(< "$var_value_path")"
-        export "${target_env_var}"="$temp_file_contents"
+        export "$target_env_var"="$temp_file_contents"
     done
 }
 
