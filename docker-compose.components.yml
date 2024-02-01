@@ -247,6 +247,11 @@ services:
     image: ${REGISTRY}openmpf_tika_text_detection:${TAG}
     build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/java/TikaTextDetection
 
+  transformer-tagging:
+    <<: *detection-component-base
+    image: ${REGISTRY}openmpf_transformer_tagging:${TAG}
+    build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/python/TransformerTagging
+
   trtis-detection:
     <<: *detection-component-base
     image: ${REGISTRY}openmpf_trtis_detection:${TAG}
