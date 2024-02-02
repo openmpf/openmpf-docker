@@ -76,5 +76,7 @@ set_file_env_vars() {
     done
 }
 
+# Use >&2 to redirect standard out to standard error.
 >&2 set_file_env_vars
+# Unset set_file_env_vars to minimize changes to calling script's environment.
 unset -f set_file_env_vars
