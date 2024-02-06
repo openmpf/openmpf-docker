@@ -383,9 +383,10 @@ container has access to (e.g. Docker configs, secrets, and bind mounts).
   secret is mounted in the container. Secrets are mounted at `/run/secrets/<secret_name>` by
   default.
 
-Below is an example of how a user could set `KEYSTORE_PASSWORD` environment variable using a secret.
-The password for the keystore is `changeit`. The `keystore_password.txt` file is created using
-`printf` so a trailing new line is not added.
+Below is an example of a partial Docker Compose file that shows how a user could set the
+`KEYSTORE_PASSWORD` environment variable using a secret. The password for the keystore is
+`changeit`. The `keystore_password.txt` file is created using `printf` so a trailing new line is
+not added.
 ```bash
 printf 'changeit' > keystore_password.txt # Step 1
 ```
