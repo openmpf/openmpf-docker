@@ -26,20 +26,28 @@
 # limitations under the License.                                            #
 #############################################################################
 
+set -o errexit -o pipefail
+
 # Install CA certificates specified by colon delimited paths in the MPF_CA_CERTS environment
 # variable.
+install_certs() {
+    IFS=':' read -r -a ca_certs <<< "$MPF_CA_CERTS"
+    for cert in "${ca_certs[@]}"; do
+        # If there are leading colons, trailing colons, or two colons in a row, $cert wil contain
+        # the empty string.
+        [[ ! $cert ]] && continue
 
-IFS=':' read -r -a ca_certs <<< "$MPF_CA_CERTS"
-for cert in "${ca_certs[@]}"; do
-    # If there are leading colons, trailing colons, or two colons in a row, $cert wil contain the empty string.
-    [ ! "$cert" ] && continue
-
-    extension=${cert##*.}
-    cert_file_name=$(basename "$cert")
-    # update-ca-certificates will ignore files that don't end .crt, so we append it to the file
-    # name when it is missing.
-    [ "$extension" != crt ] && cert_file_name=$cert_file_name.crt
-    cp "$cert" "/usr/local/share/ca-certificates/$cert_file_name"
-    certs_added=1
-done
-[ "$certs_added" ] && update-ca-certificates
+        echo "Installing certificate: $cert"
+        extension=${cert##*.}
+        cert_file_name=$(basename "$cert")
+        # update-ca-certificates will ignore files that don't end .crt, so we append it to the file
+        # name when it is missing.
+        [[ $extension != crt ]] && cert_file_name=$cert_file_name.crt
+        cp -- "$cert" "/usr/local/share/ca-certificates/$cert_file_name"
+        certs_added=1
+    done
+    if [[ $certs_added ]]; then
+        update-ca-certificates
+    fi
+}
+>&2 install_certs
