@@ -361,14 +361,17 @@ add `-f docker-compose.users.yml` to the above command.
 
 ### (Optional) Import Root Certificates for Additional Certificate Authorities
 
-The Workflow Manager can be configured to trust additional certificate authorities. The Workflow Manager uses these
-certificates when it acts as an HTTPS client. Examples include remote media download and job status callbacks.
+The Workflow Manager, Markup, and component containers can be configured to trust additional
+certificate authorities. The containers use these certificates when acting as an HTTPS client. For
+example, the Workflow Manager will use the certificates when downloading remote media and when
+sending job status callbacks.
 
-To import additional root certificates add an entry for `MPF_CA_CERTS` to the `workflow-manager` service's environment
-variables in `docker-compose.core.yml`. `MPF_CA_CERTS` must contain a colon-delimited list of absolute file paths. Each
-entry in `MPF_CA_CERTS` will be added to Workflow Manager's trust store. This feature is intended to be used with a
-volume mounted to the Workflow Manager container containing the certificates, but the paths can refer to any path the
-container has access to (e.g. Docker configs, secrets, and bind mounts).
+To import additional root certificates add an entry for `MPF_CA_CERTS` to a service's environment
+variables in `docker-compose.core.yml`. `MPF_CA_CERTS` must contain a colon-delimited list of
+absolute file paths. Each entry in `MPF_CA_CERTS` will be added to the container's trust store.
+This feature is intended to be used with a volume mounted to the container containing the
+certificates, but the paths can refer to any path the container has access to (e.g. Docker configs,
+secrets, and bind mounts).
 
 
 ### (Optional) Use Secrets for Environment Variables
