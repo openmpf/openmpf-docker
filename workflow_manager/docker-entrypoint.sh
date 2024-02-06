@@ -26,12 +26,14 @@
 # limitations under the License.                                            #
 #############################################################################
 
-set -o errexit -o pipefail -o xtrace
+set -o errexit -o pipefail
 
 
 ################################################################################
 # Initial Setup                                                                #
 ################################################################################
+
+source /scripts/set-file-env-vars.sh
 
 # If empty, unset MPF_VERSION so that the default value is used by the WFM.
 if [ -z "$MPF_VERSION" ]; then
@@ -99,8 +101,6 @@ else
     exit 3
 fi
 echo 'PostgreSQL is available'
-
-set +o xtrace
 
 
 # Wait for Redis service.

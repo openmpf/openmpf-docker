@@ -378,7 +378,6 @@ try {
         dir(openmpfDockerRepo.path) {
             test_cli_runner(inProgressTag)
 
-            def skipArgs = env.docker_services_build_only.split(',').collect{ it.replaceAll("\\s","") }.findAll{ !it.isEmpty() }.collect{ "--scale $it=0"  }.join(' ')
             def composeFiles = "docker-compose.integration.test.yml:$componentComposeFiles"
 
             def nproc = Math.min((shOutput('nproc') as int), 6)
@@ -396,6 +395,12 @@ try {
                      "COMPOSE_PROJECT_NAME=openmpf_$buildId",
                      "COMPOSE_FILE=$composeFiles",
                      "ACTIVE_MQ_BROKER_URI=failover:(tcp://workflow-manager:61616)?maxReconnectAttempts=100&startupMaxReconnectAttempts=100"]) {
+                def serviceNames = shOutput("docker compose config --services").split('\n') as Set
+                def skipArgs = env.docker_services_build_only.split(',')
+                        .collect{ it.trim() }
+                        .findAll{ it in serviceNames }
+                        .collect{ "--scale $it=0"  }
+                        .join(' ')
                 try {
                     sh "docker compose up --exit-code-from workflow-manager $scaleArgs $skipArgs"
                     shStatus 'docker compose down --volumes'

@@ -26,7 +26,7 @@
 # limitations under the License.                                            #
 #############################################################################
 
-FROM ubuntu:20.04 as build
+FROM ubuntu:20.04 AS build
 
 SHELL ["/bin/bash", "-o", "errexit", "-o", "pipefail", "-c"]
 
@@ -199,6 +199,8 @@ RUN ln --symbolic /home/mpf/openmpf-projects/openmpf/trunk/workflow-manager/targ
     ln --symbolic /home/mpf/openmpf-projects/openmpf/trunk/bin/mpf-scripts; \
     ln --symbolic /home/mpf/openmpf-projects/openmpf/trunk/install; \
     ln --symbolic /root/mpf-sdk-install;
+
+RUN cp -r /home/mpf/openmpf-projects/openmpf-docker/openmpf_build/scripts /scripts;
 
 LABEL org.label-schema.build-date="" \
       org.label-schema.license="Mixed" \

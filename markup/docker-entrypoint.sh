@@ -28,6 +28,8 @@
 
 set -o errexit -o pipefail
 
+source /scripts/set-file-env-vars.sh
+
 # NOTE: $HOSTNAME is not known until runtime.
 export THIS_MPF_NODE="${THIS_MPF_NODE}_id_${HOSTNAME}"
 

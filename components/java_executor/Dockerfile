@@ -28,7 +28,7 @@
 
 ARG BUILD_REGISTRY
 ARG BUILD_TAG=latest
-FROM ${BUILD_REGISTRY}openmpf_build:${BUILD_TAG} as openmpf_build
+FROM ${BUILD_REGISTRY}openmpf_build:${BUILD_TAG} AS openmpf_build
 
 
 FROM ubuntu:20.04
@@ -47,6 +47,8 @@ RUN --mount=type=tmpfs,target=/var/cache/apt \
     ln --symbolic /usr/bin/python3.8 /usr/bin/python3;
 
 COPY --from=openmpf_build /usr/local/bin/ffmpeg /usr/local/bin/ffprobe /usr/local/bin/
+
+COPY --from=openmpf_build /scripts/* /scripts/
 
 ENV MPF_HOME /opt/mpf
 

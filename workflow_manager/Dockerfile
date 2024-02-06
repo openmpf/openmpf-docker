@@ -28,7 +28,7 @@
 
 ARG BUILD_REGISTRY
 ARG BUILD_TAG=latest
-FROM ${BUILD_REGISTRY}openmpf_build:${BUILD_TAG} as openmpf_build
+FROM ${BUILD_REGISTRY}openmpf_build:${BUILD_TAG} AS openmpf_build
 
 
 FROM ubuntu:20.04
@@ -62,6 +62,8 @@ COPY --from=openmpf_build /build-artifacts/mpf-scripts /home/mpf/mpf-scripts
 # Make sure mpf-scripts is not globally installed and that the mpf command in not on the $PATH
 RUN mkdir --parents /home/mpf/mpf-scripts-install; \
     pip3 install --no-cache --target /home/mpf/mpf-scripts-install /home/mpf/mpf-scripts
+
+COPY --from=openmpf_build /scripts/* /scripts/
 
 ENV MPF_HOME /opt/mpf
 
