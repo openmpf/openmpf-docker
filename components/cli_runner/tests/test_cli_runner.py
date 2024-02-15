@@ -444,7 +444,8 @@ class TestPythonCliRunner(BaseTestCliRunner):
     track_type = 'TEXT REGION'
     _text_image = get_test_media('hello-world.png')
     _default_job_properties = {'BATCH_SIZE': '1',
-                               'CONFIDENCE_THRESHOLD': '0.8',
+                               'QUALITY_SELECTION_PROPERTY': 'CONFIDENCE',
+                               'QUALITY_SELECTION_THRESHOLD': '0.8',
                                'FINAL_PADDING': '0.0',
                                'MAX_SIDE_LENGTH': '-1',
                                'MERGE_MAX_ROTATION_DIFFERENCE': '10.0',
