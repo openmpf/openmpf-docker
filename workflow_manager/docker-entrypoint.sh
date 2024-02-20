@@ -34,6 +34,7 @@ set -o errexit -o pipefail
 ################################################################################
 
 source /scripts/set-file-env-vars.sh
+/scripts/install-ca-certs.sh
 
 # If empty, unset MPF_VERSION so that the default value is used by the WFM.
 if [ -z "$MPF_VERSION" ]; then
@@ -62,26 +63,6 @@ then
 fi
 # else, the user.properties template will be moved to
 # "$MPF_HOME/config/user.properties" by the WFM
-
-
-################################################################################
-# Import CA Certs                                                              #
-################################################################################
-
-IFS=':' read -r -a ca_certs <<< "$MPF_CA_CERTS"
-for cert in "${ca_certs[@]}"; do
-    # If there are leading colons, trailing colons, or two colons in a row, $cert wil contain the empty string.
-    [ ! "$cert" ] && continue
-
-    extension=${cert##*.}
-    cert_file_name=$(basename "$cert")
-    # update-ca-certificates will ignore files that don't end .crt, so we append it to the file
-    # name when it is missing.
-    [ "$extension" != crt ] && cert_file_name=$cert_file_name.crt
-    cp "$cert" "/usr/local/share/ca-certificates/$cert_file_name"
-    certs_added=1
-done
-[ "$certs_added" ] && update-ca-certificates
 
 
 ################################################################################
