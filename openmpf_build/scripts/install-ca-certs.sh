@@ -28,17 +28,26 @@
 
 set -o errexit -o pipefail
 
-source /scripts/set-file-env-vars.sh
-/scripts/install-ca-certs.sh
+# Install CA certificates specified by colon delimited paths in the MPF_CA_CERTS environment
+# variable.
+install_certs() {
+    IFS=':' read -r -a ca_certs <<< "$MPF_CA_CERTS"
+    for cert in "${ca_certs[@]}"; do
+        # If there are leading colons, trailing colons, or two colons in a row, $cert wil contain
+        # the empty string.
+        [[ ! $cert ]] && continue
 
-# NOTE: $HOSTNAME is not known until runtime.
-export THIS_MPF_NODE="${THIS_MPF_NODE}_id_${HOSTNAME}"
-
-if [ ! "$ACTIVE_MQ_BROKER_URI" ]; then
-    # Set reconnect attempts so that about 5 minutes will be spent attempting to reconnect.
-    export ACTIVE_MQ_BROKER_URI="failover:(tcp://$ACTIVE_MQ_HOST:61616)?maxReconnectAttempts=13&startupMaxReconnectAttempts=21"
-fi
-
-set -o xtrace
-
-exec java -jar mpf-markup-*.jar "$ACTIVE_MQ_BROKER_URI"
+        echo "Installing certificate: $cert"
+        extension=${cert##*.}
+        cert_file_name=$(basename "$cert")
+        # update-ca-certificates will ignore files that don't end .crt, so we append it to the file
+        # name when it is missing.
+        [[ $extension != crt ]] && cert_file_name=$cert_file_name.crt
+        cp -- "$cert" "/usr/local/share/ca-certificates/$cert_file_name"
+        certs_added=1
+    done
+    if [[ $certs_added ]]; then
+        update-ca-certificates
+    fi
+}
+>&2 install_certs
