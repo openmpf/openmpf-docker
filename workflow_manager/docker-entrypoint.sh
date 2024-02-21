@@ -26,20 +26,19 @@
 # limitations under the License.                                            #
 #############################################################################
 
-set -o errexit -o pipefail -o xtrace
+set -o errexit -o pipefail
 
 
 ################################################################################
 # Initial Setup                                                                #
 ################################################################################
 
+source /scripts/set-file-env-vars.sh
+/scripts/install-ca-certs.sh
+
 # If empty, unset MPF_VERSION so that the default value is used by the WFM.
 if [ -z "$MPF_VERSION" ]; then
     unset MPF_VERSION
-fi
-
-if [ ! "$ACTIVE_MQ_BROKER_URI" ]; then
-    export ACTIVE_MQ_BROKER_URI="failover://(tcp://$ACTIVE_MQ_HOST:61616)?jms.prefetchPolicy.all=0&startupMaxReconnectAttempts=1"
 fi
 
 ################################################################################
@@ -67,26 +66,6 @@ fi
 
 
 ################################################################################
-# Import CA Certs                                                              #
-################################################################################
-
-IFS=':' read -r -a ca_certs <<< "$MPF_CA_CERTS"
-for cert in "${ca_certs[@]}"; do
-    # If there are leading colons, trailing colons, or two colons in a row, $cert wil contain the empty string.
-    [ ! "$cert" ] && continue
-
-    extension=${cert##*.}
-    cert_file_name=$(basename "$cert")
-    # update-ca-certificates will ignore files that don't end .crt, so we append it to the file
-    # name when it is missing.
-    [ "$extension" != crt ] && cert_file_name=$cert_file_name.crt
-    cp "$cert" "/usr/local/share/ca-certificates/$cert_file_name"
-    certs_added=1
-done
-[ "$certs_added" ] && update-ca-certificates
-
-
-################################################################################
 # Start Workflow Manager
 ################################################################################
 
@@ -104,8 +83,6 @@ else
 fi
 echo 'PostgreSQL is available'
 
-set +o xtrace
-
 
 # Wait for Redis service.
 echo 'Waiting for Redis to become available ...'
@@ -116,17 +93,6 @@ until [ +PONG = "$( (exec 8<>/dev/tcp/redis/6379 && echo -e 'PING\r\n' >&8 && he
 done
 echo 'Redis is up'
 
-
-echo 'Waiting for ActiveMQ to become available ...'
-# --spider makes wget use a HEAD request
-# wget exits with code 6 when there is an authentication error. This is expected because the
-# ActiveMQ status page requires authentication. We are just using the request to verify ActiveMQ
-# is running so there is no need to authenticate.
-until wget --spider --tries 1 "http://$ACTIVE_MQ_HOST:8161" >> /dev/null 2>&1 || [ $? -eq 6 ]; do
-    echo 'ActiveMQ is unavailable. Sleeping.'
-    sleep 5
-done
-echo 'ActiveMQ is up'
 
 
 if [ "$KEYSTORE_PASSWORD" ]; then
@@ -140,4 +106,3 @@ else
     set -o xtrace
     exec java org.mitre.mpf.Application
 fi
-

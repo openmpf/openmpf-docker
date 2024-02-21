@@ -28,7 +28,7 @@
 
 ARG BUILD_REGISTRY
 ARG BUILD_TAG=latest
-FROM ${BUILD_REGISTRY}openmpf_build:${BUILD_TAG} as openmpf_build
+FROM ${BUILD_REGISTRY}openmpf_build:${BUILD_TAG} AS openmpf_build
 
 
 FROM ubuntu:20.04
@@ -65,11 +65,13 @@ COPY --from=openmpf_build /build-artifacts/install/lib/libmpfopencvjni.so \
 COPY --from=openmpf_build /build-artifacts/install/lib/libmpfDetectionComponentApi.so \
                           /usr/lib/x86_64-linux-gnu
 
+COPY --from=openmpf_build /scripts/* /scripts/
+
 ENV MPF_HOME /opt/mpf
 
 COPY --from=openmpf_build /build-artifacts/markup/*.jar $MPF_HOME/jars/
 
-ENV ACTIVE_MQ_HOST activemq
+ENV ACTIVE_MQ_HOST workflow-manager
 ENV MPF_LOG_PATH $MPF_HOME/share/logs
 ENV THIS_MPF_NODE markup
 

@@ -28,7 +28,7 @@
 
 ARG BUILD_REGISTRY
 ARG BUILD_TAG=latest
-FROM ${BUILD_REGISTRY}openmpf_build:${BUILD_TAG} as openmpf_build
+FROM ${BUILD_REGISTRY}openmpf_build:${BUILD_TAG} AS openmpf_build
 
 
 FROM ubuntu:20.04
@@ -81,6 +81,7 @@ COPY --from=openmpf_build /build-artifacts/install/config/Log4cxxConfig.xml $MPF
 COPY --from=openmpf_build /build-artifacts/install/lib/mpf_cpp_sdk.cpython-38-x86_64-linux-gnu.so \
                           /usr/lib/python3.8/lib-dynload
 
+COPY --from=openmpf_build /scripts/* /scripts/
 
 ENV MPF_LOG_PATH $MPF_HOME/share/logs
 
@@ -91,7 +92,7 @@ ENV BUILD_DIR /home/mpf/component_build
 ENV PLUGINS_DIR $MPF_HOME/plugins
 
 
-COPY docker-entrypoint.sh component-executor.py /scripts/
+COPY docker-entrypoint.sh component-executor.py component_registration.py /scripts/
 
 COPY cli_runner/*.py cli_runner/Log4cxxConfig.xml /scripts/cli_runner/
 

@@ -366,10 +366,6 @@ try {
                 def wfmShasArg = getVcsRefLabelArg([openmpfRepo, openmpfDockerRepo, customConfigRepo])
                 sh "docker build workflow_manager $commonBuildArgs $customLabelArg $wfmShasArg " +
                         " -t openmpf_workflow_manager:$inProgressTag"
-
-                def amqShasArg = getVcsRefLabelArg([openmpfDockerRepo, customConfigRepo])
-                sh "docker build activemq $commonBuildArgs $customLabelArg $amqShasArg " +
-                        " -t openmpf_activemq:$inProgressTag"
             }
         }
         else  {
@@ -382,7 +378,6 @@ try {
         dir(openmpfDockerRepo.path) {
             test_cli_runner(inProgressTag)
 
-            def skipArgs = env.docker_services_build_only.split(',').collect{ it.replaceAll("\\s","") }.findAll{ !it.isEmpty() }.collect{ "--scale $it=0"  }.join(' ')
             def composeFiles = "docker-compose.integration.test.yml:$componentComposeFiles"
 
             def nproc = Math.min((shOutput('nproc') as int), 6)
@@ -398,7 +393,14 @@ try {
                      "EXTRA_MVN_OPTIONS=$mvnTestOptions",
                      // Use custom project name to allow multiple builds on same machine
                      "COMPOSE_PROJECT_NAME=openmpf_$buildId",
-                     "COMPOSE_FILE=$composeFiles"]) {
+                     "COMPOSE_FILE=$composeFiles",
+                     "ACTIVE_MQ_BROKER_URI=failover:(tcp://workflow-manager:61616)?maxReconnectAttempts=100&startupMaxReconnectAttempts=100"]) {
+                def serviceNames = shOutput("docker compose config --services").split('\n') as Set
+                def skipArgs = env.docker_services_build_only.split(',')
+                        .collect{ it.trim() }
+                        .findAll{ it in serviceNames }
+                        .collect{ "--scale $it=0"  }
+                        .join(' ')
                 try {
                     sh "docker compose up --exit-code-from workflow-manager $scaleArgs $skipArgs"
                     shStatus 'docker compose down --volumes'
@@ -437,7 +439,7 @@ try {
                         "-v $trivyVolume:/root/.cache/ " +
                         "-v '${pwd()}/$openmpfDockerRepo.path/trivyignore.txt:/.trivyignore' " +
                         "aquasec/trivy image --severity CRITICAL,HIGH --exit-code 1 " +
-                        "--timeout 20m --security-checks vuln $service.image")
+                        "--timeout 30m --scanners vuln $service.image")
                 if (exitCode != 0) {
                     failedImages << service.image
                 }

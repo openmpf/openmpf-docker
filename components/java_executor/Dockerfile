@@ -28,7 +28,7 @@
 
 ARG BUILD_REGISTRY
 ARG BUILD_TAG=latest
-FROM ${BUILD_REGISTRY}openmpf_build:${BUILD_TAG} as openmpf_build
+FROM ${BUILD_REGISTRY}openmpf_build:${BUILD_TAG} AS openmpf_build
 
 
 FROM ubuntu:20.04
@@ -48,6 +48,8 @@ RUN --mount=type=tmpfs,target=/var/cache/apt \
 
 COPY --from=openmpf_build /usr/local/bin/ffmpeg /usr/local/bin/ffprobe /usr/local/bin/
 
+COPY --from=openmpf_build /scripts/* /scripts/
+
 ENV MPF_HOME /opt/mpf
 
 ENV MPF_LOG_PATH $MPF_HOME/share/logs
@@ -56,7 +58,7 @@ ENV PLUGINS_DIR $MPF_HOME/plugins
 
 COPY --from=openmpf_build /build-artifacts/java-executor/*.jar $MPF_HOME/jars/
 
-COPY component-executor.py /scripts/component-executor.py
+COPY component-executor.py component_registration.py /scripts/
 
 ENTRYPOINT ["python3", "-u", "/scripts/component-executor.py"]
 

@@ -44,7 +44,7 @@ class BaseTestCliRunner(unittest.TestCase):
 
     # Provided by subclass
     image_name: ClassVar[str]
-    detection_type: ClassVar[str]
+    track_type: ClassVar[str]
 
     @classmethod
     def setUpClass(cls):
@@ -141,7 +141,7 @@ class BaseTestCliRunner(unittest.TestCase):
 
     @classmethod
     def _get_tracks(cls, output_object: Dict[str, Any]) -> List[Dict[str, Any]]:
-        return output_object['media'][0]['output'][cls.detection_type][0]['tracks']
+        return output_object['media'][0]['output'][cls.track_type][0]['tracks']
 
 
 
@@ -163,12 +163,12 @@ class BaseTestCliRunner(unittest.TestCase):
         self.assertEqual(expected_media_metadata, media_entry['mediaMetadata'])
 
         self.assertEqual(1, len(media_entry['output']))
-        self.assertIn(self.detection_type, media_entry['output'])
+        self.assertIn(self.track_type, media_entry['output'])
 
-        detection_type_entry = media_entry['output'][self.detection_type]
-        self.assertEqual(1, len(detection_type_entry))
-        self.assertEqual(1, len(detection_type_entry[0]))
-        self.assertIn('tracks', detection_type_entry[0])
+        track_type_entry = media_entry['output'][self.track_type]
+        self.assertEqual(1, len(track_type_entry))
+        self.assertEqual(1, len(track_type_entry[0]))
+        self.assertIn('tracks', track_type_entry[0])
 
 
     def _assertTrackIsFromImage(self, track):
@@ -176,7 +176,7 @@ class BaseTestCliRunner(unittest.TestCase):
         self.assertEqual(0, track['stopOffsetFrame'])
         self.assertEqual(0, track['startOffsetTime'])
         self.assertEqual(0, track['stopOffsetTime'])
-        self.assertEqual(self.detection_type, track['type'])
+        self.assertEqual(self.track_type, track['type'])
 
         detections = track['detections']
         self.assertEqual(1, len(detections))
@@ -191,7 +191,7 @@ class BaseTestCliRunner(unittest.TestCase):
 # noinspection DuplicatedCode
 class TestCppCliRunnerWithOcvFace(BaseTestCliRunner):
     image_name = 'openmpf_ocv_face_detection'
-    detection_type = 'FACE'
+    track_type = 'FACE'
     _face_image = get_test_media('meds-af-S419-01_40deg.jpg')
     _default_job_properties = {'MAX_FEATURE': '250',
                                'MAX_OPTICAL_FLOW_ERROR': '4.7',
@@ -361,7 +361,7 @@ class TestCppCliRunnerWithOcvFace(BaseTestCliRunner):
 
 class TestCppCliRunnerWithTesseract(BaseTestCliRunner):
     image_name = 'openmpf_tesseract_ocr_text_detection'
-    detection_type = 'TEXT'
+    track_type = 'TEXT'
     _default_job_properties = {'ADAPTIVE_HIST_CLIP_LIMIT': '2.0',
                                'ADAPTIVE_HIST_TILE_SIZE': '5',
                                'ADAPTIVE_THRS_BLOCKSIZE': '51',
@@ -441,7 +441,7 @@ class TestCppCliRunnerWithTesseract(BaseTestCliRunner):
 # noinspection DuplicatedCode
 class TestPythonCliRunner(BaseTestCliRunner):
     image_name = 'openmpf_east_text_detection'
-    detection_type = 'TEXT REGION'
+    track_type = 'TEXT REGION'
     _text_image = get_test_media('hello-world.png')
     _default_job_properties = {'BATCH_SIZE': '1',
                                'CONFIDENCE_THRESHOLD': '0.8',

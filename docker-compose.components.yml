@@ -31,8 +31,9 @@ version: '3.7'
 x-detection-component-base:
   &detection-component-base
   environment: &common-env-vars
-    WFM_USER: ${WFM_USER}
-    WFM_PASSWORD: ${WFM_PASSWORD}
+    WFM_USER:
+    WFM_PASSWORD:
+    ACTIVE_MQ_BROKER_URI:
   depends_on:
     - workflow-manager
   volumes:
@@ -43,6 +44,11 @@ x-detection-component-base:
 
 
 services:
+  argos_translation:
+    <<: *detection-component-base
+    image: ${REGISTRY}openmpf_argos_translation:${TAG}
+    build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/python/ArgosTranslation
+
   azure_form_detection:
     <<: *detection-component-base
     image: ${REGISTRY}openmpf_azure_form_detection:${TAG}
@@ -102,7 +108,7 @@ services:
     <<: *detection-component-base
     image: ${REGISTRY}openmpf_clip_detection:${TAG}
     build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/python/ClipDetection
-  
+
   clip-detection-server:
     image: ${REGISTRY}openmpf_clip_detection_server:${TAG}
     build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/python/ClipDetection/triton_server
@@ -241,6 +247,11 @@ services:
     image: ${REGISTRY}openmpf_tika_text_detection:${TAG}
     build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/java/TikaTextDetection
 
+  transformer-tagging:
+    <<: *detection-component-base
+    image: ${REGISTRY}openmpf_transformer_tagging:${TAG}
+    build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/python/TransformerTagging
+
   trtis-detection:
     <<: *detection-component-base
     image: ${REGISTRY}openmpf_trtis_detection:${TAG}
@@ -270,6 +281,11 @@ services:
     #volumes:
     #  - "${OPENMPF_PROJECTS_PATH}/openmpf-components/cpp/TrtisDetection/plugin-files/models:/models"
     command: [trtserver,--model-store=/models]
+
+  whisper-speech-detection:
+    <<: *detection-component-base
+    image: ${REGISTRY}openmpf_whisper_speech_detection:${TAG}
+    build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/python/WhisperSpeechDetection
 
 volumes:
   yolo_engine_files:
