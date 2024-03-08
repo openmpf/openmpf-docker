@@ -54,7 +54,7 @@ COPY --from=openmpf_build /usr/local/bin/ffmpeg /usr/local/bin/ffprobe /usr/loca
 RUN --mount=type=bind,from=openmpf_build,source=/build-artifacts/install/lib,target=/tmp/mpf-libs \
     cd /tmp/mpf-libs; \
     cp --preserve=links --no-dereference \
-        libopencv* libopenblas* libgfortran* libquadmath* libheif* libde265* \
+        libopencv* libopenblas* libgfortran* libquadmath* libheif* libde265* libprotobuf* \
         /usr/lib/x86_64-linux-gnu;
 
 COPY --from=openmpf_build /usr/share/fonts/google-noto-emoji /usr/share/fonts/google-noto-emoji
