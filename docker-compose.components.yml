@@ -130,7 +130,7 @@ services:
               --model-repository=/models,
               --strict-model-config=false,
               --model-control-mode=explicit,
-              --load-model=ip_clip_512,
+              --load-model=vit_l_14,
               # --log-verbose=1,  # (optional)
               --grpc-infer-allocation-pool-size=16 ]
 
