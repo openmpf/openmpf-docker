@@ -73,18 +73,18 @@ RUN --mount=type=tmpfs,target=/var/cache/apt \
 
 RUN --mount=type=tmpfs,target=/tmp \
     mkdir /tmp/opencv-contrib; \
-    wget -O- 'https://github.com/opencv/opencv_contrib/archive/4.5.5.tar.gz' \
+    wget -O- 'https://github.com/opencv/opencv_contrib/archive/4.9.0.tar.gz' \
         | tar --extract --gzip --directory /tmp/opencv-contrib; \
     mkdir /tmp/opencv; \
     cd  /tmp/opencv; \
-    wget -O- 'https://github.com/opencv/opencv/archive/4.5.5.tar.gz' \
+    wget -O- 'https://github.com/opencv/opencv/archive/4.9.0.tar.gz' \
         | tar --extract --gzip; \
-    cd opencv-4.5.5; \
+    cd opencv-4.9.0; \
     sed -i '315s/.*/    return min((int)sysconf( _SC_NPROCESSORS_ONLN ), 4);/' modules/videoio/src/cap_ffmpeg_impl.hpp; \
     mkdir build; \
     cd build; \
     export OpenBLAS_HOME=/usr/lib/x86_64-linux-gnu/openblas-pthread; \
-    cmake -DCMAKE_INSTALL_PREFIX:PATH='/opt/opencv-4.5.5' \
+    cmake -DCMAKE_INSTALL_PREFIX:PATH='/opt/opencv-4.9.0' \
         -DWITH_IPP=false \
         -DBUILD_EXAMPLES=false \
         -DBUILD_TESTS=false \
@@ -96,10 +96,10 @@ RUN --mount=type=tmpfs,target=/tmp \
         -DWITH_CUDNN=true \
         -DOPENCV_DNN_CUDA=true \
         -DBUILD_CUDA_STUBS=true \
-        -DOPENCV_EXTRA_MODULES_PATH=/tmp/opencv-contrib/opencv_contrib-4.5.5/modules \
+        -DOPENCV_EXTRA_MODULES_PATH=/tmp/opencv-contrib/opencv_contrib-4.9.0/modules \
         ..; \
     make --jobs "$(nproc)" install; \
-    ln --symbolic '/opt/opencv-4.5.5/include/opencv4/opencv2' /usr/local/include/opencv2;
+    ln --symbolic '/opt/opencv-4.9.0/include/opencv4/opencv2' /usr/local/include/opencv2;
 
 
 RUN --mount=type=tmpfs,target=/tmp \
