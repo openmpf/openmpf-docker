@@ -80,7 +80,6 @@ RUN --mount=type=tmpfs,target=/tmp \
     wget -O- 'https://github.com/opencv/opencv/archive/4.9.0.tar.gz' \
         | tar --extract --gzip; \
     cd opencv-4.9.0; \
-    sed -i '315s/.*/    return min((int)sysconf( _SC_NPROCESSORS_ONLN ), 4);/' modules/videoio/src/cap_ffmpeg_impl.hpp; \
     mkdir build; \
     cd build; \
     export OpenBLAS_HOME=/usr/lib/x86_64-linux-gnu/openblas-pthread; \
