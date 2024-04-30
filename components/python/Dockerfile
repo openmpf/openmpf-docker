@@ -96,7 +96,7 @@ COPY --from=openmpf_build \
 
 WORKDIR /home/mpf/openmpf-projects/openmpf-python-component-sdk/detection/nlp_text_splitter
 
-RUN ./install.sh
+RUN ./install.sh -i wtp-canine-s-1l
 
 RUN python tests/test_text_splitter.py
 
