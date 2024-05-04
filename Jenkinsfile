@@ -471,7 +471,7 @@ try {
 
         def composeImageNames
         withEnv(["TAG=$imageTag", "REGISTRY=$remoteImagePrefix", "COMPOSE_FILE=$runtimeComposeFiles"]) {
-            composeImageNames = shOutput "cd '$openmpfDockerRepo.path' && docker compose config --images"
+            composeImageNames = shOutput("cd '$openmpfDockerRepo.path' && docker compose config --images").split('\n') as Set
         }
         print("composeImageNames")  // DEBUG
         print(composeImageNames)  // DEBUG
@@ -484,11 +484,6 @@ try {
                     .collect{ it.trim() }
             print("searchImageNames")  // DEBUG
             print(searchImageNames)  // DEBUG
-
-            shortNames = (baseImageNames + composeImageNames)
-                    .collect{ it.split(":").first().split("/").last() in searchImageNames }
-            print("shortNames")  // DEBUG
-            print(shortNames)  // DEBUG
 
             pushImageNames = (baseImageNames + composeImageNames)
                     .findAll{ it.split(":").first().split("/").last() in searchImageNames }
