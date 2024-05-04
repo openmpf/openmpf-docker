@@ -458,34 +458,34 @@ try {
     }
 
     optionalStage('Push runtime images', pushRuntimeImages) {
-        def baseImageNames = ["openmpf_cpp_component_build",
-                              "openmpf_cpp_executor",
-                              "openmpf_java_component_build",
-                              "openmpf_java_executor",
-                              "openmpf_python_component_build",
-                              "openmpf_python_executor",
-                              "openmpf_python_executor_ssb"]
+        def baseImages = ["openmpf_cpp_component_build",
+                          "openmpf_cpp_executor",
+                          "openmpf_java_component_build",
+                          "openmpf_java_executor",
+                          "openmpf_python_component_build",
+                          "openmpf_python_executor",
+                          "openmpf_python_executor_ssb"]
                 .collect{ "${remoteImagePrefix}$it:$imageTag" }
 
-        def composeImageNames
+        def composeImages
         withEnv(["TAG=$imageTag", "REGISTRY=$remoteImagePrefix", "COMPOSE_FILE=$runtimeComposeFiles"]) {
-            composeImageNames = shOutput("cd '$openmpfDockerRepo.path' && docker compose config --images").split('\n') as Set
+            composeImages = shOutput("cd '$openmpfDockerRepo.path' && docker compose config --images").split('\n') as Set
         }
 
-        def pushImageNames
-        if (env.docker_images_to_push) {
-            searchImageNames = env.docker_images_to_push.split(',')
+        def pushImages
+        if (env.runtime_images_to_push) {
+            searchImages = env.runtime_images_to_push.split(',')
                     .collect{ it.trim() }
-            pushImageNames = (baseImageNames + composeImageNames)
-                    .findAll{ it.split(":").first().split("/").last() in searchImageNames }
+            pushImages = (baseImages + composeImages)
+                    .findAll{ it.split(":").first().split("/").last() in searchImages }
         } 
         else {
             // Push everything if no names are specified.
-            pushImageNames = baseImageNames + composeImageNames
+            pushImages = baseImages + composeImages
         }
 
-        for (def imageName in pushImageNames) {
-            sh "docker push $imageName"
+        for (def image in pushImages) {
+            sh "docker push $image"
         }
     } // optionalStage('Push runtime images', ...
 }
