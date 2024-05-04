@@ -358,7 +358,7 @@ try {
     //             addVcsRefLabels(composeYaml, openmpfRepo, openmpfDockerRepo)
     //             addUserDefinedLabels(composeYaml, customComponentServices, imageUrl, imageVersion, customLabelKey)
     //         }
-    //     }
+        }
 
     //     if (applyCustomConfig) {
     //         echo 'APPLYING CUSTOM CONFIGURATION'
