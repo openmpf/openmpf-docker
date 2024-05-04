@@ -237,10 +237,10 @@ try {
     }
 
     // def componentComposeFiles
-    // def runtimeComposeFiles
+    def runtimeComposeFiles
 
-    // stage('Build images') {
-    // timeout(time: buildTimeout, unit: 'HOURS') {
+    stage('Build images') {
+    timeout(time: buildTimeout, unit: 'HOURS') {
     //     // Make sure we are using most recent version of external images
     //     for (externalImage in ['docker/dockerfile:1.2', 'postgres:alpine',
     //                            'redis:alpine', 'ubuntu:20.04']) {
@@ -328,28 +328,28 @@ try {
     //                 " --target executor -t openmpf_python_executor:$inProgressTag --no-cache=false"
     //     }
 
-    //     dir (openmpfDockerRepo.path) {
-    //         sh 'cp .env.tpl .env'
+        dir (openmpfDockerRepo.path) {
+            sh 'cp .env.tpl .env'
 
-    //         componentComposeFiles = 'docker-compose.components.yml'
-    //         def customComponentServices = []
+            componentComposeFiles = 'docker-compose.components.yml'
+            def customComponentServices = []
 
-    //         if (buildCustomComponents) {
-    //             def customComponentsComposeFile =
-    //                     "../../$customComponentsRepo.path/docker-compose.custom-components.yml"
-    //             componentComposeFiles += ":$customComponentsComposeFile"
+            if (buildCustomComponents) {
+                def customComponentsComposeFile =
+                        "../../$customComponentsRepo.path/docker-compose.custom-components.yml"
+                componentComposeFiles += ":$customComponentsComposeFile"
 
-    //             def customGpuOnlyComponentsComposeFile =
-    //                         "../../$customComponentsRepo.path/docker-compose.custom-gpu-only-components.yml"
-    //             componentComposeFiles += ":$customGpuOnlyComponentsComposeFile"
+                def customGpuOnlyComponentsComposeFile =
+                            "../../$customComponentsRepo.path/docker-compose.custom-gpu-only-components.yml"
+                componentComposeFiles += ":$customGpuOnlyComponentsComposeFile"
 
-    //             customComponentServices =
-    //                     readYaml(text: shOutput("cat $customComponentsComposeFile")).services.keySet()
-    //             customComponentServices +=
-    //                     readYaml(text: shOutput("cat $customGpuOnlyComponentsComposeFile")).services.keySet()
-    //         }
+                customComponentServices =
+                        readYaml(text: shOutput("cat $customComponentsComposeFile")).services.keySet()
+                customComponentServices +=
+                        readYaml(text: shOutput("cat $customGpuOnlyComponentsComposeFile")).services.keySet()
+            }
 
-    //         runtimeComposeFiles = "docker-compose.core.yml:$componentComposeFiles:docker-compose.elk.yml"
+            runtimeComposeFiles = "docker-compose.core.yml:$componentComposeFiles:docker-compose.elk.yml"
 
     //         withEnv(["TAG=$inProgressTag", "COMPOSE_FILE=$runtimeComposeFiles"]) {
     //             sh "docker compose build $commonBuildArgs --build-arg RUN_TESTS=true --parallel"
@@ -371,8 +371,8 @@ try {
     //     else  {
     //         echo 'SKIPPING CUSTOM CONFIGURATION'
     //     }
-    // } // timeout
-    // } // stage('Build images')
+    } // timeout
+    } // stage('Build images')
 
     // optionalStage('Run Integration Tests', !skipIntegrationTests) {
     //     dir(openmpfDockerRepo.path) {
