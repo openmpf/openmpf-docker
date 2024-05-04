@@ -45,7 +45,7 @@ def pushRuntimeImages = env.push_runtime_images?.toBoolean() ?: false
 
 def pollReposAndEndBuild = env.poll_repos_and_end_build?.toBoolean() ?: false
 
-def postBuildStatusEnabled = env.post_build_status?.toBoolean()  ?: false
+def postBuildStatusEnabled = env.post_build_status?.toBoolean() ?: false
 def githubAuthToken = env.github_auth_token
 def emailRecipients = env.email_recipients
 
@@ -458,19 +458,35 @@ try {
     }
 
     optionalStage('Push runtime images', pushRuntimeImages) {
+        def baseImages = ["openmpf_cpp_component_build",
+                          "openmpf_cpp_executor",
+                          "openmpf_java_component_build",
+                          "openmpf_java_executor",
+                          "openmpf_python_component_build",
+                          "openmpf_python_executor",
+                          "openmpf_python_executor_ssb"]
+                .collect{ "${remoteImagePrefix}$it:$imageTag" }
+
+        def composeImages
         withEnv(["TAG=$imageTag", "REGISTRY=$remoteImagePrefix", "COMPOSE_FILE=$runtimeComposeFiles"]) {
-            sh "docker push '${remoteImagePrefix}openmpf_cpp_component_build:$imageTag'"
-            sh "docker push '${remoteImagePrefix}openmpf_cpp_executor:$imageTag'"
+            composeImages = shOutput("cd '$openmpfDockerRepo.path' && docker compose config --images").split('\n') as Set
+        }
 
-            sh "docker push '${remoteImagePrefix}openmpf_java_component_build:$imageTag'"
-            sh "docker push '${remoteImagePrefix}openmpf_java_executor:$imageTag'"
+        def pushImages
+        if (env.runtime_images_to_push) {
+            searchImages = env.runtime_images_to_push.split(',')
+                    .collect{ it.trim() }
+            pushImages = (baseImages + composeImages)
+                    .findAll{ it.split(":").first().split("/").last() in searchImages }
+        } 
+        else {
+            // Push everything if no names are specified.
+            pushImages = baseImages + composeImages
+        }
 
-            sh "docker push '${remoteImagePrefix}openmpf_python_component_build:$imageTag'"
-            sh "docker push '${remoteImagePrefix}openmpf_python_executor:$imageTag'"
-            sh "docker push '${remoteImagePrefix}openmpf_python_executor_ssb:$imageTag'"
-
-            sh "cd '$openmpfDockerRepo.path' && docker compose push"
-        } // withEnv...
+        for (def image in pushImages) {
+            sh "docker push $image"
+        }
     } // optionalStage('Push runtime images', ...
 }
 catch (e) { // Global exception handler
