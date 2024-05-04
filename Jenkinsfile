@@ -479,9 +479,16 @@ try {
         def pushImageNames
         if (env.docker_images_to_push) {
             print("in docker_images_to_push")  // DEBUG
-            pushImageNames = env.docker_images_to_push.split(',')
+
+            searchImageNames = env.docker_images_to_push.split(',')
                     .collect{ it.trim() }
-                    .findAll{ it in baseImageNames + composeImageNames }
+            print("searchImageNames")  // DEBUG
+            print(searchImageNames)  // DEBUG
+
+            pushImageNames = (baseImageNames + composeImageNames)
+                    .findAll{ it.split(":").first().split("/").last() in searchImageNames }
+            print("pushImageNames")  // DEBUG
+            print(pushImageNames)  // DEBUG
         } 
         else {
             print("in default")  // DEBUG
@@ -490,7 +497,9 @@ try {
         }
 
         for (def imageName in pushImageNames) {
-            sh "docker push $imageName"
+            print("PUSH")  // DEBUG
+            print("$imageName")  // DEBUG
+            // sh "docker push $imageName"
         }
     } // optionalStage('Push runtime images', ...
 }
