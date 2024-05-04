@@ -45,7 +45,7 @@ def pushRuntimeImages = env.push_runtime_images?.toBoolean() ?: false
 
 def pollReposAndEndBuild = env.poll_repos_and_end_build?.toBoolean() ?: false
 
-def postBuildStatusEnabled = env.post_build_status?.toBoolean()  ?: false
+def postBuildStatusEnabled = env.post_build_status?.toBoolean() ?: false
 def githubAuthToken = env.github_auth_token
 def emailRecipients = env.email_recipients
 
@@ -458,19 +458,40 @@ try {
     }
 
     optionalStage('Push runtime images', pushRuntimeImages) {
+        def baseImageNames = ["openmpf_cpp_component_build",
+                              "openmpf_cpp_executor",
+                              "openmpf_java_component_build",
+                              "openmpf_java_executor",
+                              "openmpf_python_component_build",
+                              "openmpf_python_executor",
+                              "openmpf_python_executor_ssb"]
+                .collect{ "${remoteImagePrefix}$it:$imageTag" }
+        print("baseImageNames")  // DEBUG
+        print(baseImageNames)  // DEBUG
+
+        def composeImageNames
         withEnv(["TAG=$imageTag", "REGISTRY=$remoteImagePrefix", "COMPOSE_FILE=$runtimeComposeFiles"]) {
-            sh "docker push '${remoteImagePrefix}openmpf_cpp_component_build:$imageTag'"
-            sh "docker push '${remoteImagePrefix}openmpf_cpp_executor:$imageTag'"
+            composeImageNames = shOutput "cd '$openmpfDockerRepo.path' && docker compose config --images"
+        }
+        print("composeImageNames")  // DEBUG
+        print(composeImageNames)  // DEBUG
 
-            sh "docker push '${remoteImagePrefix}openmpf_java_component_build:$imageTag'"
-            sh "docker push '${remoteImagePrefix}openmpf_java_executor:$imageTag'"
+        def pushImageNames
+        if (env.docker_images_to_push) {
+            print("in docker_images_to_push")  // DEBUG
+            pushImageNames = env.docker_images_to_push.split(',')
+                    .collect{ it.trim() }
+                    .findAll{ it in baseImageNames + composeImageNames }
+        } 
+        else {
+            print("in default")  // DEBUG
+            // Push everything if no names are specified.
+            pushImageNames = baseImageNames + composeImageNames
+        }
 
-            sh "docker push '${remoteImagePrefix}openmpf_python_component_build:$imageTag'"
-            sh "docker push '${remoteImagePrefix}openmpf_python_executor:$imageTag'"
-            sh "docker push '${remoteImagePrefix}openmpf_python_executor_ssb:$imageTag'"
-
-            sh "cd '$openmpfDockerRepo.path' && docker compose push"
-        } // withEnv...
+        for (def imageName in pushImageNames) {
+            sh "docker push $imageName"
+        }
     } // optionalStage('Push runtime images', ...
 }
 catch (e) { // Global exception handler
