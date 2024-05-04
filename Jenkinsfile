@@ -485,6 +485,11 @@ try {
             print("searchImageNames")  // DEBUG
             print(searchImageNames)  // DEBUG
 
+            shortNames = (baseImageNames + composeImageNames)
+                    .collect{ it.split(":").first().split("/").last() in searchImageNames }
+            print("shortNames")  // DEBUG
+            print(shortNames)  // DEBUG
+
             pushImageNames = (baseImageNames + composeImageNames)
                     .findAll{ it.split(":").first().split("/").last() in searchImageNames }
             print("pushImageNames")  // DEBUG
