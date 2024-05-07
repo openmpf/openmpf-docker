@@ -59,7 +59,7 @@ ENV PATH $COMPONENT_VIRTUALENV/bin:/scripts:$PATH
 
 
 #########################################
-FROM common AS build
+FROM common AS build_api
 
 RUN python3 -m venv "$COMPONENT_VIRTUALENV"; \
     pip config --site set global.no-cache-dir true; \
@@ -83,6 +83,36 @@ LABEL org.label-schema.build-date="" \
       org.label-schema.url="https://openmpf.github.io" \
       org.label-schema.vcs-url="https://github.com/openmpf/openmpf-python-component-sdk" \
       org.label-schema.vendor="MITRE"
+
+
+#########################################
+# Install and test the text splitter in a different stage so that the dependencies don't end up in
+# the base image for all Python components.
+FROM build_api AS build_text_splitter
+
+COPY --from=openmpf_build \
+    /home/mpf/openmpf-projects/openmpf-python-component-sdk/detection/nlp_text_splitter \
+    /home/mpf/openmpf-projects/openmpf-python-component-sdk/detection/nlp_text_splitter
+
+WORKDIR /home/mpf/openmpf-projects/openmpf-python-component-sdk/detection/nlp_text_splitter
+
+RUN ./install.sh --install-wtp-model wtp-canine-s-1l
+
+RUN python tests/test_text_splitter.py
+
+# Remove the tests directory so that the entire nlp_text_splitter directory can be copied without
+# also including the tests in the next stage.
+RUN rm -r tests
+
+
+#########################################
+FROM build_api AS build
+
+# Copy the text splitter source code in to the image so that components can choose to install it in
+# their Docker images.
+COPY --from=build_text_splitter \
+    /home/mpf/openmpf-projects/openmpf-python-component-sdk/detection/nlp_text_splitter \
+    /home/mpf/openmpf-projects/openmpf-python-component-sdk/detection/nlp_text_splitter
 
 
 #########################################
