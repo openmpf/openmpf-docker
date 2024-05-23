@@ -467,21 +467,23 @@ try {
                           "openmpf_python_executor_ssb"]
                 .collect{ "${remoteImagePrefix}$it:$imageTag" }
 
-        withEnv(["TAG=$imageTag", "REGISTRY=$remoteImagePrefix", "COMPOSE_FILE=$runtimeComposeFiles"]) {
-            if (!env.runtime_images_to_push) {
-                for (def image in baseImages) {
-                    sh "docker push $image"
+        dir (openmpfDockerRepo.path) {
+            withEnv(["TAG=$imageTag", "REGISTRY=$remoteImagePrefix", "COMPOSE_FILE=$runtimeComposeFiles"]) {
+                if (!env.runtime_images_to_push) {
+                    for (def image in baseImages) {
+                        sh "docker push $image"
+                    }
+                    sh "docker compose push"
                 }
-                sh "cd '$openmpfDockerRepo.path' && docker compose push"
-            }
-            else {
-                def composeImages = shOutput("docker compose config --images").split('\n') as Set
-                def searchImages = env.runtime_images_to_push.split(',')
-                        .collect{ it.trim() }
-                def pushImages = (baseImages + composeImages)
-                        .findAll{ it.split(":").first().split("/").last() in searchImages }
-                for (def image in pushImages) {
-                    sh "docker push $image"
+                else {
+                    def composeImages = shOutput("docker compose config --images").split('\n') as Set
+                    def searchImages = env.runtime_images_to_push.split(',')
+                            .collect{ it.trim() }
+                    def pushImages = (baseImages + composeImages)
+                            .findAll{ it.split(":").first().split("/").last() in searchImages }
+                    for (def image in pushImages) {
+                        sh "docker push $image"
+                    }
                 }
             }
         }
