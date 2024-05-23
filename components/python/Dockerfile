@@ -116,15 +116,19 @@ COPY --from=build_text_splitter \
 
 
 #########################################
+FROM common AS copy_libs
+
+RUN --mount=type=bind,from=openmpf_build,source=/build-artifacts/install/lib,target=/tmp/mpf-libs \
+    --mount=type=bind,from=openmpf_build,source=/build-artifacts/install/bin/amq_detection_component,target=/tmp/amq_detection_component \
+    --mount=type=bind,from=openmpf_build,source=/scripts/copy_libs.sh,target=/tmp/copy_libs.sh \
+    mkdir /libs-to-copy; \
+    /tmp/copy_libs.sh /tmp/amq_detection_component /libs-to-copy /tmp/mpf-libs
+
+
+#########################################
 FROM common AS executor
 
-# Use mount and cp shell command because the docker COPY command resolves symlinks which then causes duplicate copies
-# of the libraries to be added to the image.
-RUN --mount=type=bind,from=openmpf_build,source=/build-artifacts/install/lib,target=/tmp/mpf-libs \
-    cd /tmp/mpf-libs; \
-    # component executor binary's dependencies
-    cp --preserve=links --no-dereference liblog4cxx* libapr* libactivemq-cpp* \
-        /usr/lib/x86_64-linux-gnu;
+COPY --from=copy_libs /libs-to-copy /usr/lib/x86_64-linux-gnu/
 
 # Component executor binary
 COPY --from=openmpf_build /build-artifacts/install/bin/amq_detection_component \
