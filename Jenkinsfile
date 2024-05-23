@@ -472,7 +472,7 @@ try {
                 for (def image in baseImages) {
                     sh "docker push $image"
                 }
-                sh "docker compose push"
+                sh "cd '$openmpfDockerRepo.path' && docker compose push"
             }
             else {
                 def composeImages = shOutput("docker compose config --images").split('\n') as Set
