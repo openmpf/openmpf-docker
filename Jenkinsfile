@@ -467,25 +467,23 @@ try {
                           "openmpf_python_executor_ssb"]
                 .collect{ "${remoteImagePrefix}$it:$imageTag" }
 
-        def composeImages
         withEnv(["TAG=$imageTag", "REGISTRY=$remoteImagePrefix", "COMPOSE_FILE=$runtimeComposeFiles"]) {
-            composeImages = shOutput("cd '$openmpfDockerRepo.path' && docker compose config --images").split('\n') as Set
-        }
-
-        def pushImages
-        if (env.runtime_images_to_push) {
-            searchImages = env.runtime_images_to_push.split(',')
-                    .collect{ it.trim() }
-            pushImages = (baseImages + composeImages)
-                    .findAll{ it.split(":").first().split("/").last() in searchImages }
-        } 
-        else {
-            // Push everything if no names are specified.
-            pushImages = baseImages + composeImages
-        }
-
-        for (def image in pushImages) {
-            sh "docker push $image"
+            if (!env.runtime_images_to_push) {
+                for (def image in baseImages) {
+                    sh "docker push $image"
+                }
+                sh "docker compose push"
+            }
+            else {
+                def composeImages = shOutput("docker compose config --images").split('\n') as Set
+                def searchImages = env.runtime_images_to_push.split(',')
+                        .collect{ it.trim() }
+                def pushImages = (baseImages + composeImages)
+                        .findAll{ it.split(":").first().split("/").last() in searchImages }
+                for (def image in pushImages) {
+                    sh "docker push $image"
+                }
+            }
         }
     } // optionalStage('Push runtime images', ...
 }
