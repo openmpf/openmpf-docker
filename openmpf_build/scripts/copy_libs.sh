@@ -32,7 +32,7 @@ NEED_TO_CHECK_MISSING_LIBS=true
 
 main() {
     if [[ $# -lt 3 ]]; then
-        echo 'Too few arugments.'
+        echo 'Too few arguments.'
         echo "Usage: $0 <elf-file> <target-libs-dir> <source-libs-dir>"
         exit 1
     fi
