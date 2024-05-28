@@ -54,6 +54,8 @@ copy_libs() {
         local lib_name
         lib_name=$(get_missing_lib_name "$line")
         if [[ $lib_name ]]; then
+            # The library we are copying might also have dependencies, so we will need to run
+            # ldd again once the library is copied in.
             NEED_TO_CHECK_MISSING_LIBS=true
             echo "cp '$lib_copy_src_dir/$lib_name' '$extra_libs_install_dir/$lib_name'"
             cp "$lib_copy_src_dir/$lib_name" "$extra_libs_install_dir/$lib_name"
@@ -74,8 +76,7 @@ run_ldd() {
     LD_LIBRARY_PATH="$ld_lib_path" ldd "$lib_file"
 }
 
-# line is: "  libname.so => not found"
-# NOT_FOUND_PATTERN='([^[:space:]=]+)[[:space:]]*=>[[:space:]]* not found'
+# The format for the lines with missing libraries is: "  libname.so => not found"
 NOT_FOUND_PATTERN='([^[:space:]=]+) => not found'
 
 get_missing_lib_name() {
