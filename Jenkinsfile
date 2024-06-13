@@ -715,12 +715,14 @@ def dockerCleanUp() {
 
         def now = java.time.Instant.now()
         def stepsForParallel = [:]
-        for (image in images) {
+        images.each {
+            def image = "${it}"
+
             if (!image.contains('deleteme')) {
                 continue;
             }
 
-            stepsForParallel[image] = { ->
+            stepsForParallel["Clean up $image"] = { ->
                 /*
                 // Time formats from Docker (includes quotes at beginning and end):
                 // - "2019-11-18T18:58:33.990718123Z"
