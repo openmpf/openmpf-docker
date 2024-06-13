@@ -714,24 +714,31 @@ def dockerCleanUp() {
                         .split("\n")
 
         def now = java.time.Instant.now()
-        for (image in images) {
+        def stepsForParallel = [:]
+        images.each {
+            def image = "${it}"
+
             if (!image.contains('deleteme')) {
-                continue;
+                return;
             }
 
-            // Time formats from Docker (includes quotes at beginning and end):
-            // - "2019-11-18T18:58:33.990718123Z"
-            // - "2020-06-29T12:47:45.512019992-04:00"
-            def quotedTagTimeString = shOutput "docker image inspect --format '{{json .Metadata.LastTagTime}}' $image"
-            def tagTimeString = quotedTagTimeString[1..-2]
-            def tagTime = parseDate(tagTimeString)
+            stepsForParallel["Clean up $image"] = { ->
+                // Time formats from Docker (includes quotes at beginning and end):
+                // - "2019-11-18T18:58:33.990718123Z"
+                // - "2020-06-29T12:47:45.512019992-04:00"
+                def quotedTagTimeString = shOutput "docker image inspect --format '{{json .Metadata.LastTagTime}}' $image"
+                def tagTimeString = quotedTagTimeString[1..-2]
+                def tagTime = parseDate(tagTimeString)
 
-            def daysSinceLastTag = tagTime.until(now, java.time.temporal.ChronoUnit.DAYS)
-            if (daysSinceLastTag > daysUntilRemoval) {
-                echo "Deleting $image because has \"deleteme\" in its name and was last tagged $daysSinceLastTag days ago."
-                sh "docker image rm $image"
+                def daysSinceLastTag = tagTime.until(now, java.time.temporal.ChronoUnit.DAYS)
+                if (daysSinceLastTag > daysUntilRemoval) {
+                    echo "Deleting $image because has \"deleteme\" in its name and was last tagged $daysSinceLastTag days ago."
+                    sh "docker image rm $image"
+                }
             }
         }
+        
+        parallel stepsForParallel
 
         sh 'docker builder prune --force --keep-storage=120GB'
     }
