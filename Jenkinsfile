@@ -719,7 +719,7 @@ def dockerCleanUp() {
             def image = "${it}"
 
             if (!image.contains('deleteme')) {
-                continue;
+                return;
             }
 
             stepsForParallel["Clean up $image"] = { ->
