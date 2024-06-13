@@ -720,7 +720,7 @@ def dockerCleanUp() {
                 continue;
             }
 
-            stepsForParallel[image] = {
+            stepsForParallel[image] = { ->
                 /*
                 // Time formats from Docker (includes quotes at beginning and end):
                 // - "2019-11-18T18:58:33.990718123Z"
