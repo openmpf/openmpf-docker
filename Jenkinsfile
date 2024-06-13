@@ -721,6 +721,7 @@ def dockerCleanUp() {
             }
 
             stepsForParallel[image] = {
+                /*
                 // Time formats from Docker (includes quotes at beginning and end):
                 // - "2019-11-18T18:58:33.990718123Z"
                 // - "2020-06-29T12:47:45.512019992-04:00"
@@ -733,6 +734,8 @@ def dockerCleanUp() {
                     echo "Deleting $image because has \"deleteme\" in its name and was last tagged $daysSinceLastTag days ago."
                     sh "docker image rm $image"
                 }
+                */
+                echo "HERE $image"
             }
         }
         
