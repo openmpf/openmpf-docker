@@ -144,6 +144,7 @@ def buildException
 def inProgressTag
 
 try {
+    /*
     def buildId = "${currentBuild.projectName}_${currentBuild.number}"
     // Use inProgressTag to ensure concurrent builds don't use the same image tag.
     inProgressTag = buildId
@@ -488,12 +489,14 @@ try {
             }
         }
     } // optionalStage('Push runtime images', ...
+    */
 }
 catch (e) { // Global exception handler
     buildException = e
     throw e
 }
 finally {
+    /*
     def buildStatus
     if (isAborted()) {
         echo 'DETECTED BUILD ABORTED'
@@ -526,6 +529,7 @@ finally {
         }
     }
     email(buildStatus, emailRecipients)
+    */
 
     dockerCleanUp()
 }
