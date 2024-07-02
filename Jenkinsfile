@@ -328,14 +328,13 @@ try {
                     " --target executor -t openmpf_python_executor:$inProgressTag --no-cache=false"
         }
 
-
-        dir(openmpfDockerRepo.path + '/subject-components') {
-            sh "docker build . -f python/Dockerfile $commonBuildArgs $labelArgs $pythonShas " +
+        dir(openmpfDockerRepo.path + '/subject-components/python') {
+            sh "docker build . $commonBuildArgs $labelArgs $pythonShas " +
                     " --target executor -t openmpf_python_subject_executor:$inProgressTag"
 
             // Add --no-cache=false so that openmpf_python_subject_build re-uses the layers
             // created during the build of openmpf_python_subject_executor
-            sh "docker build . -f python/Dockerfile $commonBuildArgs $labelArgs $pythonShas " +
+            sh "docker build . $commonBuildArgs $labelArgs $pythonShas " +
                     " --target build -t openmpf_python_subject_build:$inProgressTag --no-cache=false"
         }
 
@@ -744,7 +743,7 @@ def dockerCleanUp() {
                 }
             }
         }
-        
+
         parallel stepsForParallel
 
         sh 'docker builder prune --force --keep-storage=120GB'
