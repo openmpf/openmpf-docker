@@ -294,6 +294,7 @@ try {
         }
 
 
+        def pythonShas = getVcsRefLabelArg([openmpfPythonSdkRepo])
         dir(openmpfDockerRepo.path + '/components') {
             def cppShas = getVcsRefLabelArg([openmpfCppSdkRepo])
             sh "docker build . -f cpp_component_build/Dockerfile $commonBuildArgs $labelArgs $cppShas " +
@@ -311,7 +312,6 @@ try {
                     " -t openmpf_java_executor:$inProgressTag"
 
 
-            def pythonShas = getVcsRefLabelArg([openmpfPythonSdkRepo])
             sh "docker build . -f python/Dockerfile $commonBuildArgs $labelArgs $pythonShas " +
                     " --target ssb -t openmpf_python_executor_ssb:$inProgressTag"
 
@@ -326,6 +326,17 @@ try {
 
             sh "docker build . -f python/Dockerfile $commonBuildArgs $labelArgs $pythonShas " +
                     " --target executor -t openmpf_python_executor:$inProgressTag --no-cache=false"
+        }
+
+
+        dir(openmpfDockerRepo.path + '/subject-components') {
+            sh "docker build . -f python/Dockerfile $commonBuildArgs $labelArgs $pythonShas " +
+                    " --target executor -t openmpf_python_subject_executor:$inProgressTag"
+
+            // Add --no-cache=false so that openmpf_python_subject_build re-uses the layers
+            // created during the build of openmpf_python_subject_executor
+            sh "docker build . -f python/Dockerfile $commonBuildArgs $labelArgs $pythonShas " +
+                    " --target build -t openmpf_python_subject_build:$inProgressTag --no-cache=false"
         }
 
         dir (openmpfDockerRepo.path) {
@@ -464,7 +475,9 @@ try {
                           "openmpf_java_executor",
                           "openmpf_python_component_build",
                           "openmpf_python_executor",
-                          "openmpf_python_executor_ssb"]
+                          "openmpf_python_executor_ssb",
+                          "openmpf_python_subject_executor",
+                          "openmpf_python_subject_build"]
                 .collect{ "${remoteImagePrefix}$it:$imageTag" }
 
         dir (openmpfDockerRepo.path) {

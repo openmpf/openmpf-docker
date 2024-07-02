@@ -1,4 +1,4 @@
-# syntax=docker/dockerfile:1.2
+# syntax=docker/dockerfile:1.4
 
 #############################################################################
 # NOTICE                                                                    #
@@ -26,7 +26,7 @@
 # limitations under the License.                                            #
 #############################################################################
 
-FROM ubuntu:20.04 AS build
+FROM ubuntu:20.04 AS apt_install
 
 SHELL ["/bin/bash", "-o", "errexit", "-o", "pipefail", "-c"]
 
@@ -71,6 +71,8 @@ RUN --mount=type=tmpfs,target=/var/cache/apt \
     ln --symbolic /usr/bin/protoc /usr/local/bin/protoc;
 
 
+FROM apt_install AS ocv_install
+
 RUN --mount=type=tmpfs,target=/tmp \
     mkdir /tmp/opencv-contrib; \
     wget -O- 'https://github.com/opencv/opencv_contrib/archive/4.9.0.tar.gz' \
@@ -99,6 +101,9 @@ RUN --mount=type=tmpfs,target=/tmp \
         ..; \
     make --jobs "$(nproc)" install; \
     ln --symbolic '/opt/opencv-4.9.0/include/opencv4/opencv2' /usr/local/include/opencv2;
+
+
+FROM apt_install
 
 
 RUN --mount=type=tmpfs,target=/tmp \
@@ -148,6 +153,11 @@ RUN --mount=type=tmpfs,target=/tmp \
     cd build; \
     cmake3 -DCMAKE_INSTALL_PREFIX=/usr -DWITH_EXAMPLES=false ..; \
     make --jobs "$(nproc)" install;
+
+
+COPY --from=ocv_install /opt/opencv-4.9.0 /opt/opencv-4.9.0
+
+RUN ln --symbolic '/opt/opencv-4.9.0/include/opencv4/opencv2' /usr/local/include/opencv2;
 
 
 COPY . /home/mpf/openmpf-projects
