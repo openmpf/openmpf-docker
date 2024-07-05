@@ -30,8 +30,9 @@ set -o errexit -o pipefail -o xtrace
 
 src_dir="${SRC_DIR:-/home/mpf/component_src}"
 build_dir="${BUILD_DIR:-/home/mpf/component_build}"
+build_type="${BUILD_TYPE:-Release}"
 
 mkdir --parents "$build_dir"
 cd "$build_dir"
-cmake "$src_dir"
+cmake -DCMAKE_BUILD_TYPE="$build_type" "$src_dir"
 make --jobs "$(nproc)"

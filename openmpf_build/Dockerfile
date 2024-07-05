@@ -86,6 +86,7 @@ RUN --mount=type=tmpfs,target=/tmp \
     cd build; \
     export OpenBLAS_HOME=/usr/lib/x86_64-linux-gnu/openblas-pthread; \
     cmake -DCMAKE_INSTALL_PREFIX:PATH='/opt/opencv-4.9.0' \
+        -DCMAKE_BUILD_TYPE=Release \
         -DWITH_IPP=false \
         -DBUILD_EXAMPLES=false \
         -DBUILD_TESTS=false \
@@ -99,7 +100,7 @@ RUN --mount=type=tmpfs,target=/tmp \
         -DBUILD_CUDA_STUBS=true \
         -DOPENCV_EXTRA_MODULES_PATH=/tmp/opencv-contrib/opencv_contrib-4.9.0/modules \
         ..; \
-    make --jobs "$(nproc)" install; \
+    make --jobs "$(nproc)" install/strip; \
     ln --symbolic '/opt/opencv-4.9.0/include/opencv4/opencv2' /usr/local/include/opencv2;
 
 
@@ -113,7 +114,7 @@ RUN --mount=type=tmpfs,target=/tmp \
         | tar --extract --gzip; \
     cd activemq-cpp-library-3.9.5; \
     ./configure; \
-    make --jobs "$(nproc)" install;
+    make --jobs "$(nproc)" install-strip;
 
 RUN wget -O- 'https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz' \
         | tar --extract --xz --directory /usr/local/bin --strip-components 1 --wildcards \
@@ -151,8 +152,8 @@ RUN --mount=type=tmpfs,target=/tmp \
     cd libheif-1.12.0; \
     mkdir build; \
     cd build; \
-    cmake3 -DCMAKE_INSTALL_PREFIX=/usr -DWITH_EXAMPLES=false ..; \
-    make --jobs "$(nproc)" install;
+    cmake3 -DCMAKE_INSTALL_PREFIX=/usr -DWITH_EXAMPLES=false -DCMAKE_BUILD_TYPE=Release ..; \
+    make --jobs "$(nproc)" install/strip;
 
 
 COPY --from=ocv_install /opt/opencv-4.9.0 /opt/opencv-4.9.0
