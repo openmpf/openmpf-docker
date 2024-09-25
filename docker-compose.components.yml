@@ -156,6 +156,11 @@ services:
       context: ${OPENMPF_PROJECTS_PATH}/openmpf-contrib-components/cpp/motion
       dockerfile: MogMotionDetection/Dockerfile
 
+  nllb-translation:
+    <<: *detection-component-base
+    image: ${REGISTRY}openmpf_nllb_translation:${TAG}
+    build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/python/NllbTranslation
+
   nlp-text-correction:
     <<: *detection-component-base
     image: ${REGISTRY}openmpf_nlp_text_correction:${TAG}
