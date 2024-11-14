@@ -332,7 +332,7 @@ try {
             sh 'cp .env.tpl .env'
 
             def coreImages =
-                    readYaml(text: shOutput("cat docker-compose.core.yml")).services.image
+                    readYaml(text: shOutput("cat docker-compose.core.yml")).services.keySet()
             echo 'CORE IMAGES:\n' + coreImages // DEBUG
 
             def componentComposeFiles = 'docker-compose.components.yml'
