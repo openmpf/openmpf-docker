@@ -370,8 +370,6 @@ try {
             withEnv(["TAG=$inProgressTag", "COMPOSE_FILE=$runtimeComposeFiles"]) {
                 sh "docker compose build $commonBuildArgs --build-arg RUN_TESTS=true --parallel"
 
-                echo 'CUSTOM COMPONENT SERVICES:\n' + customComponentServices // DEBUG
-
                 def composeYaml = readYaml(text: shOutput('docker compose config'))
                 addVcsRefLabels(composeYaml, openmpfRepo, openmpfDockerRepo)
                 addUserDefinedLabels(composeYaml, customComponentServices, imageUrl, imageVersion, customLabelKey)
