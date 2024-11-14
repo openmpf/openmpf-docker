@@ -355,10 +355,10 @@ try {
                         readYaml(text: shOutput("cat $customGpuOnlyComponentsComposeFile")).services.keySet()
             }
 
-            runtimeComposeFiles = "docker-compose.core.yml:$componentComposeFiles:docker-compose.elk.yml"
+            // def composeFiles = "docker-compose.core.yml:$componentComposeFiles"
 
-            withEnv(["TAG=$inProgressTag", "COMPOSE_FILE=$runtimeComposeFiles"]) {
-                def componentComposeYaml = readYaml(text: shOutput('docker compose config'))
+            withEnv(["TAG=$inProgressTag", "COMPOSE_FILE=$componentComposeFiles"]) {
+                def componentComposeYaml = readYaml(text: shOutput('docker compose config --no-consistency'))
 
                 if (env.runtime_images_to_build) {
                     def buildImages = findImages(env.runtime_images_to_build)
