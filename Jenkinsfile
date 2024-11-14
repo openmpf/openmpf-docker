@@ -359,7 +359,9 @@ try {
                     def searchImages = env.runtime_images_to_build.split(',')
                             .collect{ it.trim() }
                     echo 'SEARCH IMAGES:\n' + searchImages // DEBUG
-                    componentComposeYaml.services.foreach { echo 'SERVICE:\n' + it.key }
+                    for ( e in componentComposeYaml.services ) {
+                        echo 'SERVICE:\n' + e.key // DEBUG
+                    }
                     def keepServiceEntries = componentComposeYaml.services
                             .findAll { it.key in searchImages }
                     echo 'KEEP SERVICES:\n' + keepServiceEntries // DEBUG
