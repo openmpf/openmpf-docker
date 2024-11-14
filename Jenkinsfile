@@ -331,9 +331,11 @@ try {
         dir (openmpfDockerRepo.path) {
             sh 'cp .env.tpl .env'
 
+            /*
             def coreImages =
                     readYaml(text: shOutput("cat docker-compose.core.yml")).services.keySet()
             echo 'CORE IMAGES:\n' + coreImages // DEBUG
+            */
 
             def componentComposeFiles = 'docker-compose.components.yml'
             def customComponentServices = []
@@ -359,7 +361,7 @@ try {
                 def componentComposeYaml = readYaml(text: shOutput('docker compose config'))
 
                 if (env.runtime_images_to_build) {
-                    def buildImages = findImages(env.runtime_images_to_build, coreImages)
+                    def buildImages = findImages(env.runtime_images_to_build)
                     echo 'BUILD IMAGES:\n' + buildImages // DEBUG
                     def keepServiceEntries = componentComposeYaml.services.findAll { buildImages.contains(it.value.image) }
                     echo 'KEEP SERVICES:\n' + keepServiceEntries // DEBUG
