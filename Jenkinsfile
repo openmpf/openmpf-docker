@@ -237,6 +237,7 @@ try {
     }
 
     def runtimeComponentComposeFile = "docker-compose.components.jenkins.yml"
+    def runtimeComposeFiles
 
     stage('Build images') {
     timeout(time: buildTimeout, unit: 'HOURS') {
@@ -330,8 +331,9 @@ try {
         dir (openmpfDockerRepo.path) {
             sh 'cp .env.tpl .env'
 
-            def coreServices =
-                    readYaml(text: shOutput("cat docker-compose.core.yml")).services.keySet()
+            def coreImages =
+                    readYaml(text: shOutput("cat docker-compose.core.yml")).services.image
+            echo 'CORE IMAGES:\n' + coreImages // DEBUG
 
             def componentComposeFiles = 'docker-compose.components.yml'
             def customComponentServices = []
@@ -351,13 +353,13 @@ try {
                         readYaml(text: shOutput("cat $customGpuOnlyComponentsComposeFile")).services.keySet()
             }
 
-            def allComposeFiles = "docker-compose.core.yml:$componentComposeFiles:docker-compose.elk.yml"
+            runtimeComposeFiles = "docker-compose.core.yml:$componentComposeFiles:docker-compose.elk.yml"
 
-            withEnv(["TAG=$inProgressTag", "COMPOSE_FILE=$allComposeFiles"]) {
+            withEnv(["TAG=$inProgressTag", "COMPOSE_FILE=$runtimeComposeFiles"]) {
                 def componentComposeYaml = readYaml(text: shOutput('docker compose config'))
 
                 if (env.runtime_images_to_build) {
-                    def buildImages = findImages(env.runtime_images_to_build, coreServices)
+                    def buildImages = findImages(env.runtime_images_to_build, coreImages)
                     echo 'BUILD IMAGES:\n' + buildImages // DEBUG
                     def keepServiceEntries = componentComposeYaml.services.findAll { buildImages.contains(it.value.image) }
                     echo 'KEEP SERVICES:\n' + keepServiceEntries // DEBUG
@@ -372,7 +374,9 @@ try {
                 writeYaml(file: runtimeComponentComposeFile, data: componentComposeYaml, overwrite: true)
             }
 
-            withEnv(["TAG=$inProgressTag", "COMPOSE_FILE=$allComposeFiles"]) {
+            runtimeComposeFiles = "docker-compose.core.yml:$runtimeComponentComposeFile:docker-compose.elk.yml"
+
+            withEnv(["TAG=$inProgressTag", "COMPOSE_FILE=$runtimeComposeFiles"]) {
                 sh "docker compose build $commonBuildArgs --build-arg RUN_TESTS=true --parallel"
 
                 def composeYaml = readYaml(text: shOutput('docker compose config'))
@@ -445,7 +449,7 @@ try {
         def composeYaml
         dir (openmpfDockerRepo.path) {
             withEnv(["TAG=$inProgressTag",
-                     "COMPOSE_FILE=docker-compose.core.yml:$componentComposeFiles"]) {
+                     "COMPOSE_FILE=docker-compose.core.yml:$runtimeComponentComposeFile"]) {
                 composeYaml = readYaml(text: shOutput('docker compose config'))
             }
         }
@@ -489,7 +493,7 @@ try {
                 .collect{ "${remoteImagePrefix}$it:$imageTag" }
 
         dir (openmpfDockerRepo.path) {
-            withEnv(["TAG=$imageTag", "REGISTRY=$remoteImagePrefix", "COMPOSE_FILE=$runtimeComposeFile"]) {
+            withEnv(["TAG=$imageTag", "REGISTRY=$remoteImagePrefix", "COMPOSE_FILE=$runtimeComposeFiles"]) {
                 if (!env.runtime_images_to_push) {
                     for (def image in baseImages) {
                         sh "docker push $image"
