@@ -357,9 +357,10 @@ try {
 
                 if (env.runtime_images_to_build) {
                     def buildImages = findImages(env.runtime_images_to_build)
+                    echo 'BUILD IMAGES:\n' + buildImages // DEBUG
                     def modifiedYaml = composeYaml
                     for (def service in composeYaml.services) {
-                        echo 'SERVICE:\n' + service.value // DEBUG
+                        echo 'SERVICE:\n' + service.value.image // DEBUG
                         if (!buildImages.contains(service.value.image)) {
                             modifiedYaml.remove(service)
                         }
