@@ -330,6 +330,9 @@ try {
         dir (openmpfDockerRepo.path) {
             sh 'cp .env.tpl .env'
 
+            def coreServices =
+                    readYaml(text: shOutput("cat docker-compose.core.yml")).services.keySet()
+
             def componentComposeFiles = 'docker-compose.components.yml'
             def customComponentServices = []
 
@@ -348,14 +351,17 @@ try {
                         readYaml(text: shOutput("cat $customGpuOnlyComponentsComposeFile")).services.keySet()
             }
 
-            withEnv(["TAG=$inProgressTag", "COMPOSE_FILE=$componentComposeFiles"]) {
+            def allComposeFiles = "docker-compose.core.yml:$componentComposeFiles:docker-compose.elk.yml"
+
+            withEnv(["TAG=$inProgressTag", "COMPOSE_FILE=$allComposeFiles"]) {
                 def componentComposeYaml = readYaml(text: shOutput('docker compose config'))
 
                 if (env.runtime_images_to_build) {
-                    def buildImages = findImages(env.runtime_images_to_build)
+                    def buildImages = findImages(env.runtime_images_to_build, coreServices)
+                    echo 'BUILD IMAGES:\n' + buildImages // DEBUG
                     def keepServiceEntries = componentComposeYaml.services.findAll { buildImages.contains(it.value.image) }
-                    customComponentServices.retainAll(keepServiceEntries.keySet())
                     echo 'KEEP SERVICES:\n' + keepServiceEntries // DEBUG
+                    customComponentServices.retainAll(keepServiceEntries.keySet())
                     echo 'CUSTOM COMPONENT SERVICES:\n' + customComponentServices // DEBUG
                     componentComposeYaml.services.clear()
                     componentComposeYaml.services.putAll(keepServiceEntries)
@@ -365,8 +371,6 @@ try {
 
                 writeYaml(file: runtimeComponentComposeFile, data: componentComposeYaml, overwrite: true)
             }
-
-            def allComposeFiles = "docker-compose.core.yml:$runtimeComponentComposeFile:docker-compose.elk.yml"
 
             withEnv(["TAG=$inProgressTag", "COMPOSE_FILE=$allComposeFiles"]) {
                 sh "docker compose build $commonBuildArgs --build-arg RUN_TESTS=true --parallel"
