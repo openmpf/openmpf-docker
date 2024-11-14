@@ -353,6 +353,7 @@ try {
 
             withEnv(["TAG=$inProgressTag", "COMPOSE_FILE=$componentComposeFiles"]) {
                 def componentComposeYaml = readYaml(text: shOutput('docker compose config --no-consistency'))
+                echo 'COMPONENT COMPOSE YAML:\n' + componentComposeYaml // DEBUG
 
                 if (env.runtime_images_to_build) {
                     def searchImages = env.runtime_images_to_build.split(',')
