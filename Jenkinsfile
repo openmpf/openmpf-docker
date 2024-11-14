@@ -374,7 +374,7 @@ try {
                     echo 'KEEP SERVICES:\n' + keepServices // DEBUG
 
                     composeYaml.services.clear()
-                    compaseYaml.services.putAll(keepServices)
+                    composeYaml.services.putAll(keepServices)
                 }
 
                 echo 'COMPOSE YAML:\n' + composeYaml // DEBUG
