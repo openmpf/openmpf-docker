@@ -357,8 +357,9 @@ try {
                 if (env.runtime_images_to_build) {
                     def searchImages = env.runtime_images_to_build.split(',')
                             .collect{ it.trim() }
+                    echo 'SEARCH IMAGES:\n' + searchImages // DEBUG
                     def keepServiceEntries = componentComposeYaml.services
-                            .findAll { searchImages.contains(it.key) }
+                            .findAll { it.key in searchImages }
                     echo 'KEEP SERVICES:\n' + keepServiceEntries // DEBUG
                     customComponentServices.retainAll(keepServiceEntries.keySet())
                     echo 'CUSTOM COMPONENT SERVICES:\n' + customComponentServices // DEBUG
