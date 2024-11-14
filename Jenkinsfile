@@ -355,8 +355,10 @@ try {
                 def componentComposeYaml = readYaml(text: shOutput('docker compose config --no-consistency'))
 
                 if (env.runtime_images_to_build) {
-                    def keepServiceEntries =
-                            componentComposeYaml.services.findAll { env.runtime_images_to_build.contains(it.key) }
+                    def searchImages = env.runtime_images_to_build.split(',')
+                            .collect{ it.trim() }
+                    def keepServiceEntries = componentComposeYaml.services
+                            .findAll { searchImages.contains(it.key) }
                     echo 'KEEP SERVICES:\n' + keepServiceEntries // DEBUG
                     customComponentServices.retainAll(keepServiceEntries.keySet())
                     echo 'CUSTOM COMPONENT SERVICES:\n' + customComponentServices // DEBUG
