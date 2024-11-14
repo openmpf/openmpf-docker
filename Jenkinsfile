@@ -236,8 +236,7 @@ try {
          sh "docker system prune --all --force"
     }
 
-    def componentComposeFiles
-    def runtimeComposeFile = "docker-compose.jenkins.yml"
+    def runtimeComponentComposeFile = "docker-compose.components.jenkins.yml"
 
     stage('Build images') {
     timeout(time: buildTimeout, unit: 'HOURS') {
@@ -331,7 +330,7 @@ try {
         dir (openmpfDockerRepo.path) {
             sh 'cp .env.tpl .env'
 
-            componentComposeFiles = 'docker-compose.components.yml'
+            def componentComposeFiles = 'docker-compose.components.yml'
             def customComponentServices = []
 
             if (buildCustomComponents) {
@@ -349,42 +348,30 @@ try {
                         readYaml(text: shOutput("cat $customGpuOnlyComponentsComposeFile")).services.keySet()
             }
 
-            def allComposeFiles = "docker-compose.core.yml:$componentComposeFiles:docker-compose.elk.yml"
-            def composeYaml
-
-            withEnv(["TAG=$inProgressTag", "COMPOSE_FILE=$allComposeFiles"]) {
-                composeYaml = readYaml(text: shOutput('docker compose config'))
+            withEnv(["TAG=$inProgressTag", "COMPOSE_FILE=$componentComposeFiles"]) {
+                def componentComposeYaml = readYaml(text: shOutput('docker compose config'))
 
                 if (env.runtime_images_to_build) {
                     def buildImages = findImages(env.runtime_images_to_build)
-                    echo 'BUILD IMAGES:\n' + buildImages // DEBUG
-                    /*
-                    for (def service in composeYaml.services) {
-                        // echo 'SERVICE:\n' + service.value.image // DEBUG
-                        if (!buildImages.contains(service.value.image)) {
-                            echo 'REMOVE:\n' + service.value.image // DEBUG
-                            modifiedYaml.services.remove(service)
-                        } else {
-                            echo 'KEEP:\n' + service.value.image // DEBUG
-                        }
-                    }
-                    */
-
-                    def keepServices = composeYaml.services.findAll { buildImages.contains(it.value.image) }
-                    echo 'KEEP SERVICES:\n' + keepServices // DEBUG
-
-                    composeYaml.services.clear()
-                    composeYaml.services.putAll(keepServices)
+                    def keepServiceEntries = componentComposeYaml.services.findAll { buildImages.contains(it.value.image) }
+                    customComponentServices.retainAll(keepServiceEntries.keySet())
+                    echo 'KEEP SERVICES:\n' + keepServiceEntries // DEBUG
+                    echo 'CUSTOM COMPONENT SERVICES:\n' + customComponentServices // DEBUG
+                    componentComposeYaml.services.clear()
+                    componentComposeYaml.services.putAll(keepServiceEntries)
                 }
 
-                echo 'COMPOSE YAML:\n' + composeYaml // DEBUG
+                echo 'COMPONENT COMPOSE YAML:\n' + componentComposeYaml // DEBUG
 
-                writeYaml(file: runtimeComposeFile, data: composeYaml, overwrite: true)
+                writeYaml(file: runtimeComponentComposeFile, data: componentComposeYaml, overwrite: true)
             }
 
-            withEnv(["TAG=$inProgressTag", "COMPOSE_FILE=$runtimeComposeFile"]) {
+            def allComposeFiles = "docker-compose.core.yml:$runtimeComponentComposeFile:docker-compose.elk.yml"
+
+            withEnv(["TAG=$inProgressTag", "COMPOSE_FILE=$allComposeFiles"]) {
                 sh "docker compose build $commonBuildArgs --build-arg RUN_TESTS=true --parallel"
 
+                def composeYaml = readYaml(text: shOutput('docker compose config'))
                 addVcsRefLabels(composeYaml, openmpfRepo, openmpfDockerRepo)
                 addUserDefinedLabels(composeYaml, customComponentServices, imageUrl, imageVersion, customLabelKey)
             }
@@ -408,7 +395,7 @@ try {
         dir(openmpfDockerRepo.path) {
             test_cli_runner(inProgressTag)
 
-            def composeFiles = "docker-compose.integration.test.yml:$componentComposeFiles"
+            def composeFiles = "docker-compose.integration.test.yml:$runtimeComponentComposeFile"
 
             def nproc = Math.min((shOutput('nproc') as int), 6)
             def servicesInSystemTests = ['ocv-face-detection', 'ocv-dnn-detection', 'oalpr-license-plate-text-detection',
