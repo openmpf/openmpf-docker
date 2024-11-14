@@ -355,8 +355,8 @@ try {
                 def componentComposeYaml = readYaml(text: shOutput('docker compose config --no-consistency'))
                 echo 'COMPONENT COMPOSE YAML:\n' + componentComposeYaml // DEBUG
 
-                if (env.runtime_images_to_build) {
-                    def searchImages = env.runtime_images_to_build.split(',')
+                if (env.docker_services_to_build) {
+                    def searchImages = env.docker_services_to_build.split(',')
                             .collect{ it.trim() }
                     echo 'SEARCH IMAGES:\n' + searchImages // DEBUG
                     for ( e in componentComposeYaml.services ) {
