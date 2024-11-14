@@ -358,7 +358,7 @@ try {
                 if (env.runtime_images_to_build) {
                     def buildImages = findImages(env.runtime_images_to_build)
                     echo 'BUILD IMAGES:\n' + buildImages // DEBUG
-                    def modifiedYaml = composeYaml
+                    /*
                     for (def service in composeYaml.services) {
                         // echo 'SERVICE:\n' + service.value.image // DEBUG
                         if (!buildImages.contains(service.value.image)) {
@@ -368,7 +368,13 @@ try {
                             echo 'KEEP:\n' + service.value.image // DEBUG
                         }
                     }
-                    composeYaml = modifiedYaml
+                    */
+
+                    def keepServices = composeYaml.services.findAll { buildImages.contains(it.value.image) }
+                    echo 'KEEP SERVICES:\n' + keepServices // DEBUG
+
+                    composeYaml.services.clear()
+                    compaseYaml.services.putAll(keepServices)
                 }
 
                 echo 'COMPOSE YAML:\n' + composeYaml // DEBUG
