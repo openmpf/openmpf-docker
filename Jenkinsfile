@@ -362,7 +362,10 @@ try {
                     for (def service in composeYaml.services) {
                         echo 'SERVICE:\n' + service.value.image // DEBUG
                         if (!buildImages.contains(service.value.image)) {
+                            echo 'REMOVE:\n' + service.value.image // DEBUG
                             modifiedYaml.remove(service)
+                        } else {
+                            echo 'KEEP:\n' + service.value.image // DEBUG
                         }
                     }
                     composeYaml = modifiedYaml
