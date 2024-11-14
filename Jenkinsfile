@@ -331,12 +331,6 @@ try {
         dir (openmpfDockerRepo.path) {
             sh 'cp .env.tpl .env'
 
-            /*
-            def coreImages =
-                    readYaml(text: shOutput("cat docker-compose.core.yml")).services.keySet()
-            echo 'CORE IMAGES:\n' + coreImages // DEBUG
-            */
-
             def componentComposeFiles = 'docker-compose.components.yml'
             def customComponentServices = []
 
@@ -361,9 +355,8 @@ try {
                 def componentComposeYaml = readYaml(text: shOutput('docker compose config --no-consistency'))
 
                 if (env.runtime_images_to_build) {
-                    def buildImages = findImages(env.runtime_images_to_build)
-                    echo 'BUILD IMAGES:\n' + buildImages // DEBUG
-                    def keepServiceEntries = componentComposeYaml.services.findAll { buildImages.contains(it.value.image) }
+                    def keepServiceEntries =
+                            componentComposeYaml.services.findAll { env.runtime_images_to_build.contains(it.key) }
                     echo 'KEEP SERVICES:\n' + keepServiceEntries // DEBUG
                     customComponentServices.retainAll(keepServiceEntries.keySet())
                     echo 'CUSTOM COMPONENT SERVICES:\n' + customComponentServices // DEBUG
@@ -503,7 +496,11 @@ try {
                     sh "docker compose push"
                 }
                 else {
-                    def pushImages = findImages(env.runtime_images_to_push, baseImages)
+                    def composeImages = shOutput("docker compose config --images").split('\n') as Set
+                    def searchImages = env.runtime_images_to_push.split(',')
+                            .collect{ it.trim() }
+                    def pushImages = (baseImages + composeImages)
+                            .findAll{ it.split(":").first().split("/").last() in searchImages }
                     for (def image in pushImages) {
                         sh "docker push $image"
                     }
@@ -802,11 +799,4 @@ def optionalStage(name, condition, body) {
             org.jenkinsci.plugins.pipeline.modeldefinition.Utils.markStageSkippedForConditional(name)
         }
     }
-}
-
-def findImages(searchString, otherImages = []) {
-    def composeImages = shOutput("docker compose config --images").split('\n') as Set
-    def searchImages = searchString.split(',').collect{ it.trim() }
-    return (composeImages + otherImages)
-            .findAll{ it.split(":").first().split("/").last() in searchImages }
 }
