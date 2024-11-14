@@ -359,7 +359,7 @@ try {
                     def buildImages = findImages(env.runtime_images_to_build)
                     def modifiedYaml = composeYaml
                     for (def service in composeYaml.services) {
-                        if (service.image !in buildImages) {
+                        if (!buildImages.contains(service.image)) {
                             modifiedYaml.remove(service)
                         }
                     }
