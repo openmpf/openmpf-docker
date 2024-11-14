@@ -349,8 +349,9 @@ try {
                         readYaml(text: shOutput("cat $customGpuOnlyComponentsComposeFile")).services.keySet()
             }
 
-            withEnv(["TAG=$inProgressTag", "COMPOSE_FILE=$componentComposeFiles"]) {
-                def componentComposeYaml = readYaml(text: shOutput('docker compose config --no-consistency'))
+            withEnv(["COMPOSE_FILE=$componentComposeFiles"]) {
+                def componentComposeYaml =
+                        readYaml(text: shOutput('docker compose config --no-interpolate --no-consistency'))
 
                 if (env.docker_services_to_build) {
                     def searchImages = env.docker_services_to_build.split(',')
@@ -361,6 +362,8 @@ try {
                     componentComposeYaml.services.clear()
                     componentComposeYaml.services.putAll(keepServiceEntries)
                 }
+
+                echo 'COMPOSE YAML:\n' + componentComposeYaml // DEBUG
 
                 writeYaml(file: runtimeComponentComposeFile, data: componentComposeYaml, overwrite: true)
             }
