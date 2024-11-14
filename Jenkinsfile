@@ -237,7 +237,7 @@ try {
     }
 
     def componentComposeFiles
-    def runtimeComposeFiles
+    def runtimeComposeFile = "docker-compose.jenkins.yml"
 
     stage('Build images') {
     timeout(time: buildTimeout, unit: 'HOURS') {
@@ -349,12 +349,31 @@ try {
                         readYaml(text: shOutput("cat $customGpuOnlyComponentsComposeFile")).services.keySet()
             }
 
-            runtimeComposeFiles = "docker-compose.core.yml:$componentComposeFiles:docker-compose.elk.yml"
+            def allComposeFiles = "docker-compose.core.yml:$componentComposeFiles:docker-compose.elk.yml"
+            def composeYaml
 
-            withEnv(["TAG=$inProgressTag", "COMPOSE_FILE=$runtimeComposeFiles"]) {
+            withEnv(["TAG=$inProgressTag", "COMPOSE_FILE=$allComposeFiles"]) {
+                composeYaml = readYaml(text: shOutput('docker compose config'))
+
+                if (env.runtime_images_to_build) {
+                    def buildImages = findImages(env.runtime_images_to_build)
+                    def modifiedYaml = composeYaml
+                    for (def service in composeYaml.services) {
+                        if (service.image !in buildImages) {
+                            modifiedYaml.remove(service)
+                        }
+                    }
+                    composeYaml = modifiedYaml
+                }
+
+                echo 'COMPOSE YAML:\n' + composeYaml // DEBUG
+
+                writeYaml(file: runtimeComposeFile, data: composeYaml, overwrite: true)
+            }
+
+            withEnv(["TAG=$inProgressTag", "COMPOSE_FILE=$runtimeComposeFile"]) {
                 sh "docker compose build $commonBuildArgs --build-arg RUN_TESTS=true --parallel"
 
-                def composeYaml = readYaml(text: shOutput('docker compose config'))
                 addVcsRefLabels(composeYaml, openmpfRepo, openmpfDockerRepo)
                 addUserDefinedLabels(composeYaml, customComponentServices, imageUrl, imageVersion, customLabelKey)
             }
@@ -468,7 +487,7 @@ try {
                 .collect{ "${remoteImagePrefix}$it:$imageTag" }
 
         dir (openmpfDockerRepo.path) {
-            withEnv(["TAG=$imageTag", "REGISTRY=$remoteImagePrefix", "COMPOSE_FILE=$runtimeComposeFiles"]) {
+            withEnv(["TAG=$imageTag", "REGISTRY=$remoteImagePrefix", "COMPOSE_FILE=$runtimeComposeFile"]) {
                 if (!env.runtime_images_to_push) {
                     for (def image in baseImages) {
                         sh "docker push $image"
@@ -476,11 +495,7 @@ try {
                     sh "docker compose push"
                 }
                 else {
-                    def composeImages = shOutput("docker compose config --images").split('\n') as Set
-                    def searchImages = env.runtime_images_to_push.split(',')
-                            .collect{ it.trim() }
-                    def pushImages = (baseImages + composeImages)
-                            .findAll{ it.split(":").first().split("/").last() in searchImages }
+                    def pushImages = findImages(env.runtime_images_to_push, baseImages)
                     for (def image in pushImages) {
                         sh "docker push $image"
                     }
@@ -779,4 +794,11 @@ def optionalStage(name, condition, body) {
             org.jenkinsci.plugins.pipeline.modeldefinition.Utils.markStageSkippedForConditional(name)
         }
     }
+}
+
+def findImages(searchString, otherImages = []) {
+    def composeImages = shOutput("docker compose config --images").split('\n') as Set
+    def searchImages = searchString.split(',').collect{ it.trim() }
+    return (composeImages + otherImages)
+            .findAll{ it.split(":").first().split("/").last() in searchImages }
 }
