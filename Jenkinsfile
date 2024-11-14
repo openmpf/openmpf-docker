@@ -349,29 +349,18 @@ try {
                         readYaml(text: shOutput("cat $customGpuOnlyComponentsComposeFile")).services.keySet()
             }
 
-            // def composeFiles = "docker-compose.core.yml:$componentComposeFiles"
-
             withEnv(["TAG=$inProgressTag", "COMPOSE_FILE=$componentComposeFiles"]) {
                 def componentComposeYaml = readYaml(text: shOutput('docker compose config --no-consistency'))
-                echo 'COMPONENT COMPOSE YAML:\n' + componentComposeYaml // DEBUG
 
                 if (env.docker_services_to_build) {
                     def searchImages = env.docker_services_to_build.split(',')
                             .collect{ it.trim() }
-                    echo 'SEARCH IMAGES:\n' + searchImages // DEBUG
-                    for ( e in componentComposeYaml.services ) {
-                        echo 'SERVICE:\n' + e.key // DEBUG
-                    }
                     def keepServiceEntries = componentComposeYaml.services
                             .findAll { it.key in searchImages }
-                    echo 'KEEP SERVICES:\n' + keepServiceEntries // DEBUG
                     customComponentServices.retainAll(keepServiceEntries.keySet())
-                    echo 'CUSTOM COMPONENT SERVICES:\n' + customComponentServices // DEBUG
                     componentComposeYaml.services.clear()
                     componentComposeYaml.services.putAll(keepServiceEntries)
                 }
-
-                echo 'COMPONENT COMPOSE YAML:\n' + componentComposeYaml // DEBUG
 
                 writeYaml(file: runtimeComponentComposeFile, data: componentComposeYaml, overwrite: true)
             }
@@ -380,6 +369,8 @@ try {
 
             withEnv(["TAG=$inProgressTag", "COMPOSE_FILE=$runtimeComposeFiles"]) {
                 sh "docker compose build $commonBuildArgs --build-arg RUN_TESTS=true --parallel"
+
+                echo 'CUSTOM COMPONENT SERVICES:\n' + customComponentServices // DEBUG
 
                 def composeYaml = readYaml(text: shOutput('docker compose config'))
                 addVcsRefLabels(composeYaml, openmpfRepo, openmpfDockerRepo)
