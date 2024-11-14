@@ -363,8 +363,6 @@ try {
                     componentComposeYaml.services.putAll(keepServiceEntries)
                 }
 
-                echo 'COMPOSE YAML:\n' + componentComposeYaml // DEBUG
-
                 writeYaml(file: runtimeComponentComposeFile, data: componentComposeYaml, overwrite: true)
             }
 
