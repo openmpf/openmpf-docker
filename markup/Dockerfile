@@ -7,11 +7,11 @@
 # under contract, and is subject to the Rights in Data-General Clause       #
 # 52.227-14, Alt. IV (DEC 2007).                                            #
 #                                                                           #
-# Copyright 2023 The MITRE Corporation. All Rights Reserved.                #
+# Copyright 2024 The MITRE Corporation. All Rights Reserved.                #
 #############################################################################
 
 #############################################################################
-# Copyright 2023 The MITRE Corporation                                      #
+# Copyright 2024 The MITRE Corporation                                      #
 #                                                                           #
 # Licensed under the Apache License, Version 2.0 (the "License");           #
 # you may not use this file except in compliance with the License.          #
@@ -31,7 +31,7 @@ ARG BUILD_TAG=latest
 FROM ${BUILD_REGISTRY}openmpf_build:${BUILD_TAG} AS openmpf_build
 
 
-FROM ubuntu:20.04
+FROM ubuntu:20.04 AS common
 
 SHELL ["/bin/bash", "-o", "errexit", "-o", "pipefail", "-c"]
 
@@ -49,26 +49,22 @@ RUN --mount=type=tmpfs,target=/var/cache/apt \
 
 COPY --from=openmpf_build /usr/local/bin/ffmpeg /usr/local/bin/ffprobe /usr/local/bin/
 
-# Use mount and cp shell command because the docker COPY command resolves symlinks which then
-# causes duplicate copies of the libraries to be added to the image.
+COPY --from=openmpf_build /scripts/* /scripts/
+
+
+FROM common AS copy_libs
+
 RUN --mount=type=bind,from=openmpf_build,source=/build-artifacts/install/lib,target=/tmp/mpf-libs \
-    cd /tmp/mpf-libs; \
-    cp --preserve=links --no-dereference \
-        libopencv* libopenblas* libgfortran* libquadmath* libheif* libde265* libprotobuf* \
-        /usr/lib/x86_64-linux-gnu;
+    mkdir /libs-to-copy; \
+    cp /tmp/mpf-libs/libmpfopencvjni.so /libs-to-copy/; \
+    /scripts/copy_libs.sh /libs-to-copy/libmpfopencvjni.so /libs-to-copy /tmp/mpf-libs
+
+FROM common
+
+COPY --from=copy_libs /libs-to-copy /usr/lib/x86_64-linux-gnu/
 
 COPY --from=openmpf_build /usr/share/fonts/google-noto-emoji /usr/share/fonts/google-noto-emoji
 
-COPY --from=openmpf_build /build-artifacts/install/lib/libmpfopencvjni.so \
-                          /usr/lib/x86_64-linux-gnu/
-
-COPY --from=openmpf_build /build-artifacts/install/lib/libmpfDetectionComponentApi.so \
-                          /usr/lib/x86_64-linux-gnu
-
-COPY --from=openmpf_build /build-artifacts/install/lib/libmpfProtobufsShared.so \
-                          /usr/lib/x86_64-linux-gnu
-
-COPY --from=openmpf_build /scripts/* /scripts/
 
 ENV MPF_HOME /opt/mpf
 

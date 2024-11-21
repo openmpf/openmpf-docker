@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2023 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2024 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2023 The MITRE Corporation                                       *
+ * Copyright 2024 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -45,7 +45,7 @@ def pushRuntimeImages = env.push_runtime_images?.toBoolean() ?: false
 
 def pollReposAndEndBuild = env.poll_repos_and_end_build?.toBoolean() ?: false
 
-def postBuildStatusEnabled = env.post_build_status?.toBoolean()  ?: false
+def postBuildStatusEnabled = env.post_build_status?.toBoolean() ?: false
 def githubAuthToken = env.github_auth_token
 def emailRecipients = env.email_recipients
 
@@ -480,19 +480,35 @@ try {
     }
 
     optionalStage('Push runtime images', pushRuntimeImages) {
-        withEnv(["TAG=$imageTag", "REGISTRY=$remoteImagePrefix", "COMPOSE_FILE=$runtimeComposeFiles"]) {
-            sh "docker push '${remoteImagePrefix}openmpf_cpp_component_build:$imageTag'"
-            sh "docker push '${remoteImagePrefix}openmpf_cpp_executor:$imageTag'"
+        def baseImages = ["openmpf_cpp_component_build",
+                          "openmpf_cpp_executor",
+                          "openmpf_java_component_build",
+                          "openmpf_java_executor",
+                          "openmpf_python_component_build",
+                          "openmpf_python_executor",
+                          "openmpf_python_executor_ssb"]
+                .collect{ "${remoteImagePrefix}$it:$imageTag" }
 
-            sh "docker push '${remoteImagePrefix}openmpf_java_component_build:$imageTag'"
-            sh "docker push '${remoteImagePrefix}openmpf_java_executor:$imageTag'"
-
-            sh "docker push '${remoteImagePrefix}openmpf_python_component_build:$imageTag'"
-            sh "docker push '${remoteImagePrefix}openmpf_python_executor:$imageTag'"
-            sh "docker push '${remoteImagePrefix}openmpf_python_executor_ssb:$imageTag'"
-
-            sh "cd '$openmpfDockerRepo.path' && docker compose push"
-        } // withEnv...
+        dir (openmpfDockerRepo.path) {
+            withEnv(["TAG=$imageTag", "REGISTRY=$remoteImagePrefix", "COMPOSE_FILE=$runtimeComposeFiles"]) {
+                if (!env.runtime_images_to_push) {
+                    for (def image in baseImages) {
+                        sh "docker push $image"
+                    }
+                    sh "docker compose push"
+                }
+                else {
+                    def composeImages = shOutput("docker compose config --images").split('\n') as Set
+                    def searchImages = env.runtime_images_to_push.split(',')
+                            .collect{ it.trim() }
+                    def pushImages = (baseImages + composeImages)
+                            .findAll{ it.split(":").first().split("/").last() in searchImages }
+                    for (def image in pushImages) {
+                        sh "docker push $image"
+                    }
+                }
+            }
+        }
     } // optionalStage('Push runtime images', ...
 }
 catch (e) { // Global exception handler
@@ -716,24 +732,29 @@ def dockerCleanUp() {
                         .split("\n")
 
         def now = java.time.Instant.now()
-        for (image in images) {
+        def stepsForParallel = [:]
+        images.each { image ->
             if (!image.contains('deleteme')) {
-                continue;
+                return;
             }
 
-            // Time formats from Docker (includes quotes at beginning and end):
-            // - "2019-11-18T18:58:33.990718123Z"
-            // - "2020-06-29T12:47:45.512019992-04:00"
-            def quotedTagTimeString = shOutput "docker image inspect --format '{{json .Metadata.LastTagTime}}' $image"
-            def tagTimeString = quotedTagTimeString[1..-2]
-            def tagTime = parseDate(tagTimeString)
+            stepsForParallel["Clean up $image"] = { ->
+                // Time formats from Docker (includes quotes at beginning and end):
+                // - "2019-11-18T18:58:33.990718123Z"
+                // - "2020-06-29T12:47:45.512019992-04:00"
+                def quotedTagTimeString = shOutput "docker image inspect --format '{{json .Metadata.LastTagTime}}' $image"
+                def tagTimeString = quotedTagTimeString[1..-2]
+                def tagTime = parseDate(tagTimeString)
 
-            def daysSinceLastTag = tagTime.until(now, java.time.temporal.ChronoUnit.DAYS)
-            if (daysSinceLastTag > daysUntilRemoval) {
-                echo "Deleting $image because has \"deleteme\" in its name and was last tagged $daysSinceLastTag days ago."
-                sh "docker image rm $image"
+                def daysSinceLastTag = tagTime.until(now, java.time.temporal.ChronoUnit.DAYS)
+                if (daysSinceLastTag > daysUntilRemoval) {
+                    echo "Deleting $image because has \"deleteme\" in its name and was last tagged $daysSinceLastTag days ago."
+                    sh "docker image rm $image"
+                }
             }
         }
+        
+        parallel stepsForParallel
 
         sh 'docker builder prune --force --keep-storage=120GB'
     }
