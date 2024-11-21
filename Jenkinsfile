@@ -453,7 +453,7 @@ try {
                 echo 'Trivy scan failed for the following images:\n' + failedImages.join('\n')
             }
 
-            archiveArtifacts artifacts: "${openmpfProjectsRepo.path}/${openmpfDockerRepo.path}/*_sbom.json", allowEmptyArchive: true
+            archiveArtifacts artifacts: "${openmpfDockerRepo.path}/*_sbom.json", allowEmptyArchive: true
         }
         finally {
             sh "docker volume rm $trivyVolume"
