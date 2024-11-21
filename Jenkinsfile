@@ -435,7 +435,10 @@ try {
         try {
             def failedImages = []
             for (def serviceName in composeYaml.services.keySet()) {
+                //fetch service using the serviceName
                 def service = composeYaml.services[serviceName]
+
+                //save the output to a file
                 def exitCode = shStatus("docker run --rm " +
                         "-e TRIVY_INSECURE=${runTrivyInsecure} " +
                         "-v /var/run/docker.sock:/var/run/docker.sock " +
@@ -449,6 +452,7 @@ try {
                     failedImages << service.image
                 }
                 else {
+                    //if successful, print the results to the console
                     shStatus ("docker run --rm " +
                         "-e TRIVY_INSECURE=${runTrivyInsecure} " +
                         "-v /var/run/docker.sock:/var/run/docker.sock " +
@@ -463,6 +467,7 @@ try {
                 echo 'Trivy scan failed for the following images:\n' + failedImages.join('\n')
             }
 
+            //create build artifacts of the files
             archiveArtifacts artifacts: "${openmpfDockerRepo.path}/*_sbom.json", allowEmptyArchive: true
         }
         finally {
