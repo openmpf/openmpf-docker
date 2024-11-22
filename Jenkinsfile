@@ -193,7 +193,6 @@ try {
             sh "$fetch_command"
             sh "git submodule foreach $fetch_command"
 
-
             sh "git checkout 'origin/$openmpfProjectsRepo.branch'"
             sh 'git submodule update --init'
         }
