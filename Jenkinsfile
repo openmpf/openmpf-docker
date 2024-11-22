@@ -184,7 +184,15 @@ try {
         dir(openmpfProjectsRepo.path) {
             sh 'git clean -ffd'
             sh 'git submodule foreach git clean -ffd'
-            sh 'git fetch --recurse-submodules'
+
+            def fetch_command = "git fetch origin '+refs/heads/*:refs/remotes/origin/*'" +
+                    // This creates branches for pull requests. The will be named "pull/" followed
+                    // by the pull request ID. For example, the branch for pull request 321 will
+                    // be named "pull/321".
+                    " '+refs/pull/*/head:refs/remotes/origin/pull/*'"
+            sh "$fetch_command"
+            sh "git submodule foreach $fetch_command"
+
             sh "git checkout 'origin/$openmpfProjectsRepo.branch'"
             sh 'git submodule update --init'
         }
