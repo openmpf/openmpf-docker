@@ -481,7 +481,7 @@ try {
                         "-v '${pwd()}/$openmpfDockerRepo.path/trivyignore.txt:/.trivyignore' " +
                         "-v '${pwd()}/$openmpfDockerRepo.path:/trivy' " +
                         "aquasec/trivy image --format cyclonedx --output /trivy/${serviceName}_sbom.json " +
-                        "--exit-code 1 --timeout 30m --scanners vuln $service.image")
+                        "--timeout 30m --scanners vuln $service.image")
                 if (exitCode != 0) {
                     failedImages << service.image
                 }
