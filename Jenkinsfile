@@ -356,11 +356,8 @@ try {
                 if (env.docker_services_to_build) {
                     def searchImages = env.docker_services_to_build.split(',')
                             .collect{ it.trim() }
-                    def keepServiceEntries = componentComposeYaml.services
-                            .findAll { it.key in searchImages }
-                    customComponentServices.retainAll(keepServiceEntries.keySet())
-                    componentComposeYaml.services.clear()
-                    componentComposeYaml.services.putAll(keepServiceEntries)
+                    componentComposeYaml.services.keySet().retainAll(searchImages)
+                    customComponentServices.retainAll(componentComposeYaml.services.keySet())
                 }
 
                 writeYaml(file: runtimeComponentComposeFile, data: componentComposeYaml, overwrite: true)
