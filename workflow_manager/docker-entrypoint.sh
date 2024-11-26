@@ -87,7 +87,7 @@ echo 'PostgreSQL is available'
 # Wait for Redis service.
 echo 'Waiting for Redis to become available ...'
 # From https://stackoverflow.com/a/39214806
-until [ +PONG = "$( (exec 8<>/dev/tcp/redis/6379 && echo -e 'PING\r\n' >&8 && head -c 5 <&8; exec 8>&-) 2>/dev/null )" ]; do
+until [ +PONG = "$( (exec 8<>/dev/tcp/${REDIS_HOST:-redis}/6379 && echo -e 'PING\r\n' >&8 && head -c 5 <&8; exec 8>&-) 2>/dev/null )" ]; do
     echo 'Redis is unavailable. Sleeping.'
     sleep 5
 done
