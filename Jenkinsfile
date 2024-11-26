@@ -358,6 +358,14 @@ try {
                             .collect{ it.trim() }
                     componentComposeYaml.services.keySet().retainAll(searchImages)
 
+                    echo "SEARCH IMAGES:\n$searchImages"  // DEBUG
+
+                    def ks = componentComposeYaml.services.keySet()
+                    echo "KEY SET:\n$ks"  // DEBUG
+
+                    def services = componentComposeYaml.services
+                    echo "SERVICES:\n$services"  // DEBUG
+
                     echo "COMPOSE YAML:\n$componentComposeYaml"  // DEBUG
 
                     customComponentServices.retainAll(componentComposeYaml.services.keySet())
