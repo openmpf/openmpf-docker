@@ -434,7 +434,7 @@ try {
         sh "docker volume create $trivyVolume"
         try {
             def failedImages = []
-             for (def serviceName in composeYaml.services.keySet()) {
+            for (def serviceName in composeYaml.services.keySet()) {
                 // fetch service using the serviceName
                 def service = composeYaml.services[serviceName]
 
@@ -456,6 +456,7 @@ try {
                         "-v /var/run/docker.sock:/var/run/docker.sock " +
                         "-v $trivyVolume:/root/.cache/ " +
                         "-v '${pwd()}/$openmpfDockerRepo.path/trivyignore.txt:/.trivyignore' " +
+                        "-v '${pwd()}/$openmpfDockerRepo.path:/trivy' " +
                         "aquasec/trivy sbom --severity CRITICAL,HIGH --exit-code 1 " +
                         "--timeout 30m --scanners vuln /trivy/${serviceName}_sbom.json")
                     if (exitCode != 0) {
@@ -467,7 +468,7 @@ try {
                 echo 'Trivy scan failed for the following images:\n' + failedImages.join('\n')
             }
 
-            //create build artifacts of the files
+            // create build artifacts of the files
             archiveArtifacts artifacts: "${openmpfDockerRepo.path}/*_sbom.json", allowEmptyArchive: true
         }
         finally {
