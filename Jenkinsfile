@@ -357,6 +357,9 @@ try {
                     def searchImages = env.docker_services_to_build.split(',')
                             .collect{ it.trim() }
                     componentComposeYaml.services.keySet().retainAll(searchImages)
+
+                    echo "COMPOSE YAML:\n$componentComposeYaml"  // DEBUG
+
                     customComponentServices.retainAll(componentComposeYaml.services.keySet())
                 }
 
