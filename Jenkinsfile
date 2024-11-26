@@ -244,7 +244,7 @@ try {
          sh "docker system prune --all --force"
     }
 
-    def componentComposeFiles
+    def runtimeComponentComposeFile = "docker-compose.components.jenkins.yml"
     def runtimeComposeFiles
 
     stage('Build images') {
@@ -339,7 +339,7 @@ try {
         dir (openmpfDockerRepo.path) {
             sh 'cp .env.tpl .env'
 
-            componentComposeFiles = 'docker-compose.components.yml'
+            def componentComposeFiles = 'docker-compose.components.yml'
             def customComponentServices = []
 
             if (buildCustomComponents) {
@@ -357,7 +357,24 @@ try {
                         readYaml(text: shOutput("cat $customGpuOnlyComponentsComposeFile")).services.keySet()
             }
 
-            runtimeComposeFiles = "docker-compose.core.yml:$componentComposeFiles:docker-compose.elk.yml"
+            withEnv(["COMPOSE_FILE=$componentComposeFiles"]) {
+                def componentComposeYaml =
+                        readYaml(text: shOutput('docker compose config --no-interpolate --no-consistency'))
+
+                if (env.docker_services_to_build) {
+                    def searchImages = env.docker_services_to_build.split(',')
+                            .collect{ it.trim() }
+                    def keepServiceEntries = componentComposeYaml.services
+                            .findAll { it.key in searchImages }
+                    customComponentServices.retainAll(keepServiceEntries.keySet())
+                    componentComposeYaml.services.clear()
+                    componentComposeYaml.services.putAll(keepServiceEntries)
+                }
+
+                writeYaml(file: runtimeComponentComposeFile, data: componentComposeYaml, overwrite: true)
+            }
+
+            runtimeComposeFiles = "docker-compose.core.yml:$runtimeComponentComposeFile:docker-compose.elk.yml"
 
             withEnv(["TAG=$inProgressTag", "COMPOSE_FILE=$runtimeComposeFiles"]) {
                 sh "docker compose build $commonBuildArgs --build-arg RUN_TESTS=true --parallel"
@@ -386,7 +403,7 @@ try {
         dir(openmpfDockerRepo.path) {
             test_cli_runner(inProgressTag)
 
-            def composeFiles = "docker-compose.integration.test.yml:$componentComposeFiles"
+            def composeFiles = "docker-compose.integration.test.yml:$runtimeComponentComposeFile"
 
             def nproc = Math.min((shOutput('nproc') as int), 6)
             def servicesInSystemTests = ['ocv-face-detection', 'ocv-dnn-detection', 'oalpr-license-plate-text-detection',
@@ -432,7 +449,7 @@ try {
         def composeYaml
         dir (openmpfDockerRepo.path) {
             withEnv(["TAG=$inProgressTag",
-                     "COMPOSE_FILE=docker-compose.core.yml:$componentComposeFiles"]) {
+                     "COMPOSE_FILE=docker-compose.core.yml:$runtimeComponentComposeFile"]) {
                 composeYaml = readYaml(text: shOutput('docker compose config'))
             }
         }
