@@ -476,13 +476,13 @@ try {
             }
 
             // number of cpu cores
-            def cpuCores = sh(script: "nproc", returnStdout: true).trim().toInteger()
+            def maxTasks = sh(script: "nproc", returnStdout: true).trim().toInteger()
 
             // process tasks in parallel (limited to maxTasks)
             while (!taskQueue.isEmpty()) {
                 // limit the number of running tasks
                 def tasksToRun = [:]
-                def taskCount = Math.min(cpuCores, taskQueue.size())
+                def taskCount = Math.min(maxTasks, taskQueue.size())
 
                 // add tasks the map
                 for (int i = 0; i < taskCount; i++) {
@@ -490,6 +490,7 @@ try {
                     tasksToRun[taskName] = taskQueue.remove(0)
                 }
 
+                // debug info
                 echo "Running parallel tasks: ${tasksToRun.keySet()} ${tasksToRun.values()}"
 
                 // Run the tasks in parallel
