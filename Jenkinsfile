@@ -482,10 +482,10 @@ try {
             while (!taskQueue.isEmpty()) {
                 // limit the number of running tasks
                 parallel(
-                    task1: taskQueue.take(1)[0],
-                    task2: taskQueue.take(1)[0],
-                    task3: taskQueue.take(1)[0],
-                    task4: taskQueue.take(1)[0]
+                    task1: taskQueue.take()[0],
+                    task2: taskQueue.take()[0],
+                    task3: taskQueue.take()[0],
+                    task4: taskQueue.take()[0]
                 )
             }
 
