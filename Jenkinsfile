@@ -483,8 +483,10 @@ try {
                 // limit the number of running tasks
                 def runningTasks = parallel(taskQueue.take(cpuCores))
 
-                // wait for all running tasks to finish
-                wait for runningTasks
+                // wait for tasks to finish
+                for (task in runningTasks) {
+                    wait task
+                }
             }
 
             // print failed images
