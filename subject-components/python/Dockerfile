@@ -58,9 +58,20 @@ ENV PATH $COMPONENT_VIRTUALENV/bin:/scripts:$PATH
 #########################################
 FROM common AS build
 
+# The subject component executor depends on the python-qpid-proton pip package.
+# python-qpid-proton requires a C compiler and the Python headers to be installed.
+RUN --mount=type=tmpfs,target=/var/cache/apt \
+    --mount=type=tmpfs,target=/var/lib/apt/lists  \
+    --mount=type=tmpfs,target=/tmp \
+<<eot
+    apt-get update
+    apt-get install --no-install-recommends -y gcc python3.8-dev
+eot
+
 RUN <<eot
     python3 -m venv "$COMPONENT_VIRTUALENV"
     pip config --site set global.no-cache-dir true
+    pip install --upgrade setuptools
 eot
 
 RUN --mount=from=openmpf_build,source=/home/mpf/openmpf-projects/openmpf-python-component-sdk/detection,target=/tmp/python \
@@ -69,39 +80,31 @@ RUN --mount=from=openmpf_build,source=/home/mpf/openmpf-projects/openmpf-python-
 RUN --mount=from=openmpf_build,source=/home/mpf/openmpf-projects/openmpf-python-component-sdk/subject,target=/tmp/python \
     pip3 install --no-cache-dir /tmp/python/api;
 
+RUN --mount=from=openmpf_build,source=/build-artifacts/install/bin/subject_executor/requirements.txt,target=/tmp/requirements.txt \
+    pip3 install -r /tmp/requirements.txt
+
 ENV SRC_DIR /home/mpf/component_src
 
 WORKDIR $SRC_DIR
 
 COPY install-component.sh /scripts/
 
-FROM common AS copy_libs
-
-RUN --mount=type=bind,from=openmpf_build,source=/build-artifacts/install/lib,target=/tmp/mpf-libs \
-    --mount=type=bind,from=openmpf_build,source=/build-artifacts/install/bin/subject_tracking_executor,target=/tmp/subject_tracking_executor \
-    --mount=type=bind,from=openmpf_build,source=/scripts/copy_libs.sh,target=/tmp/copy_libs.sh \
-    mkdir /libs-to-copy; \
-    /tmp/copy_libs.sh /tmp/subject_tracking_executor /libs-to-copy /tmp/mpf-libs
-
 
 #########################################
 FROM common AS executor
 
-COPY --from=copy_libs /libs-to-copy /usr/lib/x86_64-linux-gnu/
-
 ENV MPF_HOME /opt/mpf
 
-COPY --from=openmpf_build /build-artifacts/install/bin/subject_tracking_executor \
-                          $MPF_HOME/bin/subject_tracking_executor
+COPY --from=openmpf_build /build-artifacts/install/bin/subject_executor $MPF_HOME/bin/subject_executor
 
 ENV PYTHONUNBUFFERED 1
 
 ENV PLUGINS_DIR $MPF_HOME/plugins
 
-ENV ACTIVE_MQ_BROKER_URI failover:(tcp://workflow-manager:61616)?maxReconnectAttempts=13&startupMaxReconnectAttempts=21
+ENV ACTIVE_MQ_HOST workflow-manager
 
 ENV COMPONENT_LANGUAGE python
 
 # Using tini here is equivalent to starting the container with the --init flag, except that users
 # do not need to remember to add the flag.
-ENTRYPOINT ["tini", "-v", "--", "/opt/mpf/bin/subject_tracking_executor"]
+ENTRYPOINT ["tini", "-v", "--", "python", "/opt/mpf/bin/subject_executor/__main__.py"]
