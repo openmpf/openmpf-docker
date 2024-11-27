@@ -477,16 +477,13 @@ try {
             def cpuCores = sh(script: "nproc", returnStdout: true).trim().toInteger()
 
             // convert into a list of entries
-            def parallelTasksList = parallelTasks.collect { key, value ->
-                [(key): value]
-            }
+            def chunkedParallelTasks = parallelTasks.collect { k, v -> 
+                [(k): v]
+            }.collate(cpuCores)
 
-            // limit the parallel tasks
-            def chunkedParallelTasks = parallelTasksList.collate(cpuCores)
-
-            // parallel tasks in chunks
+            // process each chunk
             chunkedParallelTasks.each { chunk ->
-                parallel chunk
+                parallel(chunk) 
             }
 
             // print failed images
