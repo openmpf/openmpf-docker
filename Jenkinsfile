@@ -436,15 +436,14 @@ try {
             // list of failed scans
             def failedImages = []
 
-            // map for parallel tasks
-            def parallelTasks = [:]
+            // queue of tasks
+            def taskQueue = []
 
-            for (def serviceName in composeYaml.services.keySet()) {
-                // fetch service using the serviceName
-                def service = composeYaml.services[serviceName]
+            composeYaml.services.keySet().each { serviceName ->
+                def task = {
+                    // fetch service using the serviceName
+                    def service = composeYaml.services[serviceName]
 
-                // add trivy scans to the map
-                parallelTasks["Scan ${serviceName}"] = {
                     // save the output to a file
                     def exitCode = shStatus("docker run --rm " +
                             "-e TRIVY_INSECURE=${runTrivyInsecure} " +
@@ -471,19 +470,21 @@ try {
                         }
                     }
                 }
+
+                // add to the queue
+                taskQueue << task
             }
 
             // number of available CPU cores
             def cpuCores = sh(script: "nproc", returnStdout: true).trim().toInteger()
 
-            // convert into a list of entries
-            def chunkedParallelTasks = parallelTasks.collect { k, v -> 
-                [(k): v]
-            }.collate(cpuCores)
+            // process tasks in parallel (limited to maxTasks)
+            while (!taskQueue.isEmpty()) {
+                // limit the number of running tasks
+                def runningTasks = parallel(taskQueue.take(cpuCores))
 
-            // process each chunk
-            chunkedParallelTasks.each { chunk ->
-                parallel(chunk) 
+                // wait for all running tasks to finish
+                wait for runningTasks
             }
 
             // print failed images
