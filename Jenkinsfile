@@ -480,11 +480,13 @@ try {
 
             // process tasks in parallel (limited to maxTasks)
             while (!taskQueue.isEmpty()) {
+                sh "echo before parallel"
                 // limit the number of running tasks
                 def runningTasks = parallel(taskQueue.take(cpuCores))
 
                 // wait for tasks to finish
                 for (task in runningTasks) {
+                    sh "echo before wait"
                     wait task
                 }
             }
