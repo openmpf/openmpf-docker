@@ -57,6 +57,7 @@ def customLabelKey = env.getProperty("custom_label_key") ?: "custom"
 def preDockerBuildScriptPath = env.pre_docker_build_script_path
 
 def runTrivyScans = env.run_trivy_scans?.toBoolean() ?: false
+def runTrivyInsecure = env.run_trivy_insecure?.toBoolean() ?: false
 def skipIntegrationTests = env.skip_integration_tests?.toBoolean() ?: false
 def pruneDocker = env.prune_docker?.toBoolean() ?: false
 def buildTimeout = env.build_timeout ?: 6 // hours
@@ -457,21 +458,77 @@ try {
         def trivyVolume = "trivy_$inProgressTag"
         sh "docker volume create $trivyVolume"
         try {
+            // list of failed scans
             def failedImages = []
-            for (def service in composeYaml.services.values()) {
-                def exitCode = shStatus("docker run --rm " +
-                        "-v /var/run/docker.sock:/var/run/docker.sock " +
-                        "-v $trivyVolume:/root/.cache/ " +
-                        "-v '${pwd()}/$openmpfDockerRepo.path/trivyignore.txt:/.trivyignore' " +
-                        "aquasec/trivy image --severity CRITICAL,HIGH --exit-code 1 " +
-                        "--timeout 30m --scanners vuln $service.image")
-                if (exitCode != 0) {
-                    failedImages << service.image
+
+            // queue of tasks
+            def taskQueue = []
+
+            composeYaml.services.keySet().each { serviceName ->
+                def task = {
+                    // fetch service using the serviceName
+                    def service = composeYaml.services[serviceName]
+
+                    // save the output to a file
+                    def exitCode = shStatus("docker run --rm " +
+                            "-e TRIVY_INSECURE=${runTrivyInsecure} " +
+                            "-v /var/run/docker.sock:/var/run/docker.sock " +
+                            "-v $trivyVolume:/root/.cache/ " +
+                            "-v '${pwd()}/$openmpfDockerRepo.path/trivyignore.txt:/.trivyignore' " +
+                            "-v '${pwd()}/$openmpfDockerRepo.path:/trivy' " +
+                            "aquasec/trivy image --format cyclonedx --output /trivy/${serviceName}_sbom.json " +
+                            "--timeout 30m --scanners vuln $service.image")
+                    if (exitCode != 0) {
+                        failedImages << service.image
+                    } else {
+                        // print the vulnerabilities to the console
+                        exitCode = shStatus("docker run --rm " +
+                            "-e TRIVY_INSECURE=${runTrivyInsecure} " +
+                            "-v /var/run/docker.sock:/var/run/docker.sock " +
+                            "-v $trivyVolume:/root/.cache/ " +
+                            "-v '${pwd()}/$openmpfDockerRepo.path/trivyignore.txt:/.trivyignore' " +
+                            "-v '${pwd()}/$openmpfDockerRepo.path:/trivy' " +
+                            "aquasec/trivy sbom --severity CRITICAL,HIGH --exit-code 1 " +
+                            "--timeout 30m --scanners vuln /trivy/${serviceName}_sbom.json")
+                        if (exitCode != 0) {
+                            failedImages << service.image
+                        }
+                    }
                 }
+
+                // add to the queue
+                taskQueue << task
             }
+
+            // number of cpu cores
+            def maxTasks = sh(script: "nproc", returnStdout: true).trim().toInteger()
+
+            // process tasks in parallel (limited to maxTasks)
+            while (!taskQueue.isEmpty()) {
+                // limit the number of running tasks
+                def tasksToRun = [:]
+                def taskCount = Math.min(maxTasks, taskQueue.size())
+
+                // add tasks the map
+                for (int i = 0; i < taskCount; i++) {
+                    def taskName = "Task ${i}" 
+                    tasksToRun[taskName] = taskQueue.remove(0)
+                }
+
+                // debug info
+                echo "Running parallel tasks: ${tasksToRun.keySet()} ${tasksToRun.values()}"
+
+                // Run the tasks in parallel
+                parallel tasksToRun
+            }
+
+            // print failed images
             if (failedImages) {
                 echo 'Trivy scan failed for the following images:\n' + failedImages.join('\n')
             }
+
+            // create build artifacts of the files
+            archiveArtifacts artifacts: "${openmpfDockerRepo.path}/*_sbom.json", allowEmptyArchive: true
         }
         finally {
             sh "docker volume rm $trivyVolume"
