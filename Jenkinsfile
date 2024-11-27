@@ -476,13 +476,18 @@ try {
             }
 
             // number of available CPU cores
-            def cpuCores = sh(script: "nproc", returnStdout: true).trim().toInteger()
+            // def cpuCores = sh(script: "nproc", returnStdout: true).trim().toInteger()
 
             // process tasks in parallel (limited to maxTasks)
             while (!taskQueue.isEmpty()) {
                 sh "echo before parallel"
                 // limit the number of running tasks
-                def runningTasks = parallel(taskQueue.take(cpuCores))
+                def runningTasks = parallel(
+                    task1: taskQueue.take(1)[0],
+                    task2: taskQueue.take(1)[0],
+                    task3: taskQueue.take(1)[0],
+                    task4: taskQueue.take(1)[0]
+                )
 
                 // wait for tasks to finish
                 for (task in runningTasks) {
