@@ -471,6 +471,8 @@ try {
                     }
                 }
 
+                sh "echo ${task}"
+
                 // add to the queue
                 taskQueue << task
             }
@@ -486,9 +488,11 @@ try {
 
                 // add tasks the map
                 for (int i = 0; i < taskCount; i++) {
-                    def taskName = "Task ${i + 1 + (taskQueue.size() - taskCount)}" 
+                    def taskName = "Task ${i}" 
                     tasksToRun[taskName] = taskQueue.take(1)[0]
                 }
+
+                sh "echo ${tasksToRun}"
 
                 // Run the tasks in parallel
                 parallel tasksToRun
