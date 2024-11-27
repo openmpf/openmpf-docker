@@ -476,17 +476,22 @@ try {
             }
 
             // number of available CPU cores
-            // def cpuCores = sh(script: "nproc", returnStdout: true).trim().toInteger()
+            def cpuCores = sh(script: "nproc", returnStdout: true).trim().toInteger()
 
             // process tasks in parallel (limited to maxTasks)
             while (!taskQueue.isEmpty()) {
                 // limit the number of running tasks
-                parallel(
-                    task1: taskQueue.take()[0],
-                    task2: taskQueue.take()[0],
-                    task3: taskQueue.take()[0],
-                    task4: taskQueue.take()[0]
-                )
+                def tasksToRun = [:]
+                def taskCount = Math.min(cpuCores, taskQueue.size())
+
+                // add tasks the map
+                for (int i = 0; i < taskCount; i++) {
+                    def taskName = "Task ${i + 1 + (taskQueue.size() - taskCount)}" 
+                    tasksToRun[taskName] = taskQueue.take(1)[0]
+                }
+
+                // Run the tasks in parallel
+                parallel tasksToRun
             }
 
             // print failed images
