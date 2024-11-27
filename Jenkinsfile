@@ -489,7 +489,7 @@ try {
                 // add tasks the map
                 for (int i = 0; i < taskCount; i++) {
                     def taskName = "Task ${i}" 
-                    tasksToRun[taskName] = taskQueue.take(1)[0]
+                    tasksToRun[taskName] = taskQueue.remove(0)[0]
                 }
 
                 echo "Running parallel tasks: ${tasksToRun.keySet()}"
