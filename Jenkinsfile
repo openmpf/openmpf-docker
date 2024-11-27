@@ -474,6 +474,12 @@ try {
                 // add to the queue
                 taskQueue << task
             }
+
+            echo "Task Queue contents:"
+            taskQueue.eachWithIndex { task, index ->
+                echo "Task ${index + 1}: Service Name - ${composeYaml.services.keySet().toList()[index]}"
+            }
+
             // process tasks in parallel (limited to maxTasks)
             while (!taskQueue.isEmpty()) {
                 // limit the number of running tasks
@@ -487,6 +493,8 @@ try {
                 }
 
                 echo "Running parallel tasks: ${tasksToRun.keySet()}"
+                echo "Running parallel tasks: ${tasksToRun.values()}"
+
 
                 // Run the tasks in parallel
                 parallel tasksToRun
