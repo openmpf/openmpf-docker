@@ -433,37 +433,58 @@ try {
         def trivyVolume = "trivy_$inProgressTag"
         sh "docker volume create $trivyVolume"
         try {
+            // list of failed scans
             def failedImages = []
+
+            // map for parallel tasks
+            def parallelTasks = [:]
+
             for (def serviceName in composeYaml.services.keySet()) {
                 // fetch service using the serviceName
                 def service = composeYaml.services[serviceName]
 
-                // save the output to a file
-                def exitCode = shStatus("docker run --rm " +
-                        "-e TRIVY_INSECURE=${runTrivyInsecure} " +
-                        "-v /var/run/docker.sock:/var/run/docker.sock " +
-                        "-v $trivyVolume:/root/.cache/ " +
-                        "-v '${pwd()}/$openmpfDockerRepo.path/trivyignore.txt:/.trivyignore' " +
-                        "-v '${pwd()}/$openmpfDockerRepo.path:/trivy' " +
-                        "aquasec/trivy image --format cyclonedx --output /trivy/${serviceName}_sbom.json " +
-                        "--timeout 30m --scanners vuln $service.image")
-                if (exitCode != 0) {
-                    failedImages << service.image
-                } else {
-                    // print the vulnerabilities to the console
-                    exitCode = shStatus("docker run --rm " +
-                        "-e TRIVY_INSECURE=${runTrivyInsecure} " +
-                        "-v /var/run/docker.sock:/var/run/docker.sock " +
-                        "-v $trivyVolume:/root/.cache/ " +
-                        "-v '${pwd()}/$openmpfDockerRepo.path/trivyignore.txt:/.trivyignore' " +
-                        "-v '${pwd()}/$openmpfDockerRepo.path:/trivy' " +
-                        "aquasec/trivy sbom --severity CRITICAL,HIGH --exit-code 1 " +
-                        "--timeout 30m --scanners vuln /trivy/${serviceName}_sbom.json")
+                // add trivy scans to the map
+                parallelTasks["Scan ${serviceName}"] = {
+                    // save the output to a file
+                    def exitCode = shStatus("docker run --rm " +
+                            "-e TRIVY_INSECURE=${runTrivyInsecure} " +
+                            "-v /var/run/docker.sock:/var/run/docker.sock " +
+                            "-v $trivyVolume:/root/.cache/ " +
+                            "-v '${pwd()}/$openmpfDockerRepo.path/trivyignore.txt:/.trivyignore' " +
+                            "-v '${pwd()}/$openmpfDockerRepo.path:/trivy' " +
+                            "aquasec/trivy image --format cyclonedx --output /trivy/${serviceName}_sbom.json " +
+                            "--timeout 30m --scanners vuln $service.image")
                     if (exitCode != 0) {
                         failedImages << service.image
+                    } else {
+                        // print the vulnerabilities to the console
+                        exitCode = shStatus("docker run --rm " +
+                            "-e TRIVY_INSECURE=${runTrivyInsecure} " +
+                            "-v /var/run/docker.sock:/var/run/docker.sock " +
+                            "-v $trivyVolume:/root/.cache/ " +
+                            "-v '${pwd()}/$openmpfDockerRepo.path/trivyignore.txt:/.trivyignore' " +
+                            "-v '${pwd()}/$openmpfDockerRepo.path:/trivy' " +
+                            "aquasec/trivy sbom --severity CRITICAL,HIGH --exit-code 1 " +
+                            "--timeout 30m --scanners vuln /trivy/${serviceName}_sbom.json")
+                        if (exitCode != 0) {
+                            failedImages << service.image
+                        }
                     }
                 }
             }
+
+            // number of available CPU cores
+            def cpuCores = sh(script: "nproc", returnStdout: true).trim().toInteger()
+
+            // limit the parallel tasks
+            def chunkedParallelTasks = parallelTasks.collate(cpuCores)
+
+            // parallel tasks in chunks
+            chunkedParallelTasks.each { chunk ->
+                parallel chunk
+            }
+
+            // print failed images
             if (failedImages) {
                 echo 'Trivy scan failed for the following images:\n' + failedImages.join('\n')
             }
