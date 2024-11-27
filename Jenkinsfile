@@ -475,16 +475,14 @@ try {
                 taskQueue << task
             }
 
-            echo "Task Queue contents:"
-            taskQueue.eachWithIndex { task, index ->
-                echo "Task ${index + 1}: Service Name - ${composeYaml.services.keySet().toList()[index]}"
-            }
+            // number of cpu cores
+            def cpuCores = sh(script: "nproc", returnStdout: true).trim().toInteger()
 
             // process tasks in parallel (limited to maxTasks)
             while (!taskQueue.isEmpty()) {
                 // limit the number of running tasks
                 def tasksToRun = [:]
-                def taskCount = Math.min(4, taskQueue.size())
+                def taskCount = Math.min(cpuCores, taskQueue.size())
 
                 // add tasks the map
                 for (int i = 0; i < taskCount; i++) {
@@ -492,9 +490,7 @@ try {
                     tasksToRun[taskName] = taskQueue.remove(0)
                 }
 
-                echo "Running parallel tasks: ${tasksToRun.keySet()}"
-                echo "Running parallel tasks: ${tasksToRun.values()}"
-
+                echo "Running parallel tasks: ${tasksToRun.keySet()} ${tasksToRun.values()}"
 
                 // Run the tasks in parallel
                 parallel tasksToRun
