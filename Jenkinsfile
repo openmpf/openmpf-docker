@@ -476,8 +476,13 @@ try {
             // number of available CPU cores
             def cpuCores = sh(script: "nproc", returnStdout: true).trim().toInteger()
 
+            // convert into a list of entries
+            def parallelTasksList = parallelTasks.collect { key, value ->
+                [(key): value]
+            }
+
             // limit the parallel tasks
-            def chunkedParallelTasks = parallelTasks.collate(cpuCores)
+            def chunkedParallelTasks = parallelTasksList.collate(cpuCores)
 
             // parallel tasks in chunks
             chunkedParallelTasks.each { chunk ->
