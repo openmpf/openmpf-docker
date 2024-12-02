@@ -63,9 +63,10 @@ FROM common AS build_api
 
 RUN python3 -m venv "$COMPONENT_VIRTUALENV"; \
     pip config --site set global.no-cache-dir true; \
+    pip install --upgrade pip; \
     pip install --upgrade setuptools;
 
-RUN --mount=from=openmpf_build,source=/home/mpf/openmpf-projects/openmpf-python-component-sdk/detection,target=/tmp/python \
+RUN --mount=from=openmpf_build,source=/home/mpf/openmpf-projects/openmpf-python-component-sdk/detection,target=/tmp/python,rw \
     pip3 install --no-cache-dir /tmp/python/api /tmp/python/component_util; \
     python3 -m unittest discover --verbose --buffer --start-directory /tmp/python/component_util/tests
 
@@ -89,6 +90,12 @@ LABEL org.label-schema.build-date="" \
 # Install and test the text splitter in a different stage so that the dependencies don't end up in
 # the base image for all Python components.
 FROM build_api AS build_text_splitter
+
+RUN --mount=type=tmpfs,target=/var/cache/apt \
+    --mount=type=tmpfs,target=/var/lib/apt/lists  \
+    --mount=type=tmpfs,target=/tmp \
+    apt-get update; \
+    apt-get install --no-install-recommends -y g++ python3.8-dev
 
 COPY --from=openmpf_build \
     /home/mpf/openmpf-projects/openmpf-python-component-sdk/detection/nlp_text_splitter \
