@@ -61,11 +61,20 @@ ENV PATH $COMPONENT_VIRTUALENV/bin:/scripts:$PATH
 #########################################
 FROM common AS build_api
 
+RUN --mount=type=tmpfs,target=/var/cache/apt \
+    --mount=type=tmpfs,target=/var/lib/apt/lists  \
+    --mount=type=tmpfs,target=/tmp \
+    apt-get update; \
+    # Some pip packages will try to compile C/C++ extensions during install. To compile the C/C++
+    # extensions, a C++ compiler and the Python development headers must be installed.
+    apt-get install --no-install-recommends -y g++ python3.8-dev
+
 RUN python3 -m venv "$COMPONENT_VIRTUALENV"; \
     pip config --site set global.no-cache-dir true; \
+    pip install --upgrade pip; \
     pip install --upgrade setuptools;
 
-RUN --mount=from=openmpf_build,source=/home/mpf/openmpf-projects/openmpf-python-component-sdk/detection,target=/tmp/python \
+RUN --mount=from=openmpf_build,source=/home/mpf/openmpf-projects/openmpf-python-component-sdk/detection,target=/tmp/python,rw \
     pip3 install --no-cache-dir /tmp/python/api /tmp/python/component_util; \
     python3 -m unittest discover --verbose --buffer --start-directory /tmp/python/component_util/tests
 
