@@ -439,6 +439,26 @@ try {
             // queue of tasks
             def taskQueue = []
 
+            // download db files
+            def exitCode = shStatus("docker run --rm " +
+                            "-e TRIVY_INSECURE=${runTrivyInsecure} " +
+                            "-v /var/run/docker.sock:/var/run/docker.sock " +
+                            "-v $trivyVolume:/root/.cache/ " +
+                            "aquasec/trivy image --download-db-only")
+            if (exitCode != 0) {
+                echo 'Trivy failed to download the db files'
+            }
+
+            // download the java db files
+            exitCode = shStatus("docker run --rm " +
+                            "-e TRIVY_INSECURE=${runTrivyInsecure} " +
+                            "-v /var/run/docker.sock:/var/run/docker.sock " +
+                            "-v $trivyVolume:/root/.cache/ " +
+                            "aquasec/trivy image --download-java-db-only")
+            if (exitCode != 0) {
+                echo 'Trivy failed to download the java db files'
+            }
+
             composeYaml.services.keySet().each { serviceName ->
                 def task = {
                     // fetch service using the serviceName
@@ -452,7 +472,7 @@ try {
                             "-v '${pwd()}/$openmpfDockerRepo.path/trivyignore.txt:/.trivyignore' " +
                             "-v '${pwd()}/$openmpfDockerRepo.path:/trivy' " +
                             "aquasec/trivy image --format cyclonedx --output /trivy/${serviceName}_sbom.json " +
-                            "--timeout 30m --scanners vuln $service.image")
+                            "--timeout 30m $service.image")
                     if (exitCode != 0) {
                         failedImages << service.image
                     } else {
