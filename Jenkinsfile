@@ -465,7 +465,7 @@ try {
                     def service = composeYaml.services[serviceName]
 
                     // save the output to a file
-                    def exitCode = shStatus("docker run --rm " +
+                    exitCode = shStatus("docker run --rm " +
                             "-e TRIVY_INSECURE=${runTrivyInsecure} " +
                             "-v /var/run/docker.sock:/var/run/docker.sock " +
                             "-v $trivyVolume:/root/.cache/ " +
