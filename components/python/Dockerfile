@@ -61,6 +61,14 @@ ENV PATH $COMPONENT_VIRTUALENV/bin:/scripts:$PATH
 #########################################
 FROM common AS build_api
 
+RUN --mount=type=tmpfs,target=/var/cache/apt \
+    --mount=type=tmpfs,target=/var/lib/apt/lists  \
+    --mount=type=tmpfs,target=/tmp \
+    apt-get update; \
+    # Some pip packages will try to compile C/C++ extensions during install. To compile the C/C++
+    # extensions, a C++ compiler and the Python development headers must be installed.
+    apt-get install --no-install-recommends -y g++ python3.8-dev
+
 RUN python3 -m venv "$COMPONENT_VIRTUALENV"; \
     pip config --site set global.no-cache-dir true; \
     pip install --upgrade pip; \
@@ -90,12 +98,6 @@ LABEL org.label-schema.build-date="" \
 # Install and test the text splitter in a different stage so that the dependencies don't end up in
 # the base image for all Python components.
 FROM build_api AS build_text_splitter
-
-RUN --mount=type=tmpfs,target=/var/cache/apt \
-    --mount=type=tmpfs,target=/var/lib/apt/lists  \
-    --mount=type=tmpfs,target=/tmp \
-    apt-get update; \
-    apt-get install --no-install-recommends -y g++ python3.8-dev
 
 COPY --from=openmpf_build \
     /home/mpf/openmpf-projects/openmpf-python-component-sdk/detection/nlp_text_splitter \
