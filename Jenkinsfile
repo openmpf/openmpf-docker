@@ -359,7 +359,8 @@ try {
 
             withEnv(["COMPOSE_FILE=$componentComposeFiles"]) {
                 def componentComposeYaml =
-                        readYaml(text: shOutput('docker compose config --no-interpolate --no-consistency'))
+                        readYaml(text: shOutput('docker compose config --no-interpolate ' +
+                            '--no-consistency --no-path-resolution --no-normalize'))
 
                 if (env.docker_services_to_build) {
                     def searchImages = env.docker_services_to_build.split(',')
@@ -756,7 +757,7 @@ def dockerCleanUp() {
                 }
             }
         }
-        
+
         parallel stepsForParallel
 
         sh 'docker builder prune --force --keep-storage=120GB'
