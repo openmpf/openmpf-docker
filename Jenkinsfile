@@ -58,7 +58,7 @@ def preDockerBuildScriptPath = env.pre_docker_build_script_path
 
 def runTrivyScans = env.run_trivy_scans?.toBoolean() ?: false
 def runTrivyInsecure = env.run_trivy_insecure?.toBoolean() ?: false
-def runTrivyMaxTasks = env.run_trivy_max_tasks ?: 4
+def runTrivyMaxTasks = env.run_trivy_max_tasks?.toInteger() ?: 4
 def skipIntegrationTests = env.skip_integration_tests?.toBoolean() ?: false
 def pruneDocker = env.prune_docker?.toBoolean() ?: false
 def buildTimeout = env.build_timeout ?: 6 // hours
