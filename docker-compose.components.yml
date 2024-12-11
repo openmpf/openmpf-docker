@@ -44,12 +44,12 @@ x-detection-component-base:
 
 
 services:
-  argos_translation:
+  argos-translation:
     <<: *detection-component-base
     image: ${REGISTRY}openmpf_argos_translation:${TAG}
     build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/python/ArgosTranslation
 
-  azure_form_detection:
+  azure-form-detection:
     <<: *detection-component-base
     image: ${REGISTRY}openmpf_azure_form_detection:${TAG}
     build:
@@ -59,7 +59,7 @@ services:
       MPF_PROP_ACS_URL: ${ACS_FORM_DETECTION_URL}
       MPF_PROP_ACS_SUBSCRIPTION_KEY: ${ACS_FORM_DETECTION_SUBSCRIPTION_KEY}
 
-  azure_ocr_text_detection:
+  azure-ocr-text-detection:
     <<: *detection-component-base
     image: ${REGISTRY}openmpf_azure_ocr_text_detection:${TAG}
     build:
@@ -69,7 +69,7 @@ services:
       MPF_PROP_ACS_URL: ${ACS_OCR_URL}
       MPF_PROP_ACS_SUBSCRIPTION_KEY: ${ACS_OCR_SUBSCRIPTION_KEY}
 
-  azure_read_text_detection:
+  azure-read-text-detection:
     <<: *detection-component-base
     image: ${REGISTRY}openmpf_azure_read_text_detection:${TAG}
     build:
@@ -79,7 +79,7 @@ services:
       MPF_PROP_ACS_URL: ${ACS_READ_URL}
       MPF_PROP_ACS_SUBSCRIPTION_KEY: ${ACS_READ_SUBSCRIPTION_KEY}
 
-  azure_speech_detection:
+  azure-speech-detection:
     <<: *detection-component-base
     image: ${REGISTRY}openmpf_azure_speech_detection:${TAG}
     build:
@@ -91,7 +91,7 @@ services:
       MPF_PROP_ACS_BLOB_CONTAINER_URL: ${ACS_SPEECH_BLOB_CONTAINER_URL}
       MPF_PROP_ACS_BLOB_SERVICE_KEY: ${ACS_SPEECH_BLOB_SERVICE_KEY}
 
-  azure_translation:
+  azure-translation:
     <<: *detection-component-base
     image: ${REGISTRY}openmpf_azure_translation:${TAG}
     build:
