@@ -29,10 +29,31 @@
 set -o errexit -o pipefail -o xtrace
 
 src_dir="${SRC_DIR:-/home/mpf/component_src}"
-build_dir="${BUILD_DIR:-/home/mpf/component_build}"
-build_type="${BUILD_TYPE:-Release}"
 
-mkdir --parents "$build_dir"
-cd "$build_dir"
-cmake -DCMAKE_BUILD_TYPE="$build_type" "$src_dir"
-make --jobs "$(nproc)"
+descriptor_path=$src_dir/plugin-files/descriptor/descriptor.json
+
+if [ ! -e "$descriptor_path" ]; then
+    echo "Error: Expected $descriptor_path to exist. Did you forget to COPY or bind mount your component source code?"
+    exit 3
+fi
+
+component_name=$(python3 -c "import json; print(json.load(open('$descriptor_path'))['componentName'])")
+mkdir --parents "$MPF_HOME/plugins/$component_name"
+
+if [ -e "$src_dir/pyproject.toml" ] || [ -e "$src_dir/setup.py" ]; then
+    echo 'Installing plugin with pip'
+    cp --recursive "$src_dir"/plugin-files/* "$MPF_HOME/plugins/$component_name/"
+
+
+    if [ -d "$src_dir/plugin-files/wheelhouse" ]; then
+        "$COMPONENT_VIRTUALENV/bin/pip3" install \
+            --find-links "$src_dir/plugin-files/wheelhouse" \
+            --no-cache-dir "$src_dir"
+    else
+        "$COMPONENT_VIRTUALENV/bin/pip3" install \
+            --no-cache-dir "$src_dir"
+    fi
+else
+    echo "Did not find pyproject.toml or setup.py in $src_dir"
+    exit 2
+fi
