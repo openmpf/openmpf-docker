@@ -503,7 +503,7 @@ try {
                     if (exitCode != 0) {
                         failedImages << service.image
                     } else {
-                        // print the vulnerabilities to the console
+                        // print the vulnerabilities to a file
                         exitCode = shStatus("docker run --rm " +
                             "-e TRIVY_INSECURE=${runTrivyInsecure} " +
                             "-v /var/run/docker.sock:/var/run/docker.sock " +
@@ -511,10 +511,15 @@ try {
                             "-v '${pwd()}/$openmpfDockerRepo.path/trivyignore.txt:/.trivyignore' " +
                             "-v '${pwd()}/$openmpfDockerRepo.path:/trivy' " +
                             "aquasec/trivy sbom --severity CRITICAL,HIGH --exit-code 1 " +
+                            "--format json --output /trivy/${serviceName}_trivy.json " +
                             "--timeout 30m --scanners vuln /trivy/${serviceName}_sbom.json")
                         if (exitCode != 0) {
                             failedImages << service.image
                         }
+
+                        // scan and publish to the build output
+                        def trivy = scanForIssues tool: trivy(pattern: "${openmpfDockerRepo.path}/${serviceName}_trivy.json")
+                        publishIssues id: "${serviceName}", name: "${serviceName} Trivy Scans", issues: [trivy]
                     }
                 }
 
