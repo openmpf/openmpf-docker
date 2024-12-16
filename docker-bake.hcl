@@ -1,5 +1,3 @@
-# syntax=docker/dockerfile:1.4
-
 #############################################################################
 # NOTICE                                                                    #
 #                                                                           #
@@ -26,46 +24,65 @@
 # limitations under the License.                                            #
 #############################################################################
 
-ARG BUILD_REGISTRY
-ARG BUILD_TAG=latest
-FROM ${BUILD_REGISTRY}openmpf_build:${BUILD_TAG} AS openmpf_build
+variable "TAG" {
+    default = "latest"
+}
+
+variable "REGISTRY" {
+    default = ""
+}
+
+group "default" {
+    targets = [
+        "openmpf_build",
+        "openmpf_cpp_component_build", "openmpf_cpp_executor",
+        "openmpf_java_component_build", "openmpf_java_executor",
+        "openmpf_python_component_build", "openmpf_python_executor", "openmpf_python_executor_ssb"
+    ]
+}
 
 
-FROM ubuntu:20.04
+target "openmpf_build" {
+    context = ".."
+    dockerfile = "openmpf-docker/openmpf_build/Dockerfile"
+    tags = image_name("openmpf_build")
+}
 
-SHELL ["/bin/bash", "-o", "errexit", "-o", "pipefail", "-c"]
 
-ENV LANG C.UTF-8
-ENV LC_ALL C.UTF-8
+target "openmpf_cpp_and_java_components" {
+    name = "openmpf_${lang}_${type}"
+    tags = image_name("openmpf_${lang}_${type}")
+    dockerfile = "${lang}_${type}/Dockerfile"
+    context = "components"
+    contexts = {
+        openmpf_build = "target:openmpf_build"
+    }
+    matrix = {
+        type = ["component_build", "executor"]
+        lang = ["cpp", "java"]
+    }
+}
 
-RUN --mount=type=tmpfs,target=/var/cache/apt \
-    --mount=type=tmpfs,target=/var/lib/apt/lists  \
-    --mount=type=tmpfs,target=/tmp \
-    apt-get update; \
-    apt-get upgrade -y; \
-    apt-get install --no-install-recommends -y openjdk-17-jre-headless python3.8; \
-    ln --symbolic /usr/bin/python3.8 /usr/bin/python3;
 
-COPY --from=openmpf_build /usr/local/bin/ffmpeg /usr/local/bin/ffprobe /usr/local/bin/
+target "openmpf_python_components" {
+    name = "openmpf_python_${type.name}"
+    tags = image_name("openmpf_python_${type.name}")
+    dockerfile = "python/Dockerfile"
+    target = type.target
+    context = "components"
+    contexts = {
+        openmpf_build = "target:openmpf_build"
+    }
+    matrix = {
+        type = [
+            { name = "component_build", target = "build" },
+            { name = "executor" , target = "executor" },
+            { name = "executor_ssb", target = "ssb" }
+        ]
+    }
+}
 
-COPY --from=openmpf_build /scripts/* /scripts/
-
-ENV MPF_HOME /opt/mpf
-
-ENV MPF_LOG_PATH $MPF_HOME/share/logs
-
-ENV PLUGINS_DIR $MPF_HOME/plugins
-
-COPY --from=openmpf_build /build-artifacts/java-executor/*.jar $MPF_HOME/jars/
-
-COPY component-executor.py component_registration.py /scripts/
-
-ENTRYPOINT ["python3", "-u", "/scripts/component-executor.py"]
-
-LABEL org.label-schema.build-date="" \
-      org.label-schema.license="Apache 2.0" \
-      org.label-schema.name="OpenMPF Java Component Executor" \
-      org.label-schema.schema-version="1.0" \
-      org.label-schema.url="https://openmpf.github.io" \
-      org.label-schema.vcs-url="https://github.com/openmpf/openmpf-java-component-sdk" \
-      org.label-schema.vendor="MITRE"
+function "image_name" {
+    params = [base_name]
+    result = ["${REGISTRY}${base_name}:${TAG}"]
+}
