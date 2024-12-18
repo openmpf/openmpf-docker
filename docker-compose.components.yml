@@ -59,17 +59,7 @@ services:
       MPF_PROP_ACS_URL: ${ACS_FORM_DETECTION_URL}
       MPF_PROP_ACS_SUBSCRIPTION_KEY: ${ACS_FORM_DETECTION_SUBSCRIPTION_KEY}
 
-  azure-ocr-text-detection:
-    <<: *detection-component-base
-    image: ${REGISTRY}openmpf_azure_ocr_text_detection:${TAG}
-    build:
-      context: ${OPENMPF_PROJECTS_PATH}/openmpf-components/python/AzureOcrTextDetection
-    environment:
-      <<: *common-env-vars
-      MPF_PROP_ACS_URL: ${ACS_OCR_URL}
-      MPF_PROP_ACS_SUBSCRIPTION_KEY: ${ACS_OCR_SUBSCRIPTION_KEY}
-
-  azure-read-text-detection:
+  azure_read_text_detection:
     <<: *detection-component-base
     image: ${REGISTRY}openmpf_azure_read_text_detection:${TAG}
     build:
