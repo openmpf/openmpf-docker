@@ -32,6 +32,7 @@ version: '3.7'
 x-component-base: &component-base
   environment: &common-env-vars
     ACTIVE_MQ_BROKER_URI:
+    AMQP_CONNECT_ATTEMPTS:
   depends_on:
     - workflow-manager
   volumes:
