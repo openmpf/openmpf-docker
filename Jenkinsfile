@@ -59,6 +59,8 @@ def preDockerBuildScriptPath = env.pre_docker_build_script_path
 def runTrivyScans = env.run_trivy_scans?.toBoolean() ?: false
 def runTrivyInsecure = env.run_trivy_insecure?.toBoolean() ?: false
 def runTrivyMaxTasks = env.run_trivy_max_tasks?.toInteger() ?: 4
+def dependencyTrackCredId = env.dependency_track_cred_id?.toBoolean() ?: false
+def dependencyTrackUploadSbom = env.dependency_track_upload_sbom?.toBoolean() ?: false
 def skipIntegrationTests = env.skip_integration_tests?.toBoolean() ?: false
 def pruneDocker = env.prune_docker?.toBoolean() ?: false
 def buildTimeout = env.build_timeout ?: 6 // hours
@@ -520,6 +522,22 @@ try {
                         // scan and publish to the build output
                         def trivy = scanForIssues tool: trivy(pattern: "${openmpfDockerRepo.path}/${serviceName}_trivy.json")
                         publishIssues id: "${serviceName}", name: "${serviceName} Trivy Scans", issues: [trivy]
+
+                        // upload to dependency track
+                        if (dependencyTrackUploadSbom) {
+                            def serviceVersion = service.image?.split(':')[1] 
+                            if (service.version) {
+                                serviceVersion = service.version
+                            }
+
+                            dependencyTrackPublisher(
+                                artifact: "${openmpfDockerRepo.path}/${serviceName}_sbom.json",
+                                projectName: "${serviceName}",
+                                projectVersion: serviceVersion,
+                                synchronous: false,
+                                dependencyTrackApiKey: dependencyTrackCredId
+                            )
+                        }
                     }
                 }
 
