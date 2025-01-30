@@ -530,6 +530,12 @@ try {
                                 serviceVersion = service.version
                             }
 
+                            // if the image is pushed to the registry, use the image tag for dependency track
+                            if (pushRuntimeImages) {
+                                serviceVersion = imageTag
+                            }
+
+                            // publish using the dependency track plugin
                             dependencyTrackPublisher(
                                 artifact: "${openmpfDockerRepo.path}/${serviceName}_sbom.json",
                                 projectName: serviceImageName,
