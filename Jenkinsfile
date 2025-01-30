@@ -532,7 +532,7 @@ try {
 
                             dependencyTrackPublisher(
                                 artifact: "${openmpfDockerRepo.path}/${serviceName}_sbom.json",
-                                projectName: "${serviceName}",
+                                projectName: "${service.image}",
                                 projectVersion: serviceVersion,
                                 synchronous: false,
                                 dependencyTrackApiKey: dependencyTrackCredId
