@@ -143,6 +143,27 @@ services:
     image: ${REGISTRY}openmpf_keyword_tagging:${TAG}
     build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/cpp/KeywordTagging
 
+  llava-detection:
+    <<: *detection-component-base
+    image: ${REGISTRY}openmpf_llava_detection:${TAG}
+    build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/python/LlavaDetection
+  
+  llava-detection-server:
+    <<: *detection-component-base
+    image: ${REGISTRY}ollama_server:${TAG}
+    build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/python/LlavaDetection/ollama_server
+    deploy:
+      mode: global
+    ulimits:
+      memlock: -1
+      stack: 67108864
+    ports:
+    - "11434:11434"
+    runtime: nvidia
+    environment:
+      NVIDIA_VISIBLE_DEVICES: all
+    command: [serve]
+
   mog-motion-detection:
     <<: *detection-component-base
     image: ${REGISTRY}openmpf_mog_motion_detection:${TAG}
