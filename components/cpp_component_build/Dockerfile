@@ -7,11 +7,11 @@
 # under contract, and is subject to the Rights in Data-General Clause       #
 # 52.227-14, Alt. IV (DEC 2007).                                            #
 #                                                                           #
-# Copyright 2023 The MITRE Corporation. All Rights Reserved.                #
+# Copyright 2024 The MITRE Corporation. All Rights Reserved.                #
 #############################################################################
 
 #############################################################################
-# Copyright 2023 The MITRE Corporation                                      #
+# Copyright 2024 The MITRE Corporation                                      #
 #                                                                           #
 # Licensed under the Apache License, Version 2.0 (the "License");           #
 # you may not use this file except in compliance with the License.          #
@@ -60,7 +60,7 @@ RUN --mount=type=tmpfs,target=/var/cache/apt \
         /usr/lib/x86_64-linux-gnu/libcudnn*.a; \
     ln --symbolic /usr/bin/cmake /usr/bin/cmake3;
 
-COPY --from=openmpf_build /opt/opencv-4.5.5 /opt/opencv-4.5.5
+COPY --from=openmpf_build /opt/opencv-4.9.0 /opt/opencv-4.9.0
 
 COPY --from=openmpf_build /usr/local/bin/ffmpeg /usr/local/bin/ffprobe /usr/local/bin/
 
@@ -71,7 +71,7 @@ RUN mkdir /home/mpf; echo 'find_package(mpfCMakeHelpers REQUIRED)' > /home/mpf/C
 COPY --from=openmpf_build /build-artifacts/mpf-sdk-install/include /home/mpf/mpf-sdk-install/include
 COPY --from=openmpf_build /build-artifacts/mpf-sdk-install/lib /home/mpf/mpf-sdk-install/lib
 
-RUN echo '/opt/opencv-4.5.5/lib' > /etc/ld.so.conf.d/opencv.conf; \
+RUN echo '/opt/opencv-4.9.0/lib' > /etc/ld.so.conf.d/opencv.conf; \
     echo '/home/mpf/mpf-sdk-install/lib' > /etc/ld.so.conf.d/mpf.conf; \
     ldconfig
 

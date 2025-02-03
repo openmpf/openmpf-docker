@@ -7,11 +7,11 @@
 # under contract, and is subject to the Rights in Data-General Clause       #
 # 52.227-14, Alt. IV (DEC 2007).                                            #
 #                                                                           #
-# Copyright 2023 The MITRE Corporation. All Rights Reserved.                #
+# Copyright 2024 The MITRE Corporation. All Rights Reserved.                #
 #############################################################################
 
 #############################################################################
-# Copyright 2023 The MITRE Corporation                                      #
+# Copyright 2024 The MITRE Corporation                                      #
 #                                                                           #
 # Licensed under the Apache License, Version 2.0 (the "License");           #
 # you may not use this file except in compliance with the License.          #
@@ -28,10 +28,10 @@
 
 ARG BUILD_REGISTRY
 ARG BUILD_TAG=latest
-FROM ${BUILD_REGISTRY}openmpf_build:${BUILD_TAG} as openmpf_build
+FROM ${BUILD_REGISTRY}openmpf_build:${BUILD_TAG} AS openmpf_build
 
 
-FROM ubuntu:20.04
+FROM ubuntu:20.04 AS common
 
 SHELL ["/bin/bash", "-o", "errexit", "-o", "pipefail", "-c"]
 
@@ -64,12 +64,19 @@ ENV MPF_HOME /opt/mpf
 
 WORKDIR $MPF_HOME
 
-# Use mount and cp shell command because the docker COPY command resolves symlinks which then causes duplicate copies
-# of the libraries to be added to the image.
+
+FROM common AS copy_libs
+
 RUN --mount=type=bind,from=openmpf_build,source=/build-artifacts/install/lib,target=/tmp/mpf-libs \
-    cd /tmp/mpf-libs; \
-    # component executor binary's dependencies
-    cp --preserve=links --no-dereference libactivemq-cpp* /usr/lib/x86_64-linux-gnu;
+    --mount=type=bind,from=openmpf_build,source=/build-artifacts/install/bin/amq_detection_component,target=/tmp/amq_detection_component \
+    --mount=type=bind,from=openmpf_build,source=/scripts/copy_libs.sh,target=/tmp/copy_libs.sh \
+    mkdir /libs-to-copy; \
+    /tmp/copy_libs.sh /tmp/amq_detection_component /libs-to-copy /tmp/mpf-libs
+
+
+FROM common
+
+COPY --from=copy_libs /libs-to-copy /usr/lib/x86_64-linux-gnu/
 
 # component executor binary
 COPY --from=openmpf_build /build-artifacts/install/bin/amq_detection_component \
@@ -81,6 +88,7 @@ COPY --from=openmpf_build /build-artifacts/install/config/Log4cxxConfig.xml $MPF
 COPY --from=openmpf_build /build-artifacts/install/lib/mpf_cpp_sdk.cpython-38-x86_64-linux-gnu.so \
                           /usr/lib/python3.8/lib-dynload
 
+COPY --from=openmpf_build /scripts/* /scripts/
 
 ENV MPF_LOG_PATH $MPF_HOME/share/logs
 
@@ -91,7 +99,7 @@ ENV BUILD_DIR /home/mpf/component_build
 ENV PLUGINS_DIR $MPF_HOME/plugins
 
 
-COPY docker-entrypoint.sh component-executor.py /scripts/
+COPY docker-entrypoint.sh component-executor.py component_registration.py /scripts/
 
 COPY cli_runner/*.py cli_runner/Log4cxxConfig.xml /scripts/cli_runner/
 

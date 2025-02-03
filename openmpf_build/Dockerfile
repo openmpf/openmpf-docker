@@ -7,11 +7,11 @@
 # under contract, and is subject to the Rights in Data-General Clause       #
 # 52.227-14, Alt. IV (DEC 2007).                                            #
 #                                                                           #
-# Copyright 2023 The MITRE Corporation. All Rights Reserved.                #
+# Copyright 2024 The MITRE Corporation. All Rights Reserved.                #
 #############################################################################
 
 #############################################################################
-# Copyright 2023 The MITRE Corporation                                      #
+# Copyright 2024 The MITRE Corporation                                      #
 #                                                                           #
 # Licensed under the Apache License, Version 2.0 (the "License");           #
 # you may not use this file except in compliance with the License.          #
@@ -26,7 +26,7 @@
 # limitations under the License.                                            #
 #############################################################################
 
-FROM ubuntu:20.04 as build
+FROM ubuntu:20.04 AS build
 
 SHELL ["/bin/bash", "-o", "errexit", "-o", "pipefail", "-c"]
 
@@ -73,18 +73,17 @@ RUN --mount=type=tmpfs,target=/var/cache/apt \
 
 RUN --mount=type=tmpfs,target=/tmp \
     mkdir /tmp/opencv-contrib; \
-    wget -O- 'https://github.com/opencv/opencv_contrib/archive/4.5.5.tar.gz' \
+    wget -O- 'https://github.com/opencv/opencv_contrib/archive/4.9.0.tar.gz' \
         | tar --extract --gzip --directory /tmp/opencv-contrib; \
     mkdir /tmp/opencv; \
     cd  /tmp/opencv; \
-    wget -O- 'https://github.com/opencv/opencv/archive/4.5.5.tar.gz' \
+    wget -O- 'https://github.com/opencv/opencv/archive/4.9.0.tar.gz' \
         | tar --extract --gzip; \
-    cd opencv-4.5.5; \
-    sed -i '315s/.*/    return min((int)sysconf( _SC_NPROCESSORS_ONLN ), 4);/' modules/videoio/src/cap_ffmpeg_impl.hpp; \
+    cd opencv-4.9.0; \
     mkdir build; \
     cd build; \
     export OpenBLAS_HOME=/usr/lib/x86_64-linux-gnu/openblas-pthread; \
-    cmake -DCMAKE_INSTALL_PREFIX:PATH='/opt/opencv-4.5.5' \
+    cmake -DCMAKE_INSTALL_PREFIX:PATH='/opt/opencv-4.9.0' \
         -DWITH_IPP=false \
         -DBUILD_EXAMPLES=false \
         -DBUILD_TESTS=false \
@@ -96,10 +95,10 @@ RUN --mount=type=tmpfs,target=/tmp \
         -DWITH_CUDNN=true \
         -DOPENCV_DNN_CUDA=true \
         -DBUILD_CUDA_STUBS=true \
-        -DOPENCV_EXTRA_MODULES_PATH=/tmp/opencv-contrib/opencv_contrib-4.5.5/modules \
+        -DOPENCV_EXTRA_MODULES_PATH=/tmp/opencv-contrib/opencv_contrib-4.9.0/modules \
         ..; \
     make --jobs "$(nproc)" install; \
-    ln --symbolic '/opt/opencv-4.5.5/include/opencv4/opencv2' /usr/local/include/opencv2;
+    ln --symbolic '/opt/opencv-4.9.0/include/opencv4/opencv2' /usr/local/include/opencv2;
 
 
 RUN --mount=type=tmpfs,target=/tmp \
@@ -199,6 +198,8 @@ RUN ln --symbolic /home/mpf/openmpf-projects/openmpf/trunk/workflow-manager/targ
     ln --symbolic /home/mpf/openmpf-projects/openmpf/trunk/bin/mpf-scripts; \
     ln --symbolic /home/mpf/openmpf-projects/openmpf/trunk/install; \
     ln --symbolic /root/mpf-sdk-install;
+
+RUN cp -r /home/mpf/openmpf-projects/openmpf-docker/openmpf_build/scripts /scripts;
 
 LABEL org.label-schema.build-date="" \
       org.label-schema.license="Mixed" \

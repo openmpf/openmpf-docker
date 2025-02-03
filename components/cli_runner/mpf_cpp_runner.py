@@ -5,11 +5,11 @@
 # under contract, and is subject to the Rights in Data-General Clause       #
 # 52.227-14, Alt. IV (DEC 2007).                                            #
 #                                                                           #
-# Copyright 2023 The MITRE Corporation. All Rights Reserved.                #
+# Copyright 2024 The MITRE Corporation. All Rights Reserved.                #
 #############################################################################
 
 #############################################################################
-# Copyright 2023 The MITRE Corporation                                      #
+# Copyright 2024 The MITRE Corporation                                      #
 #                                                                           #
 # Licensed under the Apache License, Version 2.0 (the "License");           #
 # you may not use this file except in compliance with the License.          #
@@ -53,7 +53,7 @@ class CppComponentHandle(util.ComponentHandle, contextlib.AbstractContextManager
         if not self._component.Init():
             raise RuntimeError('The component failed to initialized.')
 
-        self.detection_type = self._component.GetDetectionType()
+        self.track_type = descriptor['algorithm']['trackType']
 
 
     def __exit__(self, *exc_details):

@@ -5,11 +5,11 @@
  * under contract, and is subject to the Rights in Data-General Clause        *
  * 52.227-14, Alt. IV (DEC 2007).                                             *
  *                                                                            *
- * Copyright 2023 The MITRE Corporation. All Rights Reserved.                 *
+ * Copyright 2024 The MITRE Corporation. All Rights Reserved.                 *
  ******************************************************************************/
 
 /******************************************************************************
- * Copyright 2023 The MITRE Corporation                                       *
+ * Copyright 2024 The MITRE Corporation                                       *
  *                                                                            *
  * Licensed under the Apache License, Version 2.0 (the "License");            *
  * you may not use this file except in compliance with the License.           *
@@ -45,7 +45,7 @@ def pushRuntimeImages = env.push_runtime_images?.toBoolean() ?: false
 
 def pollReposAndEndBuild = env.poll_repos_and_end_build?.toBoolean() ?: false
 
-def postBuildStatusEnabled = env.post_build_status?.toBoolean()  ?: false
+def postBuildStatusEnabled = env.post_build_status?.toBoolean() ?: false
 def githubAuthToken = env.github_auth_token
 def emailRecipients = env.email_recipients
 
@@ -184,7 +184,15 @@ try {
         dir(openmpfProjectsRepo.path) {
             sh 'git clean -ffd'
             sh 'git submodule foreach git clean -ffd'
-            sh 'git fetch --recurse-submodules'
+
+            def fetch_command = "git fetch origin '+refs/heads/*:refs/remotes/origin/*'" +
+                    // This creates branches for pull requests. The will be named "pull/" followed
+                    // by the pull request ID. For example, the branch for pull request 321 will
+                    // be named "pull/321".
+                    " '+refs/pull/*/head:refs/remotes/origin/pull/*'"
+            sh "$fetch_command"
+            sh "git submodule foreach $fetch_command"
+
             sh "git checkout 'origin/$openmpfProjectsRepo.branch'"
             sh 'git submodule update --init'
         }
@@ -236,7 +244,7 @@ try {
          sh "docker system prune --all --force"
     }
 
-    def componentComposeFiles
+    def runtimeComponentComposeFile = "docker-compose.components.jenkins.yml"
     def runtimeComposeFiles
 
     stage('Build images') {
@@ -331,7 +339,7 @@ try {
         dir (openmpfDockerRepo.path) {
             sh 'cp .env.tpl .env'
 
-            componentComposeFiles = 'docker-compose.components.yml'
+            def componentComposeFiles = 'docker-compose.components.yml'
             def customComponentServices = []
 
             if (buildCustomComponents) {
@@ -349,7 +357,25 @@ try {
                         readYaml(text: shOutput("cat $customGpuOnlyComponentsComposeFile")).services.keySet()
             }
 
-            runtimeComposeFiles = "docker-compose.core.yml:$componentComposeFiles:docker-compose.elk.yml"
+            withEnv(["COMPOSE_FILE=$componentComposeFiles"]) {
+                def componentComposeYaml =
+                        readYaml(text: shOutput('docker compose config --no-interpolate ' +
+                            '--no-consistency --no-path-resolution --no-normalize'))
+
+                if (env.docker_services_to_build) {
+                    def searchImages = env.docker_services_to_build.split(',')
+                            .collect{ it.trim() }
+                    def keepServiceEntries = componentComposeYaml.services
+                            .findAll { it.key in searchImages }
+                    customComponentServices.retainAll(keepServiceEntries.keySet())
+                    componentComposeYaml.services.clear()
+                    componentComposeYaml.services.putAll(keepServiceEntries)
+                }
+
+                writeYaml(file: runtimeComponentComposeFile, data: componentComposeYaml, overwrite: true)
+            }
+
+            runtimeComposeFiles = "docker-compose.core.yml:$runtimeComponentComposeFile:docker-compose.elk.yml"
 
             withEnv(["TAG=$inProgressTag", "COMPOSE_FILE=$runtimeComposeFiles"]) {
                 sh "docker compose build $commonBuildArgs --build-arg RUN_TESTS=true --parallel"
@@ -366,10 +392,6 @@ try {
                 def wfmShasArg = getVcsRefLabelArg([openmpfRepo, openmpfDockerRepo, customConfigRepo])
                 sh "docker build workflow_manager $commonBuildArgs $customLabelArg $wfmShasArg " +
                         " -t openmpf_workflow_manager:$inProgressTag"
-
-                def amqShasArg = getVcsRefLabelArg([openmpfDockerRepo, customConfigRepo])
-                sh "docker build activemq $commonBuildArgs $customLabelArg $amqShasArg " +
-                        " -t openmpf_activemq:$inProgressTag"
             }
         }
         else  {
@@ -382,8 +404,7 @@ try {
         dir(openmpfDockerRepo.path) {
             test_cli_runner(inProgressTag)
 
-            def skipArgs = env.docker_services_build_only.split(',').collect{ it.replaceAll("\\s","") }.findAll{ !it.isEmpty() }.collect{ "--scale $it=0"  }.join(' ')
-            def composeFiles = "docker-compose.integration.test.yml:$componentComposeFiles"
+            def composeFiles = "docker-compose.integration.test.yml:$runtimeComponentComposeFile"
 
             def nproc = Math.min((shOutput('nproc') as int), 6)
             def servicesInSystemTests = ['ocv-face-detection', 'ocv-dnn-detection', 'oalpr-license-plate-text-detection',
@@ -398,7 +419,14 @@ try {
                      "EXTRA_MVN_OPTIONS=$mvnTestOptions",
                      // Use custom project name to allow multiple builds on same machine
                      "COMPOSE_PROJECT_NAME=openmpf_$buildId",
-                     "COMPOSE_FILE=$composeFiles"]) {
+                     "COMPOSE_FILE=$composeFiles",
+                     "ACTIVE_MQ_BROKER_URI=failover:(tcp://workflow-manager:61616)?maxReconnectAttempts=100&startupMaxReconnectAttempts=100"]) {
+                def serviceNames = shOutput("docker compose config --services").split('\n') as Set
+                def skipArgs = env.docker_services_build_only.split(',')
+                        .collect{ it.trim() }
+                        .findAll{ it in serviceNames }
+                        .collect{ "--scale $it=0"  }
+                        .join(' ')
                 try {
                     sh "docker compose up --exit-code-from workflow-manager $scaleArgs $skipArgs"
                     shStatus 'docker compose down --volumes'
@@ -422,7 +450,7 @@ try {
         def composeYaml
         dir (openmpfDockerRepo.path) {
             withEnv(["TAG=$inProgressTag",
-                     "COMPOSE_FILE=docker-compose.core.yml:$componentComposeFiles"]) {
+                     "COMPOSE_FILE=docker-compose.core.yml:$runtimeComponentComposeFile"]) {
                 composeYaml = readYaml(text: shOutput('docker compose config'))
             }
         }
@@ -437,7 +465,7 @@ try {
                         "-v $trivyVolume:/root/.cache/ " +
                         "-v '${pwd()}/$openmpfDockerRepo.path/trivyignore.txt:/.trivyignore' " +
                         "aquasec/trivy image --severity CRITICAL,HIGH --exit-code 1 " +
-                        "--timeout 20m --security-checks vuln $service.image")
+                        "--timeout 30m --scanners vuln $service.image")
                 if (exitCode != 0) {
                     failedImages << service.image
                 }
@@ -456,19 +484,35 @@ try {
     }
 
     optionalStage('Push runtime images', pushRuntimeImages) {
-        withEnv(["TAG=$imageTag", "REGISTRY=$remoteImagePrefix", "COMPOSE_FILE=$runtimeComposeFiles"]) {
-            sh "docker push '${remoteImagePrefix}openmpf_cpp_component_build:$imageTag'"
-            sh "docker push '${remoteImagePrefix}openmpf_cpp_executor:$imageTag'"
+        def baseImages = ["openmpf_cpp_component_build",
+                          "openmpf_cpp_executor",
+                          "openmpf_java_component_build",
+                          "openmpf_java_executor",
+                          "openmpf_python_component_build",
+                          "openmpf_python_executor",
+                          "openmpf_python_executor_ssb"]
+                .collect{ "${remoteImagePrefix}$it:$imageTag" }
 
-            sh "docker push '${remoteImagePrefix}openmpf_java_component_build:$imageTag'"
-            sh "docker push '${remoteImagePrefix}openmpf_java_executor:$imageTag'"
-
-            sh "docker push '${remoteImagePrefix}openmpf_python_component_build:$imageTag'"
-            sh "docker push '${remoteImagePrefix}openmpf_python_executor:$imageTag'"
-            sh "docker push '${remoteImagePrefix}openmpf_python_executor_ssb:$imageTag'"
-
-            sh "cd '$openmpfDockerRepo.path' && docker compose push"
-        } // withEnv...
+        dir (openmpfDockerRepo.path) {
+            withEnv(["TAG=$imageTag", "REGISTRY=$remoteImagePrefix", "COMPOSE_FILE=$runtimeComposeFiles"]) {
+                if (!env.runtime_images_to_push) {
+                    for (def image in baseImages) {
+                        sh "docker push $image"
+                    }
+                    sh "docker compose push"
+                }
+                else {
+                    def composeImages = shOutput("docker compose config --images").split('\n') as Set
+                    def searchImages = env.runtime_images_to_push.split(',')
+                            .collect{ it.trim() }
+                    def pushImages = (baseImages + composeImages)
+                            .findAll{ it.split(":").first().split("/").last() in searchImages }
+                    for (def image in pushImages) {
+                        sh "docker push $image"
+                    }
+                }
+            }
+        }
     } // optionalStage('Push runtime images', ...
 }
 catch (e) { // Global exception handler
@@ -692,24 +736,29 @@ def dockerCleanUp() {
                         .split("\n")
 
         def now = java.time.Instant.now()
-        for (image in images) {
+        def stepsForParallel = [:]
+        images.each { image ->
             if (!image.contains('deleteme')) {
-                continue;
+                return;
             }
 
-            // Time formats from Docker (includes quotes at beginning and end):
-            // - "2019-11-18T18:58:33.990718123Z"
-            // - "2020-06-29T12:47:45.512019992-04:00"
-            def quotedTagTimeString = shOutput "docker image inspect --format '{{json .Metadata.LastTagTime}}' $image"
-            def tagTimeString = quotedTagTimeString[1..-2]
-            def tagTime = parseDate(tagTimeString)
+            stepsForParallel["Clean up $image"] = { ->
+                // Time formats from Docker (includes quotes at beginning and end):
+                // - "2019-11-18T18:58:33.990718123Z"
+                // - "2020-06-29T12:47:45.512019992-04:00"
+                def quotedTagTimeString = shOutput "docker image inspect --format '{{json .Metadata.LastTagTime}}' $image"
+                def tagTimeString = quotedTagTimeString[1..-2]
+                def tagTime = parseDate(tagTimeString)
 
-            def daysSinceLastTag = tagTime.until(now, java.time.temporal.ChronoUnit.DAYS)
-            if (daysSinceLastTag > daysUntilRemoval) {
-                echo "Deleting $image because has \"deleteme\" in its name and was last tagged $daysSinceLastTag days ago."
-                sh "docker image rm $image"
+                def daysSinceLastTag = tagTime.until(now, java.time.temporal.ChronoUnit.DAYS)
+                if (daysSinceLastTag > daysUntilRemoval) {
+                    echo "Deleting $image because has \"deleteme\" in its name and was last tagged $daysSinceLastTag days ago."
+                    sh "docker image rm $image"
+                }
             }
         }
+
+        parallel stepsForParallel
 
         sh 'docker builder prune --force --keep-storage=120GB'
     }

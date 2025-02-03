@@ -5,11 +5,11 @@
 # under contract, and is subject to the Rights in Data-General Clause       #
 # 52.227-14, Alt. IV (DEC 2007).                                            #
 #                                                                           #
-# Copyright 2023 The MITRE Corporation. All Rights Reserved.                #
+# Copyright 2024 The MITRE Corporation. All Rights Reserved.                #
 #############################################################################
 
 #############################################################################
-# Copyright 2023 The MITRE Corporation                                      #
+# Copyright 2024 The MITRE Corporation                                      #
 #                                                                           #
 # Licensed under the Apache License, Version 2.0 (the "License");           #
 # you may not use this file except in compliance with the License.          #
@@ -55,8 +55,8 @@ class ComponentHandle(Protocol):
     Manages the lifetime of a language-specific component.
     """
 
-    # The type of detection produced by the component.
-    detection_type: str
+    # The type of track produced by the component.
+    track_type: str
 
     # A reference to the module containing the MPF job and result objects.
     # The classes and fields are named identically in mpf_cpp_sdk and mpf_component_api so the
@@ -116,4 +116,3 @@ def get_job_props_from_env(env: Mapping[str, str]) -> Iterator[Tuple[str, str]]:
         if len(var_name) > len(property_prefix) and var_name.startswith(property_prefix):
             prop_name = var_name[len(property_prefix):]
             yield prop_name, var_value
-

@@ -5,11 +5,11 @@
 # under contract, and is subject to the Rights in Data-General Clause       #
 # 52.227-14, Alt. IV (DEC 2007).                                            #
 #                                                                           #
-# Copyright 2023 The MITRE Corporation. All Rights Reserved.                #
+# Copyright 2024 The MITRE Corporation. All Rights Reserved.                #
 #############################################################################
 
 #############################################################################
-# Copyright 2023 The MITRE Corporation                                      #
+# Copyright 2024 The MITRE Corporation                                      #
 #                                                                           #
 # Licensed under the Apache License, Version 2.0 (the "License");           #
 # you may not use this file except in compliance with the License.          #
@@ -31,8 +31,9 @@ version: '3.7'
 x-detection-component-base:
   &detection-component-base
   environment: &common-env-vars
-    WFM_USER: ${WFM_USER}
-    WFM_PASSWORD: ${WFM_PASSWORD}
+    WFM_USER:
+    WFM_PASSWORD:
+    ACTIVE_MQ_BROKER_URI:
   depends_on:
     - workflow-manager
   volumes:
@@ -43,7 +44,12 @@ x-detection-component-base:
 
 
 services:
-  azure_form_detection:
+  argos-translation:
+    <<: *detection-component-base
+    image: ${REGISTRY}openmpf_argos_translation:${TAG}
+    build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/python/ArgosTranslation
+
+  azure-form-detection:
     <<: *detection-component-base
     image: ${REGISTRY}openmpf_azure_form_detection:${TAG}
     build:
@@ -52,16 +58,6 @@ services:
       <<: *common-env-vars
       MPF_PROP_ACS_URL: ${ACS_FORM_DETECTION_URL}
       MPF_PROP_ACS_SUBSCRIPTION_KEY: ${ACS_FORM_DETECTION_SUBSCRIPTION_KEY}
-
-  azure_ocr_text_detection:
-    <<: *detection-component-base
-    image: ${REGISTRY}openmpf_azure_ocr_text_detection:${TAG}
-    build:
-      context: ${OPENMPF_PROJECTS_PATH}/openmpf-components/python/AzureOcrTextDetection
-    environment:
-      <<: *common-env-vars
-      MPF_PROP_ACS_URL: ${ACS_OCR_URL}
-      MPF_PROP_ACS_SUBSCRIPTION_KEY: ${ACS_OCR_SUBSCRIPTION_KEY}
 
   azure_read_text_detection:
     <<: *detection-component-base
@@ -73,7 +69,7 @@ services:
       MPF_PROP_ACS_URL: ${ACS_READ_URL}
       MPF_PROP_ACS_SUBSCRIPTION_KEY: ${ACS_READ_SUBSCRIPTION_KEY}
 
-  azure_speech_detection:
+  azure-speech-detection:
     <<: *detection-component-base
     image: ${REGISTRY}openmpf_azure_speech_detection:${TAG}
     build:
@@ -85,7 +81,7 @@ services:
       MPF_PROP_ACS_BLOB_CONTAINER_URL: ${ACS_SPEECH_BLOB_CONTAINER_URL}
       MPF_PROP_ACS_BLOB_SERVICE_KEY: ${ACS_SPEECH_BLOB_SERVICE_KEY}
 
-  azure_translation:
+  azure-translation:
     <<: *detection-component-base
     image: ${REGISTRY}openmpf_azure_translation:${TAG}
     build:
@@ -102,7 +98,7 @@ services:
     <<: *detection-component-base
     image: ${REGISTRY}openmpf_clip_detection:${TAG}
     build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/python/ClipDetection
-  
+
   clip-detection-server:
     image: ${REGISTRY}openmpf_clip_detection_server:${TAG}
     build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/python/ClipDetection/triton_server
@@ -124,7 +120,7 @@ services:
               --model-repository=/models,
               --strict-model-config=false,
               --model-control-mode=explicit,
-              --load-model=ip_clip_512,
+              --load-model=vit_l_14,
               # --log-verbose=1,  # (optional)
               --grpc-infer-allocation-pool-size=16 ]
 
@@ -262,6 +258,11 @@ services:
     image: ${REGISTRY}openmpf_tika_text_detection:${TAG}
     build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/java/TikaTextDetection
 
+  transformer-tagging:
+    <<: *detection-component-base
+    image: ${REGISTRY}openmpf_transformer_tagging:${TAG}
+    build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/python/TransformerTagging
+
   trtis-detection:
     <<: *detection-component-base
     image: ${REGISTRY}openmpf_trtis_detection:${TAG}
@@ -291,6 +292,11 @@ services:
     #volumes:
     #  - "${OPENMPF_PROJECTS_PATH}/openmpf-components/cpp/TrtisDetection/plugin-files/models:/models"
     command: [trtserver,--model-store=/models]
+
+  whisper-speech-detection:
+    <<: *detection-component-base
+    image: ${REGISTRY}openmpf_whisper_speech_detection:${TAG}
+    build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/python/WhisperSpeechDetection
 
 volumes:
   yolo_engine_files:

@@ -7,11 +7,11 @@
 # under contract, and is subject to the Rights in Data-General Clause       #
 # 52.227-14, Alt. IV (DEC 2007).                                            #
 #                                                                           #
-# Copyright 2023 The MITRE Corporation. All Rights Reserved.                #
+# Copyright 2024 The MITRE Corporation. All Rights Reserved.                #
 #############################################################################
 
 #############################################################################
-# Copyright 2023 The MITRE Corporation                                      #
+# Copyright 2024 The MITRE Corporation                                      #
 #                                                                           #
 # Licensed under the Apache License, Version 2.0 (the "License");           #
 # you may not use this file except in compliance with the License.          #
@@ -28,23 +28,16 @@
 
 set -o errexit -o pipefail
 
+source /scripts/set-file-env-vars.sh
+/scripts/install-ca-certs.sh
+
 # NOTE: $HOSTNAME is not known until runtime.
 export THIS_MPF_NODE="${THIS_MPF_NODE}_id_${HOSTNAME}"
 
 if [ ! "$ACTIVE_MQ_BROKER_URI" ]; then
-    export ACTIVE_MQ_BROKER_URI="failover://(tcp://$ACTIVE_MQ_HOST:61616)?jms.prefetchPolicy.all=0&startupMaxReconnectAttempts=1"
+    # Set reconnect attempts so that about 5 minutes will be spent attempting to reconnect.
+    export ACTIVE_MQ_BROKER_URI="failover:(tcp://$ACTIVE_MQ_HOST:61616)?maxReconnectAttempts=13&startupMaxReconnectAttempts=21"
 fi
-
-# --spider makes wget use a HEAD request
-# wget exits with code 6 when there is an authentication error. This is expected because the
-# ActiveMQ status page requires authentication. We are just using the request to verify ActiveMQ
-# is running so there is no need to authenticate.
-echo 'Waiting for ActiveMQ to become available ...'
-until wget --spider --tries 1 "http://$ACTIVE_MQ_HOST:8161" >> /dev/null 2>&1 || [ $? -eq 6 ]; do
-    echo 'ActiveMQ is unavailable. Sleeping.'
-    sleep 5
-done
-echo 'ActiveMQ is up'
 
 set -o xtrace
 

@@ -5,11 +5,11 @@
 # under contract, and is subject to the Rights in Data-General Clause       #
 # 52.227-14, Alt. IV (DEC 2007).                                            #
 #                                                                           #
-# Copyright 2023 The MITRE Corporation. All Rights Reserved.                #
+# Copyright 2024 The MITRE Corporation. All Rights Reserved.                #
 #############################################################################
 
 #############################################################################
-# Copyright 2023 The MITRE Corporation                                      #
+# Copyright 2024 The MITRE Corporation                                      #
 #                                                                           #
 # Licensed under the Apache License, Version 2.0 (the "License");           #
 # you may not use this file except in compliance with the License.          #
@@ -34,12 +34,6 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-mpf}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
 
-  activemq:
-    image: ${REGISTRY}openmpf_activemq:${TAG:-latest}
-    environment:
-      # Set which configuration files are used at runtime:
-      - ACTIVE_MQ_PROFILE=default
-
   redis:
     image: redis:alpine
 
@@ -49,7 +43,6 @@ services:
     depends_on:
       - db
       - redis
-      - activemq
     environment:
       - EXTRA_MVN_OPTIONS=$EXTRA_MVN_OPTIONS
     volumes:
@@ -61,9 +54,10 @@ services:
     build: markup
     volumes:
       - shared_data:/opt/mpf/share
+    environment:
+      ACTIVE_MQ_BROKER_URI:
     deploy:
       mode: global
 
 volumes:
   shared_data:
-
