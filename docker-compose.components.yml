@@ -155,7 +155,6 @@ services:
       stack: 67108864
     ports:
     - "11434:11434"
-    runtime: nvidia
     environment:
       NVIDIA_VISIBLE_DEVICES: all
     command: [serve]
