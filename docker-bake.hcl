@@ -37,7 +37,8 @@ group "default" {
         "openmpf_build",
         "openmpf_cpp_component_build", "openmpf_cpp_executor",
         "openmpf_java_component_build", "openmpf_java_executor",
-        "openmpf_python_component_build", "openmpf_python_executor", "openmpf_python_executor_ssb"
+        "openmpf_python_component_build", "openmpf_python_executor", "openmpf_python_executor_ssb",
+        "openmpf_python_subject_build", "openmpf_python_subject_executor"
     ]
 }
 
@@ -81,6 +82,20 @@ target "openmpf_python_components" {
         ]
     }
 }
+
+target "openmpf_subject_components" {
+    name = "openmpf_python_subject_${type}"
+    tags = image_name("openmpf_python_subject_${type}")
+    target = type
+    context = "subject-components/python"
+    contexts = {
+        openmpf_build = "target:openmpf_build"
+    }
+    matrix = {
+        type = ["build", "executor"]
+    }
+}
+
 
 function "image_name" {
     params = [base_name]
