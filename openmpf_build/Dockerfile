@@ -1,4 +1,4 @@
-# syntax=docker/dockerfile:1.2
+# syntax=docker/dockerfile:1.4
 
 #############################################################################
 # NOTICE                                                                    #
@@ -26,7 +26,7 @@
 # limitations under the License.                                            #
 #############################################################################
 
-FROM ubuntu:20.04 AS build
+FROM ubuntu:20.04 AS apt_install
 
 SHELL ["/bin/bash", "-o", "errexit", "-o", "pipefail", "-c"]
 
@@ -47,8 +47,8 @@ RUN --mount=type=tmpfs,target=/var/cache/apt \
     apt-get upgrade -y; \
     DEBIAN_FRONTEND=noninteractive apt-get install --no-install-recommends -y \
         wget ca-certificates gnupg2 unzip xz-utils cmake make g++ libgtest-dev mediainfo libssl-dev \
-        liblog4cxx-dev libboost-dev file openjdk-17-jdk-headless libprotobuf-dev \
-        protobuf-compiler libprotobuf-java python3.8-dev python3-pip libgl1-mesa-glx  \
+        liblog4cxx-dev libboost-dev file openjdk-17-jdk-headless \
+        python3.8-dev python3-pip libgl1-mesa-glx  \
         # libheif build deps
         libde265-dev \
         # OpenCV build deps \
@@ -67,9 +67,10 @@ RUN --mount=type=tmpfs,target=/var/cache/apt \
     find /usr/local/cuda/lib64/ -name '*.a' -not -name 'libcudart_static.a' -delete; \
     rm /usr/lib/x86_64-linux-gnu/libcudnn*.a; \
     ln --symbolic /usr/include/x86_64-linux-gnu/openblas-pthread/cblas.h /usr/include/cblas.h; \
-    ln --symbolic /usr/bin/cmake /usr/bin/cmake3; \
-    ln --symbolic /usr/bin/protoc /usr/local/bin/protoc;
+    ln --symbolic /usr/bin/cmake /usr/bin/cmake3;
 
+
+FROM apt_install AS ocv_install
 
 RUN --mount=type=tmpfs,target=/tmp \
     mkdir /tmp/opencv-contrib; \
@@ -84,6 +85,7 @@ RUN --mount=type=tmpfs,target=/tmp \
     cd build; \
     export OpenBLAS_HOME=/usr/lib/x86_64-linux-gnu/openblas-pthread; \
     cmake -DCMAKE_INSTALL_PREFIX:PATH='/opt/opencv-4.9.0' \
+        -DCMAKE_BUILD_TYPE=Release \
         -DWITH_IPP=false \
         -DBUILD_EXAMPLES=false \
         -DBUILD_TESTS=false \
@@ -97,9 +99,34 @@ RUN --mount=type=tmpfs,target=/tmp \
         -DBUILD_CUDA_STUBS=true \
         -DOPENCV_EXTRA_MODULES_PATH=/tmp/opencv-contrib/opencv_contrib-4.9.0/modules \
         ..; \
-    make --jobs "$(nproc)" install; \
+    make --jobs "$(nproc)" install/strip; \
     ln --symbolic '/opt/opencv-4.9.0/include/opencv4/opencv2' /usr/local/include/opencv2;
 
+
+FROM apt_install
+
+RUN --mount=type=tmpfs,target=/tmp <<eot
+    mkdir /tmp/abseil
+    wget -O- 'https://github.com/abseil/abseil-cpp/releases/download/20240722.0/abseil-cpp-20240722.0.tar.gz' \
+        | tar --extract --gzip --directory /tmp/abseil;
+
+    mkdir /tmp/protobuf
+    cd /tmp/protobuf
+    wget -O- 'https://github.com/protocolbuffers/protobuf/releases/download/v28.3/protobuf-28.3.tar.gz' \
+        | tar --extract --gzip;
+
+    cd protobuf-28.3
+    mkdir build
+    cd build
+    cmake \
+        -DCMAKE_CXX_STANDARD=17 \
+        -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
+        -DABSL_ROOT_DIR=/tmp/abseil/abseil-cpp-20240722.0 \
+        -Dprotobuf_BUILD_TESTS=OFF \
+        ..
+    cmake --build . --parallel "$(nproc)"
+    cmake --install . --strip
+eot
 
 RUN --mount=type=tmpfs,target=/tmp \
     mkdir /tmp/activemq-cpp; \
@@ -108,7 +135,7 @@ RUN --mount=type=tmpfs,target=/tmp \
         | tar --extract --gzip; \
     cd activemq-cpp-library-3.9.5; \
     ./configure; \
-    make --jobs "$(nproc)" install;
+    make --jobs "$(nproc)" install-strip;
 
 RUN wget -O- 'https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz' \
         | tar --extract --xz --directory /usr/local/bin --strip-components 1 --wildcards \
@@ -146,8 +173,13 @@ RUN --mount=type=tmpfs,target=/tmp \
     cd libheif-1.12.0; \
     mkdir build; \
     cd build; \
-    cmake3 -DCMAKE_INSTALL_PREFIX=/usr -DWITH_EXAMPLES=false ..; \
-    make --jobs "$(nproc)" install;
+    cmake3 -DCMAKE_INSTALL_PREFIX=/usr -DWITH_EXAMPLES=false -DCMAKE_BUILD_TYPE=Release ..; \
+    make --jobs "$(nproc)" install/strip;
+
+
+COPY --from=ocv_install /opt/opencv-4.9.0 /opt/opencv-4.9.0
+
+RUN ln --symbolic '/opt/opencv-4.9.0/include/opencv4/opencv2' /usr/local/include/opencv2;
 
 
 COPY . /home/mpf/openmpf-projects

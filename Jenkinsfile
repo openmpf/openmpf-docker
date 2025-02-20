@@ -57,6 +57,10 @@ def customLabelKey = env.getProperty("custom_label_key") ?: "custom"
 def preDockerBuildScriptPath = env.pre_docker_build_script_path
 
 def runTrivyScans = env.run_trivy_scans?.toBoolean() ?: false
+def runTrivyInsecure = env.run_trivy_insecure?.toBoolean() ?: false
+def runTrivyMaxTasks = env.run_trivy_max_tasks?.toInteger() ?: 4
+def dependencyTrackCredId = env.dependency_track_cred_id
+def dependencyTrackUploadSbom = env.dependency_track_upload_sbom?.toBoolean() ?: false
 def skipIntegrationTests = env.skip_integration_tests?.toBoolean() ?: false
 def pruneDocker = env.prune_docker?.toBoolean() ?: false
 def buildTimeout = env.build_timeout ?: 6 // hours
@@ -302,6 +306,7 @@ try {
         }
 
 
+        def pythonShas = getVcsRefLabelArg([openmpfPythonSdkRepo])
         dir(openmpfDockerRepo.path + '/components') {
             def cppShas = getVcsRefLabelArg([openmpfCppSdkRepo])
             sh "docker build . -f cpp_component_build/Dockerfile $commonBuildArgs $labelArgs $cppShas " +
@@ -319,7 +324,6 @@ try {
                     " -t openmpf_java_executor:$inProgressTag"
 
 
-            def pythonShas = getVcsRefLabelArg([openmpfPythonSdkRepo])
             sh "docker build . -f python/Dockerfile $commonBuildArgs $labelArgs $pythonShas " +
                     " --target ssb -t openmpf_python_executor_ssb:$inProgressTag"
 
@@ -334,6 +338,16 @@ try {
 
             sh "docker build . -f python/Dockerfile $commonBuildArgs $labelArgs $pythonShas " +
                     " --target executor -t openmpf_python_executor:$inProgressTag --no-cache=false"
+        }
+
+        dir(openmpfDockerRepo.path + '/subject-components/python') {
+            sh "docker build . $commonBuildArgs $labelArgs $pythonShas " +
+                    " --target executor -t openmpf_python_subject_executor:$inProgressTag"
+
+            // Add --no-cache=false so that openmpf_python_subject_build re-uses the layers
+            // created during the build of openmpf_python_subject_executor
+            sh "docker build . $commonBuildArgs $labelArgs $pythonShas " +
+                    " --target build -t openmpf_python_subject_build:$inProgressTag --no-cache=false"
         }
 
         dir (openmpfDockerRepo.path) {
@@ -420,7 +434,8 @@ try {
                      // Use custom project name to allow multiple builds on same machine
                      "COMPOSE_PROJECT_NAME=openmpf_$buildId",
                      "COMPOSE_FILE=$composeFiles",
-                     "ACTIVE_MQ_BROKER_URI=failover:(tcp://workflow-manager:61616)?maxReconnectAttempts=100&startupMaxReconnectAttempts=100"]) {
+                     "ACTIVE_MQ_BROKER_URI=failover:(tcp://workflow-manager:61616)?maxReconnectAttempts=100&startupMaxReconnectAttempts=100",
+                     "AMQP_CONNECT_ATTEMPTS=100"]) {
                 def serviceNames = shOutput("docker compose config --services").split('\n') as Set
                 def skipArgs = env.docker_services_build_only.split(',')
                         .collect{ it.trim() }
@@ -458,21 +473,124 @@ try {
         def trivyVolume = "trivy_$inProgressTag"
         sh "docker volume create $trivyVolume"
         try {
+            // list of failed scans
             def failedImages = []
-            for (def service in composeYaml.services.values()) {
-                def exitCode = shStatus("docker run --rm " +
-                        "-v /var/run/docker.sock:/var/run/docker.sock " +
-                        "-v $trivyVolume:/root/.cache/ " +
-                        "-v '${pwd()}/$openmpfDockerRepo.path/trivyignore.txt:/.trivyignore' " +
-                        "aquasec/trivy image --severity CRITICAL,HIGH --exit-code 1 " +
-                        "--timeout 30m --scanners vuln $service.image")
-                if (exitCode != 0) {
-                    failedImages << service.image
-                }
+
+            // queue of tasks
+            def taskQueue = []
+
+            // download db files
+            def exitCode = shStatus("docker run --rm " +
+                            "-e TRIVY_INSECURE=${runTrivyInsecure} " +
+                            "-v /var/run/docker.sock:/var/run/docker.sock " +
+                            "-v $trivyVolume:/root/.cache/ " +
+                            "aquasec/trivy image --download-db-only")
+            if (exitCode != 0) {
+                echo 'Trivy failed to download the db files'
             }
+
+            // download the java db files
+            exitCode = shStatus("docker run --rm " +
+                            "-e TRIVY_INSECURE=${runTrivyInsecure} " +
+                            "-v /var/run/docker.sock:/var/run/docker.sock " +
+                            "-v $trivyVolume:/root/.cache/ " +
+                            "aquasec/trivy image --download-java-db-only")
+            if (exitCode != 0) {
+                echo 'Trivy failed to download the java db files'
+            }
+
+            composeYaml.services.keySet().each { serviceName ->
+                def task = {
+                    // fetch service using the serviceName
+                    def service = composeYaml.services[serviceName]
+
+                    // save the output to a file
+                    exitCode = shStatus("docker run --rm " +
+                            "-e TRIVY_INSECURE=${runTrivyInsecure} " +
+                            "-v /var/run/docker.sock:/var/run/docker.sock " +
+                            "-v $trivyVolume:/root/.cache/ " +
+                            "-v '${pwd()}/$openmpfDockerRepo.path/trivyignore.txt:/.trivyignore' " +
+                            "-v '${pwd()}/$openmpfDockerRepo.path:/trivy' " +
+                            "aquasec/trivy image --format cyclonedx --output /trivy/${serviceName}_sbom.json " +
+                            "--timeout 30m $service.image")
+                    if (exitCode != 0) {
+                        failedImages << service.image
+                    } else {
+                        // print the vulnerabilities to a file
+                        exitCode = shStatus("docker run --rm " +
+                            "-e TRIVY_INSECURE=${runTrivyInsecure} " +
+                            "-v /var/run/docker.sock:/var/run/docker.sock " +
+                            "-v $trivyVolume:/root/.cache/ " +
+                            "-v '${pwd()}/$openmpfDockerRepo.path/trivyignore.txt:/.trivyignore' " +
+                            "-v '${pwd()}/$openmpfDockerRepo.path:/trivy' " +
+                            "aquasec/trivy sbom --severity CRITICAL,HIGH --exit-code 1 " +
+                            "--format json --output /trivy/${serviceName}_trivy.json " +
+                            "--timeout 30m --scanners vuln /trivy/${serviceName}_sbom.json")
+                        if (exitCode != 0) {
+                            failedImages << service.image
+                        }
+
+                        // scan and publish to the build output
+                        def trivy = scanForIssues tool: trivy(pattern: "${openmpfDockerRepo.path}/${serviceName}_trivy.json")
+                        publishIssues id: "${serviceName}", name: "${serviceName} Trivy Scans", issues: [trivy]
+
+                        // upload to dependency track
+                        if (dependencyTrackUploadSbom) {
+                            def (serviceImageName, serviceVersion) = service.image?.split(':')
+                            if (service.version) {
+                                serviceVersion = service.version
+                            }
+
+                            // if the image is pushed to the registry, use the image tag for dependency track
+                            if (pushRuntimeImages) {
+                                serviceVersion = imageTag
+                            }
+
+                            // publish using the dependency track plugin
+                            dependencyTrackPublisher(
+                                artifact: "${openmpfDockerRepo.path}/${serviceName}_sbom.json",
+                                projectName: serviceImageName,
+                                projectVersion: serviceVersion,
+                                synchronous: false,
+                                dependencyTrackApiKey: dependencyTrackCredId
+                            )
+                        }
+                    }
+                }
+
+                // add to the queue
+                taskQueue << task
+            }
+
+            // number of cpu cores
+            def maxTasks = Math.min((shOutput('nproc') as int), runTrivyMaxTasks)
+
+            // process tasks in parallel (limited to maxTasks)
+            while (!taskQueue.isEmpty()) {
+                // limit the number of running tasks
+                def tasksToRun = [:]
+                def taskCount = Math.min(maxTasks, taskQueue.size())
+
+                // add tasks the map
+                for (int i = 0; i < taskCount; i++) {
+                    def taskName = "Task ${i}" 
+                    tasksToRun[taskName] = taskQueue.remove(0)
+                }
+
+                // debug info
+                echo "Running parallel tasks: ${tasksToRun.keySet()} ${tasksToRun.values()}"
+
+                // Run the tasks in parallel
+                parallel tasksToRun
+            }
+
+            // print failed images
             if (failedImages) {
                 echo 'Trivy scan failed for the following images:\n' + failedImages.join('\n')
             }
+
+            // create build artifacts of the files
+            archiveArtifacts artifacts: "${openmpfDockerRepo.path}/*_sbom.json", allowEmptyArchive: true
         }
         finally {
             sh "docker volume rm $trivyVolume"
@@ -490,7 +608,9 @@ try {
                           "openmpf_java_executor",
                           "openmpf_python_component_build",
                           "openmpf_python_executor",
-                          "openmpf_python_executor_ssb"]
+                          "openmpf_python_executor_ssb",
+                          "openmpf_python_subject_executor",
+                          "openmpf_python_subject_build"]
                 .collect{ "${remoteImagePrefix}$it:$imageTag" }
 
         dir (openmpfDockerRepo.path) {
