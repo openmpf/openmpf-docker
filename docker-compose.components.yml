@@ -140,6 +140,11 @@ services:
         limits:
           cpus: "2.0"
 
+  fasttext-language-detection:
+    <<: *detection-component-base
+    image: ${REGISTRY}openmpf_fasttext_language_detection:${TAG}
+    build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/python/FastTextLanguageDetection
+
   keyword-tagging:
     <<: *detection-component-base
     image: ${REGISTRY}openmpf_keyword_tagging:${TAG}
