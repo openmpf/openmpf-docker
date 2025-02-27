@@ -156,7 +156,6 @@ services:
     build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/python/LlavaDetection
   
   llava-detection-server:
-    <<: *detection-component-base
     image: ${REGISTRY}ollama_server:${TAG}
     build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/python/LlavaDetection/ollama_server
     deploy:
@@ -164,8 +163,6 @@ services:
     ulimits:
       memlock: -1
       stack: 67108864
-    ports:
-    - "11434:11434"
     environment:
       NVIDIA_VISIBLE_DEVICES: all
     command: [serve]
