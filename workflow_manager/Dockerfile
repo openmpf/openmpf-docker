@@ -38,14 +38,23 @@ SHELL ["/bin/bash", "-o", "errexit", "-o", "pipefail", "-c"]
 ENV LANG C.UTF-8
 ENV LC_ALL C.UTF-8
 
+
 RUN --mount=type=tmpfs,target=/var/cache/apt \
     --mount=type=tmpfs,target=/var/lib/apt/lists  \
     --mount=type=tmpfs,target=/tmp \
     apt-get update; \
     apt-get upgrade -y; \
     apt-get install --no-install-recommends -y \
-        openjdk-17-jre-headless libtcnative-1 file mediainfo wget ca-certificates \
-        python3.8 python3-pip;
+        openjdk-17-jre-headless libtcnative-1 file mediainfo wget ca-certificates gnupg2; \
+    wget -O- 'https://keyserver.ubuntu.com/pks/lookup?op=get&search=0xba6932366a755776' \
+        | apt-key add -; \
+    echo 'deb http://ppa.launchpad.net/deadsnakes/ppa/ubuntu focal main' \
+        > /etc/apt/sources.list.d/deadsnakes.list; \
+    apt-get update; \
+    apt-get install --no-install-recommends -y python3.12; \
+    python3.12 -m ensurepip --upgrade --default-pip; \
+    ln --symbolic /usr/bin/python3.12 /usr/local/bin/python3;
+
 
 
 RUN wget --directory-prefix /scripts \

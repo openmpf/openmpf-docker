@@ -44,8 +44,15 @@ RUN --mount=type=tmpfs,target=/var/cache/apt \
 <<eot
     apt-get update
     apt-get upgrade -y
-    apt-get install --no-install-recommends -y python3.8 python3.8-venv libpython3.8 tini \
-        libgl1-mesa-glx libglib2.0-0
+    apt-get install --no-install-recommends -y tini libgl1-mesa-glx libglib2.0-0 \
+        wget ca-certificates gnupg2
+    wget -O- 'https://keyserver.ubuntu.com/pks/lookup?op=get&search=0xba6932366a755776' \
+        | apt-key add -
+    echo 'deb http://ppa.launchpad.net/deadsnakes/ppa/ubuntu focal main' \
+        > /etc/apt/sources.list.d/deadsnakes.list
+    apt-get update
+    apt-get install --no-install-recommends -y python3.12 python3.12-venv libpython3.12
+    ln --symbolic /usr/bin/python3.12 /usr/local/bin/python3
 eot
 
 ENV MPF_HOME /opt/mpf
@@ -65,19 +72,20 @@ RUN --mount=type=tmpfs,target=/var/cache/apt \
     --mount=type=tmpfs,target=/tmp \
 <<eot
     apt-get update
-    apt-get install --no-install-recommends -y gcc python3.8-dev
+    apt-get install --no-install-recommends -y gcc python3.12-dev
 eot
 
 RUN <<eot
     python3 -m venv "$COMPONENT_VIRTUALENV"
     pip config --site set global.no-cache-dir true
+    pip install --upgrade pip
     pip install --upgrade setuptools
 eot
 
-RUN --mount=from=openmpf_build,source=/home/mpf/openmpf-projects/openmpf-python-component-sdk/detection,target=/tmp/python \
+RUN --mount=from=openmpf_build,source=/home/mpf/openmpf-projects/openmpf-python-component-sdk/detection,target=/tmp/python,rw \
     pip3 install --no-cache-dir /tmp/python/api /tmp/python/component_util;
 
-RUN --mount=from=openmpf_build,source=/home/mpf/openmpf-projects/openmpf-python-component-sdk/subject,target=/tmp/python \
+RUN --mount=from=openmpf_build,source=/home/mpf/openmpf-projects/openmpf-python-component-sdk/subject,target=/tmp/python,rw \
     pip3 install --no-cache-dir /tmp/python/api;
 
 RUN --mount=from=openmpf_build,source=/build-artifacts/install/bin/subject_executor/requirements.txt,target=/tmp/requirements.txt \
