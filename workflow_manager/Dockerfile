@@ -51,10 +51,9 @@ RUN --mount=type=tmpfs,target=/var/cache/apt \
     echo 'deb http://ppa.launchpad.net/deadsnakes/ppa/ubuntu focal main' \
         > /etc/apt/sources.list.d/deadsnakes.list; \
     apt-get update; \
-    apt-get install --no-install-recommends -y python3.12; \
+    apt-get install --no-install-recommends -y python3.12-venv; \
     python3.12 -m ensurepip --upgrade --default-pip; \
     ln --symbolic /usr/bin/python3.12 /usr/local/bin/python3;
-
 
 
 RUN wget --directory-prefix /scripts \
