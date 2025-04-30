@@ -50,7 +50,7 @@ RUN --mount=type=tmpfs,target=/var/cache/apt \
         liblog4cxx-dev libboost-dev file openjdk-17-jdk-headless \
         python3.8-dev python3-pip libgl1-mesa-glx  \
         # libheif build deps
-        libde265-dev \
+        libde265-dev git meson nasm pkg-config \
         # OpenCV build deps \
         libopenblas-dev liblapacke-dev libavcodec-dev libavcodec-extra libavformat-dev  \
         libavutil-dev libswscale-dev libavresample-dev libharfbuzz-dev libfreetype-dev; \
@@ -170,10 +170,13 @@ RUN --mount=type=tmpfs,target=/tmp \
     cd /tmp/libheif; \
     wget -O- https://github.com/strukturag/libheif/archive/refs/tags/v1.19.8.tar.gz \
         | tar --extract --gzip; \
-    cd libheif-1.19.8; \
+    cd libheif-1.19.8/third-party; \
+    bash dav1d.cmd; \
+    cd ..; \
     mkdir build; \
     cd build; \
-    cmake3 -DCMAKE_INSTALL_PREFIX=/usr -DWITH_EXAMPLES=false -DCMAKE_BUILD_TYPE=Release ..; \
+    PKG_CONFIG_PATH="/tmp/libheif/libheif-1.19.8/third-party/dav1d/dist/lib64/pkgconfig" \
+        cmake3 -DCMAKE_INSTALL_PREFIX=/usr -DWITH_EXAMPLES=false -DWITH_DAV1D=true -DCMAKE_BUILD_TYPE=Release ..; \
     make --jobs "$(nproc)" install/strip;
 
 
