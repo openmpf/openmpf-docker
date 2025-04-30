@@ -175,7 +175,7 @@ RUN --mount=type=tmpfs,target=/tmp \
     cd ..; \
     mkdir build; \
     cd build; \
-    PKG_CONFIG_PATH="/tmp/libheif/libheif-1.19.8/third-party/dav1d/dist/lib64/pkgconfig" \
+    PKG_CONFIG_PATH="/tmp/libheif/libheif-1.19.8/third-party/dav1d/dist/lib/x86_64-linux-gnu/pkgconfig" \
         cmake3 -DCMAKE_INSTALL_PREFIX=/usr -DWITH_EXAMPLES=false -DWITH_DAV1D=true -DCMAKE_BUILD_TYPE=Release ..; \
     make --jobs "$(nproc)" install/strip;
 
