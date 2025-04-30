@@ -168,9 +168,9 @@ RUN wget -O- 'https://archive.apache.org/dist/maven/maven-3/3.3.3/binaries/apach
 RUN --mount=type=tmpfs,target=/tmp \
     mkdir /tmp/libheif; \
     cd /tmp/libheif; \
-    wget -O- https://github.com/strukturag/libheif/archive/refs/tags/v1.12.0.tar.gz \
+    wget -O- https://github.com/strukturag/libheif/archive/refs/tags/v1.19.8.tar.gz \
         | tar --extract --gzip; \
-    cd libheif-1.12.0; \
+    cd libheif-1.19.8; \
     mkdir build; \
     cd build; \
     cmake3 -DCMAKE_INSTALL_PREFIX=/usr -DWITH_EXAMPLES=false -DCMAKE_BUILD_TYPE=Release ..; \
