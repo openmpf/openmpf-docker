@@ -50,7 +50,7 @@ RUN --mount=type=tmpfs,target=/var/cache/apt \
         liblog4cxx-dev libboost-dev file openjdk-17-jdk-headless \
         python3.8-dev python3-pip libgl1-mesa-glx  \
         # libheif build deps
-        libde265-dev git ninja-build pkg-config \
+        libde265-dev git nasm ninja-build pkg-config \
         # OpenCV build deps \
         libopenblas-dev liblapacke-dev libavcodec-dev libavcodec-extra libavformat-dev  \
         libavutil-dev libswscale-dev libavresample-dev libharfbuzz-dev libfreetype-dev; \
@@ -164,15 +164,6 @@ RUN wget -O- 'https://archive.apache.org/dist/maven/maven-3/3.3.3/binaries/apach
         | tar --extract --gzip --directory /opt; \
     ln --symbolic /opt/apache-maven-3.3.3/bin/mvn /usr/local/bin;
 
-
-# DEBUG
-RUN --mount=type=tmpfs,target=/var/cache/apt \
-    --mount=type=tmpfs,target=/var/lib/apt/lists  \
-    --mount=type=tmpfs,target=/tmp \
-    apt-get update; \
-    apt-get upgrade -y; \
-    DEBIAN_FRONTEND=noninteractive apt-get install --no-install-recommends -y \
-        nasm
 
 RUN --mount=type=tmpfs,target=/tmp \
     mkdir /tmp/libheif; \
