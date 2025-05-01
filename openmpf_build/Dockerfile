@@ -165,6 +165,15 @@ RUN wget -O- 'https://archive.apache.org/dist/maven/maven-3/3.3.3/binaries/apach
     ln --symbolic /opt/apache-maven-3.3.3/bin/mvn /usr/local/bin;
 
 
+# DEBUG
+RUN --mount=type=tmpfs,target=/var/cache/apt \
+    --mount=type=tmpfs,target=/var/lib/apt/lists  \
+    --mount=type=tmpfs,target=/tmp \
+    apt-get update; \
+    apt-get upgrade -y; \
+    DEBIAN_FRONTEND=noninteractive apt-get install --no-install-recommends -y \
+        nasm
+
 RUN --mount=type=tmpfs,target=/tmp \
     mkdir /tmp/libheif; \
     cd /tmp/libheif; \
