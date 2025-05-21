@@ -62,27 +62,27 @@ prefix on the `FROM` lines.
 FROM openmpf/openmpf_cpp_component_build:latest as build_component
 
 # If your component has external dependencies, you would add the commands necessary to download or
-# build the dependencies here. Adding the dependencies prior the copying in your source code 
-# allows you to take advantage of the Docker build cache to avoid re-installing the dependencies 
+# build the dependencies here. Adding the dependencies prior the copying in your source code
+# allows you to take advantage of the Docker build cache to avoid re-installing the dependencies
 # every time your source code changes.
 # e.g. RUN yum install -y mydependency
 
 # Copy in your source code
 COPY . .
 
-# Build your component. The [build-component.sh](../cpp_component_build/scripts/build-component.sh) 
+# Build your component. The [build-component.sh](../cpp_component_build/scripts/build-component.sh)
 # script is provided by the openmpf_cpp_component_build base image.
 RUN build-component.sh
 
-# You optionally may want to run unit tests here, or wherever is appropriate for your Dockerfile. 
-# The [OcvFaceDetection component's Dockerfile](https://github.com/openmpf/openmpf-components/blob/master/cpp/OcvFaceDetection/Dockerfile) 
-# shows one way of setting up unit tests, but you can do it in whatever way you see fit. 
+# You optionally may want to run unit tests here, or wherever is appropriate for your Dockerfile.
+# The [OcvFaceDetection component's Dockerfile](https://github.com/openmpf/openmpf-components/blob/master/cpp/OcvFaceDetection/Dockerfile)
+# shows one way of setting up unit tests, but you can do it in whatever way you see fit.
 
-# In the second stage of the build we extend the openmpf_cpp_executor base image. 
+# In the second stage of the build we extend the openmpf_cpp_executor base image.
 FROM openmpf/openmpf_cpp_executor:latest
 
-# If your component has runtime dependencies other than the shared libraries required at compile 
-# time you should install them here. Adding the dependencies prior to copying your component's 
+# If your component has runtime dependencies other than the shared libraries required at compile
+# time you should install them here. Adding the dependencies prior to copying your component's
 # build artifacts allows you to take advantage of the Docker build cache to avoid re-installing
 # the dependencies every time your source code changes.
 
@@ -90,8 +90,8 @@ FROM openmpf/openmpf_cpp_executor:latest
 # Set LD_LIBRARY_PATH so this component works with the [CLI runner](../../CLI_RUNNER.md).
 ENV LD_LIBRARY_PATH $PLUGINS_DIR/MyFaceDetection/lib
 
-# Copy only the files the component will need at runtime from the build stage. 
-# This line also copies over the libraries that your component links to. 
+# Copy only the files the component will need at runtime from the build stage.
+# This line also copies over the libraries that your component links to.
 # Note that running build-component.sh in the first stage collected those libraries for you.
 COPY --from=build_component $BUILD_DIR/plugin/MyFaceDetection \
                             $PLUGINS_DIR/MyFaceDetection
@@ -118,14 +118,11 @@ For example: `docker build -t MyFaceDetection /path/to/MyFaceDetection`.
 ### Run your component
 
 1. Start OpenMPF
-2. Run the following command replacing `<component_name>` with the value provided in the build step. If your OpenMPF
-   deployment uses non-default credentials the `WFM_USER` and `WFM_PASSWORD` values will need to be modified.
+2. Run the following command replacing `<component_name>` with the value provided in the build step.
 
 ```bash
 docker run \
     --network openmpf_default \
     -v openmpf_shared_data:/opt/mpf/share \
-    -e WFM_USER=admin \
-    -e WFM_PASSWORD=mpfadm \
     <component_name>
 ```
