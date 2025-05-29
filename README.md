@@ -114,8 +114,8 @@ the [Contribution Guide](CONTRIBUTING.md).
 [Bake](https://docs.docker.com/build/bake/) is an experimental feature available in recent Docker
 releases. Since this is an experimental feature, you may run in to issues trying to use it. In
 that case, skip this step and follow the instructions in the
-["Create the OpenMPF Build Image"](#docker-build-command) and
-["Build the OpenMPF Component Executor Docker Images"](#component-executors-build-commands)
+[Create the OpenMPF Build Image](#docker-build-command) and
+[Build the OpenMPF Component Executor Docker Images](#component-executors-build-commands)
 sections.
 
 Run the command below from within the `openmpf-projects/openmpf-docker` directory to build all of
@@ -124,7 +124,7 @@ the OpenMPF base images.
 - `docker buildx bake --allow=fs.read=.. -f docker-bake.hcl`
 
 If you were able to run the command successfully, skip to the
-["Generate docker-compose.yml"](#generate-compose-file) section.
+[Generate docker-compose.yml](#generate-compose-file) section.
 
 
 #### Create the OpenMPF Build Image
