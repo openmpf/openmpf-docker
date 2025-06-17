@@ -26,19 +26,34 @@
 # limitations under the License.                                            #
 #############################################################################
 
-set -o errexit -o pipefail
+set -o errexit -o pipefail -o xtrace
 
-source /scripts/set-file-env-vars.sh
-/scripts/install-ca-certs.sh
+src_dir="${SRC_DIR:-/home/mpf/component_src}"
 
-if [ $# -eq 0 ]; then
-    echo No command line arguments. Starting as regular component... 1>&2
-    exec python3 /scripts/component-executor.py
+descriptor_path=$src_dir/plugin-files/descriptor/descriptor.json
+
+if [ ! -e "$descriptor_path" ]; then
+    echo "Error: Expected $descriptor_path to exist. Did you forget to COPY or bind mount your component source code?"
+    exit 3
 fi
 
-if [ "$1" == runner ]; then
-    shift
-fi
+component_name=$(python3 -c "import json; print(json.load(open('$descriptor_path'))['componentName'])")
+mkdir --parents "$MPF_HOME/plugins/$component_name"
 
-echo Starting as component CLI runner... 1>&2
-exec runner "$@"
+if [ -e "$src_dir/pyproject.toml" ] || [ -e "$src_dir/setup.py" ]; then
+    echo 'Installing plugin with pip'
+    cp --recursive "$src_dir"/plugin-files/* "$MPF_HOME/plugins/$component_name/"
+
+
+    if [ -d "$src_dir/plugin-files/wheelhouse" ]; then
+        "$COMPONENT_VIRTUALENV/bin/pip3" install \
+            --find-links "$src_dir/plugin-files/wheelhouse" \
+            --no-cache-dir "$src_dir"
+    else
+        "$COMPONENT_VIRTUALENV/bin/pip3" install \
+            --no-cache-dir "$src_dir"
+    fi
+else
+    echo "Did not find pyproject.toml or setup.py in $src_dir"
+    exit 2
+fi

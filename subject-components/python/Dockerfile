@@ -31,7 +31,7 @@ ARG BUILD_TAG=latest
 FROM ${BUILD_REGISTRY}openmpf_build:${BUILD_TAG} AS openmpf_build
 
 
-FROM ubuntu:20.04
+FROM ubuntu:20.04 AS common
 
 SHELL ["/bin/bash", "-o", "errexit", "-o", "pipefail", "-c"]
 
@@ -41,31 +41,70 @@ ENV LC_ALL C.UTF-8
 RUN --mount=type=tmpfs,target=/var/cache/apt \
     --mount=type=tmpfs,target=/var/lib/apt/lists  \
     --mount=type=tmpfs,target=/tmp \
-    apt-get update; \
-    apt-get upgrade -y; \
-    apt-get install --no-install-recommends -y openjdk-17-jre-headless python3.8; \
-    ln --symbolic /usr/bin/python3.8 /usr/bin/python3;
-
-COPY --from=openmpf_build /usr/local/bin/ffmpeg /usr/local/bin/ffprobe /usr/local/bin/
-
-COPY --from=openmpf_build /scripts/* /scripts/
+<<eot
+    apt-get update
+    apt-get upgrade -y
+    apt-get install --no-install-recommends -y python3.8 python3.8-venv libpython3.8 tini \
+        libgl1-mesa-glx libglib2.0-0
+eot
 
 ENV MPF_HOME /opt/mpf
 
-ENV MPF_LOG_PATH $MPF_HOME/share/logs
+ENV COMPONENT_VIRTUALENV $MPF_HOME/plugin-venv
+
+# Adding $COMPONENT_VIRTUALENV/bin to the front of $PATH persistently activates the virtualenv.
+ENV PATH $COMPONENT_VIRTUALENV/bin:/scripts:$PATH
+
+#########################################
+FROM common AS build
+
+# The subject component executor depends on the python-qpid-proton pip package.
+# python-qpid-proton requires a C compiler and the Python headers to be installed.
+RUN --mount=type=tmpfs,target=/var/cache/apt \
+    --mount=type=tmpfs,target=/var/lib/apt/lists  \
+    --mount=type=tmpfs,target=/tmp \
+<<eot
+    apt-get update
+    apt-get install --no-install-recommends -y gcc python3.8-dev
+eot
+
+RUN <<eot
+    python3 -m venv "$COMPONENT_VIRTUALENV"
+    pip config --site set global.no-cache-dir true
+    pip install --upgrade setuptools
+eot
+
+RUN --mount=from=openmpf_build,source=/home/mpf/openmpf-projects/openmpf-python-component-sdk/detection,target=/tmp/python \
+    pip3 install --no-cache-dir /tmp/python/api /tmp/python/component_util;
+
+RUN --mount=from=openmpf_build,source=/home/mpf/openmpf-projects/openmpf-python-component-sdk/subject,target=/tmp/python \
+    pip3 install --no-cache-dir /tmp/python/api;
+
+RUN --mount=from=openmpf_build,source=/build-artifacts/install/bin/subject_executor/requirements.txt,target=/tmp/requirements.txt \
+    pip3 install -r /tmp/requirements.txt
+
+ENV SRC_DIR /home/mpf/component_src
+
+WORKDIR $SRC_DIR
+
+COPY install-component.sh /scripts/
+
+
+#########################################
+FROM common AS executor
+
+ENV MPF_HOME /opt/mpf
+
+COPY --from=openmpf_build /build-artifacts/install/bin/subject_executor $MPF_HOME/bin/subject_executor
+
+ENV PYTHONUNBUFFERED 1
 
 ENV PLUGINS_DIR $MPF_HOME/plugins
 
-COPY --from=openmpf_build /build-artifacts/java-executor/*.jar $MPF_HOME/jars/
+ENV ACTIVE_MQ_HOST workflow-manager
 
-COPY component-executor.py component_registration.py /scripts/
+ENV COMPONENT_LANGUAGE python
 
-ENTRYPOINT ["python3", "-u", "/scripts/component-executor.py"]
-
-LABEL org.label-schema.build-date="" \
-      org.label-schema.license="Apache 2.0" \
-      org.label-schema.name="OpenMPF Java Component Executor" \
-      org.label-schema.schema-version="1.0" \
-      org.label-schema.url="https://openmpf.github.io" \
-      org.label-schema.vcs-url="https://github.com/openmpf/openmpf-java-component-sdk" \
-      org.label-schema.vendor="MITRE"
+# Using tini here is equivalent to starting the container with the --init flag, except that users
+# do not need to remember to add the flag.
+ENTRYPOINT ["tini", "-v", "--", "python", "/opt/mpf/bin/subject_executor/__main__.py"]

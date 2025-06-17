@@ -5,11 +5,11 @@
 # under contract, and is subject to the Rights in Data-General Clause       #
 # 52.227-14, Alt. IV (DEC 2007).                                            #
 #                                                                           #
-# Copyright 2023 The MITRE Corporation. All Rights Reserved.                #
+# Copyright 2024 The MITRE Corporation. All Rights Reserved.                #
 #############################################################################
 
 #############################################################################
-# Copyright 2023 The MITRE Corporation                                      #
+# Copyright 2024 The MITRE Corporation                                      #
 #                                                                           #
 # Licensed under the Apache License, Version 2.0 (the "License");           #
 # you may not use this file except in compliance with the License.          #
@@ -28,12 +28,11 @@
 
 version: '3.7'
 
-x-detection-component-base:
-  &detection-component-base
+
+x-component-base: &component-base
   environment: &common-env-vars
-    WFM_USER:
-    WFM_PASSWORD:
     ACTIVE_MQ_BROKER_URI:
+    AMQP_CONNECT_ATTEMPTS:
   depends_on:
     - workflow-manager
   volumes:
@@ -42,14 +41,21 @@ x-detection-component-base:
     mode: replicated
     replicas: 2
 
+x-detection-component-base: &detection-component-base
+  <<: *component-base
+  environment:
+    <<: *common-env-vars
+    WFM_USER:
+    WFM_PASSWORD:
+
 
 services:
-  argos_translation:
+  argos-translation:
     <<: *detection-component-base
     image: ${REGISTRY}openmpf_argos_translation:${TAG}
     build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/python/ArgosTranslation
 
-  azure_form_detection:
+  azure-form-detection:
     <<: *detection-component-base
     image: ${REGISTRY}openmpf_azure_form_detection:${TAG}
     build:
@@ -58,16 +64,6 @@ services:
       <<: *common-env-vars
       MPF_PROP_ACS_URL: ${ACS_FORM_DETECTION_URL}
       MPF_PROP_ACS_SUBSCRIPTION_KEY: ${ACS_FORM_DETECTION_SUBSCRIPTION_KEY}
-
-  azure_ocr_text_detection:
-    <<: *detection-component-base
-    image: ${REGISTRY}openmpf_azure_ocr_text_detection:${TAG}
-    build:
-      context: ${OPENMPF_PROJECTS_PATH}/openmpf-components/python/AzureOcrTextDetection
-    environment:
-      <<: *common-env-vars
-      MPF_PROP_ACS_URL: ${ACS_OCR_URL}
-      MPF_PROP_ACS_SUBSCRIPTION_KEY: ${ACS_OCR_SUBSCRIPTION_KEY}
 
   azure_read_text_detection:
     <<: *detection-component-base
@@ -79,7 +75,7 @@ services:
       MPF_PROP_ACS_URL: ${ACS_READ_URL}
       MPF_PROP_ACS_SUBSCRIPTION_KEY: ${ACS_READ_SUBSCRIPTION_KEY}
 
-  azure_speech_detection:
+  azure-speech-detection:
     <<: *detection-component-base
     image: ${REGISTRY}openmpf_azure_speech_detection:${TAG}
     build:
@@ -91,7 +87,7 @@ services:
       MPF_PROP_ACS_BLOB_CONTAINER_URL: ${ACS_SPEECH_BLOB_CONTAINER_URL}
       MPF_PROP_ACS_BLOB_SERVICE_KEY: ${ACS_SPEECH_BLOB_SERVICE_KEY}
 
-  azure_translation:
+  azure-translation:
     <<: *detection-component-base
     image: ${REGISTRY}openmpf_azure_translation:${TAG}
     build:
@@ -148,6 +144,11 @@ services:
     <<: *detection-component-base
     image: ${REGISTRY}openmpf_gemini_detection:${TAG}
     build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/python/GeminiDetection
+
+  fasttext-language-detection:
+    <<: *detection-component-base
+    image: ${REGISTRY}openmpf_fasttext_language_detection:${TAG}
+    build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/python/FastTextLanguageDetection
 
   keyword-tagging:
     <<: *detection-component-base
@@ -221,6 +222,11 @@ services:
               --load-model=yolo-608,
               # --log-verbose=1,  # (optional)
               --grpc-infer-allocation-pool-size=16]
+
+  ortools-subject-component:
+    <<: *component-base
+    image: ${REGISTRY}openmpf_ortools_subject_component:${TAG}
+    build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/python/OrToolsSubjectComponent
 
   scene-change-detection:
     <<: *detection-component-base

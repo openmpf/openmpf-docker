@@ -28,17 +28,62 @@
 
 set -o errexit -o pipefail
 
-source /scripts/set-file-env-vars.sh
-/scripts/install-ca-certs.sh
+NEED_TO_CHECK_MISSING_LIBS=true
 
-if [ $# -eq 0 ]; then
-    echo No command line arguments. Starting as regular component... 1>&2
-    exec python3 /scripts/component-executor.py
-fi
+main() {
+    if [[ $# -lt 3 ]]; then
+        echo 'Too few arguments.'
+        echo "Usage: $0 <elf-file> <target-libs-dir> <source-libs-dir>"
+        exit 1
+    fi
 
-if [ "$1" == runner ]; then
-    shift
-fi
+    while [[ $NEED_TO_CHECK_MISSING_LIBS ]]; do
+        copy_libs "$@"
+    done
+}
 
-echo Starting as component CLI runner... 1>&2
-exec runner "$@"
+copy_libs() {
+    local lib_file=$1
+    local extra_libs_install_dir=$2
+    local lib_copy_src_dir=$3
+    NEED_TO_CHECK_MISSING_LIBS=''
+
+    readarray -t ldd_lines < <(run_ldd "$lib_file" "$extra_libs_install_dir")
+
+    for line in "${ldd_lines[@]}"; do
+        local lib_name
+        lib_name=$(get_missing_lib_name "$line")
+        if [[ $lib_name ]]; then
+            # The library we are copying might also have dependencies, so we will need to run
+            # ldd again once the library is copied in.
+            NEED_TO_CHECK_MISSING_LIBS=true
+            echo "cp '$lib_copy_src_dir/$lib_name' '$extra_libs_install_dir/$lib_name'"
+            cp "$lib_copy_src_dir/$lib_name" "$extra_libs_install_dir/$lib_name"
+        fi
+    done
+}
+
+ORIGINAL_LD_LIBRARY_PATH=$LD_LIBRARY_PATH
+
+run_ldd() {
+    local lib_file=$1
+    local extra_libs_install_dir=$2
+
+    local ld_lib_path=$extra_libs_install_dir
+    if [[ $ORIGINAL_LD_LIBRARY_PATH ]]; then
+        ld_lib_path=$ld_lib_path:$ORIGINAL_LD_LIBRARY_PATH
+    fi
+    LD_LIBRARY_PATH="$ld_lib_path" ldd "$lib_file"
+}
+
+# The format for the lines with missing libraries is: "  libname.so => not found"
+NOT_FOUND_PATTERN='([^[:space:]=]+) => not found'
+
+get_missing_lib_name() {
+    ldd_line=$1
+    if [[ $ldd_line =~ $NOT_FOUND_PATTERN ]]; then
+        echo "${BASH_REMATCH[1]}"
+    fi
+}
+
+main "$@"
