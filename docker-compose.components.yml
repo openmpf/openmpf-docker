@@ -144,7 +144,7 @@ services:
     build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/cpp/KeywordTagging
 
   llama-video-summarization:
-    <<: *detection-component-base
+    <<: *component-base
     image: ${REGISTRY}openmpf_llama_video_summarization:${TAG}
     build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/python/LlamaVideoSummarization
 
