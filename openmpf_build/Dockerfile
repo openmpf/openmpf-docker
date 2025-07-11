@@ -50,7 +50,7 @@ RUN --mount=type=tmpfs,target=/var/cache/apt \
         liblog4cxx-dev libboost-dev file openjdk-17-jdk-headless \
         libgl1-mesa-glx  \
         # libheif build deps
-        libde265-dev \
+        libde265-dev git nasm ninja-build pkg-config \
         # OpenCV build deps \
         libopenblas-dev liblapacke-dev libavcodec-dev libavcodec-extra libavformat-dev  \
         libavutil-dev libswscale-dev libavresample-dev libharfbuzz-dev libfreetype-dev; \
@@ -175,12 +175,15 @@ RUN wget -O- 'https://archive.apache.org/dist/maven/maven-3/3.3.3/binaries/apach
 RUN --mount=type=tmpfs,target=/tmp \
     mkdir /tmp/libheif; \
     cd /tmp/libheif; \
-    wget -O- https://github.com/strukturag/libheif/archive/refs/tags/v1.12.0.tar.gz \
+    wget -O- https://github.com/strukturag/libheif/archive/refs/tags/v1.19.8.tar.gz \
         | tar --extract --gzip; \
-    cd libheif-1.12.0; \
+    cd libheif-1.19.8/third-party; \
+    bash aom.cmd; \
+    cd ..; \
     mkdir build; \
     cd build; \
-    cmake3 -DCMAKE_INSTALL_PREFIX=/usr -DWITH_EXAMPLES=false -DCMAKE_BUILD_TYPE=Release ..; \
+    PKG_CONFIG_PATH="/tmp/libheif/libheif-1.19.8/third-party/aom/dist/lib/pkgconfig" \
+        cmake3 -DCMAKE_INSTALL_PREFIX=/usr -DWITH_EXAMPLES=false -DWITH_AOM_DECODER=true -DENABLE_PLUGIN_LOADING=false -DCMAKE_BUILD_TYPE=Release ..; \
     make --jobs "$(nproc)" install/strip;
 
 

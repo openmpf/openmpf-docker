@@ -102,7 +102,7 @@ ENV BUILD_DIR /home/mpf/component_build
 ENV PLUGINS_DIR $MPF_HOME/plugins
 
 
-COPY docker-entrypoint.sh component-executor.py component_registration.py /scripts/
+COPY docker-entrypoint.sh component-executor.py /scripts/
 
 COPY cli_runner/*.py cli_runner/Log4cxxConfig.xml /scripts/cli_runner/
 
