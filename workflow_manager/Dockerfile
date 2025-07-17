@@ -80,9 +80,11 @@ RUN <<eot
     mkdir jni-libs
     mv tmp-jni-libs/libmpfopencvjni.so jni-libs/
     /scripts/copy_libs.sh jni-libs/libmpfopencvjni.so jni-libs tmp-jni-libs
+    mv tmp-jni-libs/libmpfheifjni.so jni-libs/
+    /scripts/copy_libs.sh jni-libs/libmpfheifjni.so jni-libs tmp-jni-libs
+
     rm -r tmp-jni-libs
 eot
-
 
 FROM common
 

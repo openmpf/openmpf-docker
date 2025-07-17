@@ -178,7 +178,8 @@ RUN --mount=type=tmpfs,target=/tmp \
     PKG_CONFIG_PATH="/tmp/libheif/libheif-1.19.8/third-party/aom/dist/lib/pkgconfig" \
         cmake3 -DCMAKE_INSTALL_PREFIX=/usr -DWITH_EXAMPLES=false -DWITH_AOM_DECODER=true -DENABLE_PLUGIN_LOADING=false -DCMAKE_BUILD_TYPE=Release ..; \
     make --jobs "$(nproc)" install/strip; \
-    cp heifio/libheifio.a /usr/lib/x86_64-linux-gnu; \
+    cp heifio/libheifio.a /usr/lib64; \
+    ls /usr/lib64; \
     cd ../heifio; \
     mkdir -p /usr/include/libheif/heifio; \
     cp *.h /usr/include/libheif/heifio;
