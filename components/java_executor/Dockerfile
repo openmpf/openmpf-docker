@@ -1,4 +1,4 @@
-# syntax=docker/dockerfile:1.2
+# syntax=docker/dockerfile:1.4
 
 #############################################################################
 # NOTICE                                                                    #
@@ -58,7 +58,7 @@ ENV PLUGINS_DIR $MPF_HOME/plugins
 
 COPY --from=openmpf_build /build-artifacts/java-executor/*.jar $MPF_HOME/jars/
 
-COPY component-executor.py component_registration.py /scripts/
+COPY component-executor.py /scripts/
 
 ENTRYPOINT ["python3", "-u", "/scripts/component-executor.py"]
 

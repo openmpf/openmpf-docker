@@ -1,4 +1,4 @@
-# syntax=docker/dockerfile:1.2
+# syntax=docker/dockerfile:1.4
 
 #############################################################################
 # NOTICE                                                                    #
@@ -156,7 +156,7 @@ ENV MPF_LOG_PATH $MPF_HOME/share/logs
 
 ENV PLUGINS_DIR $MPF_HOME/plugins
 
-COPY docker-entrypoint.sh component-executor.py component_registration.py /scripts/
+COPY docker-entrypoint.sh component-executor.py /scripts/
 
 COPY cli_runner/*.py /scripts/cli_runner/
 
