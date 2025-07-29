@@ -1,4 +1,4 @@
-# syntax=docker/dockerfile:1.2
+# syntax=docker/dockerfile:1.4
 
 #############################################################################
 # NOTICE                                                                    #
@@ -31,7 +31,7 @@ ARG BUILD_TAG=latest
 FROM ${BUILD_REGISTRY}openmpf_build:${BUILD_TAG} AS openmpf_build
 
 
-FROM ubuntu:20.04
+FROM ubuntu:20.04 AS common
 
 SHELL ["/bin/bash", "-o", "errexit", "-o", "pipefail", "-c"]
 
@@ -67,14 +67,33 @@ COPY --from=openmpf_build /scripts/* /scripts/
 
 ENV MPF_HOME /opt/mpf
 
-COPY --from=openmpf_build /build-artifacts/workflow-manager $MPF_HOME/workflow-manager
+ENV LD_LIBRARY_PATH=/usr/lib64:$MPF_HOME/workflow-manager/WEB-INF/jni-libs
+
+
+FROM common AS copy_libs
+
+COPY --from=openmpf_build /build-artifacts/workflow-manager /build-artifacts/workflow-manager
+
+RUN <<eot
+    cd /build-artifacts/workflow-manager/WEB-INF
+    mv jni-libs tmp-jni-libs
+    mkdir jni-libs
+    mv tmp-jni-libs/libmpfopencvjni.so jni-libs/
+    /scripts/copy_libs.sh jni-libs/libmpfopencvjni.so jni-libs tmp-jni-libs
+    mv tmp-jni-libs/libmpfheifjni.so jni-libs/
+    /scripts/copy_libs.sh jni-libs/libmpfheifjni.so jni-libs tmp-jni-libs
+    rm -r tmp-jni-libs
+eot
+
+FROM common
+
+COPY --from=copy_libs /build-artifacts/workflow-manager $MPF_HOME/workflow-manager
 
 ENV REDIS_HOST=redis
 ENV THIS_MPF_NODE=workflow-manager
 ENV no_proxy=localhost
 ENV MPF_USER=root
 ENV MPF_LOG_PATH=$MPF_HOME/share/logs
-ENV LD_LIBRARY_PATH=/usr/lib64:$MPF_HOME/workflow-manager/WEB-INF/classes
 ENV PATH=$PATH:$MPF_HOME/bin
 # Default for JDBC configuration. Can be overridden at runtime.
 ENV JDBC_URL=jdbc:postgresql://db:5432/mpf
