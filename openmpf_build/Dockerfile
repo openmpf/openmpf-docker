@@ -175,14 +175,14 @@ RUN wget -O- 'https://archive.apache.org/dist/maven/maven-3/3.3.3/binaries/apach
 RUN --mount=type=tmpfs,target=/tmp \
     mkdir /tmp/libheif; \
     cd /tmp/libheif; \
-    wget -O- https://github.com/strukturag/libheif/archive/refs/tags/v1.19.8.tar.gz \
+    wget -O- https://github.com/strukturag/libheif/archive/refs/tags/v1.20.2.tar.gz \
         | tar --extract --gzip; \
-    cd libheif-1.19.8/third-party; \
+    cd libheif-1.20.2/third-party; \
     bash aom.cmd; \
     cd ..; \
     mkdir build; \
     cd build; \
-    PKG_CONFIG_PATH="/tmp/libheif/libheif-1.19.8/third-party/aom/dist/lib/pkgconfig" \
+    PKG_CONFIG_PATH="/tmp/libheif/libheif-1.20.2/third-party/aom/dist/lib/pkgconfig" \
         cmake3 -DCMAKE_INSTALL_PREFIX=/usr -DWITH_EXAMPLES=false -DWITH_AOM_DECODER=true -DENABLE_PLUGIN_LOADING=false -DCMAKE_BUILD_TYPE=Release ..; \
     make --jobs "$(nproc)" install/strip; \
     cp heifio/libheifio.a /usr/lib64; \
