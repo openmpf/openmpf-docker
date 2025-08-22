@@ -48,7 +48,7 @@ RUN --mount=type=tmpfs,target=/var/cache/apt \
     DEBIAN_FRONTEND=noninteractive apt-get install --no-install-recommends -y \
         wget ca-certificates gnupg2 unzip xz-utils cmake make g++ libgtest-dev mediainfo libssl-dev \
         liblog4cxx-dev libboost-dev file openjdk-17-jdk-headless \
-        python3.8-dev python3-pip libgl1-mesa-glx  \
+        libgl1-mesa-glx  \
         # libheif build deps
         libde265-dev git nasm ninja-build pkg-config \
         # OpenCV build deps \
@@ -56,18 +56,25 @@ RUN --mount=type=tmpfs,target=/var/cache/apt \
         libavutil-dev libswscale-dev libavresample-dev libharfbuzz-dev libfreetype-dev; \
     # Can't set up cuda repo at the beginning because it requires wget ca-certificates gnupg2
     wget -O- https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/3bf863cc.pub \
-            | apt-key add -; \
+        | apt-key add -; \
     echo "deb https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64 /" \
         > /etc/apt/sources.list.d/cuda.list; \
+    wget -O- 'https://keyserver.ubuntu.com/pks/lookup?op=get&search=0xba6932366a755776' \
+        | apt-key add -; \
+    echo 'deb http://ppa.launchpad.net/deadsnakes/ppa/ubuntu focal main' \
+        > /etc/apt/sources.list.d/deadsnakes.list; \
     apt-get update; \
     apt-get install -y --no-install-recommends cuda-minimal-build-11-4 libcufft-dev-11-4 \
         libnpp-dev-11-4 libcudnn8-dev=8.2.4.15-1+cuda11.4 libcudnn8=8.2.4.15-1+cuda11.4 \
-        libcublas-dev-11-4; \
+        libcublas-dev-11-4 \
+        python3.12-dev python3.12-venv; \
     # OpenCV doesn't use the statically compiled CUDA libraries except for libcudart and they are relatively large.
     find /usr/local/cuda/lib64/ -name '*.a' -not -name 'libcudart_static.a' -delete; \
     rm /usr/lib/x86_64-linux-gnu/libcudnn*.a; \
     ln --symbolic /usr/include/x86_64-linux-gnu/openblas-pthread/cblas.h /usr/include/cblas.h; \
-    ln --symbolic /usr/bin/cmake /usr/bin/cmake3;
+    ln --symbolic /usr/bin/cmake /usr/bin/cmake3; \
+    python3.12 -m ensurepip --upgrade --default-pip; \
+    ln --symbolic /usr/bin/python3.12 /usr/local/bin/python3;
 
 
 FROM apt_install AS ocv_install
