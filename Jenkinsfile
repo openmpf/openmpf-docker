@@ -425,7 +425,9 @@ try {
                                          'mog-motion-detection', 'subsense-motion-detection',
                                          'east-text-detection', 'tesseract-ocr-text-detection', 'keyword-tagging']
 
-            def scaleArgs = servicesInSystemTests.collect({ "--scale '$it=$nproc'" }).join(' ')
+            // def scaleArgs = servicesInSystemTests.collect({ "--scale '$it=$nproc'" }).join(' ')
+            def scaleArgs = servicesInSystemTests.collect({ "--scale 1" }).join(' ')
+
             // Sphinx uses a huge amount of memory so we don't want more than 2 of them.
             scaleArgs += " --scale sphinx-speech-detection=${Math.min(nproc, 2)} "
 
