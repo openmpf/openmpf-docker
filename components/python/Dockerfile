@@ -38,15 +38,24 @@ SHELL ["/bin/bash", "-o", "errexit", "-o", "pipefail", "-c"]
 ENV LANG C.UTF-8
 ENV LC_ALL C.UTF-8
 
+
 RUN --mount=type=tmpfs,target=/var/cache/apt \
     --mount=type=tmpfs,target=/var/lib/apt/lists  \
     --mount=type=tmpfs,target=/tmp \
     apt-get update; \
     apt-get upgrade -y; \
+    apt-get install --no-install-recommends -y wget ca-certificates gnupg2; \
+    wget -O- 'https://keyserver.ubuntu.com/pks/lookup?op=get&search=0xba6932366a755776' \
+        | apt-key add -; \
+    echo 'deb http://ppa.launchpad.net/deadsnakes/ppa/ubuntu focal main' \
+        > /etc/apt/sources.list.d/deadsnakes.list; \
+    apt-get update; \
     apt-get install --no-install-recommends -y \
-        python3.8 python3.8-venv libpython3.8 \
+        python3.12 python3.12-venv libpython3.12 \
         # Required for opencv-python
-        libglib2.0-0 libgl1-mesa-glx;
+        libglib2.0-0 libgl1-mesa-glx; \
+    python3.12 -m ensurepip --upgrade --default-pip; \
+    ln --symbolic /usr/bin/python3.12 /usr/local/bin/python3;
 
 COPY --from=openmpf_build /usr/local/bin/ffmpeg /usr/local/bin/ffprobe /usr/local/bin/
 
@@ -67,7 +76,7 @@ RUN --mount=type=tmpfs,target=/var/cache/apt \
     apt-get update; \
     # Some pip packages will try to compile C/C++ extensions during install. To compile the C/C++
     # extensions, a C++ compiler and the Python development headers must be installed.
-    apt-get install --no-install-recommends -y g++ python3.8-dev
+    apt-get install --no-install-recommends -y g++ python3.12-dev
 
 RUN python3 -m venv "$COMPONENT_VIRTUALENV"; \
     pip config --site set global.no-cache-dir true; \
