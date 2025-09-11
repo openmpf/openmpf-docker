@@ -79,6 +79,7 @@ set -o xtrace
 set +o errexit
 
 mvn verify -Pjenkins \
+    -Dpre.integration.test.spring.profiles.active=docker,jenkins,test-with-security \
     -Dspring.profiles.active=docker,jenkins \
     -Dit.test=ITWebREST \
     -Dtransport.guarantee=NONE \

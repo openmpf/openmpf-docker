@@ -39,7 +39,7 @@ x-component-base: &component-base
     - shared_data:/opt/mpf/share
   deploy: &common-deploy
     mode: replicated
-    replicas: 2
+    replicas: 1
 
 
 services:
@@ -154,6 +154,11 @@ services:
     build:
       context: ${OPENMPF_PROJECTS_PATH}/openmpf-contrib-components/cpp/motion
       dockerfile: MogMotionDetection/Dockerfile
+
+  nllb-translation:
+    <<: *component-base
+    image: ${REGISTRY}openmpf_nllb_translation:${TAG}
+    build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/python/NllbTranslation
 
   nlp-text-correction:
     <<: *component-base
