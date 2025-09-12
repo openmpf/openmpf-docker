@@ -24,13 +24,12 @@
 # limitations under the License.                                            #
 #############################################################################
 
-import pkg_resources
-from typing import Any, Mapping, Union, Iterable
+import importlib.metadata
+from typing import Any, Iterable, Mapping, Union
 
 import mpf_cli_runner_util as util
 import mpf_component_api
-from mpf_component_api import ImageLocation, VideoTrack, AudioTrack, GenericTrack
-
+from mpf_component_api import AudioTrack, GenericTrack, ImageLocation, VideoTrack
 
 
 class PythonComponentHandle(util.ComponentHandle):
@@ -42,26 +41,26 @@ class PythonComponentHandle(util.ComponentHandle):
         self.track_type = descriptor['algorithm']['trackType']
 
 
-    @classmethod
-    def _load_component(cls, descriptor) -> type:
+    @staticmethod
+    def _load_component(descriptor) -> type:
         distribution_name = descriptor['batchLibrary']
-        entry_points = pkg_resources.get_entry_map(distribution_name, 'mpf.exported_component')
-
+        dist = importlib.metadata.distribution(distribution_name)
+        entry_points = dist.entry_points.select(group='mpf.exported_component')
         if not entry_points:
             raise RuntimeError(f'The "{distribution_name}" component did not declare a '
                                '"mpf.exported_component" entrypoint')
 
         # The left hand side of the '=' in entry point declaration should be "component".
         # For example: 'mpf.exported_component': 'component = my_module:MyComponentClass'
-        component_entry_point = entry_points.get('component')
-        if component_entry_point is None:
+        if component_entry_points := entry_points.select(name='component'):
+            return next(iter(component_entry_points)).load()
+        else:
             # An entry point in the "mpf.exported_component" group was found,
             # but the left hand side of the '=' was something else.
             # For example: 'mpf.exported_component': 'MyComponentClass = my_module:MyComponentClass'
             # We really only care about the entry point group, since we don't do anything with
             # entry point name.
-            component_entry_point = next(iter(entry_points.values()))
-        return component_entry_point.load()
+            return next(iter(entry_points)).load()
 
 
     def supports(self, media_type: util.MediaType) -> bool:
