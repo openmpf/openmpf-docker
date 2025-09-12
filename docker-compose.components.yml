@@ -39,7 +39,7 @@ x-component-base: &component-base
     - shared_data:/opt/mpf/share
   deploy: &common-deploy
     mode: replicated
-    replicas: 2
+    replicas: 1
 
 
 services:
