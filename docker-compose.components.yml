@@ -292,7 +292,7 @@ services:
     build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/python/WhisperSpeechDetection
 
   python-test-component:
-    <<: *detection-component-base
+    <<: *component-base
     image: ${REGISTRY}openmpf_python_test_component:${TAG}
     build: ${OPENMPF_PROJECTS_PATH}/openmpf-python-component-sdk/detection/examples/PythonTestComponent
 
