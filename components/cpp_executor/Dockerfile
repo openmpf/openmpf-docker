@@ -1,4 +1,4 @@
-# syntax=docker/dockerfile:1.2
+# syntax=docker/dockerfile:1.4
 
 #############################################################################
 # NOTICE                                                                    #
@@ -43,16 +43,19 @@ RUN --mount=type=tmpfs,target=/var/cache/apt \
     --mount=type=tmpfs,target=/tmp \
     apt-get update; \
     apt-get upgrade -y; \
-    apt-get install --no-install-recommends -y \
-        python3.8 libpython3.8 wget ca-certificates gnupg2; \
+    apt-get install --no-install-recommends -y wget ca-certificates gnupg2; \
     # Can't set up cuda repo at the beginning because it requires wget ca-certificates gnupg2
     wget -O- https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/3bf863cc.pub \
             | apt-key add -; \
     echo "deb https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64 /" \
         > /etc/apt/sources.list.d/cuda.list; \
+    wget -O- 'https://keyserver.ubuntu.com/pks/lookup?op=get&search=0xba6932366a755776' \
+        | apt-key add -; \
+    echo 'deb http://ppa.launchpad.net/deadsnakes/ppa/ubuntu focal main' \
+        > /etc/apt/sources.list.d/deadsnakes.list; \
     apt-get update; \
-    apt-get install -y --no-install-recommends cuda-cudart-11-4; \
-    ln --symbolic /usr/bin/python3.8 /usr/bin/python3
+    apt-get install -y --no-install-recommends cuda-cudart-11-4 python3.12 libpython3.12; \
+    ln --symbolic /usr/bin/python3.12 /usr/local/bin/python3
 
 COPY --from=openmpf_build /usr/local/bin/ffmpeg /usr/local/bin/ffprobe /usr/local/bin/
 
@@ -85,8 +88,8 @@ COPY --from=openmpf_build /build-artifacts/install/bin/amq_detection_component \
 # component executor log config
 COPY --from=openmpf_build /build-artifacts/install/config/Log4cxxConfig.xml $MPF_HOME/config/
 
-COPY --from=openmpf_build /build-artifacts/install/lib/mpf_cpp_sdk.cpython-38-x86_64-linux-gnu.so \
-                          /usr/lib/python3.8/lib-dynload
+COPY --from=openmpf_build /build-artifacts/install/lib/mpf_cpp_sdk.cpython-312-x86_64-linux-gnu.so \
+                          /usr/lib/python3.12/lib-dynload
 
 COPY --from=openmpf_build /scripts/* /scripts/
 
@@ -99,7 +102,7 @@ ENV BUILD_DIR /home/mpf/component_build
 ENV PLUGINS_DIR $MPF_HOME/plugins
 
 
-COPY docker-entrypoint.sh component-executor.py component_registration.py /scripts/
+COPY docker-entrypoint.sh component-executor.py /scripts/
 
 COPY cli_runner/*.py cli_runner/Log4cxxConfig.xml /scripts/cli_runner/
 

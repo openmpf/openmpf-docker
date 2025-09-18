@@ -1,4 +1,4 @@
-# syntax=docker/dockerfile:1.2
+# syntax=docker/dockerfile:1.4
 
 #############################################################################
 # NOTICE                                                                    #
@@ -43,8 +43,14 @@ RUN --mount=type=tmpfs,target=/var/cache/apt \
     --mount=type=tmpfs,target=/tmp \
     apt-get update; \
     apt-get upgrade -y; \
-    apt-get install --no-install-recommends -y openjdk-17-jre-headless python3.8; \
-    ln --symbolic /usr/bin/python3.8 /usr/bin/python3;
+    apt-get install --no-install-recommends -y openjdk-17-jre-headless wget ca-certificates gnupg2; \
+    wget -O- 'https://keyserver.ubuntu.com/pks/lookup?op=get&search=0xba6932366a755776' \
+        | apt-key add -; \
+    echo 'deb http://ppa.launchpad.net/deadsnakes/ppa/ubuntu focal main' \
+        > /etc/apt/sources.list.d/deadsnakes.list; \
+    apt-get update; \
+    apt-get install -y --no-install-recommends python3.12; \
+    ln --symbolic /usr/bin/python3.12 /usr/local/bin/python3;
 
 COPY --from=openmpf_build /usr/local/bin/ffmpeg /usr/local/bin/ffprobe /usr/local/bin/
 
@@ -58,7 +64,7 @@ ENV PLUGINS_DIR $MPF_HOME/plugins
 
 COPY --from=openmpf_build /build-artifacts/java-executor/*.jar $MPF_HOME/jars/
 
-COPY component-executor.py component_registration.py /scripts/
+COPY component-executor.py /scripts/
 
 ENTRYPOINT ["python3", "-u", "/scripts/component-executor.py"]
 
