@@ -254,7 +254,7 @@ try {
     stage('Build images') {
     timeout(time: buildTimeout, unit: 'HOURS') {
         // Make sure we are using most recent version of external images
-        for (externalImage in ['docker/dockerfile:1.2', 'postgres:alpine',
+        for (externalImage in ['docker/dockerfile:1.2', 'postgres:17-alpine',
                                'redis:alpine', 'ubuntu:20.04']) {
             try {
                 sh "docker pull '$externalImage'"
