@@ -35,36 +35,49 @@ FROM ubuntu:20.04 AS common
 
 SHELL ["/bin/bash", "-o", "errexit", "-o", "pipefail", "-c"]
 
-ENV LANG C.UTF-8
-ENV LC_ALL C.UTF-8
+ENV LANG=C.UTF-8
+ENV LC_ALL=C.UTF-8
 
 
 RUN --mount=type=tmpfs,target=/var/cache/apt \
     --mount=type=tmpfs,target=/var/lib/apt/lists  \
-    --mount=type=tmpfs,target=/tmp \
-    apt-get update; \
-    apt-get upgrade -y; \
-    apt-get install --no-install-recommends -y wget ca-certificates gnupg2; \
-    wget -O- 'https://keyserver.ubuntu.com/pks/lookup?op=get&search=0xba6932366a755776' \
-        | apt-key add -; \
-    echo 'deb http://ppa.launchpad.net/deadsnakes/ppa/ubuntu focal main' \
-        > /etc/apt/sources.list.d/deadsnakes.list; \
-    apt-get update; \
-    apt-get install --no-install-recommends -y \
-        python3.12 python3.12-venv libpython3.12 \
-        # Required for opencv-python
-        libglib2.0-0 libgl1-mesa-glx; \
-    python3.12 -m ensurepip --upgrade --default-pip; \
-    ln --symbolic /usr/bin/python3.12 /usr/local/bin/python3;
+    --mount=type=tmpfs,target=/tmp <<eot
+    apt-get update
+    apt-get upgrade -y
+    # libglib2.0-0 and libgl1-mesa-glx are needed for opencv-python.
+    apt-get install -y ca-certificates libglib2.0-0 libgl1-mesa-glx
+eot
+
+COPY --from=openmpf_build \
+    /usr/local/bin/python3.12 /usr/local/bin/python3.12-config \
+    /usr/local/bin/pip3.12 /usr/local/bin/pip3 \
+    /usr/local/bin/
+
+COPY --from=openmpf_build /usr/local/lib/python3.12 /usr/local/lib/python3.12
+
+COPY --from=openmpf_build /usr/local/lib/libpython3.12.so.1.0 /usr/local/lib/
+
+# The Python headers are needed to build Python libraries with C extensions.
+COPY --from=openmpf_build /usr/local/include/python3.12 /usr/local/include/python3.12
+
+RUN <<eot
+    cd /usr/local/bin
+    ln --symbolic python3.12 python3
+    ln --symbolic python3.12-config python3-config
+    cd /usr/local/lib
+    ln --symbolic libpython3.12.so.1.0 libpython3.12.so
+    ln --symbolic /usr/local/lib/libpython3.12.so.1.0 /lib/x86_64-linux-gnu/libpython3.12.so.1.0
+eot
+
 
 COPY --from=openmpf_build /usr/local/bin/ffmpeg /usr/local/bin/ffprobe /usr/local/bin/
 
-ENV MPF_HOME /opt/mpf
+ENV MPF_HOME=/opt/mpf
 
-ENV COMPONENT_VIRTUALENV $MPF_HOME/plugin-venv
+ENV COMPONENT_VIRTUALENV=$MPF_HOME/plugin-venv
 
 # Adding $COMPONENT_VIRTUALENV/bin to the front of $PATH persistently activates the virtualenv.
-ENV PATH $COMPONENT_VIRTUALENV/bin:/scripts:$PATH
+ENV PATH=$COMPONENT_VIRTUALENV/bin:/scripts:$PATH
 
 
 #########################################
@@ -74,20 +87,21 @@ RUN --mount=type=tmpfs,target=/var/cache/apt \
     --mount=type=tmpfs,target=/var/lib/apt/lists  \
     --mount=type=tmpfs,target=/tmp \
     apt-get update; \
+    apt-get upgrade -y; \
     # Some pip packages will try to compile C/C++ extensions during install. To compile the C/C++
     # extensions, a C++ compiler and the Python development headers must be installed.
-    apt-get install --no-install-recommends -y g++ python3.12-dev
+    apt-get install --no-install-recommends -y g++
 
 RUN python3 -m venv "$COMPONENT_VIRTUALENV"; \
-    pip config --site set global.no-cache-dir true; \
-    pip install --upgrade pip; \
-    pip install --upgrade setuptools;
+    pip3 config --site set global.no-cache-dir true; \
+    pip3 install --upgrade pip; \
+    pip3 install --upgrade setuptools;
 
 RUN --mount=from=openmpf_build,source=/home/mpf/openmpf-projects/openmpf-python-component-sdk/detection,target=/tmp/python,rw \
     pip3 install --no-cache-dir /tmp/python/api /tmp/python/component_util; \
     python3 -m unittest discover --verbose --buffer --start-directory /tmp/python/component_util/tests
 
-ENV SRC_DIR /home/mpf/component_src
+ENV SRC_DIR=/home/mpf/component_src
 
 WORKDIR $SRC_DIR
 
@@ -116,7 +130,7 @@ WORKDIR /home/mpf/openmpf-projects/openmpf-python-component-sdk/detection/nlp_te
 
 RUN ./install.sh --install-wtp-model wtp-canine-s-1l
 
-RUN python tests/test_text_splitter.py
+RUN python3 tests/test_text_splitter.py
 
 # Remove the tests directory so that the entire nlp_text_splitter directory can be copied without
 # also including the tests in the next stage.
@@ -159,11 +173,11 @@ COPY --from=openmpf_build /scripts/* /scripts/
 
 # print()'ed messsages from docker-entrypoint.py were not being shown at the right time.
 # Only applies to stdin, stdout and stderr
-ENV PYTHONUNBUFFERED 1
+ENV PYTHONUNBUFFERED=1
 
-ENV MPF_LOG_PATH $MPF_HOME/share/logs
+ENV MPF_LOG_PATH=$MPF_HOME/share/logs
 
-ENV PLUGINS_DIR $MPF_HOME/plugins
+ENV PLUGINS_DIR=$MPF_HOME/plugins
 
 COPY docker-entrypoint.sh component-executor.py /scripts/
 
@@ -189,7 +203,7 @@ COPY --from=build $COMPONENT_VIRTUALENV $COMPONENT_VIRTUALENV
 
 COPY --from=build /scripts/install-component.sh /scripts/
 
-ENV SRC_DIR /home/mpf/component_src
+ENV SRC_DIR=/home/mpf/component_src
 
 WORKDIR $SRC_DIR
 
