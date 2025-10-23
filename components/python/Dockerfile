@@ -45,7 +45,7 @@ RUN --mount=type=tmpfs,target=/var/cache/apt \
     apt-get update
     apt-get upgrade -y
     # libglib2.0-0 and libgl1-mesa-glx are needed for opencv-python.
-    apt-get install -y ca-certificates libglib2.0-0 libgl1-mesa-glx
+    apt-get install -y ca-certificates libglib2.0-0 libgl1-mesa-glx libsqlite3-0
 eot
 
 COPY --from=openmpf_build \
