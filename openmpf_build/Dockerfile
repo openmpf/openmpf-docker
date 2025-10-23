@@ -124,7 +124,9 @@ RUN --mount=type=tmpfs,target=/tmp <<eot
 		\) -exec rm -rf '{}' + ;
 eot
 
-FROM apt_install AS custom
+
+
+FROM apt_install
 
 RUN --mount=type=tmpfs,target=/tmp <<eot
     mkdir /tmp/abseil
