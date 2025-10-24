@@ -35,32 +35,43 @@ FROM ubuntu:20.04
 
 SHELL ["/bin/bash", "-o", "errexit", "-o", "pipefail", "-c"]
 
-ENV LANG C.UTF-8
-ENV LC_ALL C.UTF-8
+ENV LANG=C.UTF-8
+ENV LC_ALL=C.UTF-8
 
 RUN --mount=type=tmpfs,target=/var/cache/apt \
     --mount=type=tmpfs,target=/var/lib/apt/lists  \
     --mount=type=tmpfs,target=/tmp \
     apt-get update; \
     apt-get upgrade -y; \
-    apt-get install --no-install-recommends -y openjdk-17-jre-headless wget ca-certificates gnupg2; \
-    wget -O- 'https://keyserver.ubuntu.com/pks/lookup?op=get&search=0xba6932366a755776' \
-        | apt-key add -; \
-    echo 'deb http://ppa.launchpad.net/deadsnakes/ppa/ubuntu focal main' \
-        > /etc/apt/sources.list.d/deadsnakes.list; \
-    apt-get update; \
-    apt-get install -y --no-install-recommends python3.12; \
-    ln --symbolic /usr/bin/python3.12 /usr/local/bin/python3;
+    DEBIAN_FRONTEND=noninteractive apt-get install --no-install-recommends -y openjdk-17-jre-headless;
+
+COPY --from=openmpf_build \
+    /usr/local/bin/python3.12 /usr/local/bin/python3.12-config \
+    /usr/local/bin/pip3.12 /usr/local/bin/pip3 \
+    /usr/local/bin/
+
+COPY --from=openmpf_build /usr/local/lib/python3.12 /usr/local/lib/python3.12
+
+COPY --from=openmpf_build /usr/local/lib/libpython3.12.so.1.0 /usr/local/lib/
+
+RUN <<eot
+    cd /usr/local/bin
+    ln --symbolic python3.12 python3
+    ln --symbolic python3.12-config python3-config
+    cd /usr/local/lib
+    ln --symbolic libpython3.12.so.1.0 libpython3.12.so
+    ln --symbolic /usr/local/lib/libpython3.12.so.1.0 /lib/x86_64-linux-gnu/libpython3.12.so.1.0
+eot
 
 COPY --from=openmpf_build /usr/local/bin/ffmpeg /usr/local/bin/ffprobe /usr/local/bin/
 
 COPY --from=openmpf_build /scripts/* /scripts/
 
-ENV MPF_HOME /opt/mpf
+ENV MPF_HOME=/opt/mpf
 
-ENV MPF_LOG_PATH $MPF_HOME/share/logs
+ENV MPF_LOG_PATH=$MPF_HOME/share/logs
 
-ENV PLUGINS_DIR $MPF_HOME/plugins
+ENV PLUGINS_DIR=$MPF_HOME/plugins
 
 COPY --from=openmpf_build /build-artifacts/java-executor/*.jar $MPF_HOME/jars/
 

@@ -35,8 +35,8 @@ FROM ubuntu:20.04 AS common
 
 SHELL ["/bin/bash", "-o", "errexit", "-o", "pipefail", "-c"]
 
-ENV LANG C.UTF-8
-ENV LC_ALL C.UTF-8
+ENV LANG=C.UTF-8
+ENV LC_ALL=C.UTF-8
 
 RUN --mount=type=tmpfs,target=/var/cache/apt \
     --mount=type=tmpfs,target=/var/lib/apt/lists  \
@@ -66,13 +66,13 @@ COPY --from=copy_libs /libs-to-copy /usr/lib/x86_64-linux-gnu/
 COPY --from=openmpf_build /usr/share/fonts/google-noto-emoji /usr/share/fonts/google-noto-emoji
 
 
-ENV MPF_HOME /opt/mpf
+ENV MPF_HOME=/opt/mpf
 
 COPY --from=openmpf_build /build-artifacts/markup/*.jar $MPF_HOME/jars/
 
-ENV ACTIVE_MQ_HOST workflow-manager
-ENV MPF_LOG_PATH $MPF_HOME/share/logs
-ENV THIS_MPF_NODE markup
+ENV ACTIVE_MQ_HOST=workflow-manager
+ENV MPF_LOG_PATH=$MPF_HOME/share/logs
+ENV THIS_MPF_NODE=markup
 
 WORKDIR $MPF_HOME/jars
 
