@@ -35,8 +35,8 @@ FROM ubuntu:20.04 AS common
 
 SHELL ["/bin/bash", "-o", "errexit", "-o", "pipefail", "-c"]
 
-ENV LANG C.UTF-8
-ENV LC_ALL C.UTF-8
+ENV LANG=C.UTF-8
+ENV LC_ALL=C.UTF-8
 
 RUN --mount=type=tmpfs,target=/var/cache/apt \
     --mount=type=tmpfs,target=/var/lib/apt/lists  \
@@ -44,23 +44,37 @@ RUN --mount=type=tmpfs,target=/var/cache/apt \
 <<eot
     apt-get update
     apt-get upgrade -y
-    apt-get install --no-install-recommends -y tini libgl1-mesa-glx libglib2.0-0 \
-        wget ca-certificates gnupg2
-    wget -O- 'https://keyserver.ubuntu.com/pks/lookup?op=get&search=0xba6932366a755776' \
-        | apt-key add -
-    echo 'deb http://ppa.launchpad.net/deadsnakes/ppa/ubuntu focal main' \
-        > /etc/apt/sources.list.d/deadsnakes.list
-    apt-get update
-    apt-get install --no-install-recommends -y python3.12 python3.12-venv libpython3.12
-    ln --symbolic /usr/bin/python3.12 /usr/local/bin/python3
+    apt-get install --no-install-recommends -y tini libgl1-mesa-glx libglib2.0-0 ca-certificates
 eot
 
-ENV MPF_HOME /opt/mpf
 
-ENV COMPONENT_VIRTUALENV $MPF_HOME/plugin-venv
+COPY --from=openmpf_build \
+    /usr/local/bin/python3.12 /usr/local/bin/python3.12-config \
+    /usr/local/bin/pip3.12 /usr/local/bin/pip3 \
+    /usr/local/bin/
+
+COPY --from=openmpf_build /usr/local/lib/python3.12 /usr/local/lib/python3.12
+
+COPY --from=openmpf_build /usr/local/lib/libpython3.12.so.1.0 /usr/local/lib/
+
+# The Python headers are needed to build Python libraries with C extensions.
+COPY --from=openmpf_build /usr/local/include/python3.12 /usr/local/include/python3.12
+
+RUN <<eot
+    cd /usr/local/bin
+    ln --symbolic python3.12 python3
+    ln --symbolic python3.12-config python3-config
+    cd /usr/local/lib
+    ln --symbolic libpython3.12.so.1.0 libpython3.12.so
+    ln --symbolic /usr/local/lib/libpython3.12.so.1.0 /lib/x86_64-linux-gnu/libpython3.12.so.1.0
+eot
+
+ENV MPF_HOME=/opt/mpf
+
+ENV COMPONENT_VIRTUALENV=$MPF_HOME/plugin-venv
 
 # Adding $COMPONENT_VIRTUALENV/bin to the front of $PATH persistently activates the virtualenv.
-ENV PATH $COMPONENT_VIRTUALENV/bin:/scripts:$PATH
+ENV PATH=$COMPONENT_VIRTUALENV/bin:/scripts:$PATH
 
 #########################################
 FROM common AS build
@@ -72,7 +86,7 @@ RUN --mount=type=tmpfs,target=/var/cache/apt \
     --mount=type=tmpfs,target=/tmp \
 <<eot
     apt-get update
-    apt-get install --no-install-recommends -y gcc python3.12-dev
+    apt-get install --no-install-recommends -y gcc libc6-dev
 eot
 
 RUN <<eot
@@ -91,7 +105,7 @@ RUN --mount=from=openmpf_build,source=/home/mpf/openmpf-projects/openmpf-python-
 RUN --mount=from=openmpf_build,source=/build-artifacts/install/bin/subject_executor/requirements.txt,target=/tmp/requirements.txt \
     pip3 install -r /tmp/requirements.txt
 
-ENV SRC_DIR /home/mpf/component_src
+ENV SRC_DIR=/home/mpf/component_src
 
 WORKDIR $SRC_DIR
 
@@ -101,17 +115,17 @@ COPY install-component.sh /scripts/
 #########################################
 FROM common AS executor
 
-ENV MPF_HOME /opt/mpf
+ENV MPF_HOME=/opt/mpf
 
 COPY --from=openmpf_build /build-artifacts/install/bin/subject_executor $MPF_HOME/bin/subject_executor
 
-ENV PYTHONUNBUFFERED 1
+ENV PYTHONUNBUFFERED=1
 
-ENV PLUGINS_DIR $MPF_HOME/plugins
+ENV PLUGINS_DIR=$MPF_HOME/plugins
 
-ENV ACTIVE_MQ_HOST workflow-manager
+ENV ACTIVE_MQ_HOST=workflow-manager
 
-ENV COMPONENT_LANGUAGE python
+ENV COMPONENT_LANGUAGE=python
 
 # Using tini here is equivalent to starting the container with the --init flag, except that users
 # do not need to remember to add the flag.
