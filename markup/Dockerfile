@@ -1,4 +1,4 @@
-# syntax=docker/dockerfile:1.2
+# syntax=docker/dockerfile:1.20
 
 #############################################################################
 # NOTICE                                                                    #
@@ -31,7 +31,7 @@ ARG BUILD_TAG=latest
 FROM ${BUILD_REGISTRY}openmpf_build:${BUILD_TAG} AS openmpf_build
 
 
-FROM ubuntu:20.04 AS common
+FROM ubuntu:24.04 AS common
 
 SHELL ["/bin/bash", "-o", "errexit", "-o", "pipefail", "-c"]
 
@@ -44,8 +44,8 @@ RUN --mount=type=tmpfs,target=/var/cache/apt \
     apt-get update; \
     apt-get upgrade -y; \
     apt-get install --no-install-recommends -y \
-        openjdk-17-jre-headless wget \
-        libavcodec58 libavformat58 libswscale5;
+        openjdk-25-jre-headless wget \
+        libavcodec60 libavformat60 libswscale7;
 
 COPY --from=openmpf_build /usr/local/bin/ffmpeg /usr/local/bin/ffprobe /usr/local/bin/
 

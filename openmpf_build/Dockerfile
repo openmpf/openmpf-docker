@@ -1,4 +1,4 @@
-# syntax=docker/dockerfile:1.4
+# syntax=docker/dockerfile:1.20
 
 #############################################################################
 # NOTICE                                                                    #
@@ -26,7 +26,7 @@
 # limitations under the License.                                            #
 #############################################################################
 
-FROM ubuntu:20.04 AS apt_install
+FROM ubuntu:24.04 AS apt_install
 
 SHELL ["/bin/bash", "-o", "errexit", "-o", "pipefail", "-c"]
 
@@ -42,88 +42,71 @@ ENV PIP_COMPILE=0
 
 RUN --mount=type=tmpfs,target=/var/cache/apt \
     --mount=type=tmpfs,target=/var/lib/apt/lists  \
-    --mount=type=tmpfs,target=/tmp \
-    apt-get update; \
-    apt-get upgrade -y; \
+    --mount=type=tmpfs,target=/tmp <<eot
+    apt-get update
+    apt-get upgrade -y
     DEBIAN_FRONTEND=noninteractive apt-get install --no-install-recommends -y \
-        wget ca-certificates gnupg2 unzip xz-utils cmake make g++ libgtest-dev mediainfo libssl-dev \
-        liblog4cxx-dev libboost-dev file openjdk-17-jdk-headless libgl1-mesa-glx \
-        # libheif build deps
-        libde265-dev git nasm ninja-build pkg-config \
-        # OpenCV build deps
+        wget ca-certificates gnupg2 unzip cmake make g++ \
+        libssl-dev libgtest-dev liblog4cxx-dev libboost-dev \
+        openjdk-25-jdk-headless python3.12-dev python3.12-venv libgl1 \
         libopenblas-dev liblapacke-dev libavcodec-dev libavcodec-extra libavformat-dev  \
-        libavutil-dev libswscale-dev libavresample-dev libharfbuzz-dev libfreetype-dev \
-        # Python build deps
-        libsqlite3-dev libreadline-dev libbz2-dev liblzma-dev; \
-    # Can't set up cuda repo at the beginning because it requires wget ca-certificates gnupg2
-    wget -O- https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/3bf863cc.pub \
-        | apt-key add -; \
-    echo "deb https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64 /" \
-        > /etc/apt/sources.list.d/cuda.list; \
-    apt-get update; \
-    apt-get install -y --no-install-recommends cuda-minimal-build-11-4 libcufft-dev-11-4 \
-        libnpp-dev-11-4 libcudnn8-dev=8.2.4.15-1+cuda11.4 libcudnn8=8.2.4.15-1+cuda11.4 \
-        libcublas-dev-11-4; \
-    # OpenCV doesn't use the statically compiled CUDA libraries except for libcudart and they are relatively large.
-    find /usr/local/cuda/lib64/ -name '*.a' -not -name 'libcudart_static.a' -delete; \
-    rm /usr/lib/x86_64-linux-gnu/libcudnn*.a; \
-    ln --symbolic /usr/include/x86_64-linux-gnu/openblas-pthread/cblas.h /usr/include/cblas.h; \
-    ln --symbolic /usr/bin/cmake /usr/bin/cmake3;
+        libavutil-dev libswscale-dev libharfbuzz-dev libfreetype-dev
+
+    # Cannot set up cuda repo at the beginning because it requires wget ca-certificates gnupg2
+    wget -O- https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/x86_64/3bf863cc.pub \
+        | apt-key add -
+    echo "deb https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/x86_64 /" \
+        > /etc/apt/sources.list.d/cuda.list
+    apt-get update
+    apt-get install -y --no-install-recommends cuda-minimal-build-13-1 libcufft-dev-13-1 \
+        libnpp-dev-13-1 libcublas-dev-13-1 libcudnn9-dev-cuda-13
+
+    # OpenCV does not use the statically compiled CUDA libraries except for libcudart and they are relatively large.
+    find /usr/local/cuda/lib64/ -name '*.a' -not -name 'libcudart_static.a' -delete
+    ln --symbolic /usr/include/x86_64-linux-gnu/openblas-pthread/cblas.h /usr/include/cblas.h
+    ln --symbolic /usr/bin/cmake /usr/bin/cmake3
+eot
 
 
 FROM apt_install AS ocv_install
 
-RUN --mount=type=tmpfs,target=/tmp \
-    mkdir /tmp/opencv-contrib; \
-    wget -O- 'https://github.com/opencv/opencv_contrib/archive/4.9.0.tar.gz' \
-        | tar --extract --gzip --directory /tmp/opencv-contrib; \
-    mkdir /tmp/opencv; \
-    cd  /tmp/opencv; \
-    wget -O- 'https://github.com/opencv/opencv/archive/4.9.0.tar.gz' \
-        | tar --extract --gzip; \
-    cd opencv-4.9.0; \
-    mkdir build; \
-    cd build; \
-    export OpenBLAS_HOME=/usr/lib/x86_64-linux-gnu/openblas-pthread; \
-    cmake -DCMAKE_INSTALL_PREFIX:PATH='/opt/opencv-4.9.0' \
+# TODO: Use a tagged version of OpenCV after CUDA 13 support is included.
+# OpenCV 4.12 does not work with CUDA 13. A PR to fix that has recently landed to the OpenCV repo,
+# but it has not been included in a release yet.
+# https://github.com/opencv/opencv/pull/27636
+ARG OPENCV_VERSION=1d5bf7a09c3f189d3f7114da3e3b615b6f285ca0
+ARG OPENCV_CONTRIB_VERSION=5ed0a377b6ad6abf545770384e632ff35eebad64
+
+RUN --mount=type=tmpfs,target=/tmp <<eot
+    mkdir /tmp/opencv-contrib
+    wget -O- "https://github.com/opencv/opencv_contrib/archive/${OPENCV_CONTRIB_VERSION}.tar.gz" \
+        | tar --extract --gzip --directory /tmp/opencv-contrib
+    mkdir /tmp/opencv
+    cd /tmp/opencv
+    wget -O- "https://github.com/opencv/opencv/archive/${OPENCV_VERSION}.tar.gz" \
+        | tar --extract --gzip
+    cd "opencv-${OPENCV_VERSION}"
+    mkdir build
+    cd build
+
+    cmake -DCMAKE_INSTALL_PREFIX:PATH='/opt/opencv-4.13.0' \
         -DCMAKE_BUILD_TYPE=Release \
         -DWITH_IPP=false \
         -DBUILD_EXAMPLES=false \
         -DBUILD_TESTS=false \
         -DBUILD_PERF_TESTS=false \
         -DWITH_CUDA=true \
-        -DCUDA_ARCH_BIN=7.0 \
-        -DCUDA_ARCH_PTX=7.0 \
+        -DCUDA_ARCH_BIN=8.0 \
+        -DCUDA_ARCH_PTX=8.0 \
         -DWITH_CUBLAS=true \
         -DWITH_CUDNN=true \
         -DOPENCV_DNN_CUDA=true \
         -DBUILD_CUDA_STUBS=true \
-        -DOPENCV_EXTRA_MODULES_PATH=/tmp/opencv-contrib/opencv_contrib-4.9.0/modules \
-        ..; \
-    make --jobs "$(nproc)" install/strip; \
-    ln --symbolic '/opt/opencv-4.9.0/include/opencv4/opencv2' /usr/local/include/opencv2;
-
-
-FROM apt_install AS python_install
-
-RUN --mount=type=tmpfs,target=/tmp <<eot
-    mkdir /tmp/python
-    cd /tmp/python
-    wget -O- 'https://www.python.org/ftp/python/3.12.12/Python-3.12.12.tar.xz' | tar --extract --xz
-    cd Python-3.12.12
-    ./configure --enable-optimizations --with-lto --enable-shared --disable-test-modules --without-static-libpython
-    make --jobs "$(nproc)"
-    make install
-    ln --symbolic /usr/local/lib/libpython3.12.so.1.0 /lib/x86_64-linux-gnu/libpython3.12.so.1.0
-
-    # find command taken from official Python Dockerfile
-    find /usr/local/lib/python3.12 -depth \
-		\( \
-			\( -type d -a \( -name test -o -name tests -o -name idle_test \) \) \
-			-o \( -type f -a \( -name '*.pyc' -o -name '*.pyo' -o -name 'libpython*.a' \) \) \
-		\) -exec rm -rf '{}' + ;
+        "-DOPENCV_EXTRA_MODULES_PATH=/tmp/opencv-contrib/opencv_contrib-${OPENCV_CONTRIB_VERSION}/modules" \
+        ..
+    make --jobs "$(nproc)" install/strip
+    ln --symbolic '/opt/opencv-4.13.0/include/opencv4/opencv2' /usr/local/include/opencv2
 eot
-
 
 
 FROM apt_install
@@ -151,93 +134,79 @@ RUN --mount=type=tmpfs,target=/tmp <<eot
     cmake --install . --strip
 eot
 
-RUN --mount=type=tmpfs,target=/tmp \
-    mkdir /tmp/activemq-cpp; \
-    cd /tmp/activemq-cpp; \
+
+RUN --mount=type=tmpfs,target=/tmp <<eot
+    mkdir /tmp/activemq-cpp
+    cd /tmp/activemq-cpp
     wget -O- https://dlcdn.apache.org/activemq/activemq-cpp/3.9.5/activemq-cpp-library-3.9.5-src.tar.gz \
-        | tar --extract --gzip; \
-    cd activemq-cpp-library-3.9.5; \
-    ./configure; \
-    make --jobs "$(nproc)" install-strip;
+        | tar --extract --gzip
+    cd activemq-cpp-library-3.9.5
+    ./configure
+    make --jobs "$(nproc)" install-strip
+eot
+
 
 RUN wget -O- 'https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz' \
         | tar --extract --xz --directory /usr/local/bin --strip-components 1 --wildcards \
             'ffmpeg-*-amd64-static/ffmpeg' 'ffmpeg-*-amd64-static/ffprobe';
 
+
 # Markup uses the emoji font for icons.
-RUN --mount=type=tmpfs,target=/tmp \
-    mkdir /tmp/noto; \
-    cd /tmp/noto; \
-    wget https://noto-website-2.storage.googleapis.com/pkgs/NotoEmoji-unhinted.zip; \
-    unzip NotoEmoji-unhinted.zip; \
-    mkdir --parents /usr/share/fonts/google-noto-emoji; \
-    cp NotoEmoji-Regular.ttf /usr/share/fonts/google-noto-emoji;
+RUN --mount=type=tmpfs,target=/tmp <<eot
+    mkdir /tmp/noto
+    cd /tmp/noto
+    wget https://noto-website-2.storage.googleapis.com/pkgs/NotoEmoji-unhinted.zip
+    unzip NotoEmoji-unhinted.zip
+    mkdir --parents /usr/share/fonts/google-noto-emoji
+    cp NotoEmoji-Regular.ttf /usr/share/fonts/google-noto-emoji
+eot
 
 
-RUN --mount=type=tmpfs,target=/tmp \
-    mkdir /tmp/pngdefry; \
-    cd /tmp/pngdefry; \
-    wget -O- 'https://github.com/openmpf/pngdefry/archive/v1.2.tar.gz' \
-        | tar --extract --gzip; \
-    cd pngdefry-1.2; \
-    gcc pngdefry.c -o /usr/local/bin/pngdefry;
+RUN --mount=type=tmpfs,target=/tmp <<eot
+    mkdir /tmp/pngdefry
+    cd /tmp/pngdefry
+    wget -O- 'https://github.com/openmpf/pngdefry/archive/v1.2.tar.gz' | tar --extract --gzip
+    cd pngdefry-1.2
+    gcc pngdefry.c -o /usr/local/bin/pngdefry
+eot
 
 
 RUN wget -O- 'https://archive.apache.org/dist/maven/maven-3/3.3.3/binaries/apache-maven-3.3.3-bin.tar.gz' \
         | tar --extract --gzip --directory /opt; \
     ln --symbolic /opt/apache-maven-3.3.3/bin/mvn /usr/local/bin;
 
-
-RUN --mount=type=tmpfs,target=/tmp \
-    mkdir /tmp/libheif; \
-    cd /tmp/libheif; \
+RUN --mount=type=tmpfs,target=/tmp <<eot
+    mkdir /tmp/libheif
+    cd /tmp/libheif
     wget -O- https://github.com/strukturag/libheif/archive/refs/tags/v1.20.2.tar.gz \
-        | tar --extract --gzip; \
-    cd libheif-1.20.2/third-party; \
-    bash aom.cmd; \
-    cd ..; \
-    mkdir build; \
-    cd build; \
-    PKG_CONFIG_PATH="/tmp/libheif/libheif-1.20.2/third-party/aom/dist/lib/pkgconfig" \
-        cmake3 -DCMAKE_INSTALL_PREFIX=/usr -DWITH_EXAMPLES=false -DWITH_AOM_DECODER=true -DENABLE_PLUGIN_LOADING=false -DCMAKE_BUILD_TYPE=Release ..; \
-    make --jobs "$(nproc)" install/strip; \
-    cp heifio/libheifio.a /usr/lib64; \
-    cd ../heifio; \
-    mkdir -p /usr/include/libheif/heifio; \
-    cp *.h /usr/include/libheif/heifio;
-
-
-COPY --from=ocv_install /opt/opencv-4.9.0 /opt/opencv-4.9.0
-
-RUN ln --symbolic '/opt/opencv-4.9.0/include/opencv4/opencv2' /usr/local/include/opencv2;
-
-
-COPY --from=python_install \
-    /usr/local/bin/python3.12 /usr/local/bin/python3.12-config \
-    /usr/local/bin/pip3.12 /usr/local/bin/pip3 \
-    /usr/local/bin/
-
-COPY --from=python_install /usr/local/lib/python3.12 /usr/local/lib/python3.12
-
-COPY --from=python_install /usr/local/lib/libpython3.12.so.1.0 /usr/local/lib/
-
-# The Python headers are needed to build Python libraries with C extensions.
-COPY --from=python_install /usr/local/include/python3.12 /usr/local/include/python3.12
-
-RUN <<eot
-    cd /usr/local/bin
-    ln --symbolic python3.12 python3
-    ln --symbolic python3.12-config python3-config
-    cd /usr/local/lib
-    ln --symbolic libpython3.12.so.1.0 libpython3.12.so
-    ln --symbolic /usr/local/lib/libpython3.12.so.1.0 /lib/x86_64-linux-gnu/libpython3.12.so.1.0
+        | tar --extract --gzip
+    cd libheif-1.20.2/third-party
+    bash aom.cmd
+    cd ..
+    mkdir build
+    cd build
+    PKG_CONFIG_PATH=/tmp/libheif/libheif-1.20.2/third-party/aom/dist/lib/pkgconfig cmake \
+        -DCMAKE_INSTALL_PREFIX=/usr \
+        -DWITH_EXAMPLES=false \
+        -DWITH_AOM_DECODER=true \
+        -DENABLE_PLUGIN_LOADING=false \
+        -DCMAKE_BUILD_TYPE=Release ..
+    make --jobs "$(nproc)" install/strip
+    cp heifio/libheifio.a /usr/lib64
+    mkdir -p /usr/include/libheif/heifio
+    cp ../heifio/*.h /usr/include/libheif/heifio
 eot
+
+COPY --from=ocv_install /opt/opencv-4.13.0 /opt/opencv-4.13.0
+
+RUN ln --symbolic '/opt/opencv-4.13.0/include/opencv4/opencv2' /usr/local/include/opencv2;
 
 COPY . /home/mpf/openmpf-projects
 
 ENV MPF_HOME=/home/mpf/openmpf-projects/openmpf/trunk/install
 
 WORKDIR /home/mpf/openmpf-projects/openmpf
+
 
 RUN --mount=type=cache,id=mvn_cache,target=/root/.m2/repository,sharing=private \
     --mount=type=tmpfs,target=/tmp \
@@ -254,19 +223,23 @@ RUN --mount=type=cache,id=mvn_cache,target=/root/.m2/repository,sharing=private 
 
 
 ARG RUN_TESTS=false
-RUN \[ "${RUN_TESTS,,}" = true ] || exit 0; \
-    export LD_LIBRARY_PATH=$MPF_HOME/lib:LD_LIBRARY_PATH; \
+RUN <<eot
+    [ "${RUN_TESTS,,}" != true ] && exit 0
+
     # Use nullglob to avoid entering for loop when no glob matches.
     # Use globstar to enable ** globs.
-    shopt -s nullglob globstar; \
-    for build_root in /root/mpf-component-build /home/mpf/openmpf-projects/openmpf/trunk/build; do \
-        cd "$build_root"; \
-        for test_executable in **/test/*Test; do \
-            cd "$(dirname "$test_executable")"; \
-            ./"$(basename "$test_executable")"; \
-            cd "$build_root"; \
-        done; \
-    done;
+    shopt -s nullglob globstar
+
+    for build_root in /root/mpf-component-build /home/mpf/openmpf-projects/openmpf/trunk/build; do
+        cd "$build_root"
+        for test_executable in **/test/*Test; do
+            cd "$(dirname "$test_executable")"
+            LD_LIBRARY_PATH="$MPF_HOME/lib:$LD_LIBRARY_PATH" ./"$(basename "$test_executable")"
+            cd "$build_root"
+        done
+    done
+eot
+
 
 WORKDIR /build-artifacts
 

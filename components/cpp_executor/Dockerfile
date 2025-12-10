@@ -1,4 +1,4 @@
-# syntax=docker/dockerfile:1.4
+# syntax=docker/dockerfile:1.20
 
 #############################################################################
 # NOTICE                                                                    #
@@ -31,7 +31,7 @@ ARG BUILD_TAG=latest
 FROM ${BUILD_REGISTRY}openmpf_build:${BUILD_TAG} AS openmpf_build
 
 
-FROM ubuntu:20.04 AS common
+FROM ubuntu:24.04 AS common
 
 SHELL ["/bin/bash", "-o", "errexit", "-o", "pipefail", "-c"]
 
@@ -40,35 +40,18 @@ ENV LC_ALL=C.UTF-8
 
 RUN --mount=type=tmpfs,target=/var/cache/apt \
     --mount=type=tmpfs,target=/var/lib/apt/lists  \
-    --mount=type=tmpfs,target=/tmp \
-    apt-get update; \
-    apt-get upgrade -y; \
-    apt-get install --no-install-recommends -y wget ca-certificates gnupg2; \
-    # Can't set up cuda repo at the beginning because it requires wget ca-certificates gnupg2
-    wget -O- https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/3bf863cc.pub \
-            | apt-key add -; \
-    echo "deb https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64 /" \
-        > /etc/apt/sources.list.d/cuda.list; \
-    apt-get update; \
-    apt-get install -y --no-install-recommends cuda-cudart-11-4;
+    --mount=type=tmpfs,target=/tmp <<eot
+    apt-get update
+    apt-get upgrade -y
+    apt-get install --no-install-recommends -y wget ca-certificates gnupg2 python3 libpython3.12t64
 
-
-COPY --from=openmpf_build \
-    /usr/local/bin/python3.12 /usr/local/bin/python3.12-config \
-    /usr/local/bin/pip3.12 /usr/local/bin/pip3 \
-    /usr/local/bin/
-
-COPY --from=openmpf_build /usr/local/lib/python3.12 /usr/local/lib/python3.12
-
-COPY --from=openmpf_build /usr/local/lib/libpython3.12.so.1.0 /usr/local/lib/
-
-RUN <<eot
-    cd /usr/local/bin
-    ln --symbolic python3.12 python3
-    ln --symbolic python3.12-config python3-config
-    cd /usr/local/lib
-    ln --symbolic libpython3.12.so.1.0 libpython3.12.so
-    ln --symbolic /usr/local/lib/libpython3.12.so.1.0 /lib/x86_64-linux-gnu/libpython3.12.so.1.0
+    # Can not set up cuda repo at the beginning because it requires wget ca-certificates gnupg2
+    wget -O- https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/x86_64/3bf863cc.pub \
+        | apt-key add -
+    echo "deb https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/x86_64 /" \
+        > /etc/apt/sources.list.d/cuda.list
+    apt-get update
+    apt-get install -y --no-install-recommends cuda-cudart-13-1
 eot
 
 COPY --from=openmpf_build /usr/local/bin/ffmpeg /usr/local/bin/ffprobe /usr/local/bin/
@@ -103,7 +86,7 @@ COPY --from=openmpf_build /build-artifacts/install/bin/amq_detection_component \
 COPY --from=openmpf_build /build-artifacts/install/config/Log4cxxConfig.xml $MPF_HOME/config/
 
 COPY --from=openmpf_build /build-artifacts/install/lib/mpf_cpp_sdk.cpython-312-x86_64-linux-gnu.so \
-                          /usr/local/lib/python3.12/lib-dynload/
+                          /usr/lib/python3.12/lib-dynload
 
 COPY --from=openmpf_build /scripts/* /scripts/
 
@@ -114,7 +97,6 @@ ENV PYTHONUNBUFFERED=1
 ENV BUILD_DIR=/home/mpf/component_build
 
 ENV PLUGINS_DIR=$MPF_HOME/plugins
-
 
 COPY docker-entrypoint.sh component-executor.py /scripts/
 

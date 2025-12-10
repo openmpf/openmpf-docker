@@ -1,4 +1,4 @@
-# syntax=docker/dockerfile:1.4
+# syntax=docker/dockerfile:1.20
 
 #############################################################################
 # NOTICE                                                                    #
@@ -31,7 +31,7 @@ ARG BUILD_TAG=latest
 FROM ${BUILD_REGISTRY}openmpf_build:${BUILD_TAG} AS openmpf_build
 
 
-FROM ubuntu:20.04 AS common
+FROM ubuntu:24.04 AS common
 
 SHELL ["/bin/bash", "-o", "errexit", "-o", "pipefail", "-c"]
 
@@ -40,33 +40,10 @@ ENV LC_ALL=C.UTF-8
 
 RUN --mount=type=tmpfs,target=/var/cache/apt \
     --mount=type=tmpfs,target=/var/lib/apt/lists  \
-    --mount=type=tmpfs,target=/tmp \
-<<eot
+    --mount=type=tmpfs,target=/tmp <<eot
     apt-get update
     apt-get upgrade -y
-    apt-get install --no-install-recommends -y tini libgl1-mesa-glx libglib2.0-0 ca-certificates
-eot
-
-
-COPY --from=openmpf_build \
-    /usr/local/bin/python3.12 /usr/local/bin/python3.12-config \
-    /usr/local/bin/pip3.12 /usr/local/bin/pip3 \
-    /usr/local/bin/
-
-COPY --from=openmpf_build /usr/local/lib/python3.12 /usr/local/lib/python3.12
-
-COPY --from=openmpf_build /usr/local/lib/libpython3.12.so.1.0 /usr/local/lib/
-
-# The Python headers are needed to build Python libraries with C extensions.
-COPY --from=openmpf_build /usr/local/include/python3.12 /usr/local/include/python3.12
-
-RUN <<eot
-    cd /usr/local/bin
-    ln --symbolic python3.12 python3
-    ln --symbolic python3.12-config python3-config
-    cd /usr/local/lib
-    ln --symbolic libpython3.12.so.1.0 libpython3.12.so
-    ln --symbolic /usr/local/lib/libpython3.12.so.1.0 /lib/x86_64-linux-gnu/libpython3.12.so.1.0
+    apt-get install --no-install-recommends -y tini libgl1 libglib2.0-0 ca-certificates python3
 eot
 
 ENV MPF_HOME=/opt/mpf
@@ -76,17 +53,17 @@ ENV COMPONENT_VIRTUALENV=$MPF_HOME/plugin-venv
 # Adding $COMPONENT_VIRTUALENV/bin to the front of $PATH persistently activates the virtualenv.
 ENV PATH=$COMPONENT_VIRTUALENV/bin:/scripts:$PATH
 
-#########################################
+
+
 FROM common AS build
 
 # The subject component executor depends on the python-qpid-proton pip package.
 # python-qpid-proton requires a C compiler and the Python headers to be installed.
 RUN --mount=type=tmpfs,target=/var/cache/apt \
     --mount=type=tmpfs,target=/var/lib/apt/lists  \
-    --mount=type=tmpfs,target=/tmp \
-<<eot
+    --mount=type=tmpfs,target=/tmp <<eot
     apt-get update
-    apt-get install --no-install-recommends -y gcc libc6-dev
+    apt-get install --no-install-recommends -y gcc libc6-dev python3.12-venv python3.12-dev
 eot
 
 RUN <<eot
@@ -112,7 +89,7 @@ WORKDIR $SRC_DIR
 COPY install-component.sh /scripts/
 
 
-#########################################
+
 FROM common AS executor
 
 ENV MPF_HOME=/opt/mpf

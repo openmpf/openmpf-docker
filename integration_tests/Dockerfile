@@ -1,4 +1,4 @@
-# syntax=docker/dockerfile:1.2
+# syntax=docker/dockerfile:1.20
 
 #############################################################################
 # NOTICE                                                                    #
@@ -31,7 +31,7 @@ ARG BUILD_TAG=latest
 
 
 # Separate stage so we don't have to re-download things when openmpf_build changes
-FROM ubuntu:20.04 as download_dependencies
+FROM ubuntu:24.04 AS download_dependencies
 
 SHELL ["/bin/bash", "-o", "errexit", "-o", "pipefail", "-c"]
 
@@ -39,7 +39,7 @@ RUN --mount=type=tmpfs,target=/var/cache/apt \
     --mount=type=tmpfs,target=/var/lib/apt/lists  \
     --mount=type=tmpfs,target=/tmp \
     apt-get update; \
-    apt-get install --no-install-recommends -y openjdk-17-jre-headless wget ca-certificates patch;
+    apt-get install --no-install-recommends -y openjdk-25-jre-headless wget ca-certificates patch;
 
 
 RUN mkdir /scripts; \
@@ -58,7 +58,7 @@ RUN mvn dependency:get -Dartifact=org.apache.maven.plugins:maven-surefire-plugin
 
 
 
-FROM ${BUILD_REGISTRY}openmpf_build:${BUILD_TAG} as integration_tests
+FROM ${BUILD_REGISTRY}openmpf_build:${BUILD_TAG} AS integration_tests
 
 SHELL ["/bin/bash", "-o", "errexit", "-o", "pipefail", "-c"]
 
@@ -77,7 +77,7 @@ COPY --from=download_dependencies /scripts/wait-for-it.sh /scripts/wait-for-it.s
 
 ENV THIS_MPF_NODE=workflow-manager
 
-ENV MPF_HOME /opt/mpf
+ENV MPF_HOME=/opt/mpf
 
 RUN ln --symbolic /home/mpf/openmpf-projects/openmpf/trunk/install "$MPF_HOME"
 
@@ -91,7 +91,7 @@ ENV PATH=$PATH:$MPF_HOME/bin
 ENV WFM_BASE_URL=http://localhost:8181
 # Default for JDBC configuration. Can be overridden at runtime.
 ENV JDBC_URL=jdbc:postgresql://db:5432/mpf
-ENV PYTHONUNBUFFERED 1
+ENV PYTHONUNBUFFERED=1
 
 COPY check-test-reports.py /scripts/check-test-reports.py
 COPY docker-entrypoint.sh /scripts/docker-entrypoint.sh
