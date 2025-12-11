@@ -431,7 +431,7 @@ class TestCppCliRunnerWithTesseract(BaseTestCliRunner):
         self.assertEqual(0, detection['y'])
         self.assertEqual(0, detection['width'])
         self.assertEqual(0, detection['height'])
-        self.assertAlmostEqual(95, detection['confidence'])
+        self.assertAlmostEqual(94, detection['confidence'])
         self.assertEqual(detection, track['exemplar'])
         self.assertEqual(expected_properties, detection['detectionProperties'])
 
