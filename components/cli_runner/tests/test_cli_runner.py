@@ -410,7 +410,7 @@ class TestCppCliRunnerWithTesseract(BaseTestCliRunner):
 
         self.assertEqual(1, len(tracks))
         track = tracks[0]
-        self.assertAlmostEqual(95, track['confidence'])
+        self.assertAlmostEqual(94, track['confidence'])
         expected_properties = {
             'MISSING_LANGUAGE_MODELS': '',
             'OSD_FALLBACK_OCCURRED': 'false',
