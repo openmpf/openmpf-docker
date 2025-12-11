@@ -241,10 +241,10 @@ services:
       context: ${OPENMPF_PROJECTS_PATH}/openmpf-contrib-components/cpp/motion
       dockerfile: SubsenseMotionDetection/Dockerfile
 
-  tesseract-ocr-text-detection:
-    <<: *component-base
-    image: ${REGISTRY}openmpf_tesseract_ocr_text_detection:${TAG}
-    build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/cpp/TesseractOCRTextDetection
+  # tesseract-ocr-text-detection:
+  #   <<: *component-base
+  #   image: ${REGISTRY}openmpf_tesseract_ocr_text_detection:${TAG}
+  #   build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/cpp/TesseractOCRTextDetection
 
   tika-image-detection:
     <<: *component-base
