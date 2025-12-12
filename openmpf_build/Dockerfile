@@ -50,7 +50,8 @@ RUN --mount=type=tmpfs,target=/var/cache/apt \
         libssl-dev libgtest-dev liblog4cxx-dev libboost-dev \
         openjdk-25-jdk-headless python3.12-dev python3.12-venv libgl1 \
         libopenblas-dev liblapacke-dev libavcodec-dev libavcodec-extra libavformat-dev  \
-        libavutil-dev libswscale-dev libharfbuzz-dev libfreetype-dev
+        libavutil-dev libswscale-dev libharfbuzz-dev libfreetype-dev \
+        libde265-dev git nasm ninja-build pkg-config
 
     # Cannot set up cuda repo at the beginning because it requires wget ca-certificates gnupg2
     wget -O- https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/x86_64/3bf863cc.pub \
@@ -62,7 +63,7 @@ RUN --mount=type=tmpfs,target=/var/cache/apt \
         libnpp-dev-13-1 libcublas-dev-13-1 libcudnn9-dev-cuda-13
 
     # OpenCV does not use the statically compiled CUDA libraries except for libcudart and they are relatively large.
-    find /usr/local/cuda/lib64/ -name '*.a' -not -name 'libcudart_static.a' -delete
+    find /usr/local/cuda/lib64/ -name '*.a' -not -name libcudart_static.a -delete
     ln --symbolic /usr/include/x86_64-linux-gnu/openblas-pthread/cblas.h /usr/include/cblas.h
     ln --symbolic /usr/bin/cmake /usr/bin/cmake3
 eot
@@ -89,7 +90,7 @@ RUN --mount=type=tmpfs,target=/tmp <<eot
     mkdir build
     cd build
 
-    cmake -DCMAKE_INSTALL_PREFIX:PATH='/opt/opencv-4.13.0' \
+    cmake -DCMAKE_INSTALL_PREFIX:PATH=/opt/opencv-4.13.0 \
         -DCMAKE_BUILD_TYPE=Release \
         -DWITH_IPP=false \
         -DBUILD_EXAMPLES=false \
@@ -102,10 +103,10 @@ RUN --mount=type=tmpfs,target=/tmp <<eot
         -DWITH_CUDNN=true \
         -DOPENCV_DNN_CUDA=true \
         -DBUILD_CUDA_STUBS=true \
-        "-DOPENCV_EXTRA_MODULES_PATH=/tmp/opencv-contrib/opencv_contrib-${OPENCV_CONTRIB_VERSION}/modules" \
+        -DOPENCV_EXTRA_MODULES_PATH="/tmp/opencv-contrib/opencv_contrib-${OPENCV_CONTRIB_VERSION}/modules" \
         ..
     make --jobs "$(nproc)" install/strip
-    ln --symbolic '/opt/opencv-4.13.0/include/opencv4/opencv2' /usr/local/include/opencv2
+    ln --symbolic /opt/opencv-4.13.0/include/opencv4/opencv2 /usr/local/include/opencv2
 eot
 
 
@@ -113,12 +114,12 @@ FROM apt_install
 
 RUN --mount=type=tmpfs,target=/tmp <<eot
     mkdir /tmp/abseil
-    wget -O- 'https://github.com/abseil/abseil-cpp/releases/download/20240722.0/abseil-cpp-20240722.0.tar.gz' \
+    wget -O- https://github.com/abseil/abseil-cpp/releases/download/20240722.0/abseil-cpp-20240722.0.tar.gz \
         | tar --extract --gzip --directory /tmp/abseil;
 
     mkdir /tmp/protobuf
     cd /tmp/protobuf
-    wget -O- 'https://github.com/protocolbuffers/protobuf/releases/download/v28.3/protobuf-28.3.tar.gz' \
+    wget -O- https://github.com/protocolbuffers/protobuf/releases/download/v28.3/protobuf-28.3.tar.gz \
         | tar --extract --gzip;
 
     cd protobuf-28.3
@@ -146,7 +147,7 @@ RUN --mount=type=tmpfs,target=/tmp <<eot
 eot
 
 
-RUN wget -O- 'https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz' \
+RUN wget -O- https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz \
         | tar --extract --xz --directory /usr/local/bin --strip-components 1 --wildcards \
             'ffmpeg-*-amd64-static/ffmpeg' 'ffmpeg-*-amd64-static/ffprobe';
 
@@ -165,15 +166,16 @@ eot
 RUN --mount=type=tmpfs,target=/tmp <<eot
     mkdir /tmp/pngdefry
     cd /tmp/pngdefry
-    wget -O- 'https://github.com/openmpf/pngdefry/archive/v1.2.tar.gz' | tar --extract --gzip
+    wget -O- https://github.com/openmpf/pngdefry/archive/v1.2.tar.gz | tar --extract --gzip
     cd pngdefry-1.2
     gcc pngdefry.c -o /usr/local/bin/pngdefry
 eot
 
 
-RUN wget -O- 'https://archive.apache.org/dist/maven/maven-3/3.3.3/binaries/apache-maven-3.3.3-bin.tar.gz' \
+RUN wget -O- https://archive.apache.org/dist/maven/maven-3/3.3.3/binaries/apache-maven-3.3.3-bin.tar.gz \
         | tar --extract --gzip --directory /opt; \
     ln --symbolic /opt/apache-maven-3.3.3/bin/mvn /usr/local/bin;
+
 
 RUN --mount=type=tmpfs,target=/tmp <<eot
     mkdir /tmp/libheif
@@ -199,7 +201,7 @@ eot
 
 COPY --from=ocv_install /opt/opencv-4.13.0 /opt/opencv-4.13.0
 
-RUN ln --symbolic '/opt/opencv-4.13.0/include/opencv4/opencv2' /usr/local/include/opencv2;
+RUN ln --symbolic /opt/opencv-4.13.0/include/opencv4/opencv2 /usr/local/include/opencv2
 
 COPY . /home/mpf/openmpf-projects
 
@@ -224,22 +226,12 @@ RUN --mount=type=cache,id=mvn_cache,target=/root/.m2/repository,sharing=private 
 
 ARG RUN_TESTS=false
 RUN <<eot
-    [ "${RUN_TESTS,,}" != true ] && exit 0
-
-    # Use nullglob to avoid entering for loop when no glob matches.
-    # Use globstar to enable ** globs.
-    shopt -s nullglob globstar
-
-    for build_root in /root/mpf-component-build /home/mpf/openmpf-projects/openmpf/trunk/build; do
-        cd "$build_root"
-        for test_executable in **/test/*Test; do
-            cd "$(dirname "$test_executable")"
-            LD_LIBRARY_PATH="$MPF_HOME/lib:$LD_LIBRARY_PATH" ./"$(basename "$test_executable")"
-            cd "$build_root"
-        done
-    done
+    if [ "${RUN_TESTS,,}" = true ]; then
+        LD_LIBRARY_PATH="$MPF_HOME/lib:$LD_LIBRARY_PATH" find \
+            /root/mpf-component-build /home/mpf/openmpf-projects/openmpf/trunk/build \
+            -wholename '**/test/*Test' -execdir '{}' \;
+    fi
 eot
-
 
 WORKDIR /build-artifacts
 
