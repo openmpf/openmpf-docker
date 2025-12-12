@@ -46,7 +46,7 @@ RUN --mount=type=tmpfs,target=/var/cache/apt \
     apt-get update
     apt-get upgrade -y
     DEBIAN_FRONTEND=noninteractive apt-get install --no-install-recommends -y \
-        wget ca-certificates gnupg2 unzip cmake make g++ \
+        wget ca-certificates gnupg2 unzip cmake make g++ file \
         libssl-dev libgtest-dev liblog4cxx-dev libboost-dev \
         openjdk-25-jdk-headless python3.12-dev python3.12-venv libgl1 \
         libopenblas-dev liblapacke-dev libavcodec-dev libavcodec-extra libavformat-dev  \

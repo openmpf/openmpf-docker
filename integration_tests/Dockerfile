@@ -39,7 +39,7 @@ RUN --mount=type=tmpfs,target=/var/cache/apt \
     --mount=type=tmpfs,target=/var/lib/apt/lists  \
     --mount=type=tmpfs,target=/tmp \
     apt-get update; \
-    apt-get install --no-install-recommends -y openjdk-25-jre-headless wget ca-certificates patch;
+    apt-get install --no-install-recommends -y openjdk-25-jre-headless wget ca-certificates;
 
 
 RUN mkdir /scripts; \
