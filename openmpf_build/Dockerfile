@@ -147,9 +147,9 @@ RUN --mount=type=tmpfs,target=/tmp <<eot
 eot
 
 
-RUN wget -O- https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz \
-        | tar --extract --xz --directory /usr/local/bin --strip-components 1 --wildcards \
-            'ffmpeg-*-amd64-static/ffmpeg' 'ffmpeg-*-amd64-static/ffprobe';
+RUN wget -O- https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-n8.0-latest-linux64-gpl-8.0.tar.xz \
+        | tar --extract --xz --directory /usr/local/bin --strip-components 2 --wildcards \
+            '*'/bin/{ffmpeg,ffprobe}
 
 
 # Markup uses the emoji font for icons.
