@@ -97,8 +97,8 @@ RUN --mount=type=tmpfs,target=/tmp <<eot
         -DBUILD_TESTS=false \
         -DBUILD_PERF_TESTS=false \
         -DWITH_CUDA=true \
-        -DCUDA_ARCH_BIN=8.0 \
-        -DCUDA_ARCH_PTX=8.0 \
+        -DCUDA_ARCH_BIN=7.5 \
+        -DCUDA_ARCH_PTX=7.5 \
         -DWITH_CUBLAS=true \
         -DWITH_CUDNN=true \
         -DOPENCV_DNN_CUDA=true \
