@@ -228,7 +228,9 @@ services:
   # TODO: Rename this to qwen-speech-summarization-server
   vllm:
     image: ${REGISTRY}openmpf_qwen_speech_summarization_server:${TAG}
-    build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/python/QwenSpeechSummarization/Dockerfile.vllm
+    build:
+      context: ${OPENMPF_PROJECTS_PATH}/openmpf-components/python/QwenSpeechSummarization
+      dockerfile: Dockerfile.vllm
     deploy:
       mode: global
       # resources:
