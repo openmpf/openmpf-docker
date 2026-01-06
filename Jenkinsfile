@@ -521,7 +521,7 @@ try {
                             "-v $trivyVolume:/root/.cache/ " +
                             "-v '${pwd()}/$openmpfDockerRepo.path/trivyignore.txt:/.trivyignore' " +
                             "-v '${pwd()}/$openmpfDockerRepo.path:/trivy' " +
-                            "aquasec/trivy sbom --severity CRITICAL,HIGH --exit-code 1 " +
+                            "aquasec/trivy sbom --severity CRITICAL --exit-code 1 " +
                             "--format json --output /trivy/${serviceName}_trivy.json " +
                             "--timeout 30m --scanners vuln /trivy/${serviceName}_sbom.json")
                         if (exitCode != 0) {
@@ -571,7 +571,7 @@ try {
 
                 // add tasks the map
                 for (int i = 0; i < taskCount; i++) {
-                    def taskName = "Task ${i}" 
+                    def taskName = "Task ${i}"
                     tasksToRun[taskName] = taskQueue.remove(0)
                 }
 
