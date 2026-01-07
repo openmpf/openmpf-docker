@@ -51,7 +51,7 @@ RUN --mount=type=tmpfs,target=/var/cache/apt \
     echo "deb https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/x86_64 /" \
         > /etc/apt/sources.list.d/cuda.list
     apt-get update
-    apt-get install -y --no-install-recommends cuda-cudart-13-1
+    apt-get install -y --no-install-recommends cuda-cudart-12-9
 eot
 
 COPY --from=openmpf_build /usr/local/bin/ffmpeg /usr/local/bin/ffprobe /usr/local/bin/

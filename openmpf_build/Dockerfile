@@ -59,8 +59,8 @@ RUN --mount=type=tmpfs,target=/var/cache/apt \
     echo "deb https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/x86_64 /" \
         > /etc/apt/sources.list.d/cuda.list
     apt-get update
-    apt-get install -y --no-install-recommends cuda-minimal-build-13-1 libcufft-dev-13-1 \
-        libnpp-dev-13-1 libcublas-dev-13-1 libcudnn9-dev-cuda-13
+    apt-get install -y --no-install-recommends cuda-minimal-build-12-9 libcufft-dev-12-9 \
+        libnpp-dev-12-9 libcublas-dev-12-9 libcudnn9-dev-cuda-12
 
     # OpenCV does not use the statically compiled CUDA libraries except for libcudart and they are relatively large.
     find /usr/local/cuda/lib64/ -name '*.a' -not -name libcudart_static.a -delete
@@ -71,25 +71,17 @@ eot
 
 FROM apt_install AS ocv_install
 
-# TODO: Use a tagged version of OpenCV after CUDA 13 support is included.
-# OpenCV 4.12 does not work with CUDA 13. A PR to fix that has recently landed to the OpenCV repo,
-# but it has not been included in a release yet.
-# https://github.com/opencv/opencv/pull/27636
-ARG OPENCV_VERSION=1d5bf7a09c3f189d3f7114da3e3b615b6f285ca0
-ARG OPENCV_CONTRIB_VERSION=5ed0a377b6ad6abf545770384e632ff35eebad64
-
 RUN --mount=type=tmpfs,target=/tmp <<eot
     mkdir /tmp/opencv-contrib
-    wget -O- "https://github.com/opencv/opencv_contrib/archive/${OPENCV_CONTRIB_VERSION}.tar.gz" \
+    wget -O- https://github.com/opencv/opencv_contrib/archive/refs/tags/4.13.0.tar.gz \
         | tar --extract --gzip --directory /tmp/opencv-contrib
     mkdir /tmp/opencv
     cd /tmp/opencv
-    wget -O- "https://github.com/opencv/opencv/archive/${OPENCV_VERSION}.tar.gz" \
+    wget -O- https://github.com/opencv/opencv/archive/refs/tags/4.13.0.tar.gz \
         | tar --extract --gzip
-    cd "opencv-${OPENCV_VERSION}"
+    cd opencv-4.13.0
     mkdir build
     cd build
-
     cmake -DCMAKE_INSTALL_PREFIX:PATH=/opt/opencv-4.13.0 \
         -DCMAKE_BUILD_TYPE=Release \
         -DWITH_IPP=false \
@@ -97,13 +89,13 @@ RUN --mount=type=tmpfs,target=/tmp <<eot
         -DBUILD_TESTS=false \
         -DBUILD_PERF_TESTS=false \
         -DWITH_CUDA=true \
-        -DCUDA_ARCH_BIN=7.5 \
-        -DCUDA_ARCH_PTX=7.5 \
+        -DCUDA_ARCH_BIN=7.0 \
+        -DCUDA_ARCH_PTX=7.0 \
         -DWITH_CUBLAS=true \
         -DWITH_CUDNN=true \
         -DOPENCV_DNN_CUDA=true \
         -DBUILD_CUDA_STUBS=true \
-        -DOPENCV_EXTRA_MODULES_PATH="/tmp/opencv-contrib/opencv_contrib-${OPENCV_CONTRIB_VERSION}/modules" \
+        -DOPENCV_EXTRA_MODULES_PATH=/tmp/opencv-contrib/opencv_contrib-4.13.0/modules \
         ..
     make --jobs "$(nproc)" install/strip
     ln --symbolic /opt/opencv-4.13.0/include/opencv4/opencv2 /usr/local/include/opencv2
