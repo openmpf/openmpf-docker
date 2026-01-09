@@ -39,24 +39,17 @@ x-component-base: &component-base
     - shared_data:/opt/mpf/share
   deploy: &common-deploy
     mode: replicated
-    replicas: 2
-
-x-detection-component-base: &detection-component-base
-  <<: *component-base
-  environment:
-    <<: *common-env-vars
-    WFM_USER:
-    WFM_PASSWORD:
+    replicas: 1
 
 
 services:
   argos-translation:
-    <<: *detection-component-base
+    <<: *component-base
     image: ${REGISTRY}openmpf_argos_translation:${TAG}
     build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/python/ArgosTranslation
 
   azure-form-detection:
-    <<: *detection-component-base
+    <<: *component-base
     image: ${REGISTRY}openmpf_azure_form_detection:${TAG}
     build:
       context: ${OPENMPF_PROJECTS_PATH}/openmpf-components/python/AzureFormDetection
@@ -66,7 +59,7 @@ services:
       MPF_PROP_ACS_SUBSCRIPTION_KEY: ${ACS_FORM_DETECTION_SUBSCRIPTION_KEY}
 
   azure_read_text_detection:
-    <<: *detection-component-base
+    <<: *component-base
     image: ${REGISTRY}openmpf_azure_read_text_detection:${TAG}
     build:
       context: ${OPENMPF_PROJECTS_PATH}/openmpf-components/python/AzureReadTextDetection
@@ -76,7 +69,7 @@ services:
       MPF_PROP_ACS_SUBSCRIPTION_KEY: ${ACS_READ_SUBSCRIPTION_KEY}
 
   azure-speech-detection:
-    <<: *detection-component-base
+    <<: *component-base
     image: ${REGISTRY}openmpf_azure_speech_detection:${TAG}
     build:
       context: ${OPENMPF_PROJECTS_PATH}/openmpf-components/python/AzureSpeechDetection
@@ -88,7 +81,7 @@ services:
       MPF_PROP_ACS_BLOB_SERVICE_KEY: ${ACS_SPEECH_BLOB_SERVICE_KEY}
 
   azure-translation:
-    <<: *detection-component-base
+    <<: *component-base
     image: ${REGISTRY}openmpf_azure_translation:${TAG}
     build:
       context: ${OPENMPF_PROJECTS_PATH}/openmpf-components/python/AzureTranslation
@@ -101,7 +94,7 @@ services:
       MPF_PROP_ACS_SUBSCRIPTION_KEY: ${ACS_TRANSLATION_SUBSCRIPTION_KEY}
 
   clip-detection:
-    <<: *detection-component-base
+    <<: *component-base
     image: ${REGISTRY}openmpf_clip_detection:${TAG}
     build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/python/ClipDetection
 
@@ -131,7 +124,7 @@ services:
               --grpc-infer-allocation-pool-size=16 ]
 
   east-text-detection:
-    <<: *detection-component-base
+    <<: *component-base
     image: ${REGISTRY}openmpf_east_text_detection:${TAG}
     build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/python/EastTextDetection
     deploy:
@@ -146,49 +139,54 @@ services:
     build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/python/GeminiDetection
 
   fasttext-language-detection:
-    <<: *detection-component-base
+    <<: *component-base
     image: ${REGISTRY}openmpf_fasttext_language_detection:${TAG}
     build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/python/FastTextLanguageDetection
 
   keyword-tagging:
-    <<: *detection-component-base
+    <<: *component-base
     image: ${REGISTRY}openmpf_keyword_tagging:${TAG}
     build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/cpp/KeywordTagging
 
   llama-video-summarization:
-    <<: *detection-component-base
+    <<: *component-base
     image: ${REGISTRY}openmpf_llama_video_summarization:${TAG}
     build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/python/LlamaVideoSummarization
 
   mog-motion-detection:
-    <<: *detection-component-base
+    <<: *component-base
     image: ${REGISTRY}openmpf_mog_motion_detection:${TAG}
     build:
       context: ${OPENMPF_PROJECTS_PATH}/openmpf-contrib-components/cpp/motion
       dockerfile: MogMotionDetection/Dockerfile
 
+  nllb-translation:
+    <<: *component-base
+    image: ${REGISTRY}openmpf_nllb_translation:${TAG}
+    build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/python/NllbTranslation
+
   nlp-text-correction:
-    <<: *detection-component-base
+    <<: *component-base
     image: ${REGISTRY}openmpf_nlp_text_correction:${TAG}
     build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/python/NlpTextCorrection
 
   oalpr-license-plate-text-detection:
-    <<: *detection-component-base
+    <<: *component-base
     image: ${REGISTRY}openmpf_oalpr_license_plate_text_detection:${TAG}
     build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/cpp/OalprLicensePlateTextDetection
 
   ocv-dnn-detection:
-    <<: *detection-component-base
+    <<: *component-base
     image: ${REGISTRY}openmpf_ocv_dnn_detection:${TAG}
     build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/cpp/OcvDnnDetection
 
   ocv-face-detection:
-    <<: *detection-component-base
+    <<: *component-base
     image: ${REGISTRY}openmpf_ocv_face_detection:${TAG}
     build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/cpp/OcvFaceDetection
 
   ocv-yolo-detection:
-    <<: *detection-component-base
+    <<: *component-base
     image: ${REGISTRY}openmpf_ocv_yolo_detection:${TAG}
     build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/cpp/OcvYoloDetection
 
@@ -229,12 +227,12 @@ services:
     build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/python/OrToolsSubjectComponent
 
   scene-change-detection:
-    <<: *detection-component-base
+    <<: *component-base
     image: ${REGISTRY}openmpf_scene_change_detection:${TAG}
     build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/cpp/SceneChangeDetection
 
   sphinx-speech-detection:
-    <<: *detection-component-base
+    <<: *component-base
     image: ${REGISTRY}openmpf_sphinx_speech_detection:${TAG}
     build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/java/SphinxSpeechDetection
     environment:
@@ -242,34 +240,34 @@ services:
       JAVA_TOOL_OPTIONS: -Xmx1g  # limit Java heap size to 1GB
 
   subsense-motion-detection:
-    <<: *detection-component-base
+    <<: *component-base
     image: ${REGISTRY}openmpf_subsense_motion_detection:${TAG}
     build:
       context: ${OPENMPF_PROJECTS_PATH}/openmpf-contrib-components/cpp/motion
       dockerfile: SubsenseMotionDetection/Dockerfile
 
   tesseract-ocr-text-detection:
-    <<: *detection-component-base
+    <<: *component-base
     image: ${REGISTRY}openmpf_tesseract_ocr_text_detection:${TAG}
     build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/cpp/TesseractOCRTextDetection
 
   tika-image-detection:
-    <<: *detection-component-base
+    <<: *component-base
     image: ${REGISTRY}openmpf_tika_image_detection:${TAG}
     build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/java/TikaImageDetection
 
   tika-text-detection:
-    <<: *detection-component-base
+    <<: *component-base
     image: ${REGISTRY}openmpf_tika_text_detection:${TAG}
     build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/java/TikaTextDetection
 
   transformer-tagging:
-    <<: *detection-component-base
+    <<: *component-base
     image: ${REGISTRY}openmpf_transformer_tagging:${TAG}
     build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/python/TransformerTagging
 
   trtis-detection:
-    <<: *detection-component-base
+    <<: *component-base
     image: ${REGISTRY}openmpf_trtis_detection:${TAG}
     build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/cpp/TrtisDetection
     environment:
@@ -281,7 +279,7 @@ services:
       - trtis-detection-server
 
   trtis-detection-server:
-    <<: *detection-component-base
+    <<: *component-base
     image: ${REGISTRY}openmpf_trtis_detection_server:${TAG}
     build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/cpp/TrtisDetection/trtserver_dockerfile
     deploy:
@@ -299,7 +297,7 @@ services:
     command: [trtserver,--model-store=/models]
 
   whisper-speech-detection:
-    <<: *detection-component-base
+    <<: *component-base
     image: ${REGISTRY}openmpf_whisper_speech_detection:${TAG}
     build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/python/WhisperSpeechDetection
 

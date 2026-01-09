@@ -30,8 +30,8 @@ FROM ubuntu:20.04 AS apt_install
 
 SHELL ["/bin/bash", "-o", "errexit", "-o", "pipefail", "-c"]
 
-ENV LANG C.UTF-8
-ENV LC_ALL C.UTF-8
+ENV LANG=C.UTF-8
+ENV LC_ALL=C.UTF-8
 
 # Disable Python bytecode generation because it was causing build cache issues. It may slightly
 # increase start up time, but once everything is imported, there is no difference in performance.
@@ -47,16 +47,17 @@ RUN --mount=type=tmpfs,target=/var/cache/apt \
     apt-get upgrade -y; \
     DEBIAN_FRONTEND=noninteractive apt-get install --no-install-recommends -y \
         wget ca-certificates gnupg2 unzip xz-utils cmake make g++ libgtest-dev mediainfo libssl-dev \
-        liblog4cxx-dev libboost-dev file openjdk-17-jdk-headless \
-        python3.8-dev python3-pip libgl1-mesa-glx  \
+        liblog4cxx-dev libboost-dev file openjdk-17-jdk-headless libgl1-mesa-glx \
         # libheif build deps
         libde265-dev git nasm ninja-build pkg-config \
-        # OpenCV build deps \
+        # OpenCV build deps
         libopenblas-dev liblapacke-dev libavcodec-dev libavcodec-extra libavformat-dev  \
-        libavutil-dev libswscale-dev libavresample-dev libharfbuzz-dev libfreetype-dev; \
+        libavutil-dev libswscale-dev libavresample-dev libharfbuzz-dev libfreetype-dev \
+        # Python build deps
+        libsqlite3-dev libreadline-dev libbz2-dev liblzma-dev; \
     # Can't set up cuda repo at the beginning because it requires wget ca-certificates gnupg2
     wget -O- https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/3bf863cc.pub \
-            | apt-key add -; \
+        | apt-key add -; \
     echo "deb https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64 /" \
         > /etc/apt/sources.list.d/cuda.list; \
     apt-get update; \
@@ -101,6 +102,28 @@ RUN --mount=type=tmpfs,target=/tmp \
         ..; \
     make --jobs "$(nproc)" install/strip; \
     ln --symbolic '/opt/opencv-4.9.0/include/opencv4/opencv2' /usr/local/include/opencv2;
+
+
+FROM apt_install AS python_install
+
+RUN --mount=type=tmpfs,target=/tmp <<eot
+    mkdir /tmp/python
+    cd /tmp/python
+    wget -O- 'https://www.python.org/ftp/python/3.12.12/Python-3.12.12.tar.xz' | tar --extract --xz
+    cd Python-3.12.12
+    ./configure --enable-optimizations --with-lto --enable-shared --disable-test-modules --without-static-libpython
+    make --jobs "$(nproc)"
+    make install
+    ln --symbolic /usr/local/lib/libpython3.12.so.1.0 /lib/x86_64-linux-gnu/libpython3.12.so.1.0
+
+    # find command taken from official Python Dockerfile
+    find /usr/local/lib/python3.12 -depth \
+		\( \
+			\( -type d -a \( -name test -o -name tests -o -name idle_test \) \) \
+			-o \( -type f -a \( -name '*.pyc' -o -name '*.pyo' -o -name 'libpython*.a' \) \) \
+		\) -exec rm -rf '{}' + ;
+eot
+
 
 
 FROM apt_install
@@ -168,16 +191,20 @@ RUN wget -O- 'https://archive.apache.org/dist/maven/maven-3/3.3.3/binaries/apach
 RUN --mount=type=tmpfs,target=/tmp \
     mkdir /tmp/libheif; \
     cd /tmp/libheif; \
-    wget -O- https://github.com/strukturag/libheif/archive/refs/tags/v1.19.8.tar.gz \
+    wget -O- https://github.com/strukturag/libheif/archive/refs/tags/v1.20.2.tar.gz \
         | tar --extract --gzip; \
-    cd libheif-1.19.8/third-party; \
+    cd libheif-1.20.2/third-party; \
     bash aom.cmd; \
     cd ..; \
     mkdir build; \
     cd build; \
-    PKG_CONFIG_PATH="/tmp/libheif/libheif-1.19.8/third-party/aom/dist/lib/pkgconfig" \
+    PKG_CONFIG_PATH="/tmp/libheif/libheif-1.20.2/third-party/aom/dist/lib/pkgconfig" \
         cmake3 -DCMAKE_INSTALL_PREFIX=/usr -DWITH_EXAMPLES=false -DWITH_AOM_DECODER=true -DENABLE_PLUGIN_LOADING=false -DCMAKE_BUILD_TYPE=Release ..; \
-    make --jobs "$(nproc)" install/strip;
+    make --jobs "$(nproc)" install/strip; \
+    cp heifio/libheifio.a /usr/lib64; \
+    cd ../heifio; \
+    mkdir -p /usr/include/libheif/heifio; \
+    cp *.h /usr/include/libheif/heifio;
 
 
 COPY --from=ocv_install /opt/opencv-4.9.0 /opt/opencv-4.9.0
@@ -185,9 +212,30 @@ COPY --from=ocv_install /opt/opencv-4.9.0 /opt/opencv-4.9.0
 RUN ln --symbolic '/opt/opencv-4.9.0/include/opencv4/opencv2' /usr/local/include/opencv2;
 
 
+COPY --from=python_install \
+    /usr/local/bin/python3.12 /usr/local/bin/python3.12-config \
+    /usr/local/bin/pip3.12 /usr/local/bin/pip3 \
+    /usr/local/bin/
+
+COPY --from=python_install /usr/local/lib/python3.12 /usr/local/lib/python3.12
+
+COPY --from=python_install /usr/local/lib/libpython3.12.so.1.0 /usr/local/lib/
+
+# The Python headers are needed to build Python libraries with C extensions.
+COPY --from=python_install /usr/local/include/python3.12 /usr/local/include/python3.12
+
+RUN <<eot
+    cd /usr/local/bin
+    ln --symbolic python3.12 python3
+    ln --symbolic python3.12-config python3-config
+    cd /usr/local/lib
+    ln --symbolic libpython3.12.so.1.0 libpython3.12.so
+    ln --symbolic /usr/local/lib/libpython3.12.so.1.0 /lib/x86_64-linux-gnu/libpython3.12.so.1.0
+eot
+
 COPY . /home/mpf/openmpf-projects
 
-ENV MPF_HOME /home/mpf/openmpf-projects/openmpf/trunk/install
+ENV MPF_HOME=/home/mpf/openmpf-projects/openmpf/trunk/install
 
 WORKDIR /home/mpf/openmpf-projects/openmpf
 

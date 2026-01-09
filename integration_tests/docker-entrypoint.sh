@@ -37,10 +37,6 @@ fi
 # Remove old test reports since /test-reports gets bind mounted in compose file.
 rm --recursive --force /test-reports/*
 
-
-python3 -u /scripts/descriptor-receiver.py &
-descriptor_receiver_pid=$!
-
 cd /home/mpf/openmpf-projects/openmpf
 
 # Move test sample data into a location that's accessible by all of the nodes.
@@ -93,8 +89,6 @@ mvn verify -Pjenkins \
     $MVN_OPTIONS $EXTRA_MVN_OPTIONS # Intentionally unquoted to allow variables to hold multiple flags.
 
 maven_exit_code=$?
-
-kill "$descriptor_receiver_pid"
 
 cd ../..
 mkdir --parents /test-reports/surefire-reports

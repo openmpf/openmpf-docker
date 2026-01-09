@@ -28,22 +28,23 @@
 
 ARG BUILD_REGISTRY
 ARG BUILD_TAG=latest
-FROM ${BUILD_REGISTRY}openmpf_build:${BUILD_TAG} as openmpf_build
+FROM ${BUILD_REGISTRY}openmpf_build:${BUILD_TAG} AS openmpf_build
 
 
 FROM ubuntu:20.04
 
 SHELL ["/bin/bash", "-o", "errexit", "-o", "pipefail", "-c"]
 
-ENV LANG C.UTF-8
-ENV LC_ALL C.UTF-8
+ENV LANG=C.UTF-8
+ENV LC_ALL=C.UTF-8
 
 RUN --mount=type=tmpfs,target=/var/cache/apt \
     --mount=type=tmpfs,target=/var/lib/apt/lists  \
     --mount=type=tmpfs,target=/tmp \
     apt-get update; \
     apt-get upgrade -y; \
-    apt-get install --no-install-recommends -y openjdk-17-jdk-headless wget ca-certificates;
+    DEBIAN_FRONTEND=noninteractive apt-get install --no-install-recommends -y \
+        openjdk-17-jdk-headless wget ca-certificates;
 
 COPY --from=openmpf_build /usr/local/bin/ffmpeg /usr/local/bin/ffprobe /usr/local/bin/
 
@@ -87,7 +88,7 @@ COPY --from=openmpf_build /home/mpf/openmpf-projects/openmpf-java-component-sdk/
 # We don't use a cache mount here since the component developer will likely need most of the libraries downloaded.
 RUN mvn install
 
-ENV SRC_DIR /home/mpf/component_src
+ENV SRC_DIR=/home/mpf/component_src
 
 WORKDIR $SRC_DIR
 
