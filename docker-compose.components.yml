@@ -134,7 +134,7 @@ services:
           cpus: "2.0"
   
   gemini-detection:
-    <<: *detection-component-base
+    <<: *component-base
     image: ${REGISTRY}openmpf_gemini_detection:${TAG}
     build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/python/GeminiDetection
 
