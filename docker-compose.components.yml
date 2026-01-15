@@ -239,7 +239,6 @@ services:
       #       - driver: nvidia
       #         device_ids: ['0']
       #         capabilities: [gpu]
-    command: "Qwen/Qwen3-30B-A3B-Instruct-2507-FP8 --max-model-len 120000 --host 0.0.0.0 --port 11434"
     tty: true
     ipc: host
     # volumes:
