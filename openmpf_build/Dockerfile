@@ -144,16 +144,6 @@ RUN wget -O- https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmp
             '*'/bin/{ffmpeg,ffprobe}
 
 
-# Markup uses the emoji font for icons.
-RUN --mount=type=tmpfs,target=/tmp <<eot
-    mkdir /tmp/noto
-    cd /tmp/noto
-    wget https://noto-website-2.storage.googleapis.com/pkgs/NotoEmoji-unhinted.zip
-    unzip NotoEmoji-unhinted.zip
-    mkdir --parents /usr/share/fonts/google-noto-emoji
-    cp NotoEmoji-Regular.ttf /usr/share/fonts/google-noto-emoji
-eot
-
 
 RUN --mount=type=tmpfs,target=/tmp <<eot
     mkdir /tmp/pngdefry
@@ -196,6 +186,11 @@ COPY --from=ocv_install /opt/opencv-4.13.0 /opt/opencv-4.13.0
 RUN ln --symbolic /opt/opencv-4.13.0/include/opencv4/opencv2 /usr/local/include/opencv2
 
 COPY . /home/mpf/openmpf-projects
+
+# Markup uses the emoji font for icons.
+RUN mkdir --parents /usr/share/fonts/google-noto-emoji; \
+    cp /home/mpf/openmpf-projects/openmpf-docker/openmpf_build/noto-emoji-font/NotoEmoji-Regular.ttf \
+        /usr/share/fonts/google-noto-emoji/
 
 ENV MPF_HOME=/home/mpf/openmpf-projects/openmpf/trunk/install
 
