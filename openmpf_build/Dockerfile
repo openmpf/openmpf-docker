@@ -165,13 +165,7 @@ RUN wget -O- 'https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-sta
             'ffmpeg-*-amd64-static/ffmpeg' 'ffmpeg-*-amd64-static/ffprobe';
 
 # Markup uses the emoji font for icons.
-RUN --mount=type=tmpfs,target=/tmp \
-    mkdir /tmp/noto; \
-    cd /tmp/noto; \
-    wget https://noto-website-2.storage.googleapis.com/pkgs/NotoEmoji-unhinted.zip; \
-    unzip NotoEmoji-unhinted.zip; \
-    mkdir --parents /usr/share/fonts/google-noto-emoji; \
-    cp NotoEmoji-Regular.ttf /usr/share/fonts/google-noto-emoji;
+COPY noto-emoji-font/NotoEmoji-Regular.ttf /usr/share/fonts/google-noto-emoji/
 
 
 RUN --mount=type=tmpfs,target=/tmp \
