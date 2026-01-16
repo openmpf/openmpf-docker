@@ -164,9 +164,6 @@ RUN wget -O- 'https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-sta
         | tar --extract --xz --directory /usr/local/bin --strip-components 1 --wildcards \
             'ffmpeg-*-amd64-static/ffmpeg' 'ffmpeg-*-amd64-static/ffprobe';
 
-# Markup uses the emoji font for icons.
-COPY noto-emoji-font/NotoEmoji-Regular.ttf /usr/share/fonts/google-noto-emoji/
-
 
 RUN --mount=type=tmpfs,target=/tmp \
     mkdir /tmp/pngdefry; \
@@ -228,6 +225,11 @@ RUN <<eot
 eot
 
 COPY . /home/mpf/openmpf-projects
+
+# Markup uses the emoji font for icons.
+RUN cp /home/mpf/openmpf-projects/openmpf-docker/openmpf_build/noto-emoji-font/NotoEmoji-Regular.ttf \
+    /usr/share/fonts/google-noto-emoji/
+
 
 ENV MPF_HOME=/home/mpf/openmpf-projects/openmpf/trunk/install
 
