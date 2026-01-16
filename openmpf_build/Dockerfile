@@ -227,9 +227,9 @@ eot
 COPY . /home/mpf/openmpf-projects
 
 # Markup uses the emoji font for icons.
-RUN cp /home/mpf/openmpf-projects/openmpf-docker/openmpf_build/noto-emoji-font/NotoEmoji-Regular.ttf \
-    /usr/share/fonts/google-noto-emoji/
-
+RUN mkdir --parents /usr/share/fonts/google-noto-emoji; \
+    cp /home/mpf/openmpf-projects/openmpf-docker/openmpf_build/noto-emoji-font/NotoEmoji-Regular.ttf \
+        /usr/share/fonts/google-noto-emoji/
 
 ENV MPF_HOME=/home/mpf/openmpf-projects/openmpf/trunk/install
 
