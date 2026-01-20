@@ -551,7 +551,9 @@ try {
                                 projectVersion: serviceVersion,
                                 synchronous: false,
                                 dependencyTrackApiKey: dependencyTrackCredId,
-                                projectProperties(tags: ['openmpf'])
+                                projectProperties: [
+                                    tags: ['openmpf']
+                                ]
                             )
                         }
                     }
