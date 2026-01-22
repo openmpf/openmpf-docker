@@ -225,8 +225,7 @@ services:
     image: ${REGISTRY}openmpf_qwen_speech_summarization:${TAG}
     build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/python/QwenSpeechSummarization
 
-  # TODO: Rename this to qwen-speech-summarization-server
-  vllm:
+  qwen-speech-summarization-server:
     image: ${REGISTRY}openmpf_qwen_speech_summarization_server:${TAG}
     build:
       context: ${OPENMPF_PROJECTS_PATH}/openmpf-components/python/QwenSpeechSummarization
@@ -239,10 +238,6 @@ services:
       #       - driver: nvidia
       #         device_ids: ['0']
       #         capabilities: [gpu]
-    tty: true
-    ipc: host
-    # volumes:
-    #  - ./.cache/huggingface:/root/.cache/huggingface
 
   scene-change-detection:
     <<: *component-base
