@@ -114,7 +114,6 @@ services:
       # Optionally, limit the GPUs exposed to the server.
       # At least one GPU is required to run the YOLO TensorRT engine.
       - NVIDIA_VISIBLE_DEVICES=all
-
     command: [tritonserver,
               --model-repository=/models,
               --strict-model-config=false,
@@ -220,6 +219,25 @@ services:
     <<: *component-base
     image: ${REGISTRY}openmpf_ortools_subject_component:${TAG}
     build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/python/OrToolsSubjectComponent
+
+  qwen-speech-summarization:
+    <<: *component-base
+    image: ${REGISTRY}openmpf_qwen_speech_summarization:${TAG}
+    build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/python/QwenSpeechSummarization
+
+  qwen-speech-summarization-server:
+    image: ${REGISTRY}openmpf_qwen_speech_summarization_server:${TAG}
+    build:
+      context: ${OPENMPF_PROJECTS_PATH}/openmpf-components/python/QwenSpeechSummarization
+      dockerfile: Dockerfile.vllm
+    deploy:
+      mode: global
+      # resources:
+      #   reservations:
+      #     devices:
+      #       - driver: nvidia
+      #         device_ids: ['0']
+      #         capabilities: [gpu]
 
   scene-change-detection:
     <<: *component-base
