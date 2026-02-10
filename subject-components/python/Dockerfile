@@ -70,7 +70,6 @@ RUN <<eot
     python3 -m venv "$COMPONENT_VIRTUALENV"
     pip config --site set global.no-cache-dir true
     pip install --upgrade pip
-    pip install --upgrade setuptools
 eot
 
 RUN --mount=from=openmpf_build,source=/home/mpf/openmpf-projects/openmpf-python-component-sdk/detection,target=/tmp/python,rw \
