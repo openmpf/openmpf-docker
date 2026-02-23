@@ -41,6 +41,7 @@ def mvnTestOptions = env.mvn_test_options ?: ''
 def dockerRegistryHost = env.docker_registry_host
 def dockerRegistryPort = env.docker_registry_port
 def dockerRegistryPath = env.docker_registry_path ?: "/openmpf"
+def dockerRegistryCred = env.openmpf_docker_registry_cred_id
 def pushRuntimeImages = env.push_runtime_images?.toBoolean() ?: false
 
 def pollReposAndEndBuild = env.poll_repos_and_end_build?.toBoolean() ?: false
@@ -390,13 +391,14 @@ try {
             }
 
             runtimeComposeFiles = "docker-compose.core.yml:$runtimeComponentComposeFile:docker-compose.elk.yml"
+            withCredentials([usernamePassword(credentialsId:'dockerRegistryCred',usernameVariable:'ARTIFACTORY_USER',passwordVariable:'ARITFACTORY_TOKEN')]) {
+                withEnv(["TAG=$inProgressTag", "COMPOSE_FILE=$runtimeComposeFiles, ARITFACTORY_USER=$ARTIFACTORY_USER, ARTIFACTORY_TOKEN=$ARTIFACTORY_TOKEN"]) {
+                    sh "docker compose build $commonBuildArgs --build-arg RUN_TESTS=true --parallel"
 
-            withEnv(["TAG=$inProgressTag", "COMPOSE_FILE=$runtimeComposeFiles"]) {
-                sh "docker compose build $commonBuildArgs --build-arg RUN_TESTS=true --parallel"
-
-                def composeYaml = readYaml(text: shOutput('docker compose config'))
-                addVcsRefLabels(composeYaml, openmpfRepo, openmpfDockerRepo)
-                addUserDefinedLabels(composeYaml, customComponentServices, imageUrl, imageVersion, customLabelKey)
+                    def composeYaml = readYaml(text: shOutput('docker compose config'))
+                    addVcsRefLabels(composeYaml, openmpfRepo, openmpfDockerRepo)
+                    addUserDefinedLabels(composeYaml, customComponentServices, imageUrl, imageVersion, customLabelKey)
+                }
             }
         }
 
