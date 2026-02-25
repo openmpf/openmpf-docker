@@ -199,6 +199,7 @@ def handle_sig_term(executor_proc: subprocess.Popen[str]):
     try:
         executor_proc.wait(1)
     except subprocess.TimeoutExpired:
+        print("Executor did not terminate gracefully, killing.")
         executor_proc.kill()
 
 
@@ -208,6 +209,7 @@ def handle_sig_int(executor_proc: subprocess.Popen[str]):
     try:
         executor_proc.wait(1)
     except subprocess.TimeoutExpired:
+        print("Executor did not terminate gracefully, killing.")
         handle_sig_term(executor_proc)
 
 
