@@ -41,7 +41,6 @@ def mvnTestOptions = env.mvn_test_options ?: ''
 def dockerRegistryHost = env.docker_registry_host
 def dockerRegistryPort = env.docker_registry_port
 def dockerRegistryPath = env.docker_registry_path ?: "/openmpf"
-def packageRegistryCred = env.package_registry_cred
 def pushRuntimeImages = env.push_runtime_images?.toBoolean() ?: false
 
 def pollReposAndEndBuild = env.poll_repos_and_end_build?.toBoolean() ?: false
@@ -393,7 +392,7 @@ try {
             runtimeComposeFiles = "docker-compose.core.yml:$runtimeComponentComposeFile:docker-compose.elk.yml"
             withCredentials([usernamePassword(credentialsId:'packageRegistryCred',usernameVariable:'ARTIFACTORY_USER',passwordVariable:'ARTIFACTORY_TOKEN')]) {
                 withEnv(["TAG=$inProgressTag", "COMPOSE_FILE=$runtimeComposeFiles", "ARTIFACTORY_USER=$ARTIFACTORY_USER", "ARTIFACTORY_TOKEN=$ARTIFACTORY_TOKEN"]) {
-                    sh "docker compose build --secret id=artifactory-user,env=ARTIFACTORY_USER --secret id=artifactory-token,env=ARTIFACTORY_TOKEN $commonBuildArgs --build-arg RUN_TESTS=true --parallel"
+                    sh "docker compose build $commonBuildArgs --build-arg RUN_TESTS=true --parallel"
 
                     def composeYaml = readYaml(text: shOutput('docker compose config'))
                     addVcsRefLabels(composeYaml, openmpfRepo, openmpfDockerRepo)
