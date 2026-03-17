@@ -390,13 +390,14 @@ try {
             }
 
             runtimeComposeFiles = "docker-compose.core.yml:$runtimeComponentComposeFile:docker-compose.elk.yml"
+            withCredentials([usernamePassword(credentialsId:'packageRegistryCred',usernameVariable:'ARTIFACTORY_USER',passwordVariable:'ARTIFACTORY_TOKEN')]) {
+                withEnv(["TAG=$inProgressTag", "COMPOSE_FILE=$runtimeComposeFiles"]) {
+                    sh "docker compose build $commonBuildArgs --build-arg RUN_TESTS=true --parallel"
 
-            withEnv(["TAG=$inProgressTag", "COMPOSE_FILE=$runtimeComposeFiles"]) {
-                sh "docker compose build $commonBuildArgs --build-arg RUN_TESTS=true --parallel"
-
-                def composeYaml = readYaml(text: shOutput('docker compose config'))
-                addVcsRefLabels(composeYaml, openmpfRepo, openmpfDockerRepo)
-                addUserDefinedLabels(composeYaml, customComponentServices, imageUrl, imageVersion, customLabelKey)
+                    def composeYaml = readYaml(text: shOutput('docker compose config'))
+                    addVcsRefLabels(composeYaml, openmpfRepo, openmpfDockerRepo)
+                    addUserDefinedLabels(composeYaml, customComponentServices, imageUrl, imageVersion, customLabelKey)
+                }
             }
         }
 
