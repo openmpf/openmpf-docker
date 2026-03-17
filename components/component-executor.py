@@ -166,10 +166,7 @@ def start_executor(
         stdin=subprocess.PIPE,
         text=True)
 
-    # Handle ctrl-c
-    signal.signal(signal.SIGINT, lambda sig, frame: handle_sig_int(executor_proc))
-    # Handle docker stop
-    signal.signal(signal.SIGTERM, lambda sig, frame: handle_sig_term(executor_proc))
+    add_signal_handlers(executor_proc)
     return executor_proc
 
 
@@ -193,22 +190,23 @@ def find_java_executor_jar(descriptor: Descriptor, mpf_home: Path) -> Path:
     return expanded_executor_path
 
 
-def handle_sig_term(executor_proc: subprocess.Popen[str]):
-    print(f'Sending SIGTERM({signal.SIGTERM}) to component executor.')
-    executor_proc.terminate()
-    try:
-        executor_proc.wait(1)
-    except subprocess.TimeoutExpired:
-        executor_proc.kill()
+def add_signal_handlers(executor_proc: subprocess.Popen[str]):
+    previously_received_signal = False
 
+    def handler(signal_num: int, __):
+        nonlocal previously_received_signal
+        if previously_received_signal:
+            sys.exit(128 + signal_num)
+        else:
+            previously_received_signal = True
+            sig_name = signal.Signals(signal_num).name
+            print(f'Sending {sig_name}({signal_num}) to component executor.')
+            executor_proc.send_signal(signal_num)
 
-def handle_sig_int(executor_proc: subprocess.Popen[str]):
-    print(f'Sending SIGINT({signal.SIGINT}) to component executor.')
-    executor_proc.send_signal(signal.SIGINT)
-    try:
-        executor_proc.wait(1)
-    except subprocess.TimeoutExpired:
-        handle_sig_term(executor_proc)
+    # Handle ctrl-c
+    signal.signal(signal.SIGINT, handler)
+    # Handle docker stop
+    signal.signal(signal.SIGTERM, handler)
 
 
 def tail_log_if_needed(log_dir: Path, component_log_name: Optional[str], executor_pid: int
