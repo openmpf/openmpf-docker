@@ -35,8 +35,9 @@ FROM ubuntu:20.04 AS common
 
 SHELL ["/bin/bash", "-o", "errexit", "-o", "pipefail", "-c"]
 
-ENV LANG C.UTF-8
-ENV LC_ALL C.UTF-8
+ENV LANG=C.UTF-8
+ENV LC_ALL=C.UTF-8
+
 
 RUN --mount=type=tmpfs,target=/var/cache/apt \
     --mount=type=tmpfs,target=/var/lib/apt/lists  \
@@ -44,14 +45,30 @@ RUN --mount=type=tmpfs,target=/var/cache/apt \
     apt-get update; \
     apt-get upgrade -y; \
     apt-get install --no-install-recommends -y \
-        openjdk-17-jre-headless libtcnative-1 file mediainfo wget ca-certificates \
-        python3.8 python3-pip;
+        openjdk-17-jre-headless libtcnative-1 file wget ca-certificates;
 
 
 RUN wget --directory-prefix /scripts \
         https://raw.githubusercontent.com/vishnubob/wait-for-it/master/wait-for-it.sh; \
     chmod +x /scripts/wait-for-it.sh;
 
+COPY --from=openmpf_build \
+    /usr/local/bin/python3.12 /usr/local/bin/python3.12-config \
+    /usr/local/bin/pip3.12 /usr/local/bin/pip3 \
+    /usr/local/bin/
+
+COPY --from=openmpf_build /usr/local/lib/python3.12 /usr/local/lib/python3.12
+
+COPY --from=openmpf_build /usr/local/lib/libpython3.12.so.1.0 /usr/local/lib/
+
+RUN <<eot
+    cd /usr/local/bin
+    ln --symbolic python3.12 python3
+    ln --symbolic python3.12-config python3-config
+    cd /usr/local/lib
+    ln --symbolic libpython3.12.so.1.0 libpython3.12.so
+    ln --symbolic /usr/local/lib/libpython3.12.so.1.0 /lib/x86_64-linux-gnu/libpython3.12.so.1.0
+eot
 
 COPY --from=openmpf_build /usr/local/bin/ffmpeg /usr/local/bin/ffprobe /usr/local/bin/
 
@@ -65,7 +82,7 @@ RUN mkdir --parents /home/mpf/mpf-scripts-install; \
 
 COPY --from=openmpf_build /scripts/* /scripts/
 
-ENV MPF_HOME /opt/mpf
+ENV MPF_HOME=/opt/mpf
 
 ENV LD_LIBRARY_PATH=/usr/lib64:$MPF_HOME/workflow-manager/WEB-INF/jni-libs
 
@@ -80,9 +97,10 @@ RUN <<eot
     mkdir jni-libs
     mv tmp-jni-libs/libmpfopencvjni.so jni-libs/
     /scripts/copy_libs.sh jni-libs/libmpfopencvjni.so jni-libs tmp-jni-libs
+    mv tmp-jni-libs/libmpfheifjni.so jni-libs/
+    /scripts/copy_libs.sh jni-libs/libmpfheifjni.so jni-libs tmp-jni-libs
     rm -r tmp-jni-libs
 eot
-
 
 FROM common
 

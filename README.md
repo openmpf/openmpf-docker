@@ -108,6 +108,25 @@ Clone the [openmpf-projects repository](https://github.com/openmpf/openmpf-proje
 If you plan to develop and integrate your own component into OpenMPF, then please refer to
 the [Contribution Guide](CONTRIBUTING.md).
 
+
+#### (Optional) Create the Base Images Using Bake
+
+[Bake](https://docs.docker.com/build/bake/) is an experimental feature available in recent Docker
+releases. Since this is an experimental feature, you may run in to issues trying to use it. In
+that case, skip this step and follow the instructions in the
+[Create the OpenMPF Build Image](#docker-build-command) and
+[Build the OpenMPF Component Executor Docker Images](#component-executors-build-commands)
+sections.
+
+Run the command below from within the `openmpf-projects/openmpf-docker` directory to build all of
+the OpenMPF base images.
+
+- `docker buildx bake --allow=fs.read=.. -f docker-bake.hcl`
+
+If you were able to run the command successfully, skip to the
+[Generate docker-compose.yml](#generate-compose-file) section.
+
+
 #### Create the OpenMPF Build Image
 
 <span id="docker-build-command"></span>
@@ -148,6 +167,9 @@ Run the following command to create the OpenMPF Python component executor image:
 Run the following command to create the OpenMPF Python component executor single stage build(SSB) image:
 
 - `DOCKER_BUILDKIT=1 docker build . -f python/Dockerfile --target ssb -t openmpf_python_executor_ssb`
+
+
+<span id="generate-compose-file"></span>
 
 #### Generate docker-compose.yml
 

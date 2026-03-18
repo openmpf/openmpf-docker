@@ -73,19 +73,19 @@ base images then you should omit the `openmpf/` prefix on the `FROM` line.
 ```dockerfile
 FROM openmpf/openmpf_python_executor_ssb:latest as build_component
 
-# If your component has external dependencies, you would add the commands necessary to download 
-# or install the dependencies here. Adding the dependencies prior the copying in your source code 
-# allows you to take advantage of the Docker build cache to avoid re-installing the dependencies 
+# If your component has external dependencies, you would add the commands necessary to download
+# or install the dependencies here. Adding the dependencies prior the copying in your source code
+# allows you to take advantage of the Docker build cache to avoid re-installing the dependencies
 # every time your source code changes.
 # e.g. RUN pip3 install --no-cache-dir 'opencv-python>=4.4.0' 'tensorflow>=2.1.0'
 
-# `--mount=target=.,readwrite` will bind-mount the root of the build context on to the current 
+# `--mount=target=.,readwrite` will bind-mount the root of the build context on to the current
 # working directory, which is set to $SRC_DIR in the base image. Written data will be discarded.
-# The [install-component.sh](./install-component.sh) script will install your component in to your 
-# component's virtualenv (located at $COMPONENT_VIRTUALENV). It is provided by the 
+# The [install-component.sh](./install-component.sh) script will install your component in to your
+# component's virtualenv (located at $COMPONENT_VIRTUALENV). It is provided by the
 # openmpf_python_executor_ssb base image.
-# You also may want run unit tests in this step. 
-# The [EastTextDetection component's Dockerfile](https://github.com/openmpf/openmpf-components/blob/master/python/EastTextDetection/Dockerfile) 
+# You also may want run unit tests in this step.
+# The [EastTextDetection component's Dockerfile](https://github.com/openmpf/openmpf-components/blob/master/python/EastTextDetection/Dockerfile)
 # shows one way of setting up unit tests.
 RUN --mount=target=.,readwrite install-component.sh
 ```
@@ -99,9 +99,9 @@ images then you should omit the `openmpf/` prefix on the `FROM` lines.
 # In first stage of the build we extend the openmpf_python_component_build base image.
 FROM openmpf/openmpf_python_component_build:latest as build_component
 
-# If your component has external dependencies, you would add the commands necessary to download 
-# or build the dependencies here. Adding the dependencies prior the copying in your source code 
-# allows you to take advantage of the Docker build cache to avoid re-installing the dependencies 
+# If your component has external dependencies, you would add the commands necessary to download
+# or build the dependencies here. Adding the dependencies prior the copying in your source code
+# allows you to take advantage of the Docker build cache to avoid re-installing the dependencies
 # every time your source code changes.
 # e.g. RUN apt-get update && apt-get install -y gcc && rm -rf /var/lib/apt/lists/*
 # e.g. RUN pip3 install --no-cache-dir 'opencv-python>=4.4.0' 'tensorflow>=2.1.0'
@@ -110,27 +110,27 @@ FROM openmpf/openmpf_python_component_build:latest as build_component
 COPY . .
 
 # Install your component in to your component's virtualenv (located at $COMPONENT_VIRTUALENV).
-# The [install-component.sh](../python_component_build/scripts/install-component.sh) 
+# The [install-component.sh](../python_component_build/scripts/install-component.sh)
 # script is provided by the openmpf_python_component_build base image.
 RUN install-component.sh
 
-# You optionally may want to run unit tests here, or wherever is appropriate for your Dockerfile. 
-# The [EastTextDetection component's Dockerfile](https://github.com/openmpf/openmpf-components/blob/7145929319ff18c2b5957a3b7f88e4a04fcf3670/python/EastTextDetection/Dockerfile) 
-# shows one way of setting up unit tests, but you can do it in whatever way you see fit. 
+# You optionally may want to run unit tests here, or wherever is appropriate for your Dockerfile.
+# The [EastTextDetection component's Dockerfile](https://github.com/openmpf/openmpf-components/blob/7145929319ff18c2b5957a3b7f88e4a04fcf3670/python/EastTextDetection/Dockerfile)
+# shows one way of setting up unit tests, but you can do it in whatever way you see fit.
 
 
 # In the second stage of the build we extend the openmpf_python_executor base image
 FROM openmpf/openmpf_python_executor:latest
 
 
-# If your component has runtime dependencies that are not pip packages, 
-# you should install them here. Adding the dependencies prior to copying your component's 
+# If your component has runtime dependencies that are not pip packages,
+# you should install them here. Adding the dependencies prior to copying your component's
 # build artifacts allows you to take advantage of the Docker build cache to avoid re-installing
 # the dependencies every time your source code changes.
 
 # Copy your component's virtualenv from the build stage.
-# The install-component.sh script from the build stage installed 
-# your plugin code and its pip dependencies in the 
+# The install-component.sh script from the build stage installed
+# your plugin code and its pip dependencies in the
 # virtualenv located at $COMPONENT_VIRTUALENV.
 COPY --from=build_component $COMPONENT_VIRTUALENV $COMPONENT_VIRTUALENV
 
@@ -156,14 +156,11 @@ For example: `docker build -t MyFaceDetection /path/to/MyFaceDetection`.
 ### Run your component
 
 1. Start OpenMPF
-2. Run the following command replacing `<component_name>` with the value provided in the build step. If your OpenMPF
-   deployment uses non-default credentials the `WFM_USER` and `WFM_PASSWORD` values will need to be modified.
+2. Run the following command replacing `<component_name>` with the value provided in the build step.
 
 ```bash
 docker run \
     --network openmpf_default \
     -v openmpf_shared_data:/opt/mpf/share \
-    -e WFM_USER=admin \
-    -e WFM_PASSWORD=mpfadm \
     <component_name>
 ```

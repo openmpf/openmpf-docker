@@ -37,9 +37,6 @@ REGISTRY=
 
 TAG=latest
 
-WFM_USER=admin
-WFM_PASSWORD=mpfadm
-
 # Set this if using "docker-compose.users.yml".
 USER_PROPERTIES_PATH=
 

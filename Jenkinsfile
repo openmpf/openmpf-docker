@@ -254,7 +254,7 @@ try {
     stage('Build images') {
     timeout(time: buildTimeout, unit: 'HOURS') {
         // Make sure we are using most recent version of external images
-        for (externalImage in ['docker/dockerfile:1.2', 'postgres:alpine',
+        for (externalImage in ['docker/dockerfile:1.2', 'postgres:17-alpine',
                                'redis:alpine', 'ubuntu:20.04']) {
             try {
                 sh "docker pull '$externalImage'"
@@ -390,13 +390,14 @@ try {
             }
 
             runtimeComposeFiles = "docker-compose.core.yml:$runtimeComponentComposeFile:docker-compose.elk.yml"
+            withCredentials([usernamePassword(credentialsId:'packageRegistryCred',usernameVariable:'ARTIFACTORY_USER',passwordVariable:'ARTIFACTORY_TOKEN')]) {
+                withEnv(["TAG=$inProgressTag", "COMPOSE_FILE=$runtimeComposeFiles"]) {
+                    sh "docker compose build $commonBuildArgs --build-arg RUN_TESTS=true --parallel"
 
-            withEnv(["TAG=$inProgressTag", "COMPOSE_FILE=$runtimeComposeFiles"]) {
-                sh "docker compose build $commonBuildArgs --build-arg RUN_TESTS=true --parallel"
-
-                def composeYaml = readYaml(text: shOutput('docker compose config'))
-                addVcsRefLabels(composeYaml, openmpfRepo, openmpfDockerRepo)
-                addUserDefinedLabels(composeYaml, customComponentServices, imageUrl, imageVersion, customLabelKey)
+                    def composeYaml = readYaml(text: shOutput('docker compose config'))
+                    addVcsRefLabels(composeYaml, openmpfRepo, openmpfDockerRepo)
+                    addUserDefinedLabels(composeYaml, customComponentServices, imageUrl, imageVersion, customLabelKey)
+                }
             }
         }
 
@@ -420,14 +421,12 @@ try {
 
             def composeFiles = "docker-compose.integration.test.yml:$runtimeComponentComposeFile"
 
-            def nproc = Math.min((shOutput('nproc') as int), 6)
+            def nproc = Math.min((shOutput('nproc') as int), 2)
             def servicesInSystemTests = ['ocv-face-detection', 'ocv-dnn-detection', 'oalpr-license-plate-text-detection',
                                          'mog-motion-detection', 'subsense-motion-detection',
                                          'east-text-detection', 'tesseract-ocr-text-detection', 'keyword-tagging']
 
             def scaleArgs = servicesInSystemTests.collect({ "--scale '$it=$nproc'" }).join(' ')
-            // Sphinx uses a huge amount of memory so we don't want more than 2 of them.
-            scaleArgs += " --scale sphinx-speech-detection=${Math.min(nproc, 2)} "
 
             withEnv(["TAG=$inProgressTag",
                      "EXTRA_MVN_OPTIONS=$mvnTestOptions",
@@ -537,22 +536,24 @@ try {
                         // upload to dependency track
                         if (dependencyTrackUploadSbom) {
                             def (serviceImageName, serviceVersion) = service.image?.split(':')
-                            if (service.version) {
-                                serviceVersion = service.version
-                            }
-
-                            // if the image is pushed to the registry, use the image tag for dependency track
-                            if (pushRuntimeImages) {
-                                serviceVersion = imageTag
+                            if (imageVersion) {
+                                projectVersion = imageVersion
+                            } else {
+                                if (service.version) {
+                                    projectVersion = service.version
+                                }
                             }
 
                             // publish using the dependency track plugin
                             dependencyTrackPublisher(
                                 artifact: "${openmpfDockerRepo.path}/${serviceName}_sbom.json",
                                 projectName: serviceImageName,
-                                projectVersion: serviceVersion,
+                                projectVersion: projectVersion,
                                 synchronous: false,
-                                dependencyTrackApiKey: dependencyTrackCredId
+                                dependencyTrackApiKey: dependencyTrackCredId,
+                                projectProperties: [
+                                    tags: ['openmpf']
+                                ]
                             )
                         }
                     }
