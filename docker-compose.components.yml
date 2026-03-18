@@ -149,7 +149,7 @@ services:
     build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/python/LlamaVideoSummarization
 
   llava-detection:
-    <<: *detection-component-base
+    <<: *component-base
     image: ${REGISTRY}openmpf_llava_detection:${TAG}
     build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/python/LlavaDetection
 
