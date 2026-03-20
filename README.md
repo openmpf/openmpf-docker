@@ -32,7 +32,7 @@ This repository contains code for the OpenMPF Dockerfiles and related files.
 ## Where Am I?
 
 - [Parent OpenMPF Project](https://github.com/openmpf/openmpf-projects)
-- [OpenMPF Core](../openmpf)
+- [OpenMPF Core](../../openmpf)
 - Components
     * [OpenMPF Standard Components](https://github.com/openmpf/openmpf-components)
     * [OpenMPF Contributed Components](https://github.com/openmpf/openmpf-contrib-components)
