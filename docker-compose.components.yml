@@ -158,19 +158,14 @@ services:
     build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/python/LlavaDetection/ollama_server
     deploy:
       mode: global
-      resources:
-        reservations:
-          devices:
-          - driver: nvidia
-            # Ollama can run with a GPU, but to use CPU mode we need to blank out the 
-            # device ids; otherwise the server will see all of the GPUs on this host
-            # and not use CPU mode.
-            device_ids: ['']
-            capabilities: [gpu]
     ulimits:
       memlock: -1
       stack: 67108864
     environment:
+      # Use "NVIDIA_VISIBLE_DEVICES=" (no value) for CPU mode.
+      # CPU mode is very slow and not recommended.
+      # To use a GPU, specify a GPU id.
+      - NVIDIA_VISIBLE_DEVICES=
       - OLLAMA_KEEP_ALIVE=-1m
       # https://github.com/ollama/ollama/issues/5756#issuecomment-2239896500
       - OLLAMA_NUM_PARALLEL=1
