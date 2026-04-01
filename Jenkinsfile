@@ -538,20 +538,13 @@ try {
 
                         // upload to dependency track
                         if (dependencyTrackUploadSbom) {
-                            def (serviceImageName, serviceVersion) = service.image?.split(':')
-                            if (imageVersion) {
-                                projectVersion = imageVersion
-                            } else {
-                                if (service.version) {
-                                    projectVersion = service.version
-                                }
-                            }
+                            def (serviceImageName, serviceVersion) = service.image.split(':')
 
                             // publish using the dependency track plugin
                             dependencyTrackPublisher(
                                 artifact: "${openmpfDockerRepo.path}/${serviceName}_sbom.json",
                                 projectName: serviceImageName,
-                                projectVersion: projectVersion,
+                                projectVersion: imageVersion ?: serviceVersion,
                                 synchronous: false,
                                 dependencyTrackApiKey: dependencyTrackCredId,
                                 projectProperties: [
