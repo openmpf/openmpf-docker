@@ -59,7 +59,8 @@ def preDockerBuildScriptPath = env.pre_docker_build_script_path
 def runTrivyScans = env.run_trivy_scans?.toBoolean() ?: false
 def runTrivyInsecure = env.run_trivy_insecure?.toBoolean() ?: false
 def runTrivyMaxTasks = env.run_trivy_max_tasks?.toInteger() ?: 4
-def trivyImg = env.trivy_image ?: 'aquasec/trivy:0.69.3'
+def trivyImg = env.trivy_image ?: 'aquasec/trivy:0.69.3@sha256:bcc376de8d77cfe086a917230e818dc9f8528e3c852f7b1aff648949b6258d1c'
+
 def dependencyTrackCredId = env.dependency_track_cred_id
 def dependencyTrackUploadSbom = env.dependency_track_upload_sbom?.toBoolean() ?: false
 def skipIntegrationTests = env.skip_integration_tests?.toBoolean() ?: false
