@@ -59,6 +59,8 @@ def preDockerBuildScriptPath = env.pre_docker_build_script_path
 def runTrivyScans = env.run_trivy_scans?.toBoolean() ?: false
 def runTrivyInsecure = env.run_trivy_insecure?.toBoolean() ?: false
 def runTrivyMaxTasks = env.run_trivy_max_tasks?.toInteger() ?: 4
+def trivyImg = env.trivy_image ?: 'aquasec/trivy:0.69.3@sha256:bcc376de8d77cfe086a917230e818dc9f8528e3c852f7b1aff648949b6258d1c'
+
 def dependencyTrackCredId = env.dependency_track_cred_id
 def dependencyTrackUploadSbom = env.dependency_track_upload_sbom?.toBoolean() ?: false
 def skipIntegrationTests = env.skip_integration_tests?.toBoolean() ?: false
@@ -468,7 +470,8 @@ try {
                 composeYaml = readYaml(text: shOutput('docker compose config'))
             }
         }
-        sh 'docker pull aquasec/trivy'
+
+        sh "docker pull $trivyImg"
         def trivyVolume = "trivy_$inProgressTag"
         sh "docker volume create $trivyVolume"
         try {
@@ -479,22 +482,22 @@ try {
             def taskQueue = []
 
             // download db files
-            def exitCode = shStatus("docker run --rm " +
-                            "-e TRIVY_INSECURE=${runTrivyInsecure} " +
-                            "-v /var/run/docker.sock:/var/run/docker.sock " +
-                            "-v $trivyVolume:/root/.cache/ " +
-                            "aquasec/trivy image --download-db-only")
-            if (exitCode != 0) {
+            def dbDownloadExitCode = shStatus(
+                "docker run --rm " +
+                "-e TRIVY_INSECURE=${runTrivyInsecure} " +
+                "-v $trivyVolume:/root/.cache/ " +
+                "$trivyImg image --download-db-only")
+            if (dbDownloadExitCode != 0) {
                 echo 'Trivy failed to download the db files'
             }
 
             // download the java db files
-            exitCode = shStatus("docker run --rm " +
-                            "-e TRIVY_INSECURE=${runTrivyInsecure} " +
-                            "-v /var/run/docker.sock:/var/run/docker.sock " +
-                            "-v $trivyVolume:/root/.cache/ " +
-                            "aquasec/trivy image --download-java-db-only")
-            if (exitCode != 0) {
+            dbDownloadExitCode = shStatus(
+                "docker run --rm " +
+                "-e TRIVY_INSECURE=${runTrivyInsecure} " +
+                "-v $trivyVolume:/root/.cache/ " +
+                "$trivyImg image --download-java-db-only")
+            if (dbDownloadExitCode != 0) {
                 echo 'Trivy failed to download the java db files'
             }
 
@@ -503,28 +506,29 @@ try {
                     // fetch service using the serviceName
                     def service = composeYaml.services[serviceName]
 
+                    def workDir = "${pwd()}/$openmpfDockerRepo.path"
+
                     // save the output to a file
-                    exitCode = shStatus("docker run --rm " +
+                    def exitCode = shStatus("docker run --rm " +
                             "-e TRIVY_INSECURE=${runTrivyInsecure} " +
-                            "-v /var/run/docker.sock:/var/run/docker.sock " +
                             "-v $trivyVolume:/root/.cache/ " +
-                            "-v '${pwd()}/$openmpfDockerRepo.path/trivyignore.txt:/.trivyignore' " +
-                            "-v '${pwd()}/$openmpfDockerRepo.path:/trivy' " +
-                            "aquasec/trivy image --format cyclonedx --output /trivy/${serviceName}_sbom.json " +
-                            "--timeout 30m $service.image")
+                            "-v '${workDir}/trivyignore.txt:/.trivyignore' " +
+                            "--mount type=image,source=${service.image},target=/data/rootfs " +
+                            "$trivyImg rootfs --format cyclonedx " +
+                            "--timeout 30m /data/rootfs > ${workDir}/${serviceName}_sbom.json")
+
                     if (exitCode != 0) {
                         failedImages << service.image
                     } else {
                         // print the vulnerabilities to a file
                         exitCode = shStatus("docker run --rm " +
                             "-e TRIVY_INSECURE=${runTrivyInsecure} " +
-                            "-v /var/run/docker.sock:/var/run/docker.sock " +
                             "-v $trivyVolume:/root/.cache/ " +
-                            "-v '${pwd()}/$openmpfDockerRepo.path/trivyignore.txt:/.trivyignore' " +
-                            "-v '${pwd()}/$openmpfDockerRepo.path:/trivy' " +
-                            "aquasec/trivy sbom --severity CRITICAL,HIGH --exit-code 1 " +
-                            "--format json --output /trivy/${serviceName}_trivy.json " +
-                            "--timeout 30m --scanners vuln /trivy/${serviceName}_sbom.json")
+                            "-v '${workDir}/trivyignore.txt:/.trivyignore' " +
+                            "-v ${workDir}/${serviceName}_sbom.json:/data/sbom.json " +
+                            "$trivyImg sbom --severity CRITICAL,HIGH --exit-code 1 " +
+                            "--format json --timeout 30m --scanners vuln " +
+                            "/data/sbom.json > ${workDir}/${serviceName}_trivy.json")
                         if (exitCode != 0) {
                             failedImages << service.image
                         }
@@ -535,20 +539,13 @@ try {
 
                         // upload to dependency track
                         if (dependencyTrackUploadSbom) {
-                            def (serviceImageName, serviceVersion) = service.image?.split(':')
-                            if (imageVersion) {
-                                projectVersion = imageVersion
-                            } else {
-                                if (service.version) {
-                                    projectVersion = service.version
-                                }
-                            }
+                            def (serviceImageName, serviceVersion) = service.image.split(':')
 
                             // publish using the dependency track plugin
                             dependencyTrackPublisher(
                                 artifact: "${openmpfDockerRepo.path}/${serviceName}_sbom.json",
                                 projectName: serviceImageName,
-                                projectVersion: projectVersion,
+                                projectVersion: imageVersion ?: serviceVersion,
                                 synchronous: false,
                                 dependencyTrackApiKey: dependencyTrackCredId,
                                 projectProperties: [
