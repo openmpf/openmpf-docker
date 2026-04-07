@@ -35,6 +35,7 @@ def preserveContainersOnFailure = env.preserve_containers_on_failure?.toBoolean(
 
 def buildCustomComponents = env.build_custom_components?.toBoolean() ?: false
 def openmpfCustomRepoCredId = env.openmpf_custom_repo_cred_id
+def openmpfProjectsRepoCredId = env.openmpf_projects_repo_cred_id
 def applyCustomConfig = env.apply_custom_config?.toBoolean() ?: false
 def mvnTestOptions = env.mvn_test_options ?: ''
 
@@ -95,9 +96,8 @@ class Repo {
 }
 
 
-def openmpfProjectsRepo = new Repo('openmpf-projects', 'https://github.com/openmpf/openmpf-projects.git',
+def openmpfProjectsRepo = new Repo('openmpf-projects', env.openmpf_projects_url,
         env.openmpf_projects_branch ?: 'develop')
-
 
 def openmpfDockerRepo = Repo.projectsSubRepo('openmpf-docker', env.openmpf_docker_branch)
 
@@ -184,9 +184,19 @@ try {
         // Directory may not exist. In that case the command doesn't do anything.
         sh "rm -rf $openmpfDockerRepo.path/test-reports/*"
 
-        if (!fileExists(openmpfProjectsRepo.path)) {
-            sh "git clone --recurse-submodules $openmpfProjectsRepo.url"
-        }
+        checkout(
+            $class: 'GitSCM',
+            userRemoteConfigs: [[url: openmpfProjectsRepo.url, credentialsId: openmpfCustomRepoCredId]],
+            extensions: [
+                [$class: 'CleanBeforeCheckout'],
+                [$class: 'GitLFSPull'],
+                [$class: 'RelativeTargetDirectory', relativeTargetDir: openmpfProjectsRepo.path],
+                [$class: 'SubmoduleOption',
+                    disableSubmodules: false,
+                    parentCredentials: true,
+                    recursiveSubmodules: true,
+                    trackingSubmodules: false]])
+
         dir(openmpfProjectsRepo.path) {
             sh 'git clean -ffd'
             sh 'git submodule foreach git clean -ffd'
