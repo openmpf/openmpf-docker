@@ -139,7 +139,7 @@ RUN --mount=type=tmpfs,target=/tmp <<eot
 eot
 
 
-RUN wget -O- https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-n8.0-latest-linux64-gpl-8.0.tar.xz \
+RUN wget -O- https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2026-04-07-13-13/ffmpeg-n8.1-7-ga3475e2554-linux64-gpl-8.1.tar.xz \
         | tar --extract --xz --directory /usr/local/bin --strip-components 2 --wildcards \
             '*'/bin/{ffmpeg,ffprobe}
 
