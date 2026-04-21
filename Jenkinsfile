@@ -47,7 +47,6 @@ def pushRuntimeImages = env.push_runtime_images?.toBoolean() ?: false
 def pollReposAndEndBuild = env.poll_repos_and_end_build?.toBoolean() ?: false
 
 def postBuildStatusEnabled = env.post_build_status?.toBoolean() ?: false
-def githubAuthToken = env.github_auth_token
 def emailRecipients = env.email_recipients
 
 // These properties add optional user-defined labels to the Docker images
@@ -186,7 +185,7 @@ try {
 
         checkout(
             $class: 'GitSCM',
-            userRemoteConfigs: [[url: openmpfProjectsRepo.url, credentialsId: openmpfCustomRepoCredId]],
+            userRemoteConfigs: [[url: openmpfProjectsRepo.url, credentialsId: openmpfProjectsRepoCredId]],
             extensions: [
                 [$class: 'CleanBeforeCheckout'],
                 [$class: 'GitLFSPull'],
@@ -651,22 +650,22 @@ finally {
     def buildStatus
     if (isAborted()) {
         echo 'DETECTED BUILD ABORTED'
-        buildStatus = 'failure'
+        buildStatus = 'failed'
     }
     else if (isProbableTimeout(buildException)) {
         echo 'DETECTED PROBABLE BUILD TIMEOUT'
-        buildStatus = 'failure'
+        buildStatus = 'failed'
     }
     else if (buildException != null) {
         echo 'DETECTED BUILD FAILURE'
         echo 'Exception type: ' + buildException.getClass()
         echo 'Exception message: ' + buildException.getMessage()
-        buildStatus = 'failure'
+        buildStatus = 'failed'
     }
     else {
         echo 'DETECTED BUILD COMPLETED'
         echo "CURRENT BUILD RESULT: ${currentBuild.currentResult}"
-        buildStatus = currentBuild.currentResult == 'SUCCESS' ? 'success' : 'failure'
+        buildStatus = currentBuild.currentResult == 'SUCCESS' ? 'success' : 'failed'
     }
 
     if (buildStatus != 'success') {
@@ -676,7 +675,7 @@ finally {
 
     if (postBuildStatusEnabled && !skipIntegrationTests) {
         for (repo in projectsSubRepos) {
-            postBuildStatus(repo, buildStatus, githubAuthToken)
+            postBuildStatus(repo, buildStatus, openmpfProjectsRepoCredId)
         }
     }
     email(buildStatus, emailRecipients)
@@ -809,23 +808,26 @@ def isProbableTimeout(Exception e) {
     return e.getClass() == org.jenkinsci.plugins.workflow.steps.FlowInterruptedException
 }
 
-def postBuildStatus(repo, status, githubAuthToken) {
+def postBuildStatus(repo, status, token) {
     if (!repo.branch || repo.branch.isAllWhitespace()) {
         return
     }
+    withCredentials([string(credentialsId: token, variable: 'TOKEN')]) {
+        def description = "$currentBuild.projectName $currentBuild.displayName"
+        def targetUrl = "$env.jenkins_url/${currentBuild.projectName}/${currentBuild.number}"
+        def statusJson = /{ "state": "$status", "description": "$description", "context": "jenkins", "target_url": "$targetUrl"}/
+        def url = "$env.openmpf_projects_status_url%2Fopen-source%2F$repo.name/statuses/$repo.sha"
+        def command = "curl -s -X POST -H 'PRIVATE-TOKEN: $TOKEN' -H 'Content-Type: application/json' -d '$statusJson' --url '$url'"
+        def response = shOutput(command)
 
-    def description = "$currentBuild.projectName $currentBuild.displayName"
-    def statusJson = /{ "state": "$status", "description": "$description", "context": "jenkins" }/
-    def url = "https://api.github.com/repos/openmpf/$repo.name/statuses/$repo.sha"
-    def response = shOutput "curl -s -X POST -H 'Authorization: token $githubAuthToken' -d '$statusJson' $url"
+        def resultJson = readJSON(text: response)
 
-    def resultJson = readJSON(text: response)
-
-    def success = (resultJson.state == status && resultJson.description == description
-                    && resultJson.context == "jenkins")
-    if (!success) {
-        echo 'Failed to post build status:'
-        echo response
+        def success = (resultJson.status == status && resultJson.description == description
+                        && resultJson.name == "jenkins")
+        if (!success) {
+            echo 'Failed to post build status:'
+            echo response
+        }
     }
 }
 
@@ -885,10 +887,7 @@ def dockerCleanUp() {
                 }
             }
         }
-
         parallel stepsForParallel
-
-        sh 'docker builder prune --force --keep-storage=120GB'
     }
     catch (e) {
         echo "Docker clean up failed due to: $e"
