@@ -580,7 +580,7 @@ try {
 
                 // add tasks the map
                 for (int i = 0; i < taskCount; i++) {
-                    def taskName = "Task ${i}" 
+                    def taskName = "Task ${i}"
                     tasksToRun[taskName] = taskQueue.remove(0)
                 }
 
@@ -817,7 +817,14 @@ def postBuildStatus(repo, status, token) {
         def targetUrl = "$env.jenkins_url/${currentBuild.projectName}/${currentBuild.number}"
         def statusJson = /{ "state": "$status", "description": "$description", "context": "jenkins", "target_url": "$targetUrl"}/
         def url = "$env.openmpf_projects_status_url%2Fopen-source%2F$repo.name/statuses/$repo.sha"
-        def command = "curl -s -X POST -H 'PRIVATE-TOKEN: $TOKEN' -H 'Content-Type: application/json' -d '$statusJson' --url '$url'"
+
+        // Use single quoted string for the token header to prevent Groovy from interpolating
+        // $TOKEN. This will result in the shell doing the interpolation. The Jenkins documentation
+        // states that it is insecure to allow Groovy to perform string interpolation on variables
+        // containing credentials because they will be visible to tools like ps.
+        // https://www.jenkins.io/doc/book/pipeline/jenkinsfile/#interpolation-of-sensitive-environment-variables
+        def command = 'curl -s -X POST -H "PRIVATE-TOKEN: $TOKEN" ' +
+                "-H 'Content-Type: application/json' -d '$statusJson' --url '$url'"
         def response = shOutput(command)
 
         def resultJson = readJSON(text: response)
