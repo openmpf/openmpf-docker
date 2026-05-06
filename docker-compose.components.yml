@@ -147,6 +147,50 @@ services:
     image: ${REGISTRY}openmpf_llama_video_summarization:${TAG}
     build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/python/LlamaVideoSummarization
 
+  llava-detection:
+    <<: *component-base
+    image: ${REGISTRY}openmpf_llava_detection:${TAG}
+    build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/python/LlavaDetection
+
+  llava-detection-server:
+    image: ${REGISTRY}openmpf_llava_detection_server:${TAG}
+    build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/python/LlavaDetection/ollama_server
+    deploy:
+      mode: global
+    ulimits:
+      memlock: -1
+      stack: 67108864
+    environment:
+      # Use "NVIDIA_VISIBLE_DEVICES=" (no value) for CPU mode.
+      # CPU mode is very slow and not recommended.
+      # To use a GPU, specify a GPU id.
+      - NVIDIA_VISIBLE_DEVICES=
+      - OLLAMA_KEEP_ALIVE=-1m
+      # https://github.com/ollama/ollama/issues/5756#issuecomment-2239896500
+      - OLLAMA_NUM_PARALLEL=1
+      - OLLAMA_MAX_LOADED_MODELS=1
+      # - OLLAMA_DEBUG=1
+    command: [serve]
+
+  llm-speech-summarization:
+    <<: *component-base
+    image: ${REGISTRY}openmpf_llm_speech_summarization:${TAG}
+    build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/python/LlmSpeechSummarization
+
+  llm-speech-summarization-server:
+    image: ${REGISTRY}openmpf_llm_speech_summarization_server:${TAG}
+    build:
+      context: ${OPENMPF_PROJECTS_PATH}/openmpf-components/python/LlmSpeechSummarization
+      dockerfile: Dockerfile.vllm
+    deploy:
+      mode: global
+      # resources:
+      #   reservations:
+      #     devices:
+      #       - driver: nvidia
+      #         device_ids: ['0']
+      #         capabilities: [gpu]
+
   mog-motion-detection:
     <<: *component-base
     image: ${REGISTRY}openmpf_mog_motion_detection:${TAG}
@@ -219,25 +263,6 @@ services:
     <<: *component-base
     image: ${REGISTRY}openmpf_ortools_subject_component:${TAG}
     build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/python/OrToolsSubjectComponent
-
-  llm-speech-summarization:
-    <<: *component-base
-    image: ${REGISTRY}openmpf_llm_speech_summarization:${TAG}
-    build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/python/LlmSpeechSummarization
-
-  llm-speech-summarization-server:
-    image: ${REGISTRY}openmpf_llm_speech_summarization_server:${TAG}
-    build:
-      context: ${OPENMPF_PROJECTS_PATH}/openmpf-components/python/LlmSpeechSummarization
-      dockerfile: Dockerfile.vllm
-    deploy:
-      mode: global
-      # resources:
-      #   reservations:
-      #     devices:
-      #       - driver: nvidia
-      #         device_ids: ['0']
-      #         capabilities: [gpu]
 
   scene-change-detection:
     <<: *component-base
