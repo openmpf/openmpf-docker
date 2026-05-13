@@ -46,6 +46,9 @@ def pushRuntimeImages = env.push_runtime_images?.toBoolean() ?: false
 
 def pollReposAndEndBuild = env.poll_repos_and_end_build?.toBoolean() ?: false
 
+def mirrorReposAndEndBuild = env.mirror_repos_and_end_build?.toBoolean() ?: false
+def githubAuthToken = env.github_auth_token
+
 def postBuildStatusEnabled = env.post_build_status?.toBoolean() ?: false
 def emailRecipients = env.email_recipients
 
@@ -140,7 +143,7 @@ if (buildCustomComponents) {
 }
 
 def allRepos = [openmpfProjectsRepo] + projectsSubRepos + customRepos
-
+def gitHubRepos = [openmpfProjectsRepo] + projectsSubRepos
 
 node(env.jenkins_nodes) {
 wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color in Jenkins console
@@ -182,6 +185,10 @@ try {
 
         // Directory may not exist. In that case the command doesn't do anything.
         sh "rm -rf $openmpfDockerRepo.path/test-reports/*"
+
+        // checkout scmGit(
+            // branches: [[name: 'master']],
+            // userRemoteConfigs: [[url: 'https://github.com/jenkinsci/git-plugin.git']])
 
         checkout(
             $class: 'GitSCM',
@@ -252,6 +259,32 @@ try {
     }
 
     if (pollReposAndEndBuild) {
+        return // end build early; do this outside of a stage
+    }
+
+    optionalStage('Mirror repos', mirrorReposAndEndBuild) {
+        // withCredentials([string(credentialsId: githubAuthToken, variable: 'GITHUB_TOKEN')]) {
+        //     for (repo in gitHubRepos) {
+        //         sh """
+        //             cd $repo.path
+        //             git remote set-url mirror https://${GITHUB_TOKEN}@github.com/youruser/yourrepo.git
+        //         """
+        //     }
+        // }
+
+        withCredentials([gitUsernamePassword(credentialsId: githubAuthToken, gitToolName: 'git-tool')]) {
+            def branch = "test/jenkins-mirror"
+            sh """
+                cd $openmpfRepo.path
+                git remote set-url mirror https://github.com/openmpf/openmpf.git
+                git fetch mirror $branch
+                git checkout -b mirror/$branch mirror/$branch
+                git merge --ff-only origin/$branch
+            """
+        }
+    }
+
+    if (mirrorReposAndEndBuild) {
         return // end build early; do this outside of a stage
     }
 
