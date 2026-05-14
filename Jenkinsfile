@@ -302,6 +302,7 @@ try {
                 // """
 
                 sh "pwd"
+                sh "cd '$repo.path' && git shortlog -e"
                 def repoLog = shOutput("cd '$repo.path' && git shortlog -e")
                 echo "$repoLog"
                 def grepExitCode = shStatus("echo '$repoLog' | grep -i jeff")
