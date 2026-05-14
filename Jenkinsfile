@@ -303,7 +303,7 @@ try {
 
                 sh """
                     cd $repo.path
-                    cat LICENSE | ! grep -i software
+                    cat LICENSE | ( ! grep -i software )
                 """
             }
 
