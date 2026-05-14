@@ -301,22 +301,26 @@ try {
                 //    cat LICENSE | ( ! grep -i software )
                 // """
 
-                sh "pwd"
-                sh "cd '$repo.path' && git status"
-                // sh "cd '$repo.path' && git shortlog -e"
-                def repoLog = sh(script: "cd '$repo.path' && git shortlog -e HEAD", returnStdout: true)
-                echo "$repoLog"
-                def grepExitCode = shStatus("echo '$repoLog' | grep -i jeff")
-                if (grepExitCode == 0) {
-                    error "ERROR: Found excluded term(s) in commit log"
-                }
+                // sh "pwd"
+                // sh "cd '$repo.path' && git status"
+                // // sh "cd '$repo.path' && git shortlog -e"
+                // def repoLog = sh(script: "cd '$repo.path' && git shortlog -e HEAD", returnStdout: true)
+                // echo "$repoLog"
+                // def grepExitCode = shStatus("echo '$repoLog' | grep -i jeff")
+                // if (grepExitCode == 0) {
+                //     error "ERROR: Found excluded term(s) in commit log"
+                // }
 
+                sh """
+                    cd '$repo.path'
+                    git shortlog -e HEAD | ( ! grep -iE '(${excludeTermsExpr})' )
+                """
             }
 
             // check feed-forward merge
             for (repo in [openmpfRepo]) {
                 sh """
-                    cd $repo.path
+                    cd '$repo.path'
                     git merge --ff-only origin/$branch
                 """
             }
