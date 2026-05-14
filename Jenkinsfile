@@ -279,7 +279,7 @@ try {
             for (repo in [openmpfRepo]) {
                 sh """
                     cd $repo.path
-                    git remote remove mirror || true`
+                    git remote remove mirror || true
                     git branch -D mirror/$branch || true
                     git remote add mirror https://github.com/openmpf/openmpf.git
                     git fetch mirror $branch
