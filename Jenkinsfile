@@ -311,10 +311,17 @@ try {
                 //     error "ERROR: Found excluded term(s) in commit log"
                 // }
 
-                sh """
-                    cd '$repo.path'
-                    git shortlog -e HEAD | ( ! grep -iE '(${excludeTermsExpr})' )
-                """
+                def gitShortlogExitCode =
+                    shStatus("cd '$repo.path' && git shortlog -e HEAD | grep -iE '(${excludeTermsExpr})'")
+                
+                // 0: matches found, 1: no matches found, other: regex error or invalid use of grep
+                if (gitShortlogExitCode == 0) {
+                    error 'ERROR: Found excluded term(s) in commit log'
+                }
+                if (gitShortlogExitCode != 1) {
+                    error "ERROR: Failed to check commit log for excluded terms. Exit code: $gitShortlogExitCode"
+                }
+
             }
 
             // check feed-forward merge
