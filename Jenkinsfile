@@ -304,7 +304,7 @@ try {
             for (repo in [openmpfRepo]) {
                 sh """
                     cd $repo.path
-                    git push mirror $branch
+                    git push mirror mirror/$branch:$branch
                 """
             }
         }
