@@ -272,11 +272,12 @@ try {
         //     }
         // }
 
-        withCredentials([gitUsernamePassword(credentialsId: gitHubRepoCredId, gitToolName: 'git-tool')]) {
+        withCredentials([gitUsernamePassword(credentialsId: gitHubRepoCredId)]) {
             def branch = "test/jenkins-mirror"
             sh """
                 cd $openmpfRepo.path
-                git remote set-url mirror https://github.com/openmpf/openmpf.git
+                git remote remove mirror || true
+                git remote add mirror https://github.com/openmpf/openmpf.git
                 git fetch mirror $branch
                 git checkout -b mirror/$branch mirror/$branch
                 git merge --ff-only origin/$branch
