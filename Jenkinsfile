@@ -289,10 +289,10 @@ try {
             }
 
             // check commit messages, user names, and user emails for excluded terms
-            def excludeTermsOpts = exclude_commit_terms.split(',').collect { " -e \"${it.trim()}\"" }.join('')
-            if (!excludeTermsOpts) {
+            if (!exclude_commit_terms.replace(',', '').trim()) {
                 echo "WARNING: No excluded terms were specified for checking commit logs."
             } else {
+                def excludeTermsOpts = exclude_commit_terms.split(',').collect { " -e \"${it.trim()}\"" }.join('')
                 for (repo in [openmpfRepo]) {
                     def gitShortlogExitCode =
                         shStatus("cd '$repo.path' && git shortlog -e HEAD | grep -i ${excludeTermsOpts}")
