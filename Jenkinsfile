@@ -289,7 +289,9 @@ try {
             }
 
             // check commit messages, user names, and user emails for excluded terms
-            def excludeTermsExpr = exclude_commit_terms.split(',').collect { it.trim() }.join('|')
+            def excludeTermsOpts = exclude_commit_terms.split(',').collect { " -e '${it}'" }.join('')
+
+
             for (repo in [openmpfRepo]) {
                 // sh """
                 //     cd $repo.path
@@ -312,11 +314,11 @@ try {
                 // }
 
                 def gitShortlogExitCode =
-                    shStatus("cd '$repo.path' && git shortlog -e HEAD | grep -iE '(${excludeTermsExpr})'")
+                    shStatus("cd '$repo.path' && git shortlog -e HEAD | grep -i ${excludeTermsOpts}")
                 
                 // 0: matches found, 1: no matches found, other: regex error or invalid use of grep
                 if (gitShortlogExitCode == 0) {
-                    error 'ERROR: Found excluded term(s) in commit log'
+                    error 'ERROR: Found excluded terms in commit log'
                 }
                 if (gitShortlogExitCode != 1) {
                     error "ERROR: Failed to check commit log for excluded terms. Exit code: $gitShortlogExitCode"
