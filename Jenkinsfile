@@ -297,7 +297,7 @@ try {
                 // """
                 sh """
                     cd $repo.path
-                    grep -i software LICENSE
+                    ! grep -i software LICENSE
                 """
             }
 
