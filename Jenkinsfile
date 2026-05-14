@@ -304,7 +304,7 @@ try {
                 sh "pwd"
                 sh "cd '$repo.path' && git status"
                 // sh "cd '$repo.path' && git shortlog -e"
-                def repoLog = sh(script: "cd '$repo.path' && git shortlog -e", returnStdout: true)
+                def repoLog = sh(script: "cd '$repo.path' && git shortlog -e HEAD", returnStdout: true)
                 echo "$repoLog"
                 def grepExitCode = shStatus("echo '$repoLog' | grep -i jeff")
                 if (grepExitCode == 0) {
