@@ -288,7 +288,7 @@ try {
             }
 
             // check commit messages for excluded terms
-            excludedCommitTerms = ['Jeff', 'mitre']
+            def excludedCommitTerms = ['Jeff', 'mitre']
             for (repo in [openmpfRepo]) {
                 sh """
                     cd $repo.path
