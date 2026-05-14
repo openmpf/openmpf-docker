@@ -298,12 +298,12 @@ try {
 
                 // sh """
                 //    cd $repo.path
-                //     ! grep -i software LICENSE
+                //    cat LICENSE | ( ! grep -i software )
                 // """
 
                 sh """
                     cd $repo.path
-                    cat LICENSE | ( ! grep -i software )
+                    git shortlog -e | ( ! grep -i jeff )
                 """
             }
 
