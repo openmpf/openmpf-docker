@@ -47,6 +47,7 @@ def pushRuntimeImages = env.push_runtime_images?.toBoolean() ?: false
 def pollReposAndEndBuild = env.poll_repos_and_end_build?.toBoolean() ?: false
 
 def mirrorReposAndEndBuild = env.mirror_repos_and_end_build?.toBoolean() ?: false
+def mirrorBranchOrTag = env.mirror_branch_or_tag
 def gitHubRepoCredId = env.github_repo_cred_id
 def excludeCommitTerms = env.exclude_commit_terms ?: ''
 
@@ -177,7 +178,7 @@ try {
     stage('Clone repos') {
         for (repo in allRepos) {
             if (fileExists(repo.path)) {
-                repo.prevSha = shOutput "cd $repo.path && git rev-parse HEAD"
+                repo.prevSha = shOutput "cd '$repo.path' && git rev-parse HEAD"
             }
             else {
                 repo.prevSha = 'NONE'
@@ -186,10 +187,6 @@ try {
 
         // Directory may not exist. In that case the command doesn't do anything.
         sh "rm -rf $openmpfDockerRepo.path/test-reports/*"
-
-        // checkout scmGit(
-            // branches: [[name: 'master']],
-            // userRemoteConfigs: [[url: 'https://github.com/jenkinsci/git-plugin.git']])
 
         checkout(
             $class: 'GitSCM',
@@ -242,7 +239,7 @@ try {
         }
 
         for (repo in allRepos) {
-            repo.sha = shOutput "cd $repo.path && git rev-parse HEAD"
+            repo.sha = shOutput "cd '$repo.path' && git rev-parse HEAD"
         }
     } // stage('Clone repos')
 
@@ -264,27 +261,16 @@ try {
     }
 
     optionalStage('Mirror repos', mirrorReposAndEndBuild) {
-        // withCredentials([string(credentialsId: githubAuthToken, variable: 'GITHUB_TOKEN')]) {
-        //     for (repo in gitHubRepos) {
-        //         sh """
-        //             cd $repo.path
-        //             git remote set-url mirror https://${GITHUB_TOKEN}@github.com/youruser/yourrepo.git
-        //         """
-        //     }
-        // }
-
         withCredentials([gitUsernamePassword(credentialsId: gitHubRepoCredId)]) {
-            def branch = "test/jenkins-mirror"
-
-            // checkout all mirror repos
-            for (repo in [openmpfRepo]) {
+            // checkout fresh version of mirror repos
+            for (repo in gitHubRepos) {
                 sh """
                     cd '$repo.path'
                     git remote remove mirror || true
-                    git branch -D mirror/$branch || true
+                    git branch -D mirror/$mirrorBranchOrTag || true
                     git remote add mirror https://github.com/openmpf/openmpf.git
-                    git fetch mirror $branch
-                    git checkout -b mirror/$branch mirror/$branch
+                    git fetch mirror $mirrorBranchOrTag
+                    git checkout -b mirror/$mirrorBranchOrTag mirror/$mirrorBranchOrTag
                 """
             }
 
@@ -293,7 +279,7 @@ try {
                 echo "WARNING: No excluded terms were specified for checking commit logs."
             } else {
                 def excludeTermsOpts = exclude_commit_terms.split(',').collect { " -e \"${it.trim()}\"" }.join('')
-                for (repo in [openmpfRepo]) {
+                for (repo in gitHubRepos) {
                     def gitShortlogExitCode =
                         shStatus("cd '$repo.path' && git shortlog -e HEAD | grep -i ${excludeTermsOpts}")
                     
@@ -308,19 +294,13 @@ try {
             }
 
             // check feed-forward merge
-            for (repo in [openmpfRepo]) {
-                sh """
-                    cd '$repo.path'
-                    git merge --ff-only origin/$branch
-                """
+            for (repo in gitHubRepos) {
+                sh "cd '$repo.path' && git merge --ff-only origin/$mirrorBranchOrTag"
             }
 
             // push repos at the same time
-            for (repo in [openmpfRepo]) {
-                sh """
-                    cd $repo.path
-                    git push mirror mirror/$branch:$branch
-                """
+            for (repo in gitHubRepos) {
+                sh "cd '$repo.path' && git push mirror mirror/$mirrorBranchOrTag:$mirrorBranchOrTag"
             }
         }
     }
