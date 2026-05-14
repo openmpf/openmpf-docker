@@ -48,6 +48,7 @@ def pollReposAndEndBuild = env.poll_repos_and_end_build?.toBoolean() ?: false
 
 def mirrorReposAndEndBuild = env.mirror_repos_and_end_build?.toBoolean() ?: false
 def gitHubRepoCredId = env.github_repo_cred_id
+def excludeCommitTerms = env.exclude_commit_terms ?: ''
 
 def postBuildStatusEnabled = env.post_build_status?.toBoolean() ?: false
 def emailRecipients = env.email_recipients
@@ -287,13 +288,12 @@ try {
                 """
             }
 
-            // check commit messages for excluded terms
-            def excludedCommitTerms = ['Jeff', 'mitre']
+            // check commit messages, user names, and user emails for excluded terms
+            def excludeTermsExpr = exclude_commit_terms.replace(",", "|");
             for (repo in [openmpfRepo]) {
                 sh """
                     cd $repo.path
-                    git shortlog -se | grep -iE '(${excludedCommitTerms.join('|')})' \
-                        && { echo "Found excluded commit terms in $repo.name"; exit 1; }
+                    git shortlog -e | { ! grep -iE '(${excludeTermsExpr})'; }
                 """
             }
 
