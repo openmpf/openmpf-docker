@@ -302,8 +302,9 @@ try {
                 // """
 
                 def repoLog = shOutput("cd '$repo.path' && git shortlog -e")
+                echo "$repoLog"
                 def grepExitCode = shStatus("echo '$repoLog' | grep -i jeff")
-                if (grepExitCode != 0) {
+                if (grepExitCode == 0) {
                     error "ERROR: Found excluded term(s) in commit log"
                 }
 
