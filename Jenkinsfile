@@ -268,7 +268,7 @@ try {
                     cd '$repo.path'
                     git remote remove mirror || true
                     git branch -D mirror/$mirrorBranchOrTag || true
-                    git remote add mirror https://github.com/openmpf/openmpf.git
+                    git remote add mirror https://github.com/openmpf/'$repo.name'.git
                     git fetch mirror $mirrorBranchOrTag
                     git checkout -b mirror/$mirrorBranchOrTag mirror/$mirrorBranchOrTag
                 """
