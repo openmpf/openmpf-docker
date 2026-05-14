@@ -295,9 +295,15 @@ try {
                 //     cd $repo.path
                 //     ! git shortlog -e | grep -iE '(${excludeTermsExpr})'
                 // """
+
+                // sh """
+                //    cd $repo.path
+                //     ! grep -i software LICENSE
+                // """
+
                 sh """
                     cd $repo.path
-                    ! grep -i software LICENSE
+                    cat LICENSE | ! grep -i software
                 """
             }
 
