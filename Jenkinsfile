@@ -266,7 +266,7 @@ try {
             for (repo in gitHubRepos) {
                 sh """
                     cd '$repo.path'
-                    git checkout origin $mirrorBranchOrTag
+                    git checkout origin/$mirrorBranchOrTag
                     git remote remove mirror || true
                     git branch -D mirror/$mirrorBranchOrTag || true
                     git remote add mirror https://github.com/openmpf/'$repo.name'.git
