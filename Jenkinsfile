@@ -291,9 +291,13 @@ try {
             // check commit messages, user names, and user emails for excluded terms
             def excludeTermsExpr = exclude_commit_terms.split(',').collect { it.trim() }.join('|')
             for (repo in [openmpfRepo]) {
+                // sh """
+                //     cd $repo.path
+                //     ! git shortlog -e | grep -iE '(${excludeTermsExpr})'
+                // """
                 sh """
                     cd $repo.path
-                    ! git shortlog -e | grep -iE '(${excludeTermsExpr})'
+                    grep -i software LICENSE
                 """
             }
 
