@@ -288,8 +288,13 @@ try {
             }
 
             // check commit messages for excluded terms
+            excludedCommitTerms = ['Jeff', 'mitre']
             for (repo in [openmpfRepo]) {
-                // TODO
+                sh """
+                    cd $repo.path
+                    git shortlog -se | grep -iE '(${excludedCommitTerms.join('|')})' \
+                        && { echo "Found excluded commit terms in $repo.name"; exit 1; }
+                """
             }
 
             // check feed-forward merge
