@@ -276,10 +276,14 @@ try {
             def branch = "test/jenkins-mirror"
             sh """
                 cd $openmpfRepo.path
+
                 git remote remove mirror || true
+                git branch -D mirror/$branch || true
+
                 git remote add mirror https://github.com/openmpf/openmpf.git
                 git fetch mirror $branch
                 git checkout -b mirror/$branch mirror/$branch
+                
                 git merge --ff-only origin/$branch
             """
         }
