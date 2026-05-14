@@ -293,7 +293,7 @@ try {
             for (repo in [openmpfRepo]) {
                 sh """
                     cd $repo.path
-                    git shortlog -e | { ! grep -iE '(${excludeTermsExpr})'; }
+                    git shortlog -e | ( ! grep -iE '(${excludeTermsExpr})' )
                 """
             }
 
