@@ -47,7 +47,7 @@ def pushRuntimeImages = env.push_runtime_images?.toBoolean() ?: false
 def pollReposAndEndBuild = env.poll_repos_and_end_build?.toBoolean() ?: false
 
 def mirrorReposAndEndBuild = env.mirror_repos_and_end_build?.toBoolean() ?: false
-def githubAuthToken = env.github_auth_token
+def gitHubRepoCredId = env.github_repo_cred_id
 
 def postBuildStatusEnabled = env.post_build_status?.toBoolean() ?: false
 def emailRecipients = env.email_recipients
@@ -272,7 +272,7 @@ try {
         //     }
         // }
 
-        withCredentials([gitUsernamePassword(credentialsId: githubAuthToken, gitToolName: 'git-tool')]) {
+        withCredentials([gitUsernamePassword(credentialsId: gitHubRepoCredId, gitToolName: 'git-tool')]) {
             def branch = "test/jenkins-mirror"
             sh """
                 cd $openmpfRepo.path
