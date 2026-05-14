@@ -290,38 +290,21 @@ try {
 
             // check commit messages, user names, and user emails for excluded terms
             def excludeTermsOpts = exclude_commit_terms.split(',').collect { " -e \"${it.trim()}\"" }.join('')
-            for (repo in [openmpfRepo]) {
-                // sh """
-                //     cd $repo.path
-                //     ! git shortlog -e | grep -iE '(${excludeTermsExpr})'
-                // """
-
-                // sh """
-                //    cd $repo.path
-                //    cat LICENSE | ( ! grep -i software )
-                // """
-
-                // sh "pwd"
-                // sh "cd '$repo.path' && git status"
-                // // sh "cd '$repo.path' && git shortlog -e"
-                // def repoLog = sh(script: "cd '$repo.path' && git shortlog -e HEAD", returnStdout: true)
-                // echo "$repoLog"
-                // def grepExitCode = shStatus("echo '$repoLog' | grep -i jeff")
-                // if (grepExitCode == 0) {
-                //     error "ERROR: Found excluded term(s) in commit log"
-                // }
-
-                def gitShortlogExitCode =
-                    shStatus("cd '$repo.path' && git shortlog -e HEAD | grep -i ${excludeTermsOpts}")
-                
-                // 0: matches found, 1: no matches found, other: regex error or invalid use of grep
-                if (gitShortlogExitCode == 0) {
-                    error 'ERROR: Found excluded terms in commit log'
+            if (!excludeTermsOpts) {
+                echo "WARNING: No excluded terms were specified for checking commit logs."
+            } else {
+                for (repo in [openmpfRepo]) {
+                    def gitShortlogExitCode =
+                        shStatus("cd '$repo.path' && git shortlog -e HEAD | grep -i ${excludeTermsOpts}")
+                    
+                    // 0: matches found, 1: no matches found, other: regex error or invalid use of grep
+                    if (gitShortlogExitCode == 0) {
+                        error 'ERROR: Found excluded terms in commit log'
+                    }
+                    if (gitShortlogExitCode != 1) {
+                        error "ERROR: Failed to check commit log for excluded terms. Exit code: $gitShortlogExitCode"
+                    }
                 }
-                if (gitShortlogExitCode != 1) {
-                    error "ERROR: Failed to check commit log for excluded terms. Exit code: $gitShortlogExitCode"
-                }
-
             }
 
             // check feed-forward merge
