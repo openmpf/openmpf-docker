@@ -289,9 +289,7 @@ try {
             }
 
             // check commit messages, user names, and user emails for excluded terms
-            def excludeTermsOpts = exclude_commit_terms.split(',').collect { " -e '${it.trim()}'" }.join('')
-
-
+            def excludeTermsOpts = exclude_commit_terms.split(',').collect { " -e \"${it.trim()}\"" }.join('')
             for (repo in [openmpfRepo]) {
                 // sh """
                 //     cd $repo.path
