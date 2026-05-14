@@ -301,6 +301,7 @@ try {
                 //    cat LICENSE | ( ! grep -i software )
                 // """
 
+                sh "pwd"
                 def repoLog = shOutput("cd '$repo.path' && git shortlog -e")
                 echo "$repoLog"
                 def grepExitCode = shStatus("echo '$repoLog' | grep -i jeff")
