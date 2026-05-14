@@ -274,18 +274,39 @@ try {
 
         withCredentials([gitUsernamePassword(credentialsId: gitHubRepoCredId)]) {
             def branch = "test/jenkins-mirror"
-            sh """
-                cd $openmpfRepo.path
 
-                git remote remove mirror || true
-                git branch -D mirror/$branch || true
+            // checkout all mirror repos
+            for (repo in [openmpfRepo]) {
+                sh """
+                    cd $repo.path
+                    git remote remove mirror || true`
+                    git branch -D mirror/$branch || true
+                    git remote add mirror https://github.com/openmpf/openmpf.git
+                    git fetch mirror $branch
+                    git checkout -b mirror/$branch mirror/$branch
+                """
+            }
 
-                git remote add mirror https://github.com/openmpf/openmpf.git
-                git fetch mirror $branch
-                git checkout -b mirror/$branch mirror/$branch
-                
-                git merge --ff-only origin/$branch
-            """
+            // check commit messages for excluded terms
+            for (repo in [openmpfRepo]) {
+                // TODO
+            }
+
+            // check feed-forward merge
+            for (repo in [openmpfRepo]) {
+                sh """
+                    cd $repo.path
+                    git merge --ff-only origin/$branch
+                """
+            }
+
+            // push repos at the same time
+            for (repo in [openmpfRepo]) {
+                sh """
+                    cd $repo.path
+                    git push mirror $branch
+                """
+            }
         }
     }
 
