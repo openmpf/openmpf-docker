@@ -303,7 +303,7 @@ try {
 
                 sh """
                     cd $repo.path
-                    git shortlog -e | ( ! grep -i jeff )
+                    ( git shortlog -e ) | ( ! grep -i jeff )
                 """
             }
 
