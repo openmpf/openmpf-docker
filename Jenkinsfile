@@ -173,7 +173,7 @@ try {
     stage('Clone repos') {
         for (repo in allRepos) {
             if (fileExists(repo.path)) {
-                repo.prevSha = shOutput "cd $repo.path && git rev-parse HEAD"
+                repo.prevSha = shOutput "cd '$repo.path' && git rev-parse HEAD"
             }
             else {
                 repo.prevSha = 'NONE'
@@ -234,7 +234,7 @@ try {
         }
 
         for (repo in allRepos) {
-            repo.sha = shOutput "cd $repo.path && git rev-parse HEAD"
+            repo.sha = shOutput "cd '$repo.path' && git rev-parse HEAD"
         }
     } // stage('Clone repos')
 
@@ -910,7 +910,7 @@ def test_cli_runner(inProgressTag) {
 }
 
 
-// Need @NonCPS because DateTimeFormatter is not serizalizable
+// Need @NonCPS because DateTimeFormatter is not serializable
 @NonCPS
 def parseDate(dateString) {
     def timestampFormatter =
