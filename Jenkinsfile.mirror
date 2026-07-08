@@ -1,0 +1,201 @@
+/******************************************************************************
+ * NOTICE                                                                     *
+ *                                                                            *
+ * This software (or technical data) was produced for the U.S. Government     *
+ * under contract, and is subject to the Rights in Data-General Clause        *
+ * 52.227-14, Alt. IV (DEC 2007).                                             *
+ *                                                                            *
+ * Copyright 2026 The MITRE Corporation. All Rights Reserved.                 *
+ ******************************************************************************/
+
+/******************************************************************************
+ * Copyright 2026 The MITRE Corporation                                       *
+ *                                                                            *
+ * Licensed under the Apache License, Version 2.0 (the "License");            *
+ * you may not use this file except in compliance with the License.           *
+ * You may obtain a copy of the License at                                    *
+ *                                                                            *
+ *    http://www.apache.org/licenses/LICENSE-2.0                              *
+ *                                                                            *
+ * Unless required by applicable law or agreed to in writing, software        *
+ * distributed under the License is distributed on an "AS IS" BASIS,          *
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.   *
+ * See the License for the specific language governing permissions and        *
+ * limitations under the License.                                             *
+ ******************************************************************************/
+
+def sourceRepoUrlPrefix = env.source_repo_url_prefix
+def sourceRepoCredId = env.source_repo_cred_id
+
+def gitHubUrlPrefix = 'https://github.com/openmpf/'
+def gitHubRepoCredId = env.github_repo_cred_id
+
+def mirrorBranch = env.mirror_branch
+def excludeCommitTerms = env.exclude_commit_terms ?: ''
+
+def emailRecipients = env.email_recipients
+
+def repos = [
+    'openmpf-projects',
+    'openmpf-projects/openmpf-docker',
+    'openmpf-projects/openmpf',
+    'openmpf-projects/openmpf-components',
+    'openmpf-projects/openmpf-contrib-components',
+    'openmpf-projects/openmpf-cpp-component-sdk',
+    'openmpf-projects/openmpf-java-component-sdk',
+    'openmpf-projects/openmpf-python-component-sdk',
+    'openmpf-projects/openmpf-build-tools',
+    'openmpf.github.io'
+]
+
+
+node(env.jenkins_nodes) {
+wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) { // show color in Jenkins console
+
+def buildException
+
+try {
+    stage('Clone source repos') {
+        checkout(
+            $class: 'GitSCM',
+            branches: [[name: mirrorBranch]],
+            userRemoteConfigs: [
+                [url: sourceRepoUrlPrefix + 'openmpf-projects', credentialsId: sourceRepoCredId]],
+            extensions: [
+                [$class: 'RelativeTargetDirectory', relativeTargetDir: 'openmpf-projects'],
+                [$class: 'SubmoduleOption',
+                    disableSubmodules: false,
+                    parentCredentials: true,
+                    recursiveSubmodules: true,
+                    trackingSubmodules: false]])
+        checkout(
+            $class: 'GitSCM',
+            branches: [[name: mirrorBranch]],
+            userRemoteConfigs: [
+                [url: sourceRepoUrlPrefix + 'openmpf-github-io', credentialsId: sourceRepoCredId]],
+            extensions: [
+                [$class: 'RelativeTargetDirectory', relativeTargetDir: 'openmpf.github.io']])
+    } // stage('Clone source repos')
+
+    stage('Mirror repos') {
+        withCredentials([gitUsernamePassword(credentialsId: gitHubRepoCredId)]) {
+            // checkout source repos
+            for (repo in repos) {
+                sh """
+                    cd '${repo}'
+                    git fetch origin '$mirrorBranch'
+                    git checkout -B '$mirrorBranch' 'origin/$mirrorBranch'
+                """
+            }
+
+            // check source commit messages, user names, and user emails for excluded terms
+            if (!exclude_commit_terms.replace(',', '').trim()) {
+                echo "WARNING: No excluded terms were specified for checking repo commit logs."
+            } else {
+                def excludeTermsOpts = exclude_commit_terms.split(',').collect { " -e '${it.trim()}'" }.join('')
+                for (repo in repos) {
+                    def gitShortlogExitCode =
+                        shStatus("cd '${repo}' && git shortlog -e HEAD | grep -i ${excludeTermsOpts}")
+                    
+                    // 0: matches found, 1: no matches found, other: regex error or invalid use of grep
+                    if (gitShortlogExitCode == 0) {
+                        error "ERROR: Found excluded terms in ${repo} repo commit log"
+                    }
+                    if (gitShortlogExitCode != 1) {
+                        error "ERROR: Failed to check ${repo} repo commit log for excluded terms. Exit code: $gitShortlogExitCode"
+                    }
+                }
+            }
+
+            // checkout GitHub repos
+            for (repo in repos) {                    
+                sh """
+                    cd '${repo}'
+
+                    git remote remove github || true
+                    git remote add github '${gitHubUrlPrefix + repo.replace('openmpf-projects/', '') + '.git'}'
+
+                    git fetch github '$mirrorBranch'
+                    git checkout -B 'mirror/$mirrorBranch' 'github/$mirrorBranch'
+                """
+            }
+
+            // check if GitHub is more recent than source
+            for (repo in repos) {
+                def gitRevListCount =
+                    shOutput("cd '${repo}' && git rev-list --count '$mirrorBranch..mirror/$mirrorBranch'")
+
+                if (gitRevListCount != '0') {
+                    error "ERROR: GitHub ${repo} repo has commits that are not in the source repo."
+                }
+            }
+
+            // check feed-forward merge
+            for (repo in repos) {
+                sh "cd '${repo}' && git merge --ff-only '$mirrorBranch'"
+            }
+
+            // push repos at the same time
+            for (repo in repos) {
+                sh "cd '${repo}' && git push github 'mirror/$mirrorBranch:$mirrorBranch'"
+            }
+        }
+    } // stage('Mirror repos')
+}
+catch (e) { // Global exception handler
+    buildException = e
+    throw e
+}
+finally {
+    def buildStatus
+    if (isAborted()) {
+        echo 'DETECTED BUILD ABORTED'
+        buildStatus = 'failed'
+    }
+    else if (isProbableTimeout(buildException)) {
+        echo 'DETECTED PROBABLE BUILD TIMEOUT'
+        buildStatus = 'failed'
+    }
+    else if (buildException != null) {
+        echo 'DETECTED BUILD FAILURE'
+        echo 'Exception type: ' + buildException.getClass()
+        echo 'Exception message: ' + buildException.getMessage()
+        buildStatus = 'failed'
+    }
+    else {
+        echo 'DETECTED BUILD COMPLETED'
+        echo "CURRENT BUILD RESULT: ${currentBuild.currentResult}"
+        buildStatus = currentBuild.currentResult == 'SUCCESS' ? 'success' : 'failed'
+    }
+
+    email(buildStatus, emailRecipients)
+}
+} // wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm'])
+} // node(env.jenkins_nodes)
+
+
+def isAborted() {
+    return currentBuild.result == 'ABORTED' ||
+            !currentBuild.getRawBuild().getActions(jenkins.model.InterruptedBuildAction).isEmpty()
+}
+
+def isProbableTimeout(Exception e) {
+    return e.getClass() == org.jenkinsci.plugins.workflow.steps.FlowInterruptedException
+}
+
+def email(status, recipients) {
+    emailext(
+        subject: "$status: $env.JOB_NAME [$env.BUILD_NUMBER]",
+        body: '${JELLY_SCRIPT,template="text"}',
+        recipientProviders: [[$class: 'RequesterRecipientProvider']],
+        to: recipients);
+}
+
+def shOutput(script) {
+    return sh(script: script, returnStdout: true).trim()
+}
+
+def shStatus(script) {
+    // This will not throw an exception for a non-zero exit code.
+    return sh(script: script, returnStatus: true)
+}

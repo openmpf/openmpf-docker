@@ -35,6 +35,7 @@ def preserveContainersOnFailure = env.preserve_containers_on_failure?.toBoolean(
 
 def buildCustomComponents = env.build_custom_components?.toBoolean() ?: false
 def openmpfCustomRepoCredId = env.openmpf_custom_repo_cred_id
+def openmpfProjectsRepoCredId = env.openmpf_projects_repo_cred_id
 def applyCustomConfig = env.apply_custom_config?.toBoolean() ?: false
 def mvnTestOptions = env.mvn_test_options ?: ''
 
@@ -46,7 +47,6 @@ def pushRuntimeImages = env.push_runtime_images?.toBoolean() ?: false
 def pollReposAndEndBuild = env.poll_repos_and_end_build?.toBoolean() ?: false
 
 def postBuildStatusEnabled = env.post_build_status?.toBoolean() ?: false
-def githubAuthToken = env.github_auth_token
 def emailRecipients = env.email_recipients
 
 // These properties add optional user-defined labels to the Docker images
@@ -59,6 +59,8 @@ def preDockerBuildScriptPath = env.pre_docker_build_script_path
 def runTrivyScans = env.run_trivy_scans?.toBoolean() ?: false
 def runTrivyInsecure = env.run_trivy_insecure?.toBoolean() ?: false
 def runTrivyMaxTasks = env.run_trivy_max_tasks?.toInteger() ?: 4
+def trivyImg = env.trivy_image ?: 'aquasec/trivy:0.69.3@sha256:bcc376de8d77cfe086a917230e818dc9f8528e3c852f7b1aff648949b6258d1c'
+
 def dependencyTrackCredId = env.dependency_track_cred_id
 def dependencyTrackUploadSbom = env.dependency_track_upload_sbom?.toBoolean() ?: false
 def skipIntegrationTests = env.skip_integration_tests?.toBoolean() ?: false
@@ -93,9 +95,8 @@ class Repo {
 }
 
 
-def openmpfProjectsRepo = new Repo('openmpf-projects', 'https://github.com/openmpf/openmpf-projects.git',
+def openmpfProjectsRepo = new Repo('openmpf-projects', env.openmpf_projects_url,
         env.openmpf_projects_branch ?: 'develop')
-
 
 def openmpfDockerRepo = Repo.projectsSubRepo('openmpf-docker', env.openmpf_docker_branch)
 
@@ -172,7 +173,7 @@ try {
     stage('Clone repos') {
         for (repo in allRepos) {
             if (fileExists(repo.path)) {
-                repo.prevSha = shOutput "cd $repo.path && git rev-parse HEAD"
+                repo.prevSha = shOutput "cd '$repo.path' && git rev-parse HEAD"
             }
             else {
                 repo.prevSha = 'NONE'
@@ -182,9 +183,19 @@ try {
         // Directory may not exist. In that case the command doesn't do anything.
         sh "rm -rf $openmpfDockerRepo.path/test-reports/*"
 
-        if (!fileExists(openmpfProjectsRepo.path)) {
-            sh "git clone --recurse-submodules $openmpfProjectsRepo.url"
-        }
+        checkout(
+            $class: 'GitSCM',
+            userRemoteConfigs: [[url: openmpfProjectsRepo.url, credentialsId: openmpfProjectsRepoCredId]],
+            extensions: [
+                [$class: 'CleanBeforeCheckout'],
+                [$class: 'GitLFSPull'],
+                [$class: 'RelativeTargetDirectory', relativeTargetDir: openmpfProjectsRepo.path],
+                [$class: 'SubmoduleOption',
+                    disableSubmodules: false,
+                    parentCredentials: true,
+                    recursiveSubmodules: true,
+                    trackingSubmodules: false]])
+
         dir(openmpfProjectsRepo.path) {
             sh 'git clean -ffd'
             sh 'git submodule foreach git clean -ffd'
@@ -223,7 +234,7 @@ try {
         }
 
         for (repo in allRepos) {
-            repo.sha = shOutput "cd $repo.path && git rev-parse HEAD"
+            repo.sha = shOutput "cd '$repo.path' && git rev-parse HEAD"
         }
     } // stage('Clone repos')
 
@@ -390,13 +401,14 @@ try {
             }
 
             runtimeComposeFiles = "docker-compose.core.yml:$runtimeComponentComposeFile:docker-compose.elk.yml"
+            withCredentials([usernamePassword(credentialsId:'packageRegistryCred',usernameVariable:'ARTIFACTORY_USER',passwordVariable:'ARTIFACTORY_TOKEN')]) {
+                withEnv(["TAG=$inProgressTag", "COMPOSE_FILE=$runtimeComposeFiles"]) {
+                    sh "docker compose build $commonBuildArgs --build-arg RUN_TESTS=true --parallel"
 
-            withEnv(["TAG=$inProgressTag", "COMPOSE_FILE=$runtimeComposeFiles"]) {
-                sh "docker compose build $commonBuildArgs --build-arg RUN_TESTS=true --parallel"
-
-                def composeYaml = readYaml(text: shOutput('docker compose config'))
-                addVcsRefLabels(composeYaml, openmpfRepo, openmpfDockerRepo)
-                addUserDefinedLabels(composeYaml, customComponentServices, imageUrl, imageVersion, customLabelKey)
+                    def composeYaml = readYaml(text: shOutput('docker compose config'))
+                    addVcsRefLabels(composeYaml, openmpfRepo, openmpfDockerRepo)
+                    addUserDefinedLabels(composeYaml, customComponentServices, imageUrl, imageVersion, customLabelKey)
+                }
             }
         }
 
@@ -467,7 +479,8 @@ try {
                 composeYaml = readYaml(text: shOutput('docker compose config'))
             }
         }
-        sh 'docker pull aquasec/trivy'
+
+        sh "docker pull $trivyImg"
         def trivyVolume = "trivy_$inProgressTag"
         sh "docker volume create $trivyVolume"
         try {
@@ -478,22 +491,22 @@ try {
             def taskQueue = []
 
             // download db files
-            def exitCode = shStatus("docker run --rm " +
-                            "-e TRIVY_INSECURE=${runTrivyInsecure} " +
-                            "-v /var/run/docker.sock:/var/run/docker.sock " +
-                            "-v $trivyVolume:/root/.cache/ " +
-                            "aquasec/trivy image --download-db-only")
-            if (exitCode != 0) {
+            def dbDownloadExitCode = shStatus(
+                "docker run --rm " +
+                "-e TRIVY_INSECURE=${runTrivyInsecure} " +
+                "-v $trivyVolume:/root/.cache/ " +
+                "$trivyImg image --download-db-only")
+            if (dbDownloadExitCode != 0) {
                 echo 'Trivy failed to download the db files'
             }
 
             // download the java db files
-            exitCode = shStatus("docker run --rm " +
-                            "-e TRIVY_INSECURE=${runTrivyInsecure} " +
-                            "-v /var/run/docker.sock:/var/run/docker.sock " +
-                            "-v $trivyVolume:/root/.cache/ " +
-                            "aquasec/trivy image --download-java-db-only")
-            if (exitCode != 0) {
+            dbDownloadExitCode = shStatus(
+                "docker run --rm " +
+                "-e TRIVY_INSECURE=${runTrivyInsecure} " +
+                "-v $trivyVolume:/root/.cache/ " +
+                "$trivyImg image --download-java-db-only")
+            if (dbDownloadExitCode != 0) {
                 echo 'Trivy failed to download the java db files'
             }
 
@@ -502,28 +515,29 @@ try {
                     // fetch service using the serviceName
                     def service = composeYaml.services[serviceName]
 
+                    def workDir = "${pwd()}/$openmpfDockerRepo.path"
+
                     // save the output to a file
-                    exitCode = shStatus("docker run --rm " +
+                    def exitCode = shStatus("docker run --rm " +
                             "-e TRIVY_INSECURE=${runTrivyInsecure} " +
-                            "-v /var/run/docker.sock:/var/run/docker.sock " +
                             "-v $trivyVolume:/root/.cache/ " +
-                            "-v '${pwd()}/$openmpfDockerRepo.path/trivyignore.txt:/.trivyignore' " +
-                            "-v '${pwd()}/$openmpfDockerRepo.path:/trivy' " +
-                            "aquasec/trivy image --format cyclonedx --output /trivy/${serviceName}_sbom.json " +
-                            "--timeout 30m $service.image")
+                            "-v '${workDir}/trivyignore.txt:/.trivyignore' " +
+                            "--mount type=image,source=${service.image},target=/data/rootfs " +
+                            "$trivyImg rootfs --format cyclonedx " +
+                            "--timeout 30m /data/rootfs > ${workDir}/${serviceName}_sbom.json")
+
                     if (exitCode != 0) {
                         failedImages << service.image
                     } else {
                         // print the vulnerabilities to a file
                         exitCode = shStatus("docker run --rm " +
                             "-e TRIVY_INSECURE=${runTrivyInsecure} " +
-                            "-v /var/run/docker.sock:/var/run/docker.sock " +
                             "-v $trivyVolume:/root/.cache/ " +
-                            "-v '${pwd()}/$openmpfDockerRepo.path/trivyignore.txt:/.trivyignore' " +
-                            "-v '${pwd()}/$openmpfDockerRepo.path:/trivy' " +
-                            "aquasec/trivy sbom --severity CRITICAL,HIGH --exit-code 1 " +
-                            "--format json --output /trivy/${serviceName}_trivy.json " +
-                            "--timeout 30m --scanners vuln /trivy/${serviceName}_sbom.json")
+                            "-v '${workDir}/trivyignore.txt:/.trivyignore' " +
+                            "-v ${workDir}/${serviceName}_sbom.json:/data/sbom.json " +
+                            "$trivyImg sbom --severity CRITICAL,HIGH --exit-code 1 " +
+                            "--format json --timeout 30m --scanners vuln " +
+                            "/data/sbom.json > ${workDir}/${serviceName}_trivy.json")
                         if (exitCode != 0) {
                             failedImages << service.image
                         }
@@ -534,23 +548,18 @@ try {
 
                         // upload to dependency track
                         if (dependencyTrackUploadSbom) {
-                            def (serviceImageName, serviceVersion) = service.image?.split(':')
-                            if (service.version) {
-                                serviceVersion = service.version
-                            }
-
-                            // if the image is pushed to the registry, use the image tag for dependency track
-                            if (pushRuntimeImages) {
-                                serviceVersion = imageTag
-                            }
+                            def (serviceImageName, serviceVersion) = service.image.split(':')
 
                             // publish using the dependency track plugin
                             dependencyTrackPublisher(
                                 artifact: "${openmpfDockerRepo.path}/${serviceName}_sbom.json",
                                 projectName: serviceImageName,
-                                projectVersion: serviceVersion,
+                                projectVersion: imageVersion ?: serviceVersion,
                                 synchronous: false,
-                                dependencyTrackApiKey: dependencyTrackCredId
+                                dependencyTrackApiKey: dependencyTrackCredId,
+                                projectProperties: [
+                                    tags: ['openmpf']
+                                ]
                             )
                         }
                     }
@@ -571,7 +580,7 @@ try {
 
                 // add tasks the map
                 for (int i = 0; i < taskCount; i++) {
-                    def taskName = "Task ${i}" 
+                    def taskName = "Task ${i}"
                     tasksToRun[taskName] = taskQueue.remove(0)
                 }
 
@@ -641,22 +650,22 @@ finally {
     def buildStatus
     if (isAborted()) {
         echo 'DETECTED BUILD ABORTED'
-        buildStatus = 'failure'
+        buildStatus = 'failed'
     }
     else if (isProbableTimeout(buildException)) {
         echo 'DETECTED PROBABLE BUILD TIMEOUT'
-        buildStatus = 'failure'
+        buildStatus = 'failed'
     }
     else if (buildException != null) {
         echo 'DETECTED BUILD FAILURE'
         echo 'Exception type: ' + buildException.getClass()
         echo 'Exception message: ' + buildException.getMessage()
-        buildStatus = 'failure'
+        buildStatus = 'failed'
     }
     else {
         echo 'DETECTED BUILD COMPLETED'
         echo "CURRENT BUILD RESULT: ${currentBuild.currentResult}"
-        buildStatus = currentBuild.currentResult == 'SUCCESS' ? 'success' : 'failure'
+        buildStatus = currentBuild.currentResult == 'SUCCESS' ? 'success' : 'failed'
     }
 
     if (buildStatus != 'success') {
@@ -666,7 +675,7 @@ finally {
 
     if (postBuildStatusEnabled && !skipIntegrationTests) {
         for (repo in projectsSubRepos) {
-            postBuildStatus(repo, buildStatus, githubAuthToken)
+            postBuildStatus(repo, buildStatus, openmpfProjectsRepoCredId)
         }
     }
     email(buildStatus, emailRecipients)
@@ -799,23 +808,33 @@ def isProbableTimeout(Exception e) {
     return e.getClass() == org.jenkinsci.plugins.workflow.steps.FlowInterruptedException
 }
 
-def postBuildStatus(repo, status, githubAuthToken) {
+def postBuildStatus(repo, status, token) {
     if (!repo.branch || repo.branch.isAllWhitespace()) {
         return
     }
+    withCredentials([string(credentialsId: token, variable: 'TOKEN')]) {
+        def description = "$currentBuild.projectName $currentBuild.displayName"
+        def targetUrl = "$env.jenkins_url/${currentBuild.projectName}/${currentBuild.number}"
+        def statusJson = /{ "state": "$status", "description": "$description", "context": "jenkins", "target_url": "$targetUrl"}/
+        def url = "$env.openmpf_projects_status_url%2Fopen-source%2F$repo.name/statuses/$repo.sha"
 
-    def description = "$currentBuild.projectName $currentBuild.displayName"
-    def statusJson = /{ "state": "$status", "description": "$description", "context": "jenkins" }/
-    def url = "https://api.github.com/repos/openmpf/$repo.name/statuses/$repo.sha"
-    def response = shOutput "curl -s -X POST -H 'Authorization: token $githubAuthToken' -d '$statusJson' $url"
+        // Use single quoted string for the token header to prevent Groovy from interpolating
+        // $TOKEN. This will result in the shell doing the interpolation. The Jenkins documentation
+        // states that it is insecure to allow Groovy to perform string interpolation on variables
+        // containing credentials because they will be visible to tools like ps.
+        // https://www.jenkins.io/doc/book/pipeline/jenkinsfile/#interpolation-of-sensitive-environment-variables
+        def command = 'curl -s -X POST -H "PRIVATE-TOKEN: $TOKEN" ' +
+                "-H 'Content-Type: application/json' -d '$statusJson' --url '$url'"
+        def response = shOutput(command)
 
-    def resultJson = readJSON(text: response)
+        def resultJson = readJSON(text: response)
 
-    def success = (resultJson.state == status && resultJson.description == description
-                    && resultJson.context == "jenkins")
-    if (!success) {
-        echo 'Failed to post build status:'
-        echo response
+        def success = (resultJson.status == status && resultJson.description == description
+                        && resultJson.name == "jenkins")
+        if (!success) {
+            echo 'Failed to post build status:'
+            echo response
+        }
     }
 }
 
@@ -875,10 +894,7 @@ def dockerCleanUp() {
                 }
             }
         }
-
         parallel stepsForParallel
-
-        sh 'docker builder prune --force --keep-storage=120GB'
     }
     catch (e) {
         echo "Docker clean up failed due to: $e"
@@ -894,7 +910,7 @@ def test_cli_runner(inProgressTag) {
 }
 
 
-// Need @NonCPS because DateTimeFormatter is not serizalizable
+// Need @NonCPS because DateTimeFormatter is not serializable
 @NonCPS
 def parseDate(dateString) {
     def timestampFormatter =
