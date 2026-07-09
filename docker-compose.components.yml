@@ -132,10 +132,44 @@ services:
         limits:
           cpus: "2.0"
   
-  gemini-detection:
+  gemini-video-summarization:
     <<: *component-base
-    image: ${REGISTRY}openmpf_gemini_detection:${TAG}
-    build: ${OPENMPF_PROJECTS_PATH}/openmpf-components/python/GeminiDetection
+    image: ${REGISTRY}openmpf_gemini_video_summarization:${TAG}
+    build:
+      context: ${OPENMPF_PROJECTS_PATH}/openmpf-components/python/GeminiVideoSummarization
+      args:
+        BUILD_REGISTRY: ${REGISTRY}
+        BUILD_TAG: ${TAG}
+    environment:
+      <<: *common-env-vars
+      MPF_PROP_API: ${GEMINI_API:-OpenAI}
+      MPF_PROP_OPENAI_BASE_URL: ${GEMINI_OPENAI_BASE_URL:-http://gemini-video-summarization-server:8000/v1}
+      MPF_PROP_MODEL_NAME: ${GEMINI_MODEL_NAME:-google/gemma-4-12B-it}
+      MPF_PROP_APPLICATION_CREDENTIALS: ${GEMINI_APPLICATION_CREDENTIALS:-}
+      MPF_PROP_ENABLE_TIMELINE: ${GEMINI_ENABLE_TIMELINE:-0}
+      MPF_PROP_ENABLE_AUDIO: ${GEMINI_ENABLE_AUDIO:-1}
+      MPF_PROP_PROCESS_FPS: ${GEMINI_PROCESS_FPS:-1.0}
+      MPF_PROP_OPENAI_REQUEST_TIMEOUT_SECONDS: ${GEMINI_OPENAI_REQUEST_TIMEOUT_SECONDS:-600}
+    depends_on:
+      - workflow-manager
+      - gemini-video-summarization-server
+
+  gemini-video-summarization-server:
+    image: ${REGISTRY}openmpf_gemini_video_summarization_server:${TAG}
+    build:
+      context: ${OPENMPF_PROJECTS_PATH}/openmpf-components/python/GeminiVideoSummarization
+      dockerfile: Dockerfile.vllm
+    ipc: host
+    volumes:
+      - ${GEMINI_HF_CACHE:-${HOME}/.cache/huggingface}:/root/.cache/huggingface
+    deploy:
+      mode: global
+      # resources:
+      #   reservations:
+      #     devices:
+      #       - driver: nvidia
+      #         device_ids: ['0']
+      #         capabilities: [gpu]
 
   fasttext-language-detection:
     <<: *component-base
