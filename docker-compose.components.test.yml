@@ -37,6 +37,9 @@ services:
   east-text-detection:
     <<: *test-args
 
+  gemini-video-summarization:
+    <<: *test-args
+
   mog-motion-detection:
     <<: *test-args
 
