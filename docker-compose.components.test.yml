@@ -40,6 +40,23 @@ services:
   gemini-video-summarization:
     <<: *test-args
 
+  gemini-video-summarization-vllm-tests:
+    image: ${REGISTRY}openmpf_gemini_video_summarization_tests:${TAG}
+    build:
+      context: ${OPENMPF_PROJECTS_PATH}/openmpf-components/python/GeminiVideoSummarization
+      target: vllm-tests
+      args:
+        BUILD_REGISTRY: ${REGISTRY}
+        BUILD_TAG: ${TAG}
+        RUN_TESTS: 'true'
+    environment:
+      RUN_VLLM_TESTS: 'true'
+      GEMINI_TEST_OPENAI_BASE_URL: http://gemini-video-summarization-server:8000/v1
+      GEMINI_TEST_MODEL_NAME: ${GEMINI_MODEL_NAME:-google/gemma-4-12B-it}
+    depends_on:
+      gemini-video-summarization-server:
+        condition: service_healthy
+
   mog-motion-detection:
     <<: *test-args
 

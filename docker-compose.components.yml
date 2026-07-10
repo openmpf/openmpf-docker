@@ -151,8 +151,10 @@ services:
       MPF_PROP_PROCESS_FPS: ${GEMINI_PROCESS_FPS:-1.0}
       MPF_PROP_OPENAI_REQUEST_TIMEOUT_SECONDS: ${GEMINI_OPENAI_REQUEST_TIMEOUT_SECONDS:-600}
     depends_on:
-      - workflow-manager
-      - gemini-video-summarization-server
+      workflow-manager:
+        condition: service_started
+      gemini-video-summarization-server:
+        condition: service_healthy
 
   gemini-video-summarization-server:
     image: ${REGISTRY}openmpf_gemini_video_summarization_server:${TAG}
@@ -162,14 +164,20 @@ services:
     ipc: host
     volumes:
       - ${GEMINI_HF_CACHE:-${HOME}/.cache/huggingface}:/root/.cache/huggingface
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "--show-error", "--max-time", "5", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 6s
+      retries: 120
+      start_period: 30s
     deploy:
       mode: global
-      # resources:
-      #   reservations:
-      #     devices:
-      #       - driver: nvidia
-      #         device_ids: ['0']
-      #         capabilities: [gpu]
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ['0']
+              capabilities: [gpu]
 
   fasttext-language-detection:
     <<: *component-base
