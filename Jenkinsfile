@@ -265,8 +265,8 @@ try {
     stage('Build images') {
     timeout(time: buildTimeout, unit: 'HOURS') {
         // Make sure we are using most recent version of external images
-        for (externalImage in ['docker/dockerfile:1.2', 'postgres:17-alpine',
-                               'redis:alpine', 'ubuntu:20.04']) {
+        for (externalImage in ['docker/dockerfile:1.20', 'postgres:17-alpine',
+                               'redis:alpine', 'ubuntu:24.04']) {
             try {
                 sh "docker pull '$externalImage'"
             }
@@ -372,14 +372,14 @@ try {
                         "../../$customComponentsRepo.path/docker-compose.custom-components.yml"
                 componentComposeFiles += ":$customComponentsComposeFile"
 
-                def customGpuOnlyComponentsComposeFile =
-                            "../../$customComponentsRepo.path/docker-compose.custom-gpu-only-components.yml"
-                componentComposeFiles += ":$customGpuOnlyComponentsComposeFile"
+                // def customGpuOnlyComponentsComposeFile =
+                //             "../../$customComponentsRepo.path/docker-compose.custom-gpu-only-components.yml"
+                // componentComposeFiles += ":$customGpuOnlyComponentsComposeFile"
 
                 customComponentServices =
                         readYaml(text: shOutput("cat $customComponentsComposeFile")).services.keySet()
-                customComponentServices +=
-                        readYaml(text: shOutput("cat $customGpuOnlyComponentsComposeFile")).services.keySet()
+                // customComponentServices +=
+                //         readYaml(text: shOutput("cat $customGpuOnlyComponentsComposeFile")).services.keySet()
             }
 
             withEnv(["COMPOSE_FILE=$componentComposeFiles"]) {

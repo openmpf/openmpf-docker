@@ -26,8 +26,6 @@
 
 # Use this file in conjunction with docker-compose.core.yml.
 
-version: '3.7'
-
 services:
   workflow-manager:
     secrets: [user_properties]

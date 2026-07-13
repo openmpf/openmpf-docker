@@ -1,4 +1,4 @@
-# syntax=docker/dockerfile:1.4
+# syntax=docker/dockerfile:1.20
 
 #############################################################################
 # NOTICE                                                                    #
@@ -31,7 +31,7 @@ ARG BUILD_TAG=latest
 FROM ${BUILD_REGISTRY}openmpf_build:${BUILD_TAG} AS openmpf_build
 
 
-FROM ubuntu:20.04 AS common
+FROM ubuntu:24.04 AS common
 
 SHELL ["/bin/bash", "-o", "errexit", "-o", "pipefail", "-c"]
 
@@ -45,30 +45,13 @@ RUN --mount=type=tmpfs,target=/var/cache/apt \
     apt-get update; \
     apt-get upgrade -y; \
     apt-get install --no-install-recommends -y \
-        openjdk-17-jre-headless libtcnative-1 file wget ca-certificates;
+        openjdk-25-jre-headless libtcnative-1 file wget ca-certificates python3-pip;
 
 
 RUN wget --directory-prefix /scripts \
         https://raw.githubusercontent.com/vishnubob/wait-for-it/master/wait-for-it.sh; \
     chmod +x /scripts/wait-for-it.sh;
 
-COPY --from=openmpf_build \
-    /usr/local/bin/python3.12 /usr/local/bin/python3.12-config \
-    /usr/local/bin/pip3.12 /usr/local/bin/pip3 \
-    /usr/local/bin/
-
-COPY --from=openmpf_build /usr/local/lib/python3.12 /usr/local/lib/python3.12
-
-COPY --from=openmpf_build /usr/local/lib/libpython3.12.so.1.0 /usr/local/lib/
-
-RUN <<eot
-    cd /usr/local/bin
-    ln --symbolic python3.12 python3
-    ln --symbolic python3.12-config python3-config
-    cd /usr/local/lib
-    ln --symbolic libpython3.12.so.1.0 libpython3.12.so
-    ln --symbolic /usr/local/lib/libpython3.12.so.1.0 /lib/x86_64-linux-gnu/libpython3.12.so.1.0
-eot
 
 COPY --from=openmpf_build /usr/local/bin/ffmpeg /usr/local/bin/ffprobe /usr/local/bin/
 
@@ -95,12 +78,14 @@ RUN <<eot
     cd /build-artifacts/workflow-manager/WEB-INF
     mv jni-libs tmp-jni-libs
     mkdir jni-libs
-    mv tmp-jni-libs/libmpfopencvjni.so jni-libs/
+
+    mv tmp-jni-libs/{libmpfopencvjni.so,libmpfheifjni.so} jni-libs/
     /scripts/copy_libs.sh jni-libs/libmpfopencvjni.so jni-libs tmp-jni-libs
-    mv tmp-jni-libs/libmpfheifjni.so jni-libs/
     /scripts/copy_libs.sh jni-libs/libmpfheifjni.so jni-libs tmp-jni-libs
+
     rm -r tmp-jni-libs
 eot
+
 
 FROM common
 
