@@ -174,12 +174,12 @@ services:
       start_period: 30s
     deploy:
       mode: global
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              device_ids: ['0']
-              capabilities: [gpu]
+      # resources:
+      #   reservations:
+      #     devices:
+      #       - driver: nvidia
+      #         device_ids: ['0']
+      #         capabilities: [gpu]
 
   fasttext-language-detection:
     <<: *component-base
