@@ -132,6 +132,53 @@ services:
         limits:
           cpus: "2.0"
   
+  gemini-image-captioning:
+    <<: *component-base
+    image: ${REGISTRY}openmpf_gemini_image_captioning:${TAG}
+    build:
+      context: ${OPENMPF_PROJECTS_PATH}/openmpf-components/python/GeminiImageCaptioning
+      args:
+        BUILD_REGISTRY: ${REGISTRY}
+        BUILD_TAG: ${TAG}
+    environment:
+      <<: *common-env-vars
+      MPF_PROP_API: ${GEMINI_IMAGE_CAPTIONING_API:-OpenAI}
+      MPF_PROP_OPENAI_BASE_URL: ${GEMINI_IMAGE_CAPTIONING_OPENAI_BASE_URL:-http://gemini-image-captioning-server:8000/v1}
+      MPF_PROP_MODEL_NAME: ${GEMINI_IMAGE_CAPTIONING_MODEL_NAME:-google/gemma-4-12B-it}
+      MPF_PROP_APPLICATION_CREDENTIALS: ${GEMINI_IMAGE_CAPTIONING_APPLICATION_CREDENTIALS:-}
+      MPF_PROP_OPENAI_REQUEST_TIMEOUT_SECONDS: ${GEMINI_IMAGE_CAPTIONING_OPENAI_REQUEST_TIMEOUT_SECONDS:-600}
+    depends_on:
+      workflow-manager:
+        condition: service_started
+      gemini-image-captioning-server:
+        condition: service_healthy
+
+  gemini-image-captioning-server:
+    image: ${REGISTRY}openmpf_gemini_image_captioning_server:${TAG}
+    build:
+      context: ${OPENMPF_PROJECTS_PATH}/openmpf-components/python/GeminiImageCaptioning
+      dockerfile: Dockerfile.vllm
+    ipc: host
+    volumes:
+      - type: bind
+        source: ${GEMINI_IMAGE_CAPTIONING_HF_CACHE:-${HOME}/.cache/huggingface}
+        target: /root/.cache/huggingface
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "--show-error", "--max-time", "5", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 6s
+      retries: 120
+      start_period: 30s
+    deploy:
+      mode: global
+      # resources:
+      #   reservations:
+      #     devices:
+      #       - driver: nvidia
+      #         device_ids: ['0']
+      #         capabilities: [gpu]
+
+
   gemini-video-summarization:
     <<: *component-base
     image: ${REGISTRY}openmpf_gemini_video_summarization:${TAG}
